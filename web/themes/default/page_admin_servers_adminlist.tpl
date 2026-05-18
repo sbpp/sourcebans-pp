@@ -13,6 +13,7 @@
     (in-game name / IP). No `nofilter` is used — every value goes through
     the escaper.
 *}
+<div class="page-section">
 <section class="card" data-testid="server-admin-list">
     <div class="card__header">
         <div>
@@ -62,3 +63,4 @@
         </table>
     {/if}
 </section>
+</div>

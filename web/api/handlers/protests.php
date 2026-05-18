@@ -32,7 +32,7 @@ function api_protests_remove(array $params): array
             throw new ApiError('delete_failed', 'There was a problem deleting the protest from the database. Check the logs for more info');
         }
 
-        Log::add('m', 'Protest Deleted', "Protest ($pid) has been deleted.");
+        Log::add(LogType::Message, 'Protest Deleted', "Protest ($pid) has been deleted.");
         return [
             'remove'        => ["apid_$pid", "apid_{$pid}a"],
             'counter'       => ['protcountarchiv' => $cnt],
@@ -40,7 +40,10 @@ function api_protests_remove(array $params): array
                 'title' => 'Protest Deleted',
                 'body'  => 'The selected protest has been deleted from the database',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — delete only fires from the archive view, so
+                // land back on the archive (not the default add-ban
+                // surface bare `?p=admin&c=bans` would route to).
+                'redir' => 'index.php?p=admin&c=bans&section=protests&view=archive',
             ],
         ];
     }
@@ -57,7 +60,7 @@ function api_protests_remove(array $params): array
             throw new ApiError('archive_failed', 'There was a problem moving the protest to the archive. Check the logs for more info');
         }
 
-        Log::add('m', 'Protest Archived', "Protest ($pid) has been moved to the archive.");
+        Log::add(LogType::Message, 'Protest Archived', "Protest ($pid) has been moved to the archive.");
         return [
             'remove'  => ["pid_$pid", "pid_{$pid}a"],
             'counter' => ['protcount' => $cnt],
@@ -65,7 +68,10 @@ function api_protests_remove(array $params): array
                 'title' => 'Protest Archived',
                 'body'  => 'The selected protest has been moved to the archive.',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — admin-bans is Pattern A; the operator was on
+                // the protests queue, so land them back on the same
+                // section's current view.
+                'redir' => 'index.php?p=admin&c=bans&section=protests',
             ],
         ];
     }
@@ -81,7 +87,7 @@ function api_protests_remove(array $params): array
             throw new ApiError('restore_failed', 'There was a problem restoring the protest from the archive. Check the logs for more info');
         }
 
-        Log::add('m', 'Protest Deleted', "Protest ($pid) has been restored from the archive.");
+        Log::add(LogType::Message, 'Protest Deleted', "Protest ($pid) has been restored from the archive.");
         return [
             'remove'  => ["apid_$pid", "apid_{$pid}a"],
             'counter' => ['protcountarchiv' => $cnt],
@@ -89,7 +95,10 @@ function api_protests_remove(array $params): array
                 'title' => 'Protest Restored',
                 'body'  => 'The selected protest has been restored from the archive.',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — restore moves the row back into the live
+                // queue, so land the operator on the current view to
+                // confirm the row reappeared.
+                'redir' => 'index.php?p=admin&c=bans&section=protests',
             ],
         ];
     }

@@ -13,15 +13,48 @@ work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
 use SteamID\SteamID;
 
+/**
+ * Delete an admin row + their server group memberships (#1352).
+ *
+ * Modern JSON twin of the v1.x sourcebans.js `RemoveAdmin()` helper
+ * (deleted at #1123 D1) — `page_admin_admins_list.tpl` wires the
+ * trash-can button through `Actions.AdminsRemove` via the
+ * `#admins-delete-dialog` confirm + reason modal. There is no
+ * legacy GET fallback for `o=remove` (the v1.x JS helper went
+ * straight to xajax then to this handler), so this is the single
+ * delete path; the modal's no-JS / no-dispatcher fallback just
+ * lands the operator back on the admins list.
+ *
+ * Inputs:
+ *   - `aid`     (int, required)    — the admin id to remove. The
+ *     handler refuses to delete a row that holds `ADMIN_OWNER`.
+ *   - `ureason` (string, optional) — admin-supplied reason. We trim
+ *     it and append `Reason: …` to the audit-log entry when
+ *     non-empty. Empty / omitted is allowed (the modal carries
+ *     `aria-required="false"`); admin deletion is a lifecycle
+ *     action, not a moderation flip, so we don't gate the call on
+ *     it the way `bans.unban` / `comms.unblock` do.
+ *
+ * @param array{ aid?: int|string, ureason?: string } $params
+ * @return array{
+ *     remove: string,
+ *     counter: array{ admincount: int },
+ *     rehash: string|null,
+ *     message: array{ title: string, body: string, kind: string, redir: string }
+ * }
+ */
 function api_admins_remove(array $params): array
 {
     $aid = (int)($params['aid'] ?? 0);
+    // Trim whitespace so a textarea that contains only spaces produces an
+    // empty reason (audit-log suffix omitted) rather than `Reason:    `.
+    $ureason = trim((string)($params['ureason'] ?? ''));
 
     $admin = $GLOBALS['PDO']->query("SELECT gid, authid, extraflags, user FROM `:prefix_admins` WHERE aid = :aid");
     $GLOBALS['PDO']->bind(':aid', $aid);
     $admin = $GLOBALS['PDO']->single();
 
-    if ($admin && (intval($admin['extraflags']) & ADMIN_OWNER) !== 0) {
+    if ($admin && ((int) $admin['extraflags'] & ADMIN_OWNER) !== 0) {
         throw new ApiError('cannot_delete_owner', 'Error: You cannot delete the owner.');
     }
 
@@ -56,7 +89,16 @@ function api_admins_remove(array $params): array
         throw new ApiError('delete_failed', 'There was an error removing the admin from the database, please check the logs');
     }
 
-    Log::add('m', 'Admin Deleted', "Admin ({$admin['user']}) has been deleted.");
+    // #1352: trail the optional admin-supplied reason in the audit-log
+    // entry so admins reading the log later can see *why* the admin was
+    // removed. Mirrors the canonical "Reason: $ureason" suffix shape
+    // from `api_bans_unban` / `api_comms_unblock` — the suffix is
+    // omitted when the operator left the field blank.
+    $logBody = "Admin ({$admin['user']}) has been deleted.";
+    if ($ureason !== '') {
+        $logBody .= " Reason: {$ureason}";
+    }
+    Log::add(LogType::Message, 'Admin Deleted', $logBody);
 
     return [
         'remove'  => "aid_$aid",
@@ -91,6 +133,29 @@ function api_admins_add(array $params): array
     $singleSrv   = (string)($params['single_servers'] ?? '');
 
     if ($serverName === '0' || $serverName === '') $serverName = null;
+
+    // #1402 (adversarial review HIGH 1) — OWNER-flag privilege-escalation
+    // guard. Mirrors api_admins_edit_perms's check (see below in this
+    // file). Two ways an attacker could land `ADMIN_OWNER` on disk via
+    // this handler:
+    //   1. `web_group === 'c'` (Custom permissions) + `mask & ADMIN_OWNER`
+    //      → goes straight onto `:prefix_admins.extraflags`.
+    //   2. `web_group === 'n'` (New admin group) + `mask & ADMIN_OWNER`
+    //      → baked into the new `:prefix_groups.flags`, after which any
+    //      future admin assigned to that group inherits it.
+    // Both shapes carry the OWNER bit in the inbound `mask` param, so a
+    // single check on `$mask & ADMIN_OWNER` covers both. The bare check
+    // does NOT close the existing-group escalation surface (assigning a
+    // pre-existing OWNER-bearing group to a new admin via `web_group` =
+    // an integer > 0); that path was pre-existing pre-#1402 and is
+    // tracked separately. The UI side mirrors this by gating the OWNER
+    // checkbox itself on `can_grant_owner` so non-owners don't see the
+    // affordance — defense in depth.
+    if (!$userbank->HasAccess(WebPermission::Owner) && ($mask & ADMIN_OWNER)) {
+        Log::add(LogType::Warning, 'Hacking Attempt',
+            $userbank->GetProperty('user') . ' tried to grant OWNER while adding an admin, but doesnt have access.');
+        return Api::redirect('index.php?p=login&m=no_access');
+    }
 
     // Validation -------------------------------------------------------
     if (empty($name)) {
@@ -242,7 +307,7 @@ function api_admins_add(array $params): array
         }
     }
 
-    Log::add('m', 'Admin added', "Admin ($name) has been added.");
+    Log::add(LogType::Message, 'Admin added', "Admin ($name) has been added.");
 
     return [
         'aid'     => $aid,
@@ -267,8 +332,8 @@ function api_admins_edit_perms(array $params): array
     if ($aid === 0) {
         throw new ApiError('bad_request', 'aid is required');
     }
-    if (!$userbank->HasAccess(ADMIN_OWNER) && ($webFlags & ADMIN_OWNER)) {
-        Log::add('w', 'Hacking Attempt',
+    if (!$userbank->HasAccess(WebPermission::Owner) && ($webFlags & ADMIN_OWNER)) {
+        Log::add(LogType::Warning, 'Hacking Attempt',
             $userbank->GetProperty('user') . ' tried to gain OWNER admin permissions, but doesnt have access.');
         return Api::redirect('index.php?p=login&m=no_access');
     }
@@ -310,7 +375,7 @@ function api_admins_edit_perms(array $params): array
     }
 
     $admin = $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = ?")->single([$aid]);
-    Log::add('m', 'Permissions Changed', "Permissions have been changed for ({$admin['user']})");
+    Log::add(LogType::Message, 'Permissions Changed', "Permissions have been changed for ({$admin['user']})");
 
     return [
         'reload'  => true,
@@ -321,44 +386,6 @@ function api_admins_edit_perms(array $params): array
             'kind'  => 'green',
             'redir' => 'index.php?p=admin&c=admins',
         ],
-    ];
-}
-
-function api_admins_update_perms(array $params): array
-{
-    global $userbank;
-    $type = (int)($params['type'] ?? 0);
-    $value = (string)($params['value'] ?? '');
-
-    $permissions = '';
-    $id = '';
-    if ($type === 1) {
-        $id = 'web';
-        if ($value === 'c') {
-            $permissions = (string)@file_get_contents(TEMPLATES_PATH . '/groups.web.perm.php');
-            $permissions = str_replace('{title}', 'Web Admin Permissions', $permissions);
-        } elseif ($value === 'n') {
-            $permissions = (string)@file_get_contents(TEMPLATES_PATH . '/group.name.php')
-                . (string)@file_get_contents(TEMPLATES_PATH . '/groups.web.perm.php');
-            $permissions = str_replace(['{name}', '{title}'], ['webname', 'New Group Permissions'], $permissions);
-        }
-    }
-    if ($type === 2) {
-        $id = 'server';
-        if ($value === 'c') {
-            $permissions = (string)file_get_contents(TEMPLATES_PATH . '/groups.server.perm.php');
-            $permissions = str_replace('{title}', 'Server Admin Permissions', $permissions);
-        } elseif ($value === 'n') {
-            $permissions = (string)@file_get_contents(TEMPLATES_PATH . '/group.name.php')
-                . (string)@file_get_contents(TEMPLATES_PATH . '/groups.server.perm.php');
-            $permissions = str_replace(['{name}', '{title}'], ['servername', 'New Group Permissions'], $permissions);
-        }
-    }
-
-    return [
-        'id'          => $id,
-        'permissions' => $permissions,
-        'is_owner'    => $userbank->HasAccess(ADMIN_OWNER),
     ];
 }
 

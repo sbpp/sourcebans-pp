@@ -13,13 +13,33 @@
       * Team coverage — no on-duty / response-time tracking yet.
     Both stay open for a follow-up once the underlying data exists.
 
-    Live server status (player counts, hostname, online/offline) is the
-    other intentional omission. The legacy theme's sb-callback /
-    LoadServerHostProperty UDP probe was deleted with sourcebans.js in
-    A1's footer rewrite; re-implementing it needs a new JSON action
-    under web/api/handlers/, which Phase B is forbidden from touching.
-    The Servers card therefore renders configured-server metadata only
-    (mod icon + ip:port + sid) and links out to ?p=servers.
+    Servers card hydration (#1375)
+    ------------------------------
+    Each `<a data-testid="server-tile">` row carries the shared
+    hostname slot (`[data-testid="server-host"]` with a
+    `data-fallback="<ip>:<port>"` IP:port that the helper re-paints
+    on probe failure) plus an IP:port subtitle. The outer wrapper is
+    `data-server-hydrate="auto"`, so the same
+    `web/scripts/server-tile-hydrate.js` helper that drives the
+    public servers list (`page_servers.tpl`) and the admin Server
+    Management list (`page_admin_servers_list.tpl`) auto-runs on
+    first paint and fires `Actions.ServersHostPlayers` per tile. The
+    dashboard widget skips the heavier per-tile chrome (no status
+    pill, no map / players cells, no players bar, no Connect / Players
+    / Refresh action row) — the helper feature-detects every optional
+    `[data-testid]` cell, so a tile that only ships the hostname slot
+    silently hydrates that one cell. SourceQueryCache on the server
+    side coalesces back-to-back probes per (ip, port) for ~30s, so the
+    dashboard's extra round-trips are absorbed cheaply.
+
+    Pre-#1375 the row showed `IP:port` as the primary label and `sid N`
+    as the subtitle. The `sid` is an internal :prefix_servers PK that
+    means nothing at-a-glance to operators — the issue reporter
+    described it as "not meaningful". The new shape mirrors the
+    public list's "hostname (primary) + IP:port (mono subtitle)"
+    convention, with the IP:port standing in for the hostname slot
+    until the probe lands so the no-JS fallback (and the in-flight
+    window before hydration completes) stays informative.
 *}
 <div class="p-6 space-y-6" style="max-width:1400px;margin:0 auto;width:100%">
 
@@ -82,8 +102,42 @@
 
     </div>
 
-    {* -- Recent bans + Servers (2-col) -------------------------------- *}
-    <div class="grid gap-4" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+    {* -- Admins-only project announcement strip ----------------------
+        Sourced from the daily fetch into `SB_CACHE/announcements.json`
+        (see `Sbpp\Announce\AnnouncementFetcher`). The page handler in
+        `web/pages/page.home.php` short-circuits `$announcement` to
+        null for anonymous + non-admin viewers, so this entire block
+        only paints for logged-in admins. Cache miss / empty feed /
+        all-expired entries also resolve to null and the strip stays
+        hidden. *}
+    {if $announcement}
+    <aside class="announcement-strip" data-testid="dashboard-announcement" aria-label="Latest announcement">
+        <details>
+            <summary>
+                <i data-lucide="megaphone" aria-hidden="true" style="width:14px;height:14px;flex-shrink:0"></i>
+                <span class="announcement-strip__title">{$announcement.title}</span>
+                {if $announcement.published_human}
+                <span class="announcement-strip__date text-faint" data-testid="dashboard-announcement-date">{$announcement.published_human}</span>
+                {/if}
+            </summary>
+            {if $announcement.body_html}
+            <div class="announcement-strip__body" data-testid="dashboard-announcement-body">
+                {* nofilter: rendered by IntroRenderer (CommonMark, html_input=escape, allow_unsafe_links=false); never raw user input *}
+                {$announcement.body_html nofilter}
+            </div>
+            {/if}
+            {if $announcement.url}
+            <a class="announcement-strip__link" data-testid="dashboard-announcement-link"
+               href="{$announcement.url}" target="_blank" rel="noopener noreferrer">
+                Read more <i data-lucide="external-link" aria-hidden="true" style="width:13px;height:13px"></i>
+            </a>
+            {/if}
+        </details>
+    </aside>
+    {/if}
+
+    {* -- Recent bans + Servers (2-col on desktop, collapses to 1-col below ~320px+gap per card; #1188) *}
+    <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))">
 
         <section class="card" data-testid="dashboard-recent-bans">
             <div class="card__header">
@@ -116,7 +170,27 @@
                     <div class="text-xs text-muted text-right" style="white-space:nowrap">{$b.banned_human}</div>
                 </a>
                 {foreachelse}
-                <div class="card__body text-sm text-muted" data-testid="dashboard-recent-bans-empty">No bans yet.</div>
+                {* #1207 PUB-5: first-run empty state. The "Add a ban" CTA
+                   is gated on `can_add_ban` (Perms::for $userbank), so
+                   anonymous visitors / admins without ADMIN_ADD_BAN see
+                   the copy without a link they couldn't follow. *}
+                <div class="empty-state" data-testid="dashboard-recent-bans-empty">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="ban" style="width:18px;height:18px"></i>
+                    </span>
+                    <h4 class="empty-state__title">No bans yet</h4>
+                    <p class="empty-state__body">Enforcement actions will show up here as soon as admins start moderating.</p>
+                    {if $can_add_ban}
+                        <div class="empty-state__actions">
+                            <a class="btn btn--primary btn--sm"
+                               href="?p=admin&amp;c=bans"
+                               data-testid="dashboard-recent-bans-empty-add">
+                                <i data-lucide="plus" style="width:13px;height:13px"></i>
+                                Add a ban
+                            </a>
+                        </div>
+                    {/if}
+                </div>
                 {/foreach}
             </div>
         </section>
@@ -137,7 +211,33 @@
                 Open the servers page to manage players in real time.
             </div>
             {/if}
-            <div style="padding:0.5rem">
+            {*
+                #1375: `data-server-hydrate="auto"` opts the row list into
+                the shared per-tile hydration helper (the same one that
+                drives `page_servers.tpl` + `page_admin_servers_list.tpl`).
+                The helper auto-runs on first paint, fires
+                `Actions.ServersHostPlayers` per `[data-testid="server-tile"]`
+                child, and patches the live hostname into the inner
+                `[data-testid="server-host"]` slot via `sb.setHTML`. The
+                dashboard widget feature-uses only the hostname cell; every
+                other testid hook (status pill / map / players / map-img /
+                players-bar) is intentionally omitted, and the helper's
+                feature-detection branches no-op for the missing ones.
+
+                `data-trunchostname="40"` keeps the live hostname short
+                enough to fit on a single line of the cramped dashboard
+                widget (the public list runs at 70, but it has the full
+                card width to spend; here the column is shared with the
+                Latest Bans card and `truncate` would silently chop a
+                70-char hostname). The number forwards to
+                `api_servers_host_players` as the SourceQuery truncation
+                hint — server-side cheaper than a JS-side trim because the
+                handler also htmlspecialchars()s the truncated string for
+                `sb.setHTML`.
+            *}
+            <div style="padding:0.5rem"
+                 data-server-hydrate="auto"
+                 data-trunchostname="40">
                 {foreach $server_list as $server}
                 <a class="flex items-center gap-3"
                    style="padding:0.625rem;border-radius:var(--radius-md);text-decoration:none;color:var(--text)"
@@ -147,13 +247,53 @@
                         <img src="images/games/{$server.icon}" alt="" width="16" height="16">
                     </span>
                     <div class="flex-1" style="min-width:0">
-                        <div class="font-medium text-sm font-mono truncate">{$server.ip}:{$server.port}</div>
-                        <div class="text-xs text-faint">sid {$server.sid}</div>
+                        {*
+                            Primary label: live hostname once
+                            server-tile-hydrate.js' applyData() lands. The
+                            inner-text fallback (and the matching
+                            data-fallback attribute) is the IP:port — the
+                            same one shown in the subtitle below — so the
+                            no-JS path stays informative without the
+                            internal `sid N` clutter that the legacy
+                            shape carried. On probe failure the helper
+                            re-paints the IP:port from data-fallback so the
+                            row never goes blank.
+
+                            The hostname is htmlspecialchars()'d
+                            server-side (api_servers_host_players), so
+                            `sb.setHTML` mirrors the legacy
+                            LoadServerHostProperty() behaviour and keeps
+                            the contract symmetric with the public servers
+                            list (which also patches via `sb.setHTML`).
+                        *}
+                        <div class="font-medium text-sm truncate"
+                             data-testid="server-host"
+                             data-fallback="{$server.ip}:{$server.port}">{$server.ip}:{$server.port}</div>
+                        <div class="text-xs text-faint font-mono truncate">{$server.ip}:{$server.port}</div>
                     </div>
                     <i data-lucide="external-link" style="width:14px;height:14px;color:var(--text-faint)"></i>
                 </a>
                 {foreachelse}
-                <div class="card__body text-sm text-muted" data-testid="dashboard-servers-empty">No servers configured.</div>
+                {* #1207 PUB-5: first-run empty state. CTA gated on
+                   `can_add_server` so visitors without ADMIN_ADD_SERVER
+                   see the copy only. *}
+                <div class="empty-state" data-testid="dashboard-servers-empty">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="server" style="width:18px;height:18px"></i>
+                    </span>
+                    <h4 class="empty-state__title">No servers configured</h4>
+                    <p class="empty-state__body">Add a server so visitors can see live status and connect from the panel.</p>
+                    {if $can_add_server}
+                        <div class="empty-state__actions">
+                            <a class="btn btn--primary btn--sm"
+                               href="?p=admin&amp;c=servers"
+                               data-testid="dashboard-servers-empty-add">
+                                <i data-lucide="plus" style="width:13px;height:13px"></i>
+                                Add a server
+                            </a>
+                        </div>
+                    {/if}
+                </div>
                 {/foreach}
             </div>
         </section>
@@ -196,7 +336,17 @@
                     <div class="text-xs text-muted text-right" style="white-space:nowrap">{$p.blocked_human}</div>
                 </a>
                 {foreachelse}
-                <div class="card__body text-sm text-muted" data-testid="dashboard-blocked-attempts-empty">No blocked attempts yet.</div>
+                {* #1207 PUB-5: blocked-attempts is a read-only stream
+                   of plugin-side intercepts; there's no admin "add"
+                   action that maps to it, so the empty state is copy
+                   only — no CTA. *}
+                <div class="empty-state" data-testid="dashboard-blocked-attempts-empty">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="shield-x" style="width:18px;height:18px"></i>
+                    </span>
+                    <h4 class="empty-state__title">No blocked attempts yet</h4>
+                    <p class="empty-state__body">Once banned players try to rejoin, the SourceMod plugin will log every intercept here.</p>
+                </div>
                 {/foreach}
             </div>
         </section>
@@ -232,7 +382,27 @@
                     <div class="text-xs text-muted text-right" style="white-space:nowrap">{$c.banned_human}</div>
                 </a>
                 {foreachelse}
-                <div class="card__body text-sm text-muted" data-testid="dashboard-recent-comms-empty">No comm blocks yet.</div>
+                {* #1207 PUB-5: first-run empty state. The "Add a comm
+                   block" CTA reuses `can_add_ban` because admin.comms.php
+                   gates Add on the same flag (ADMIN_OWNER | ADMIN_ADD_BAN);
+                   see _register.php's `comms.add` row. *}
+                <div class="empty-state" data-testid="dashboard-recent-comms-empty">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="mic-off" style="width:18px;height:18px"></i>
+                    </span>
+                    <h4 class="empty-state__title">No comm blocks yet</h4>
+                    <p class="empty-state__body">Mutes and gags issued from the panel or in-game will appear here.</p>
+                    {if $can_add_ban}
+                        <div class="empty-state__actions">
+                            <a class="btn btn--primary btn--sm"
+                               href="?p=admin&amp;c=comms"
+                               data-testid="dashboard-recent-comms-empty-add">
+                                <i data-lucide="plus" style="width:13px;height:13px"></i>
+                                Add a comm block
+                            </a>
+                        </div>
+                    {/if}
+                </div>
                 {/foreach}
             </div>
         </section>
@@ -240,14 +410,38 @@
     </div>
 
     {*
-        $IN_SERVERS_PAGE is declared on HomeDashboardView for the
-        legacy theme's transitive include of page_servers.tpl
-        (see the View's docblock). Always false on the dashboard, so
-        this block intentionally never renders; the reference is kept
-        here so SmartyTemplateRule's "unused property" check stays
-        green for the sbpp2026 PHPStan leg without us having to
-        carry a bespoke baseline entry.
+        $IN_SERVERS_PAGE is declared on HomeDashboardView; always
+        false on the dashboard, so this block intentionally never
+        renders. The reference is kept here so SmartyTemplateRule's
+        "unused property" check stays green without us having to
+        carry a bespoke baseline entry. The pre-#1306 rationale
+        ("for the transitively included page_servers.tpl") no longer
+        applies — #1306 burned $IN_SERVERS_PAGE on ServersView along
+        with the misleading right-click hint it gated; the prop
+        survives on HomeDashboardView purely as parity scaffolding
+        for any third-party theme fork that still wires it.
     *}
     {if $IN_SERVERS_PAGE}{* unreachable on dashboard *}{/if}
 
 </div>
+
+{*
+    #1375: per-tile A2S hydration for the Servers card's row list.
+    The shared helper auto-runs on first paint for every
+    `[data-server-hydrate="auto"]` container (see the wrapper around
+    the `<a data-testid="server-tile">` row foreach above), fires
+    `Actions.ServersHostPlayers` per tile, and patches the live
+    hostname into each row's `[data-testid="server-host"]` slot. The
+    dashboard widget only consumes the hostname cell — the rest of
+    the helper's hydration surface (status pill / map / players bar /
+    map-img / refresh / toggle / players panel) is feature-detected
+    and silently no-ops on tiles that don't ship those testid hooks.
+
+    `defer` lets the rest of the page paint before the helper boots
+    (parity with page_servers.tpl + page_admin_servers_list.tpl);
+    auto-run still fires once it does (the helper branches on
+    document.readyState). The script ships under web/scripts/ so all
+    three surfaces share one helper file — never copy-paste the
+    hydration code into a new template.
+*}
+<script src="./scripts/server-tile-hydrate.js" defer></script>

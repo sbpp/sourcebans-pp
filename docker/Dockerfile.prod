@@ -1,0 +1,268 @@
+# SourceBans++ production image (#1381).
+#
+# Self-hoster-friendly multi-stage build. The dev image (`docker/Dockerfile`)
+# bind-mounts the worktree, exposes the DB, ships admin/admin, and defines
+# `SBPP_DEV_KEEP_INSTALL` so init.php's install/-presence guard skips —
+# none of which is safe in production. The contracts diverge enough that
+# the two are deliberately separate Dockerfiles, NOT a single multi-target
+# build (the dev path silently inheriting prod's hardening would be a
+# subtle dev-feedback regression; the prod path silently inheriting dev's
+# OPcache revalidation would be a subtle perf regression).
+#
+# Stages:
+#   1. `builder`  — composer:2 + php:8.5-cli; runs
+#                   `composer install --no-dev --optimize-autoloader --prefer-dist`
+#                   against web/. Output: web/ tree with includes/vendor/
+#                   populated.
+#   2. `runtime`  — php:8.5-apache; runtime extensions only; copies the
+#                   builder's web/ tree; drops to non-root www-data;
+#                   ships the prod entrypoint that drives the install /
+#                   migrate state machine and removes install/+updater/
+#                   from the writable layer before handing off to Apache
+#                   (so the panel-runtime guard in web/init-recovery.php
+#                   passes without `SBPP_DEV_KEEP_INSTALL`).
+#
+# Multi-arch: the workflow builds linux/amd64 + linux/arm64 via buildx;
+# the Dockerfile itself stays arch-agnostic (no `--platform=...` pins,
+# no arch-specific apt packages).
+#
+# Non-goals:
+#   - Bundling Composer / git / nodejs / npm into the runtime stage.
+#     Self-hosters install via `docker compose pull` then `up -d` —
+#     no codegen / package-manager round-trip belongs in the runtime
+#     image.
+#   - Defining `SBPP_DEV_KEEP_INSTALL`. Production panels MUST NOT
+#     define it (per AGENTS.md anti-patterns + #1335 C1). The
+#     entrypoint physically removes install/ + updater/ from the
+#     writable layer instead.
+
+# ---------------------------------------------------------------------------
+# Stage 1 — builder
+# ---------------------------------------------------------------------------
+FROM php:8.5-cli AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_NO_INTERACTION=1
+
+# Debian-base apt packages don't pin cleanly across releases; the
+# project pins the BASE IMAGE tag instead (`php:8.5-cli`) which gives
+# reproducible Debian release / apt snapshot. Pinning individual apt
+# packages would force a coupled bump every time the base image rolls
+# forward.
+# hadolint ignore=DL3008
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /build
+COPY web/ /build/web/
+
+# Mirror release.yml's `composer install` flags so the prod image carries
+# byte-identical dependencies to the release tarball self-hosters
+# unzip-install. Both ship `web/includes/vendor/` populated; both carry
+# the optimized autoloader; neither carries dev-only dependencies (PHPStan,
+# PHPUnit, etc.).
+RUN composer install \
+        --working-dir=/build/web \
+        --no-dev \
+        --optimize-autoloader \
+        --no-interaction \
+        --prefer-dist \
+        --no-progress
+
+# Sanity-check the bundled vendor tree mirrors release.yml's smoke check.
+# A future Composer change that drops Smarty (the highest-value transitive
+# dep) would silently produce a broken runtime image; failing the build
+# loudly here catches it before publish.
+RUN test -f /build/web/includes/vendor/autoload.php \
+ && test -f /build/web/includes/vendor/smarty/smarty/src/Smarty.php
+
+# ---------------------------------------------------------------------------
+# Stage 2 — runtime
+# ---------------------------------------------------------------------------
+FROM php:8.5-apache AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    APACHE_DOCUMENT_ROOT=/var/www/html/web
+
+# Runtime extensions only. The dev image carries `default-mysql-client`,
+# `nodejs`, `npm`, `git`, `gettext-base`, `unzip` — all developer-side
+# helpers the prod image has no business shipping. `pdo_mysql` is the
+# panel's only DB driver. `intl`, `zip`, `mbstring` mirror dev. `gmp`
+# is on the spec'd runtime-extension list (#1381 deliverable 1) — it's
+# also the soft-dependency `maxmind-db/reader` suggests for large
+# integer decoding via the pure-PHP MMDB path, so shipping it keeps
+# GeoLite2 country lookups efficient. `gettext-base` is brought in
+# solely for `envsubst`, which the entrypoint uses for safe variable
+# substitution in the rendered config.php.
+#
+# HIGH-3 of the #1381 review: pre-fix the runtime image carried
+# `default-mysql-client` (~22 MB) so the entrypoint could shell out to
+# `mysqladmin ping` for the wait-for-DB loop and `mysql` for the
+# schema bootstrap. The spec explicitly excluded it ("No mysql-client
+# tooling in the runtime image"). The entrypoint now drives both
+# paths through the bundled `docker/php/sb-db.php` PDO helper — same
+# pdo_mysql extension every panel request already uses — and the
+# apt line shrinks by one package. Don't reintroduce
+# `default-mysql-client` here; see `sb-db.php` for the operations it
+# replaced.
+# (see the builder stage above for the apt-pinning rationale)
+# hadolint ignore=DL3008
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        gettext-base \
+        libicu-dev \
+        libzip-dev \
+        libonig-dev \
+        libgmp-dev \
+        tzdata \
+ && docker-php-ext-install -j"$(nproc)" \
+        pdo_mysql \
+        intl \
+        zip \
+        mbstring \
+        gmp \
+ && a2enmod rewrite headers remoteip setenvif \
+ && rm -rf /var/lib/apt/lists/*
+
+# Production PHP tuning. `display_errors=Off` + `log_errors=On` follows
+# 12-factor (errors to stderr; the orchestrator captures them).
+# OPcache `validate_timestamps=0` is the production knob — files NEVER
+# get re-checked at request time; a `docker compose pull && up -d`
+# replaces the container, which is the right invalidation event for
+# an immutable image. `max_accelerated_files` is sized at 6k to comfortably
+# hold the panel's PHP files (vendor/ alone is ~3500 files; pages/ +
+# includes/ + templates_c/ add another ~1500).
+COPY docker/php/prod-php.ini /usr/local/etc/php/conf.d/zz-sbpp-prod.ini
+
+# Apache: serve from /var/www/html/web (the panel lives under web/ in
+# the repo, mirrored into the image at /var/www/html/web).
+#
+# The `${APACHE_DOCUMENT_ROOT}` inside the single-quoted sed expression
+# below is INTENTIONAL. The expansion happens at Apache startup time
+# (via Apache's own env-var support, not the shell), so we want sed
+# to substitute the literal characters `${APACHE_DOCUMENT_ROOT}` into
+# the conf files. Letting the shell pre-expand would bake the build-
+# time value in and lose the runtime-overridability of the env var.
+# hadolint ignore=SC2016
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
+        /etc/apache2/sites-available/*.conf \
+        /etc/apache2/apache2.conf \
+        /etc/apache2/conf-available/*.conf \
+ && sed -ri -e 's!^User \$\{APACHE_RUN_USER\}!User www-data!' \
+            -e 's!^Group \$\{APACHE_RUN_GROUP\}!Group www-data!' \
+        /etc/apache2/apache2.conf
+
+# Ship a minimal default vhost that disables directory listings, denies
+# access to dotfiles, and protects the panel-internal directories that
+# self-hosters historically had to wire up themselves via .htaccess.
+COPY docker/apache/sbpp-prod.conf /etc/apache2/conf-available/zz-sbpp-prod.conf
+RUN a2enconf zz-sbpp-prod
+
+# Server-Tokens trim — don't leak the Apache version + module list in
+# error pages or the Server: header.
+RUN { \
+        echo 'ServerTokens Prod'; \
+        echo 'ServerSignature Off'; \
+        echo 'TraceEnable Off'; \
+    } > /etc/apache2/conf-available/zz-sbpp-tokens.conf \
+ && a2enconf zz-sbpp-tokens
+
+# Copy the panel tree from the builder stage (vendor/ already populated).
+# We chown to www-data:www-data so the runtime user can write to cache/
+# templates_c/ + the demos/ volume mount target.
+COPY --from=builder --chown=www-data:www-data /build/web/ /var/www/html/web/
+
+# Healthcheck endpoint (#1381 deliverable 5b). Bypasses session / chrome /
+# routing — runs init.php for the DB connection and returns 200 OK on a
+# successful `SELECT 1`, 503 with a one-line stderr log otherwise.
+COPY --chown=www-data:www-data web/health.php /var/www/html/web/health.php
+
+# Pre-create the writable directories the runtime needs. cache/ +
+# templates_c/ are Smarty + sessions; demos/ is the only must-persist
+# user-data dir (uploaded ban-evidence demos). The compose file binds
+# named volumes over each path; pre-creating with the right ownership
+# means the volume's first-mount inherits 0775 + www-data ownership
+# instead of the orphan root-owned default Docker would otherwise use.
+RUN mkdir -p \
+        /var/www/html/web/cache \
+        /var/www/html/web/cache/sessions \
+        /var/www/html/web/templates_c \
+        /var/www/html/web/demos \
+ && chown -R www-data:www-data \
+        /var/www/html/web/cache \
+        /var/www/html/web/templates_c \
+        /var/www/html/web/demos \
+ && chmod -R 0775 \
+        /var/www/html/web/cache \
+        /var/www/html/web/templates_c \
+        /var/www/html/web/demos
+
+# Bundled PHP CLI helper the entrypoint shells out to for DB ops
+# (HIGH-3: replaces the previous `mysqladmin ping` + `mysql <
+# schema.sql` calls that drove the `default-mysql-client` apt
+# dependency above). Lives under /usr/local/lib/sbpp/ — outside
+# /var/www/html/web/ — so it stays reachable after the entrypoint
+# `rm -rf`s install/ + updater/ in step 7.
+COPY docker/php/sb-db.php /usr/local/lib/sbpp/sb-db.php
+
+# Production entrypoint: drives the install + migrate state machine,
+# strips install/ + updater/ from the writable layer, then execs
+# apache2-foreground. See docker/php/prod-entrypoint.sh for the full
+# state-machine docblock.
+COPY docker/php/prod-entrypoint.sh /usr/local/bin/prod-entrypoint
+RUN chmod +x /usr/local/bin/prod-entrypoint
+
+# Apache binds 0.0.0.0:80 by default; the entrypoint rewrites this to
+# `$PORT` when the env var is set (Render / Fly / Heroku-style platforms
+# inject PORT). EXPOSE is documentation-only, but we keep it at the
+# default 80 to match the unconfigured-PORT case.
+EXPOSE 80
+
+# DB-aware healthcheck — Apache + PHP-FPM are useless to the orchestrator
+# if the panel can't reach the DB. The endpoint itself bootstraps init.php
+# (which connects via PDO) and returns the DB state.
+#
+# Generous interval/timeout because the panel's first-boot install can
+# briefly stall the entrypoint on a slow managed DB (RDS / DigitalOcean
+# Managed DB take 3-5s on cold start). `start_period` is wide enough to
+# cover the first-boot install + migrate pass.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl --fail --silent --show-error --max-time 8 \
+        http://127.0.0.1:${PORT:-80}/health.php >/dev/null \
+        || exit 1
+
+# `curl` is needed by HEALTHCHECK above; install lazily so apt cache stays
+# in the previous RUN's layer.
+# (see the builder-stage apt block for the apt-pinning rationale)
+# hadolint ignore=DL3008
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# OCI labels — populate GHCR's UI panel + give `docker inspect` a useful
+# provenance trail. The release workflow overrides `revision` + `version`
+# at build time via `--label`; the static labels here are the defaults
+# for the rare local `docker buildx build` invocation (the contributor
+# pre-PR smoke check). The CI workflow only fires on release tags + on
+# manual workflow_dispatch reruns of an existing release tag, so the
+# overridden labels carry the real provenance for every published image.
+LABEL org.opencontainers.image.title="SourceBans++" \
+      org.opencontainers.image.description="Self-hostable admin / ban / comms management for the Source engine — production image." \
+      org.opencontainers.image.url="https://sbpp.github.io" \
+      org.opencontainers.image.source="https://github.com/sbpp/sourcebans-pp" \
+      org.opencontainers.image.documentation="https://sbpp.github.io/getting-started/quickstart-docker/" \
+      org.opencontainers.image.licenses="CC-BY-NC-SA-3.0 AND GPL-3.0-or-later" \
+      org.opencontainers.image.vendor="SourceBans++ Dev Team"
+
+WORKDIR /var/www/html/web
+
+ENTRYPOINT ["prod-entrypoint"]
+CMD ["apache2-foreground"]

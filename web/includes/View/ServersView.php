@@ -29,10 +29,11 @@ namespace Sbpp\View;
  *                    by the dashboard `?p=servers&s={index}` deep links
  *                    (matches `opened_server` semantics).
  *   - evOnClick string Inline JS navigating to ?p=servers&s={index};
- *                    only set when `IN_SERVERS_PAGE` is false (i.e.
- *                    the dashboard is rendering this row). Preserved
- *                    for any third-party theme that forked the
- *                    pre-v2.0.0 default and expects the legacy hook.
+ *                    only set when `IN_HOME` is defined (i.e. the
+ *                    dashboard is rendering this row via the
+ *                    `require` of `page.servers.php`). Preserved for
+ *                    any third-party theme that forked the pre-v2.0.0
+ *                    default and expects the legacy hook.
  */
 final class ServersView extends View
 {
@@ -42,10 +43,25 @@ final class ServersView extends View
      * @param list<array<string,mixed>> $server_list
      */
     public function __construct(
-        public readonly bool $access_bans,
         public readonly array $server_list,
-        public readonly bool $IN_SERVERS_PAGE,
         public readonly int $opened_server,
+        // #1207 PUB-3: gates the "Add a server" CTA in the empty
+        // state (and is harmless when servers exist; the template
+        // only references it inside the empty branch). Splatted from
+        // `Perms::for($userbank)` in `web/pages/page.servers.php`.
+        public readonly bool $can_add_server,
+        // Right-click context-menu (the v1.x-era kick/ban/block
+        // affordance on player rows, restored after #1306). Gates
+        // both the in-template admin hint copy AND the
+        // `<script src="./scripts/server-context-menu.js">` include
+        // — anonymous viewers don't need the JS or the hint, and
+        // the SteamID side-channel the menu reads off the JSON
+        // response is server-side gated on the same permission +
+        // per-server RCON access. Mirrors `can_add_server` shape
+        // (single bool splatted from `Perms::for($userbank)` —
+        // specifically the `can_add_ban` key — in
+        // `web/pages/page.servers.php`).
+        public readonly bool $can_use_context_menu = false,
     ) {
     }
 }

@@ -1,222 +1,218 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
+if (!defined('IN_SB')) {
+    echo 'You should not be here. Only follow links!';
     die();
 }
-global $theme;
 
-new AdminTabs([], $userbank, $theme);
+global $userbank, $theme;
 
-if (!isset($_GET['id'])) {
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	No server id specified. Please only follow links
-</div>';
-    die();
+new \Sbpp\View\AdminTabs([], $userbank, $theme);
+
+require_once __DIR__ . '/_admin_edit_helpers.php';
+
+$serverId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+if ($serverId <= 0) {
+    sbpp_admin_edit_die_with_toast(
+        'No server id specified. Please only follow links.',
+        'index.php?p=admin&c=servers',
+    );
+    return;
 }
-$_GET['id'] = (int) $_GET['id'];
 
-$GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers` WHERE sid = :sid");
-$GLOBALS['PDO']->bind(':sid', $_GET['id']);
-$server = $GLOBALS['PDO']->single();
+$pdo = $GLOBALS['PDO'];
+
+$server = $pdo->query('SELECT * FROM `:prefix_servers` WHERE sid = :sid')
+    ->single([':sid' => $serverId]);
 if (!$server) {
-    Log::add("e", "Getting server data failed", "Can't find data for server with id $_GET[id].");
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	Error getting current data.
-</div></div>';
-    PageDie();
+    \Sbpp\Log::add(
+        \LogType::Error,
+        'Getting server data failed',
+        "Can't find data for server with id {$serverId}.",
+    );
+    sbpp_admin_edit_die_with_toast(
+        'Error getting current data.',
+        'index.php?p=admin&c=servers',
+    );
+    return;
 }
 
-$errorScript = "";
+if (!$userbank->HasAccess(\WebPermission::mask(\WebPermission::Owner, \WebPermission::EditServers))) {
+    \Sbpp\Log::add(
+        \LogType::Warning,
+        'Hacking Attempt',
+        $userbank->GetProperty('user') . " tried to edit a server, but doesn't have access.",
+    );
+    sbpp_admin_edit_die_with_toast(
+        "You aren't allowed to edit servers.",
+        'index.php?p=admin&c=servers',
+    );
+    return;
+}
+
+// "Don't change the rcon password" sentinel — the form pre-fills the
+// rcon inputs with this so the legacy "leave it alone unless you
+// retype it" behaviour survives the rewrite.
+const SBPP_RCON_UNCHANGED = '+-#*_';
+
+/** @var array<string,string> $validationErrors */
+$validationErrors = [];
+$postSuccess      = false;
 
 if (isset($_POST['address'])) {
-    // Form validation
-    $error = 0;
+    \CSRF::rejectIfInvalid();
 
-    // ip
-    if ((empty($_POST['address']))) {
-        $error++;
-        $errorScript .= "$('address.msg').innerHTML = 'You must type the server address.';";
-        $errorScript .= "$('address.msg').setStyle('display', 'block');";
-    } else {
-        if (!filter_var($_POST['address'], FILTER_VALIDATE_IP) && !is_string($_POST['address'])) {
-            $error++;
-            $errorScript .= "$('address.msg').innerHTML = 'You must type a valid IP.';";
-            $errorScript .= "$('address.msg').setStyle('display', 'block');";
-        }
+    $rawAddress = trim((string) $_POST['address']);
+    $rawPort    = trim((string) ($_POST['port']    ?? ''));
+    $rawMod     = (int)   ($_POST['mod']     ?? 0);
+    $rawRcon    =        (string) ($_POST['rcon']  ?? '');
+    $rawRcon2   =        (string) ($_POST['rcon2'] ?? '');
+    $enabled    = isset($_POST['enabled'])
+        && in_array((string) $_POST['enabled'], ['on', '1', 'true'], true);
+
+    if ($rawAddress === '') {
+        $validationErrors['address'] = 'You must type the server address.';
+    } elseif (!filter_var($rawAddress, FILTER_VALIDATE_IP)
+        && !preg_match('/^[a-zA-Z0-9.\\-]+$/', $rawAddress)) {
+        $validationErrors['address'] = 'You must type a valid IP or hostname.';
     }
 
-    // Port
-    if ((empty($_POST['port']))) {
-        $error++;
-        $errorScript .= "$('port.msg').innerHTML = 'You must type the server port.';";
-        $errorScript .= "$('port.msg').setStyle('display', 'block');";
-    } else {
-        if (!is_numeric($_POST['port'])) {
-            $error++;
-            $errorScript .= "$('port.msg').innerHTML = 'You must type a valid port <b>number</b>.';";
-            $errorScript .= "$('port.msg').setStyle('display', 'block');";
-        }
+    if ($rawPort === '' || !ctype_digit($rawPort)
+        || (int) $rawPort < 1 || (int) $rawPort > 65535) {
+        $validationErrors['port'] = 'You must type a valid port number (1-65535).';
     }
 
-    // rcon
-    if ($_POST['rcon'] != '+-#*_' && $_POST['rcon'] != $_POST['rcon2']) {
-        $error++;
-        $errorScript .= "$('rcon2.msg').innerHTML = 'The passwords don't match.';";
-        $errorScript .= "$('rcon2.msg').setStyle('display', 'block');";
+    if ($rawRcon !== SBPP_RCON_UNCHANGED && $rawRcon !== $rawRcon2) {
+        $validationErrors['rcon2'] = "The passwords don't match.";
     }
 
-    $ip = $_POST['address'];
-
-    // Check for dublicates afterwards
-    if ($error == 0) {
-        $GLOBALS['PDO']->query('SELECT sid FROM `:prefix_servers` WHERE ip = :ip AND port = :port AND sid != :sid');
-        $GLOBALS['PDO']->bindMultiple([
-            ':ip'   => $ip,
-            ':port' => (int) $_POST['port'],
-            ':sid'  => $_GET['id'],
+    if ($validationErrors === []) {
+        $clash = $pdo->query(
+            'SELECT sid FROM `:prefix_servers` WHERE ip = :ip AND port = :port AND sid != :sid'
+        )->single([
+            ':ip'   => $rawAddress,
+            ':port' => (int) $rawPort,
+            ':sid'  => $serverId,
         ]);
-        $chk = $GLOBALS['PDO']->single();
-        if ($chk) {
-            $error++;
-            $errorScript .= "ShowBox('Error', 'There already is a server with that IP:Port combination.', 'red');";
+        if ($clash) {
+            $validationErrors['address'] = 'There already is a server with that IP:Port combination.';
         }
     }
 
-    $enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
+    $server['ip']      = $rawAddress;
+    $server['port']    = (int) $rawPort;
+    $server['modid']   = $rawMod;
+    $server['enabled'] = $enabled ? 1 : 0;
 
-    $server['ip']      = $ip;
-    $server['port']    = (int) $_POST['port'];
-    $server['modid']   = (int) $_POST['mod'];
-    $server['enabled'] = $enabled;
-
-    if ($error == 0) {
-        $grps = "";
-        $GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers_groups` WHERE server_id = :sid");
-        $GLOBALS['PDO']->bind(':sid', $_GET['id']);
-        $sg = $GLOBALS['PDO']->resultset();
-        foreach ($sg as $s) {
-            $GLOBALS['PDO']->query("DELETE FROM `:prefix_servers_groups` WHERE server_id = :sid AND group_id = :gid");
-            $GLOBALS['PDO']->bindMultiple([
-                ':sid' => (int) $s['server_id'],
-                ':gid' => (int) $s['group_id'],
-            ]);
-            $GLOBALS['PDO']->execute();
-        }
-        if (!empty($_POST['groups'])) {
-            foreach ($_POST['groups'] as $t) {
-                $GLOBALS['PDO']->query("INSERT INTO `:prefix_servers_groups` (`server_id`, `group_id`) VALUES (:sid, :gid)");
-                $GLOBALS['PDO']->bindMultiple([
-                    ':sid' => $_GET['id'],
-                    ':gid' => (int) $t,
-                ]);
-                $GLOBALS['PDO']->execute();
-            }
-        }
-        $enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
-
-        $GLOBALS['PDO']->query(
-            "UPDATE `:prefix_servers` SET
-            `ip` = :ip,
-            `port` = :port,
-            `modid` = :modid,
-            `enabled` = :enabled
-            WHERE `sid` = :sid"
+    if ($validationErrors === []) {
+        $pdo->query(
+            'UPDATE `:prefix_servers`
+                SET ip = :ip, port = :port, modid = :modid, enabled = :enabled
+                WHERE sid = :sid'
         );
-        $GLOBALS['PDO']->bindMultiple([
-            ':ip'      => $ip,
-            ':port'    => (int) $_POST['port'],
-            ':modid'   => (int) $_POST['mod'],
-            ':enabled' => $enabled,
-            ':sid'     => (int) $_GET['id'],
+        $pdo->bindMultiple([
+            ':ip'      => $rawAddress,
+            ':port'    => (int) $rawPort,
+            ':modid'   => $rawMod,
+            ':enabled' => $enabled ? 1 : 0,
+            ':sid'     => $serverId,
         ]);
-        $GLOBALS['PDO']->execute();
+        $pdo->execute();
 
-        // don't change rcon password if not changed
-        if ($_POST['rcon'] != '+-#*_') {
-            $GLOBALS['PDO']->query(
-                "UPDATE `:prefix_servers` SET
-                `rcon` = :rcon
-                WHERE `sid` = :sid"
-            );
-            $GLOBALS['PDO']->bindMultiple([
-                ':rcon' => $_POST['rcon'],
-                ':sid'  => (int) $_GET['id'],
-            ]);
-            $GLOBALS['PDO']->execute();
+        if ($rawRcon !== SBPP_RCON_UNCHANGED) {
+            $pdo->query('UPDATE `:prefix_servers` SET rcon = :rcon WHERE sid = :sid');
+            $pdo->bindMultiple([':rcon' => $rawRcon, ':sid' => $serverId]);
+            $pdo->execute();
         }
 
-        echo "<script>ShowBox('Server updated', 'The server has been updated successfully', 'green', 'index.php?p=admin&c=servers');TabToReload();</script>";
-    }
-}
+        // Replace the server's `:prefix_servers_groups` membership
+        // wholesale — the legacy code did the same DELETE-then-INSERT
+        // sweep but row-by-row. Wrap in a transaction so a half-applied
+        // state is impossible.
+        $pdo->beginTransaction();
+        try {
+            $pdo->query('DELETE FROM `:prefix_servers_groups` WHERE server_id = :sid');
+            $pdo->bind(':sid', $serverId);
+            $pdo->execute();
 
-$modlist   = $GLOBALS['PDO']->query("SELECT mid, name FROM `:prefix_mods` WHERE `mid` > 0 AND `enabled` = 1 ORDER BY name ASC")->resultset();
-$grouplist = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = 3 ORDER BY name ASC")->resultset();
-
-$theme->assign('ip', $server['ip']);
-$theme->assign('port', $server['port']);
-$theme->assign('rcon', '+-#*_'); // Mh, some random string
-$theme->assign('modid', $server['modid']);
-
-
-$theme->assign('permission_addserver', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER));
-$theme->assign('modlist', $modlist);
-$theme->assign('grouplist', $grouplist);
-
-$theme->assign('edit_server', true);
-$theme->assign('submit_text', "Update Server");
-?>
-<div id="admin-page-content">
-    <form action="" method="post" name="editserver">
-<?php $theme->display('page_admin_servers_add.tpl'); ?>
-</form>
-<script>
-<?php
-if (!isset($_POST['address'])) {
-    $GLOBALS['PDO']->query("SELECT group_id FROM `:prefix_servers_groups` WHERE server_id = :sid");
-    $GLOBALS['PDO']->bind(':sid', $_GET['id']);
-    $groups = $GLOBALS['PDO']->resultset();
-} else {
-    if (isset($_POST['groups']) && is_array($_POST['groups'])) {
-        $groups = $_POST['groups'];
-        foreach ($groups as $k => $g) {
-            $groups[$k] = ['group_id' => $g];
+            if (isset($_POST['groups']) && is_array($_POST['groups'])) {
+                foreach ($_POST['groups'] as $g) {
+                    $gid = (int) $g;
+                    if ($gid <= 0) continue;
+                    $pdo->query(
+                        'INSERT INTO `:prefix_servers_groups` (server_id, group_id)
+                            VALUES (:sid, :gid)'
+                    );
+                    $pdo->bindMultiple([':sid' => $serverId, ':gid' => $gid]);
+                    $pdo->execute();
+                }
+            }
+            $pdo->endTransaction();
+        } catch (\Throwable $e) {
+            $pdo->cancelTransaction();
+            throw $e;
         }
-    } else {
-        $groups = [];
+
+        \Sbpp\Log::add(
+            \LogType::Message,
+            'Server Updated',
+            "Server ({$rawAddress}:{$rawPort}) has been updated.",
+        );
+        $postSuccess = true;
     }
 }
-foreach ($groups as $g) {
-    if ($g) {
-        echo "if($('g_" . $g['group_id'] . "')) $('g_" . $g['group_id'] . "').checked = true;";
+
+$assignedGroups = [];
+$rows = $pdo->query('SELECT group_id FROM `:prefix_servers_groups` WHERE server_id = :sid')
+    ->resultset([':sid' => $serverId]);
+foreach ($rows as $row) {
+    $gid = (int) ($row['group_id'] ?? 0);
+    if ($gid > 0 && !in_array($gid, $assignedGroups, true)) {
+        $assignedGroups[] = $gid;
     }
 }
-echo $errorScript;
-?>
-$('enabled').checked = <?=$server['enabled']?>;
-if($('mod')) $('mod').value = <?=$server['modid']?>;
-</script>
-</div>
+
+// On the post-submit re-render after a validation failure, fall back
+// to the values the operator just typed instead of the row currently
+// on disk.
+if (isset($_POST['address']) && isset($_POST['groups']) && is_array($_POST['groups'])) {
+    $assignedGroups = array_values(array_unique(array_map('intval', $_POST['groups'])));
+}
+
+$modList   = $pdo->query(
+    'SELECT mid, name FROM `:prefix_mods`
+        WHERE mid > 0 AND enabled = 1 ORDER BY name ASC'
+)->resultset();
+$groupList = $pdo->query(
+    "SELECT gid, name FROM `:prefix_groups` WHERE type = 3 ORDER BY name ASC"
+)->resultset();
+
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminServersAddView(
+    permission_addserver: $userbank->HasAccess(
+        \WebPermission::mask(\WebPermission::Owner, \WebPermission::AddServer)
+    ),
+    edit_server:          true,
+    ip:                   (string) $server['ip'],
+    port:                 (string) $server['port'],
+    rcon:                 SBPP_RCON_UNCHANGED,
+    modid:                (string) $server['modid'],
+    modlist:              $modList,
+    grouplist:            $groupList,
+    submit_text:          'Update Server',
+    enabled:              (bool) $server['enabled'],
+    assigned_groups:      $assignedGroups,
+));
+
+sbpp_admin_edit_emit_tail_script(
+    successTitle:    'Server updated',
+    successBody:     'The server has been updated successfully.',
+    successRedirect: 'index.php?p=admin&c=servers',
+    postSuccess:     $postSuccess,
+    rehashSids:      [],
+    validationErrors:$validationErrors,
+);

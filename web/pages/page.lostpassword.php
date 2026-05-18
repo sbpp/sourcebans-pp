@@ -1,10 +1,34 @@
 <?php
 
-global $theme;
+global $theme, $userbank;
 
 use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
 use Sbpp\Mail\Mailer;
+
+// Issue #1207 AUTH-1: a user trying to recover their password is by
+// definition logged out, so a logged-in admin (or any authenticated
+// visitor) reaching this URL should be sent home rather than rendering
+// the form with the admin sidebar leaking around it. Mirrors the
+// equivalent guard in page.login.php (which redirects logged-in users
+// to `index.php` so the form is never shown to them either).
+//
+// JS redirect rather than `header('Location:')` because this handler
+// runs INSIDE `build()` — `pages/core/header.php`,
+// `pages/core/navbar.php`, and `pages/core/title.php` have already
+// flushed ~9 KB of HTML (including the admin sidebar this guard exists
+// to suppress) by the time we get here. PHP's `header()` is a no-op
+// after output starts, so the redirect would silently fail and the
+// admin chrome leak the audit screenshot caught would still ship —
+// just with the form body missing on top, because `die()` halts
+// rendering mid-page. `page.login.php`'s 200-line-old equivalent
+// guard (`page.login.php:27-30`) uses the same JS redirect for the
+// same reason; mirror it here so the user-observable behaviour is
+// identical to the login surface.
+if ($userbank->is_logged_in()) {
+    echo "<script>window.location.href = 'index.php';</script>";
+    exit;
+}
 
 // Issue #1102: when normal login is disabled the entire password-recovery
 // flow is meaningless (a reset password can't be used to log in), and the
@@ -21,13 +45,13 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     $validation = $_GET['validation'];
 
     if (is_array($email) || is_array($validation)) {
-        print "<script>ShowBox('Error', 'Invalid request.', 'red');</script>";
-        Log::add("w", "Hacking attempt", "Attempted SQL-Injection.");
+        \Sbpp\View\Toast::emit('error', 'Error', 'Invalid request.');
+        Log::add(LogType::Warning, "Hacking attempt", "Attempted SQL-Injection.");
         PageDie();
     }
 
-    if (strlen($validation) < 10) {
-        print "<script>ShowBox('Error', 'Invalid validation string.', 'red');</script>";
+    if (strlen((string) $validation) < 10) {
+        \Sbpp\View\Toast::emit('error', 'Error', 'Invalid validation string.');
         PageDie();
     }
 
@@ -36,24 +60,54 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     $GLOBALS['PDO']->bind(':validate', $validation);
     $result = $GLOBALS['PDO']->single();
 
-    if (empty($result['aid']) || is_null($result['aid'])) {
-        print "<script>ShowBox('Error', 'The validation string does not match the email for this reset request.', 'red');</script>";
+    if (empty($result['aid'])) {
+        \Sbpp\View\Toast::emit('error', 'Error', 'The validation string does not match the email for this reset request.');
         PageDie();
     }
 
-    $password = Crypto::genSecret(MIN_PASS_LENGTH + 8);
+    // #1269: send the new password BEFORE mutating the DB row so a
+    // misconfigured mailer (e.g. an upgraded panel where the 1.x
+    // installer left `config.smtp.*` empty) doesn't silently lock the
+    // admin out. Pre-fix: the password was rolled to a random string,
+    // mail send was attempted, the result was assigned to $isEmailSent
+    // but never checked, and the user got "Your password has been
+    // reset and sent to your email" regardless. With mail broken that
+    // means the old password is gone, the new password was never
+    // delivered, and the validation token is consumed — no recovery
+    // path. Now: roll only after the mailer has accepted the message;
+    // surface the error otherwise so the user can retry once SMTP is
+    // configured.
+    $password    = Crypto::genSecret(MIN_PASS_LENGTH + 8);
+    $isEmailSent = Mail::send($email, EmailType::PasswordResetSuccess, [
+        '{password}' => $password,
+        '{name}'     => $result['user'],
+        '{home}'     => Host::complete(true)
+    ]);
+
+    if (!$isEmailSent) {
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Error',
+            'Could not send the new password by email. Your old password is still active. Please contact an administrator if this persists.',
+        );
+        PageDie();
+    }
+
     $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET `password` = :password, `validate` = NULL WHERE `aid` = :aid");
     $GLOBALS['PDO']->bind(':password', password_hash($password, PASSWORD_BCRYPT));
     $GLOBALS['PDO']->bind(':aid', $result['aid']);
     $GLOBALS['PDO']->execute();
 
-    $isEmailSent = Mail::send($email, EmailType::PasswordResetSuccess, [
-        '{password}' => $password,
-        '{name}' => $result['user'],
-        '{home}' => Host::complete(true)
-    ]);
-
-    print "<script>ShowBox('Password Reset', 'Your password has been reset and sent to your email.<br />Please check your spam folder too.<br />Please login using this password, <br />then use the change password link in Your Account.', 'blue');</script>";
+    // Body line-breaks (`<br />`) converted to spaces so the body reads
+    // as a single line — `showToast` (theme.js) `escapeHtml`s the value
+    // so raw tags surface as visible literal text.
+    \Sbpp\View\Toast::emit(
+        'info',
+        'Password Reset',
+        'Your password has been reset and sent to your email. '
+            . 'Please check your spam folder too. '
+            . 'Please login using this password, then use the change password link in Your Account.',
+    );
     PageDie();
 } else {
     \Sbpp\View\Renderer::render($theme, new \Sbpp\View\LostPasswordView());

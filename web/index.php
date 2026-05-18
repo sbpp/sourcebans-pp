@@ -1,25 +1,16 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 include_once 'init.php';
 include_once(INCLUDES_PATH . "/system-functions.php");
-include_once('config.php');
+// HIGH-1 of the #1381 review: do NOT include `config.php` here.
+// `init.php` already loaded it via `sbpp_resolve_config_path()`
+// (which honours `SBPP_CONFIG_PATH` for Docker-secret mounts);
+// a second literal `include_once('config.php')` would either
+// fail (no `config.php` at `web/`) or shadow the secret-mounted
+// values with a stale on-disk copy.
 include_once(INCLUDES_PATH . "/page-builder.php");
 
 $route = route(Config::get('config.defaultpage'));

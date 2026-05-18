@@ -1,174 +1,154 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
+if (!defined('IN_SB')) {
+    echo 'You should not be here. Only follow links!';
     die();
 }
+
 global $userbank, $theme;
 
-new AdminTabs([], $userbank, $theme);
+new \Sbpp\View\AdminTabs([], $userbank, $theme);
 
-if (!isset($_GET['id'])) {
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	No admin id specified. Please only follow links
-</div>';
-    PageDie();
+require_once __DIR__ . '/_admin_edit_helpers.php';
+
+$adminId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+if ($adminId <= 0) {
+    sbpp_admin_edit_die_with_toast('No admin id specified. Please only follow links.', 'index.php?p=admin&c=admins');
+    return;
 }
 
-$_GET['id'] = (int) $_GET['id'];
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-    Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s groups, but doesn't have access.");
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	You are not allowed to edit other admin\'s groups.
-</div>';
-    PageDie();
+if (!$userbank->HasAccess(\WebPermission::mask(\WebPermission::Owner, \WebPermission::EditAdmins))) {
+    \Sbpp\Log::add(
+        \LogType::Warning,
+        'Hacking Attempt',
+        $userbank->GetProperty('user') . ' tried to edit '
+        . $userbank->GetProperty('user', $adminId) . "'s groups, but doesn't have access.",
+    );
+    sbpp_admin_edit_die_with_toast(
+        "You aren't allowed to edit other admin's groups.",
+        'index.php?p=admin&c=admins',
+    );
+    return;
 }
 
-if (!$userbank->GetProperty("user", $_GET['id'])) {
-    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	Error getting current data.</div>';
-    PageDie();
+if (!$userbank->GetProperty('user', $adminId)) {
+    \Sbpp\Log::add(
+        \LogType::Error,
+        'Getting admin data failed',
+        "Can't find data for admin with id {$adminId}.",
+    );
+    sbpp_admin_edit_die_with_toast('Error getting current data.', 'index.php?p=admin&c=admins');
+    return;
 }
 
-// Form sent
-if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
-    if (isset($_GET['wg'])) {
-        $_POST['wg'] = $_GET['wg'];
-    }
-    if (isset($_GET['sg'])) {
-        $_POST['sg'] = $_GET['sg'];
-    }
+/** @var array<string,string> $validationErrors */
+$validationErrors = [];
+$postSuccess      = false;
+$postRehashSids   = [];
 
-    $_POST['wg'] = (int) $_POST['wg'];
-    $_POST['sg'] = (int) $_POST['sg'];
+// The legacy form submitted POST['wg'] / POST['sg']. The (unused but
+// surviving) "Set web group from URL" / "Set server group from URL"
+// shortcut paths arrived as GET[wg] / GET[sg]; preserve so existing
+// inbound links don't break.
+$incomingWg = $_POST['wg'] ?? $_GET['wg'] ?? null;
+$incomingSg = $_POST['sg'] ?? $_GET['sg'] ?? null;
 
-    // Users require a password and email to have web permissions
-    $password = $GLOBALS['userbank']->GetProperty('password', $_GET['id']);
-    $email    = $GLOBALS['userbank']->GetProperty('email', $_GET['id']);
-    if ($_POST['wg'] > 0 && (empty($password) || empty($email))) {
-        echo '<script>ShowBox("Error", "Admins have to have a password and email set in order to get web permissions.<br /><a href=\"index.php?p=admin&c=admins&o=editdetails&id=' . urlencode($_GET['id']) . '\" title=\"Edit Admin Details\">Set the details</a> first and try again.", "red");</script>';
+if ($incomingWg !== null || $incomingSg !== null) {
+    \CSRF::rejectIfInvalid();
+
+    $newWg = (int) $incomingWg;
+    $newSg = (int) $incomingSg;
+
+    $existingPassword = (string) $userbank->GetProperty('password', $adminId);
+    $existingEmail    = (string) $userbank->GetProperty('email', $adminId);
+
+    if ($newWg > 0 && ($existingPassword === '' || $existingEmail === '')) {
+        $validationErrors['wgroup'] = 'Admins need a password and email before you can give them web permissions. '
+            . 'Set the details first and try again.';
     } else {
-        if (isset($_POST['wg']) && $_POST['wg'] != "-2") {
-            if ($_POST['wg'] == -1) {
-                $_POST['wg'] = 0;
-            }
-            // Edit the web group
-            $GLOBALS['PDO']->query(
-                "UPDATE `:prefix_admins` SET
-                `gid` = :gid
-                WHERE `aid` = :aid"
-            );
-            $GLOBALS['PDO']->bindMultiple([
-                ':gid' => $_POST['wg'],
-                ':aid' => $_GET['id'],
+        $pdo = $GLOBALS['PDO'];
+
+        if ($newWg !== -2) {
+            $persistWg = $newWg === -1 ? 0 : $newWg;
+            $pdo->query('UPDATE `:prefix_admins` SET `gid` = :gid WHERE `aid` = :aid');
+            $pdo->bindMultiple([
+                ':gid' => $persistWg,
+                ':aid' => $adminId,
             ]);
-            $GLOBALS['PDO']->execute();
+            $pdo->execute();
         }
 
-        if (isset($_POST['sg']) && $_POST['sg'] != "-2") {
-            // Edit the server admin group
-            $group = "";
-            if ($_POST['sg'] != -1) {
-                $GLOBALS['PDO']->query("SELECT name FROM `:prefix_srvgroups` WHERE id = :id");
-                $GLOBALS['PDO']->bind(':id', $_POST['sg']);
-                $grps = $GLOBALS['PDO']->single();
-                if ($grps) {
-                    $group = $grps['name'];
+        if ($newSg !== -2) {
+            $resolvedGroupName = '';
+            if ($newSg !== -1) {
+                $pdo->query('SELECT name FROM `:prefix_srvgroups` WHERE id = :id');
+                $pdo->bind(':id', $newSg);
+                $row = $pdo->single();
+                if ($row) {
+                    $resolvedGroupName = (string) ($row['name'] ?? '');
                 }
             }
 
-            $GLOBALS['PDO']->query(
-                "UPDATE `:prefix_admins` SET
-                `srv_group` = :srv_group
-                WHERE aid = :aid"
-            );
-            $GLOBALS['PDO']->bindMultiple([
-                ':srv_group' => $group,
-                ':aid'       => $_GET['id'],
+            $pdo->query('UPDATE `:prefix_admins` SET `srv_group` = :name WHERE `aid` = :aid');
+            $pdo->bindMultiple([
+                ':name' => $resolvedGroupName,
+                ':aid'  => $adminId,
             ]);
-            $GLOBALS['PDO']->execute();
+            $pdo->execute();
 
-            $GLOBALS['PDO']->query(
-                "UPDATE `:prefix_admins_servers_groups` SET
-                `group_id` = :group_id
-                WHERE admin_id = :aid"
-            );
-            $GLOBALS['PDO']->bindMultiple([
-                ':group_id' => $_POST['sg'],
-                ':aid'      => $_GET['id'],
+            $pdo->query('UPDATE `:prefix_admins_servers_groups` SET `group_id` = :gid WHERE `admin_id` = :aid');
+            $pdo->bindMultiple([
+                ':gid' => $newSg,
+                ':aid' => $adminId,
             ]);
-            $GLOBALS['PDO']->execute();
-        }
-        if (Config::getBool('config.enableadminrehashing')) {
-            // rehash the admins on the servers
-            $GLOBALS['PDO']->query("SELECT s.sid FROM `:prefix_servers` s
-                LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = :aid
-                LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
-                WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-                OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-                AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
-            $GLOBALS['PDO']->bind(':aid', (int) $_GET['id']);
-            $serveraccessq = $GLOBALS['PDO']->resultset();
-            $allservers    = [];
-            foreach ($serveraccessq as $access) {
-                if (!in_array($access['sid'], $allservers)) {
-                    $allservers[] = $access['sid'];
-                }
-            }
-            echo '<script>ShowRehashBox("' . implode(",", $allservers) . '", "Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
-        } else {
-            echo '<script>ShowBox("Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
+            $pdo->execute();
         }
 
-        $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
-        $GLOBALS['PDO']->bind(':aid', (int) $_GET['id']);
-        $admname = $GLOBALS['PDO']->single();
-        Log::add("m", "Admin's Groups Updated", "Admin ($admname[user]) groups has been updated.");
+        if (\Config::getBool('config.enableadminrehashing')) {
+            $postRehashSids = sbpp_admin_edit_collect_rehash_sids($adminId);
+        }
+
+        $admName = $pdo->query('SELECT user FROM `:prefix_admins` WHERE aid = :aid')
+            ->single([':aid' => $adminId])['user'] ?? '';
+        \Sbpp\Log::add(
+            \LogType::Message,
+            "Admin's Groups Updated",
+            "Admin ({$admName}) groups have been updated.",
+        );
+        $postSuccess = true;
     }
 }
 
-$wgroups = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type != 3")->resultset();
-$sgroups = $GLOBALS['PDO']->query("SELECT id, name FROM `:prefix_srvgroups`")->resultset();
+$webGroupList    = $GLOBALS['PDO']->query('SELECT gid, name FROM `:prefix_groups` WHERE type != 3')->resultset();
+$serverGroupList = $GLOBALS['PDO']->query('SELECT id, name FROM `:prefix_srvgroups`')->resultset();
 
-$server_admin_group = $userbank->GetProperty('srv_groups', $_GET['id']);
-foreach ($sgroups as $sg) {
-    if ($sg['name'] == $server_admin_group) {
-        $server_admin_group = (int) $sg['id'];
+$assignedServerGroupName = (string) $userbank->GetProperty('srv_groups', $adminId);
+$assignedServerGroupId   = 0;
+foreach ($serverGroupList as $sg) {
+    if (($sg['name'] ?? '') === $assignedServerGroupName) {
+        $assignedServerGroupId = (int) $sg['id'];
         break;
     }
 }
 
-$theme->assign('group_admin_name', $userbank->GetProperty("user", $_GET['id']));
-$theme->assign('group_admin_id', $userbank->GetProperty("gid", $_GET['id']));
-$theme->assign('group_lst', $sgroups);
-$theme->assign('web_lst', $wgroups);
-$theme->assign('server_admin_group_id', $server_admin_group);
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\EditAdminGroupView(
+    group_admin_name:      (string) $userbank->GetProperty('user', $adminId),
+    group_admin_id:        (int) $userbank->GetProperty('gid', $adminId),
+    group_lst:             $serverGroupList,
+    web_lst:               $webGroupList,
+    server_admin_group_id: $assignedServerGroupId,
+));
 
-$theme->display('page_admin_edit_admins_group.tpl');
+sbpp_admin_edit_emit_tail_script(
+    successTitle:    'Admin updated',
+    successBody:     'The admin has been updated successfully.',
+    successRedirect: 'index.php?p=admin&c=admins',
+    postSuccess:     $postSuccess,
+    rehashSids:      $postRehashSids,
+    validationErrors:$validationErrors,
+);

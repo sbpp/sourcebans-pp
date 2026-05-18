@@ -1,0 +1,273 @@
+/* ============================================================
+   sbpp.css — visual identity overrides for the SourceBans++ docs site.
+
+   Sourced from web/themes/default/css/theme.css. The panel ships the
+   :root and html.dark blocks that this file mirrors token-for-token;
+   when those blocks change in the panel, mirror the change here in the
+   same PR (AGENTS.md "Keep the docs in sync" carries this rule).
+
+   Contract: paint Starlight chrome (sidebar, asides, code blocks,
+   buttons, links) with the panel's brand orange + zinc neutrals so a
+   self-hoster moving from this site to a freshly-installed panel reads
+   it as one product. Typography is intentionally NOT mirrored (#1333 §2).
+
+   No JS, no theme compiler. Plain CSS variables wired into Starlight's
+   public hooks (`--sl-color-*`, `--sl-text-*`, etc.).
+   ============================================================ */
+
+/* ---- Panel brand palette (raw tokens from theme.css) ---- */
+:root {
+  --sbpp-brand-50:  #fff7ed;
+  --sbpp-brand-100: #ffedd5;
+  --sbpp-brand-200: #fed7aa;
+  --sbpp-brand-300: #fdba74;
+  --sbpp-brand-400: #fb923c;
+  --sbpp-brand-500: #f97316;
+  --sbpp-brand-600: #ea580c; /* primary accent */
+  --sbpp-brand-700: #c2410c; /* hover / strong */
+  --sbpp-brand-800: #9a3412;
+  --sbpp-brand-900: #7c2d12;
+  --sbpp-brand-950: #431407;
+
+  --sbpp-zinc-50:  #fafafa;
+  --sbpp-zinc-100: #f4f4f5;
+  --sbpp-zinc-200: #e4e4e7;
+  --sbpp-zinc-300: #d4d4d8;
+  --sbpp-zinc-400: #a1a1aa;
+  --sbpp-zinc-500: #71717a;
+  --sbpp-zinc-600: #52525b;
+  --sbpp-zinc-700: #3f3f46;
+  --sbpp-zinc-800: #27272a;
+  --sbpp-zinc-900: #18181b;
+  --sbpp-zinc-950: #09090b;
+
+  /* Geometry — mirrors theme.css. */
+  --sbpp-radius-sm: 0.25rem;
+  --sbpp-radius-md: 0.375rem;
+  --sbpp-radius-lg: 0.5rem;
+  --sbpp-radius-xl: 0.75rem;
+  --sbpp-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --sbpp-shadow:    0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --sbpp-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+}
+
+/* ---- Light mode tokens ----
+   Starlight uses [data-theme] on <html> (see ThemeProvider override).
+   Set the same color-scheme hook the panel sets (theme.css line 44, #1309)
+   so native UA surfaces (open <select> panels, scrollbars, autofill
+   highlighting, color/date pickers) paint in the right scheme. */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Accent. Map panel brand to Starlight's accent triplet. */
+  --sl-color-accent-low:   var(--sbpp-brand-50);
+  --sl-color-accent:       var(--sbpp-brand-600);
+  --sl-color-accent-high:  var(--sbpp-brand-700);
+  --sl-color-text-accent:  var(--sbpp-brand-700);
+
+  /* Neutrals. Starlight's white→gray→black scale, repainted as zinc. */
+  --sl-color-white:        var(--sbpp-zinc-900);  /* "white" = primary text in light mode */
+  --sl-color-gray-1:       var(--sbpp-zinc-800);
+  --sl-color-gray-2:       var(--sbpp-zinc-700);
+  --sl-color-gray-3:       var(--sbpp-zinc-500);
+  --sl-color-gray-4:       var(--sbpp-zinc-400);
+  --sl-color-gray-5:       var(--sbpp-zinc-300);
+  --sl-color-gray-6:       var(--sbpp-zinc-200);
+  --sl-color-gray-7:       var(--sbpp-zinc-100);
+  --sl-color-black:        #ffffff;               /* "black" = page bg in light mode */
+
+  /* Page surfaces — page bg, surface card bg, sidebar bg, code bg. */
+  --sl-color-bg:           var(--sbpp-zinc-50);
+  --sl-color-bg-nav:       #ffffff;
+  --sl-color-bg-sidebar:   var(--sbpp-zinc-50);
+  --sl-color-bg-inline-code: var(--sbpp-zinc-100);
+
+  /* Text */
+  --sl-color-text:         var(--sbpp-zinc-900);
+  --sl-color-text-invert:  var(--sbpp-zinc-50);
+
+  /* Borders */
+  --sl-color-hairline:        var(--sbpp-zinc-200);
+  --sl-color-hairline-light:  var(--sbpp-zinc-100);
+  --sl-color-hairline-shade:  var(--sbpp-zinc-300);
+
+  /* Asides — light-mode variants of the panel's --info / --success /
+     --warning / --danger pairs (theme.css lines 69-72). Starlight names
+     them `note` / `tip` / `caution` / `danger`. */
+  --sl-color-asides-text-accent: var(--sbpp-brand-700);
+
+  --sl-color-blue:        #2563eb; /* --info */
+  --sl-color-blue-low:    #eff6ff; /* --info-bg */
+  --sl-color-blue-high:   #1d4ed8;
+
+  --sl-color-green:       #059669; /* --success */
+  --sl-color-green-low:   #ecfdf5; /* --success-bg */
+  --sl-color-green-high:  #047857;
+
+  --sl-color-orange:      #d97706; /* --warning */
+  --sl-color-orange-low:  #fffbeb; /* --warning-bg */
+  --sl-color-orange-high: #b45309;
+
+  --sl-color-red:         #dc2626; /* --danger */
+  --sl-color-red-low:     #fef2f2; /* --danger-bg */
+  --sl-color-red-high:    #b91c1c;
+
+  --sl-color-purple:      var(--sbpp-brand-700);
+  --sl-color-purple-low:  var(--sbpp-brand-50);
+  --sl-color-purple-high: var(--sbpp-brand-800);
+
+  /* Geometry mirrored onto Starlight's surface tokens where it has them.
+     Starlight doesn't expose every radius as a token; the ones that
+     show up in chrome (cards, buttons, code blocks) cover the surfaces
+     the user actually registers. */
+  --sl-shadow-sm:  var(--sbpp-shadow-sm);
+  --sl-shadow-md:  var(--sbpp-shadow);
+  --sl-shadow-lg:  var(--sbpp-shadow-lg);
+}
+
+/* ---- Dark mode tokens ----
+   Mirrors theme.css `html.dark` (lines 88-102). Starlight applies the
+   override via [data-theme='dark']. */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --sl-color-accent-low:   rgb(67 20 7 / 0.4);   /* --accent-soft (dark) */
+  --sl-color-accent:       var(--sbpp-brand-600);
+  --sl-color-accent-high:  var(--sbpp-brand-500);
+  --sl-color-text-accent:  var(--sbpp-brand-400);
+
+  --sl-color-white:        var(--sbpp-zinc-50);
+  --sl-color-gray-1:       var(--sbpp-zinc-100);
+  --sl-color-gray-2:       var(--sbpp-zinc-200);
+  --sl-color-gray-3:       var(--sbpp-zinc-400);
+  --sl-color-gray-4:       var(--sbpp-zinc-500);
+  --sl-color-gray-5:       var(--sbpp-zinc-700);
+  --sl-color-gray-6:       var(--sbpp-zinc-800);
+  --sl-color-gray-7:       var(--sbpp-zinc-900);
+  --sl-color-black:        var(--sbpp-zinc-950);
+
+  --sl-color-bg:           var(--sbpp-zinc-950);
+  --sl-color-bg-nav:       var(--sbpp-zinc-900);
+  --sl-color-bg-sidebar:   var(--sbpp-zinc-950);
+  --sl-color-bg-inline-code: var(--sbpp-zinc-800);
+
+  --sl-color-text:         var(--sbpp-zinc-100);
+  --sl-color-text-invert:  var(--sbpp-zinc-900);
+
+  --sl-color-hairline:        var(--sbpp-zinc-800);
+  --sl-color-hairline-light:  var(--sbpp-zinc-800);
+  --sl-color-hairline-shade:  var(--sbpp-zinc-700);
+
+  /* Asides — dark variants. Soft fills mirror theme.css's
+     `rgb(<color> / 0.4)` recipe. */
+  --sl-color-asides-text-accent: var(--sbpp-brand-400);
+
+  --sl-color-blue:        #60a5fa;
+  --sl-color-blue-low:    rgb(30 58 138 / 0.4);
+  --sl-color-blue-high:   #93c5fd;
+
+  --sl-color-green:       #34d399;
+  --sl-color-green-low:   rgb(6 78 59 / 0.4);
+  --sl-color-green-high:  #6ee7b7;
+
+  --sl-color-orange:      #fbbf24;
+  --sl-color-orange-low:  rgb(120 53 15 / 0.4);
+  --sl-color-orange-high: #fcd34d;
+
+  --sl-color-red:         #f87171;
+  --sl-color-red-low:     rgb(127 29 29 / 0.4);
+  --sl-color-red-high:    #fca5a5;
+
+  --sl-color-purple:      var(--sbpp-brand-400);
+  --sl-color-purple-low:  rgb(67 20 7 / 0.4);
+  --sl-color-purple-high: var(--sbpp-brand-300);
+}
+
+/* ---- Aside repaints ----
+   Starlight asides default to a generic accent fill. Repaint each kind
+   to match the panel's --info / --success / --warning / --danger pairs.
+   Targets the public Starlight selector (`.starlight-aside`); both
+   Markdown :::note syntax and the <Aside> component land in this DOM. */
+.starlight-aside {
+  /* Logical (writing-direction-aware) property — stock Starlight uses
+     border-inline-start so RTL locales (Arabic, Hebrew) get the accent
+     stripe on the visually-leading edge. The migration spec mentions
+     LLM-driven translation in "Future automation goals", so RTL
+     content WILL land here eventually — keep the logical property
+     (#1333 review M6). */
+  border-inline-start: 0.25rem solid var(--sl-color-asides-border);
+  border-radius: var(--sbpp-radius-md);
+}
+
+.starlight-aside--note {
+  --sl-color-asides-text-accent: var(--sl-color-blue-high);
+  --sl-color-asides-border: var(--sl-color-blue);
+  background-color: var(--sl-color-blue-low);
+}
+.starlight-aside--tip {
+  --sl-color-asides-text-accent: var(--sl-color-green-high);
+  --sl-color-asides-border: var(--sl-color-green);
+  background-color: var(--sl-color-green-low);
+}
+.starlight-aside--caution {
+  --sl-color-asides-text-accent: var(--sl-color-orange-high);
+  --sl-color-asides-border: var(--sl-color-orange);
+  background-color: var(--sl-color-orange-low);
+}
+.starlight-aside--danger {
+  --sl-color-asides-text-accent: var(--sl-color-red-high);
+  --sl-color-asides-border: var(--sl-color-red);
+  background-color: var(--sl-color-red-low);
+}
+
+/* ---- Geometry polish ----
+   Code blocks, cards, buttons inherit Starlight's defaults; nudge the
+   radius to match the panel's `--radius-md` (0.375rem) for visual parity.
+   Focus ring mirrors theme.css line 119. */
+.starlight-aside,
+.expressive-code .frame,
+.card {
+  border-radius: var(--sbpp-radius-md);
+}
+
+:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Splash hero polish (landing page) ----
+   The landing page uses the splash template; tighten the hero typography
+   so it doesn't dwarf the rest of the chrome. */
+.hero h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ---- Topbar sponsor heart ----
+   The heart icon in the topbar social row (added via
+   `social: [{ icon: 'heart', href: 'https://github.com/sponsors/rumblefrog', ... }]`
+   in astro.config.mjs) lights up brand orange instead of the default
+   neutral, matching the heart inside Footer.astro's
+   `.sbpp-sponsor-link`. The two surfaces read as a unified sponsor
+   pair across the chrome.
+
+   The href-attribute selector keeps the rule surgical — GitHub +
+   Discord icons keep Starlight's default neutral hover colours. */
+.social-icons a[href*="sponsors/rumblefrog"] {
+  color: var(--sl-color-orange);
+}
+.social-icons a[href*="sponsors/rumblefrog"]:hover,
+.social-icons a[href*="sponsors/rumblefrog"]:focus-visible {
+  color: var(--sl-color-orange-high);
+}
+
+/* ---- Selection ---- */
+::selection {
+  background-color: var(--sbpp-brand-200);
+  color: var(--sbpp-zinc-900);
+}
+[data-theme='dark'] ::selection {
+  background-color: rgb(234 88 12 / 0.4);
+  color: var(--sbpp-zinc-50);
+}

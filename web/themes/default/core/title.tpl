@@ -18,14 +18,13 @@
     static markup contract is locked from A2 onward.
 *}
 <div class="main">
-    <header class="topbar">
+    <header class="topbar" data-testid="topbar">
         <button type="button"
                 class="btn--ghost btn--icon"
                 data-mobile-menu
                 data-testid="mobile-menu-toggle"
                 aria-label="Open navigation menu"
-                aria-controls="sidebar"
-                style="display:none">
+                aria-controls="sidebar">
             <i data-lucide="menu"></i>
         </button>
 
@@ -41,22 +40,54 @@
 
         <div style="flex:1"></div>
 
+        {*
+            #1207 CC-1 / CC-3: the topbar palette trigger is icon-only at
+            EVERY viewport. CC-1 (slice 1, PR #1208) collapsed it at
+            <=768px because the search-input shape couldn't share a row
+            with the breadcrumb + theme toggle on mobile; CC-3 (this
+            slice) extends the same collapse to desktop because the
+            chrome's labelled "search input + Ctrl-K hint" was a
+            duplicate affordance for the same `<dialog id="palette-root">`
+            the ⌘K shortcut already opens — both surfaces competed for
+            attention and pulled the user's eye twice. The palette
+            itself owns the search semantically; the topbar trigger only
+            opens it.
+
+            The .topbar__search-label / .topbar__search-kbd hooks below
+            are the CSS handles theme.css uses to hide the visible label
+            and the keyboard hint. Keep them BOTH in the DOM
+            unconditionally so:
+              - SR users hear "Open command palette …" via the existing
+                aria-label regardless of viewport,
+              - theme.js's applyPlatformHints() can still rewrite the kbd
+                text to ⌘K on Mac after first paint without re-rendering,
+              - the icon stays the visible affordance on every viewport so
+                the testability hook (`data-palette-open` /
+                `data-testid="palette-trigger"`) works the same way for
+                desktop click + mobile tap.
+        *}
         <button type="button"
                 class="topbar__search"
                 data-palette-open
                 data-testid="palette-trigger"
                 aria-label="Open command palette (search players, SteamIDs, pages)">
             <i data-lucide="search" style="width:14px;height:14px"></i>
-            <span>Search players, SteamIDs…</span>
-            <kbd>&#8984;K</kbd>
+            <span class="topbar__search-label">Search players, SteamIDs…</span>
+            {* The U+2318 ⌘ glyph is missing from the vendored JetBrains Mono
+               and the generic CSS mono fallback on every non-Mac browser, so
+               a server-rendered '⌘K' renders as tofu for the majority of users
+               (#1184). Render the Ctrl form here and let theme.js upgrade
+               Mac/iOS clients to '⌘K' at boot. *}
+            <kbd class="topbar__search-kbd">Ctrl K</kbd>
         </button>
 
         <button type="button"
-                class="btn--ghost btn--icon"
+                class="btn btn--ghost btn--icon"
                 data-theme-toggle
                 data-testid="theme-toggle"
                 aria-label="Toggle color theme">
-            <i data-lucide="sun"></i>
+            <i data-lucide="sun"  class="theme-toggle__sun"></i>
+            <i data-lucide="moon" class="theme-toggle__moon"></i>
         </button>
     </header>
 

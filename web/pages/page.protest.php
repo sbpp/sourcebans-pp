@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
@@ -24,7 +10,7 @@ use Sbpp\Mail\Mailer;
 global $userbank, $theme;
 
 if (!Config::getBool('config.enableprotest')) {
-    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
+    \Sbpp\View\Toast::emit('error', 'Error', 'This page is disabled. You should not be here.');
     PageDie();
 }
 if (!defined("IN_SB")) {
@@ -39,12 +25,12 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
     $UnbanReason = "";
     $Email       = "";
 } else {
-    $Type        = (int) $_POST['Type'];
-    $SteamID     = $_POST['SteamID'];
-    $IP          = $_POST['IP'];
-    $PlayerName  = $_POST['PlayerName'];
-    $UnbanReason = $_POST['BanReason'];
-    $Email       = $_POST['EmailAddr'];
+    $Type        = (int) ($_POST['Type']      ?? 0);
+    $SteamID     = (string) ($_POST['SteamID']   ?? '');
+    $IP          = (string) ($_POST['IP']        ?? '');
+    $PlayerName  = (string) ($_POST['PlayerName']?? '');
+    $UnbanReason = (string) ($_POST['BanReason'] ?? '');
+    $Email       = (string) ($_POST['EmailAddr'] ?? '');
     $validsubmit = true;
     $errors      = "";
     $BanId       = -1;
@@ -105,7 +91,17 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
     }
 
     if (!$validsubmit) {
-        print "<script>ShowBox('Error', '$errors', 'red');</script>";
+        // Validation errors are accumulated as `* msg<br>` HTML
+        // fragments (legacy ShowBox markup, same shape page.submit.php
+        // uses). Convert `<br>` separators to plain spaces so the
+        // toast body reads as a single line per error — `showToast`
+        // (theme.js) `escapeHtml`s the value so raw tags would
+        // surface as visible literal text.
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Please fix the following',
+            (string) preg_replace('#<br\s*/?>#i', ' ', $errors),
+        );
     }
 
     if ($validsubmit && $BanId != -1) {
@@ -136,15 +132,16 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $GLOBALS['PDO']->query("SELECT aid, user, email FROM `:prefix_admins` WHERE aid = (SELECT aid FROM `:prefix_bans` WHERE bid = :bid)");
         $GLOBALS['PDO']->bind(':bid', (int) $BanId);
         $emailinfo = $GLOBALS['PDO']->single();
-        $requri    = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") + 4);
+        $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+        $requri    = substr($requestUri, 0, (int) strrpos($requestUri, ".php") + 4);
         if (Config::getBool('protest.emailonlyinvolved') && !empty($emailinfo['email'])) {
-            $admins = array(
-                array(
-                    'aid' => $emailinfo['aid'],
-                    'user' => $emailinfo['user'],
-                    'email' => $emailinfo['email']
-                )
-            );
+            $admins = [
+                [
+                    'aid'   => $emailinfo['aid'],
+                    'user'  => $emailinfo['user'],
+                    'email' => $emailinfo['email'],
+                ],
+            ];
         } else {
             $admins = $userbank->GetAllAdmins();
         }
@@ -152,7 +149,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $destAdmins = [];
 
         foreach ($admins as $admin) {
-            if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $admin['aid'])) {
+            if ($userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanProtests), $admin['aid']) && $userbank->HasAccess(WebPermission::NotifyProtest, $admin['aid'])) {
                 $destAdmins [] = $admin['email'];
             }
         }
@@ -165,12 +162,17 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
                 '{steamid}' => $_POST['SteamID'],
                 '{banadmin}' => $protadmin['user'],
                 '{message}' => $_POST['BanReason'],
-                '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans#%5E1',
+                // #1275 — admin-bans is Pattern A; the legacy `#^1`
+                // anchor that targeted the old page-toc chrome is no
+                // longer wired. Link directly to the protests section
+                // so the email recipient lands on the queue they're
+                // being asked to review.
+                '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans&section=protests',
                 '{home}' => Host::complete(true)
             ]);
         }
 
-        echo "<script>ShowBox('Successful', 'Your protest has been sent.', 'green');</script>";
+        \Sbpp\View\Toast::emit('success', 'Successful', 'Your protest has been sent.');
     }
 }
 

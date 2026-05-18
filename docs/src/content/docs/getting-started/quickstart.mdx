@@ -1,0 +1,299 @@
+---
+title: Quickstart
+description: Install SourceBans++ end-to-end — database, web panel, plugin, first server.
+sidebar:
+  order: 3
+---
+
+import { Tabs, TabItem, Aside, LinkCard, CardGrid, Steps } from '@astrojs/starlight/components';
+
+This guide walks you through a fresh SourceBans++ install from scratch.
+By the end you'll have a working panel, a connected database, and at
+least one game server reporting back to it.
+
+If you haven't yet, the [Overview](/getting-started/overview/) is the
+2-minute background read.
+
+## Before you start
+
+Make sure your host meets the [Requirements](/getting-started/prerequisites/):
+
+- A **MySQL (>= 5.6)** or **MariaDB (>= 10.0)** database you can
+  connect to.
+- **PHP >= 8.5** with the listed extensions.
+- Your game servers run **SourceMod >= 1.11** and **Metamod: Source**.
+
+If you don't have a database yet, the
+[Database setup](/setup/mariadb/) guide installs MariaDB on a fresh
+Ubuntu host in a handful of commands.
+
+You'll also want:
+
+- The SteamID of the **account you want to make the first admin**
+  (it's you, probably). In `STEAM_0:0:12345678` form — see the
+  [SteamID tip](#admin-account-setup) below if you only know the
+  numeric form.
+- A **Steam Web API key** from
+  [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey)
+  (free, takes 30 seconds).
+
+## Step 1 — Download
+
+Grab the latest release zip from the
+[Releases page](https://github.com/sbpp/sourcebans-pp/releases). You
+want the `sourcebans-pp-X.Y.Z.webpanel-only.zip` (web side) and the
+`sourcebans-pp-X.Y.Z.plugin-only.zip` (game side) — or the combined
+zip if you prefer.
+
+## Step 2 — Upload the web panel
+
+<Steps>
+1. Unzip the web archive. You should see a `web/` folder.
+
+2. Upload **the contents** of `web/` to either your web root (so
+   the panel lives at `example.com/`) or a subfolder (e.g.
+   `example.com/sb/`).
+
+3. Set write permissions on the paths the panel writes to.
+</Steps>
+
+The wizard will refuse to proceed unless the paths below are writable
+by the user the webserver runs as. Pick the tab that matches your
+host:
+
+<Tabs syncKey="platform">
+  <TabItem label="Linux (VPS)" icon="linux">
+    On most distros the webserver runs as `www-data` (Debian/Ubuntu)
+    or `apache` (Fedora/RHEL). If you uploaded as `root`, also
+    `chown` the files to that user.
+
+    ```sh
+    # config.php — the wizard appends DB credentials and the secret
+    # key to this file.
+    sudo chmod 644 config.php
+
+    # demos/ — uploaded ban-evidence demos.
+    sudo chmod -R 644 demos
+
+    # themes_c/ — Smarty's template cache. The panel writes here on
+    # every page render.
+    sudo chmod -R 774 themes_c
+
+    # images/games/, images/maps/ — admin-uploaded thumbnails.
+    sudo chmod -R 644 images/games
+    sudo chmod -R 644 images/maps
+    ```
+  </TabItem>
+
+  <TabItem label="Windows / IIS" icon="seti:windows">
+    Give the IIS application pool identity (or the user the PHP CGI
+    process runs as) **Modify** access to:
+
+    - `config.php`
+    - `demos\` (recursive)
+    - `themes_c\` (recursive)
+    - `images\games\` (recursive)
+    - `images\maps\` (recursive)
+
+    The simplest path: right-click the `sourcebans` folder →
+    Properties → Security → Edit, add the IIS user (typically
+    `IIS_IUSRS` or `IIS APPPOOL\<sitename>`), and tick Modify.
+  </TabItem>
+
+  <TabItem label="Shared hosting" icon="cloud-download">
+    Most shared hosts already run PHP under your FTP user, so
+    files uploaded over FTP have the right owner automatically.
+
+    If the wizard complains about a non-writable path, use your
+    control panel's File Manager (cPanel, Plesk, DirectAdmin, …)
+    and set permissions to **644** for files and **755** for
+    directories. `themes_c/` may need **775**.
+
+    If your host runs PHP under a different user and you don't have
+    suEXEC / suPHP, ask support to enable it — that's the proper
+    fix. World-writable (`666` / `777`) works as a last resort.
+  </TabItem>
+
+  <TabItem label="Docker" icon="docker">
+    Our official `Dockerfile` handles this automatically — the
+    webroot is owned by `www-data` inside the container and the
+    wizard runs as that user.
+
+    Rolling your own container? After copying `web/` into place,
+    run `chown -R www-data:www-data /var/www/html`.
+  </TabItem>
+</Tabs>
+
+<Aside type="tip">
+If the wizard complains a path isn't writable, that's working as
+intended — it refuses to proceed rather than leave you with a panel
+that fails mysteriously later. Fix the permissions and reload.
+</Aside>
+
+## Step 3 — Run the install wizard
+
+Open `https://<your-domain>/install/` in a browser (or
+`https://<your-domain>/sb/install/` if you uploaded into a
+subfolder). The wizard has five steps; we'll cover each.
+
+### Licence
+
+Read it, tick **I have read, and accept the licence**, click **OK**.
+
+### Database details
+
+Fill in the connection info for the database you set up earlier:
+
+| Field | What to enter |
+| --- | --- |
+| `Server Hostname` | DB host. `localhost` if the DB is on the same machine, otherwise its IP or domain. |
+| `Server Port` | DB port. `3306` is the default. |
+| `Username` | DB user. |
+| `Password` | DB password. |
+| `Database` | The database name. Create it first if you haven't. |
+| `Table Prefix` | The prefix for the panel's tables. Leave at default unless you're sharing a database with another app. |
+| `Steam API Key` | Paste the API key from [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey). |
+| `SourceBans Email` | The "from" address for password-reset and ban-submission emails. Leave empty if you don't have one. |
+
+<Aside type="tip">
+Stuck on the database step? [Database errors](/troubleshooting/database-errors/)
+covers the usual culprits (access denied, can't connect, MySQL gone
+away), and [Driver not found](/troubleshooting/could-not-find-driver/)
+if PHP can't talk to MySQL at all.
+</Aside>
+
+### System check
+
+The wizard runs a final sanity check — PHP version, extensions,
+paths it needs to write to. Every row should be green. Fix any
+yellow / red rows before continuing.
+
+### Table creation
+
+One click. The wizard creates the schema, seeds the default settings,
+and shows a success notification.
+
+### Admin account setup
+
+This is the first admin account — that's you.
+
+<Aside type="tip" title="SteamID format">
+Use the **SteamID2** form: `STEAM_0:0:12345678`. Not the SteamID3
+(`[U:1:24691356]`) or numeric / SteamID64 form. Tools like
+[SteamID I/O](https://steamid.io/) convert between them — paste any
+form in and copy the `STEAM_0:0:…` line back out.
+</Aside>
+
+Fill it in and click **OK**. Your panel is now live at
+`https://<your-domain>/`.
+
+<Aside type="caution" title="Delete the install directory">
+After the wizard finishes, **delete the `install/` directory** from
+your webserver. The panel actively refuses to boot while
+`install/` exists — leaving it accessible would let anyone re-run
+the wizard and hijack your panel.
+</Aside>
+
+## Step 4 — Register your first game server
+
+In the panel, navigate to **Admin Panel → Server Settings → Add new
+server**. Fill in the form (game, RCON password, IP, port), click
+**Add Server**, and note the **`ID` column** for the new row — that
+number is the `ServerID` the plugin needs in the next step.
+
+Full walkthrough with screenshots:
+[Adding a server](/setup/adding-server/).
+
+## Step 5 — Install the SourceMod plugins
+
+Unzip the plugin archive on each game server. The plugin files
+(`sbpp_main.smx`, `sbpp_comms.smx`, …) go into
+`addons/sourcemod/plugins/` and the config files into
+`addons/sourcemod/configs/`.
+
+You then edit two config files:
+
+### `databases.cfg`
+
+Open `addons/sourcemod/configs/databases.cfg` and add a `sourcebans`
+section pointing at the same database the panel uses:
+
+```ini
+"sourcebans"
+{
+    "driver"        "default"
+    "host"          "EDITME_DATABASE_HOST"
+    "database"      "EDITME_DATABASE_NAME"
+    "user"          "EDITME_DATABASE_USER"
+    "pass"          "EDITME_DATABASE_PASSWORD"
+    "port"          "3306"
+}
+```
+
+<Aside type="caution">
+The web panel offers to generate this section for you, but treat
+that as a starting point, not a finished config — especially if
+your game server isn't on the same host as the database. If the
+two hosts are on different networks, you'll also need to allow
+the game server's IP in your database's user grant (see
+[Database setup → Granting permission](/setup/mariadb/#granting-permission)).
+</Aside>
+
+### `sourcebans.cfg`
+
+Open `addons/sourcemod/configs/sourcebans/sourcebans.cfg` and
+update the **`ServerID`** field to match the ID you noted in Step 4.
+
+Save the files, then **reload the map or restart the server** so
+SourceMod re-reads the config.
+
+For more on companion plugins (`sbpp_comms`, `sbpp_report`,
+`sbpp_checker`, …) see [Plugin setup](/setup/plugin-setup/).
+
+## Step 6 — Verify
+
+Back in the panel:
+
+- The **Servers** page should show your new server as **online** with
+  the current map and player list within ~30 seconds.
+- Try banning a test player from in-game via SourceMod's admin menu —
+  the ban should appear on the panel's **Bans** page within seconds.
+- Try banning from the panel — the ban should kick the player from
+  the game server.
+
+If something isn't working, the most useful starting points are:
+
+- [Server connection issues](/troubleshooting/debugging-connection/) —
+  the panel doesn't show your server's map / players.
+- [Driver not found](/troubleshooting/could-not-find-driver/) — the
+  plugin can't talk to the database.
+- [Database errors](/troubleshooting/database-errors/) — anything else
+  database-related.
+
+## What's next?
+
+<CardGrid>
+  <LinkCard
+    title="Set up your admin team"
+    href="/setup/admins-and-groups/"
+    description="Create admin accounts, group them, hand out permissions and per-server access."
+  />
+  <LinkCard
+    title="Add more game servers"
+    href="/setup/adding-server/"
+    description="The same panel + plugin handshake, repeated per server."
+  />
+  <LinkCard
+    title="Discord notifications"
+    href="/integrations/discord-forward-setup/"
+    description="Forward in-game bans, reports, and comm blocks to a Discord channel."
+  />
+  <LinkCard
+    title="Customize the dashboard"
+    href="/customization/removing-default-message/"
+    description="Replace the placeholder welcome message with your community's intro text."
+  />
+</CardGrid>
+
+Still stuck? Drop into our [Discord](https://discord.gg/tzqYqmAtF5)
+and ask in `#help-support`.

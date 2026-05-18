@@ -56,30 +56,67 @@
                 </p>
             </div>
 
-            <div>
-                <label class="label" for="submitban-steam">Player&rsquo;s Steam ID</label>
-                <input type="text"
-                       class="input font-mono"
-                       id="submitban-steam"
-                       name="SteamID"
-                       maxlength="64"
-                       value="{$STEAMID}"
-                       placeholder="STEAM_0:1:23498765"
-                       autocomplete="off"
-                       data-testid="submitban-steam">
-            </div>
+            {*
+                #1207 PUB-4: shared "1 of these required" badge. Steam ID
+                + IP are an "either/or" pair (the page handler validates
+                neither-empty server-side, but the form previously had
+                no visual hint, and a typo would round-trip through a
+                full POST before bouncing). The two inputs share the
+                same `data-required-group="steamid-or-ip"` plus
+                `aria-describedby` pointing at the help line above; the
+                inline `<script>` at the bottom blocks submit when both
+                are blank, surfaces a `data-error="true"` on the group
+                container, and toggles the help line's
+                `[data-state="error"]`.
+            *}
+            <div data-testid="submitban-id-or-ip"
+                 data-required-group="steamid-or-ip"
+                 data-error="false"
+                 class="space-y-4">
+                <p id="submitban-id-or-ip-help"
+                   class="flex items-center gap-2 text-xs m-0"
+                   data-testid="submitban-id-or-ip-help"
+                   data-state="info">
+                    <span class="pill"
+                          aria-hidden="true"
+                          style="height:1.25rem;background:var(--bg-muted);color:var(--text-muted);box-shadow:inset 0 0 0 1px var(--border)">
+                        1 of these required
+                    </span>
+                    <span class="text-muted" data-id-or-ip-text>Provide either a Steam ID or an IP address (or both).</span>
+                </p>
+                <div>
+                    <label class="label" for="submitban-steam">
+                        Player&rsquo;s Steam ID
+                        <span class="text-muted text-xs" style="font-weight:400">(or use the IP below)</span>
+                    </label>
+                    <input type="text"
+                           class="input font-mono"
+                           id="submitban-steam"
+                           name="SteamID"
+                           maxlength="64"
+                           value="{$STEAMID}"
+                           placeholder="STEAM_0:1:23498765"
+                           autocomplete="off"
+                           aria-describedby="submitban-id-or-ip-help"
+                           data-testid="submitban-steam">
+                </div>
 
-            <div>
-                <label class="label" for="submitban-ip">Player&rsquo;s IP address</label>
-                <input type="text"
-                       class="input font-mono"
-                       id="submitban-ip"
-                       name="BanIP"
-                       maxlength="64"
-                       value="{$ban_ip}"
-                       placeholder="203.0.113.42"
-                       autocomplete="off"
-                       data-testid="submitban-ip">
+                <div>
+                    <label class="label" for="submitban-ip">
+                        Player&rsquo;s IP address
+                        <span class="text-muted text-xs" style="font-weight:400">(or use the Steam ID above)</span>
+                    </label>
+                    <input type="text"
+                           class="input font-mono"
+                           id="submitban-ip"
+                           name="BanIP"
+                           maxlength="64"
+                           value="{$ban_ip}"
+                           placeholder="203.0.113.42"
+                           autocomplete="off"
+                           aria-describedby="submitban-id-or-ip-help"
+                           data-testid="submitban-ip">
+                </div>
             </div>
 
             <div>
@@ -175,12 +212,20 @@
 
             <div>
                 <label class="label" for="submitban-demo">Upload demo or evidence</label>
-                <input type="file"
-                       class="input"
-                       id="submitban-demo"
-                       name="demo_file"
-                       accept=".dem,.zip,.rar,.7z,.bz2,.gz"
-                       data-testid="submitban-demo">
+                <div class="file-input">
+                    <label class="btn btn--secondary">
+                        <input type="file"
+                               id="submitban-demo"
+                               name="demo_file"
+                               accept=".dem,.zip,.rar,.7z,.bz2,.gz"
+                               data-testid="submitban-demo"
+                               data-file-input
+                               hidden>
+                        <i data-lucide="upload" style="width:14px;height:14px"></i>
+                        Choose file&hellip;
+                    </label>
+                    <span class="text-muted text-sm" data-file-name>No file chosen</span>
+                </div>
                 <p class="text-xs text-muted m-0 mt-2">
                     Optional. Allowed formats: <code class="font-mono">.dem</code>,
                     <code class="font-mono">.zip</code>, <code class="font-mono">.rar</code>,
@@ -209,3 +254,98 @@
         </div>
     </form>
 </section>
+
+{*
+    #1207 PUB-4: client-side either/or validation for Steam ID + IP.
+
+    Server-side validation in `web/pages/page.submit.php` enforces the
+    same rule (the matching `(SteamID empty + BanIP empty)` branch
+    flips `$validsubmit = false` and pushes the inline toast through
+    `emitSubmitToast`), so it stays the source of truth — JS-off
+    visitors get the same bounce. This pre-flight just keeps the user
+    from paying the round-trip when the rule is trivially violated.
+
+    Inline rather than a `web/scripts/<page>.js` file because the
+    contract is one form on one page and the canonical pattern for new
+    page-tail helpers is "self-contained vanilla JS per page" per
+    AGENTS.md ("v1.x bulk file" anti-pattern). `// @ts-check` + JSDoc
+    keeps it under the ts-check gate.
+*}
+<script>
+{literal}
+// @ts-check
+(function () {
+    'use strict';
+
+    var form = /** @type {HTMLFormElement|null} */ (
+        document.querySelector('form[action="index.php?p=submit"]')
+    );
+    if (!form) return;
+
+    var group = /** @type {HTMLElement|null} */ (form.querySelector('[data-required-group="steamid-or-ip"]'));
+    var steam = /** @type {HTMLInputElement|null} */ (form.querySelector('[data-testid="submitban-steam"]'));
+    var ip    = /** @type {HTMLInputElement|null} */ (form.querySelector('[data-testid="submitban-ip"]'));
+    var help  = /** @type {HTMLElement|null} */ (form.querySelector('[data-testid="submitban-id-or-ip-help"]'));
+    var helpText = /** @type {HTMLElement|null} */ (form.querySelector('[data-id-or-ip-text]'));
+    if (!group || !steam || !ip || !help || !helpText) return;
+
+    /** @type {string} */
+    var defaultText = helpText.textContent || '';
+
+    /**
+     * @param {boolean} isError
+     */
+    function setError(isError) {
+        group.setAttribute('data-error', isError ? 'true' : 'false');
+        help.setAttribute('data-state', isError ? 'error' : 'info');
+        // Keep the visible copy stable (a11y: don't swap text on
+        // every keystroke); the data-state attribute is the
+        // testability hook E2E asserts on. Color shift is the
+        // visible signal — see the inline style in this script.
+        help.style.color = isError ? 'var(--danger)' : '';
+        if (isError) {
+            steam.setAttribute('aria-invalid', 'true');
+            ip.setAttribute('aria-invalid', 'true');
+            helpText.textContent = 'Please enter a Steam ID or an IP address before submitting.';
+        } else {
+            steam.removeAttribute('aria-invalid');
+            ip.removeAttribute('aria-invalid');
+            helpText.textContent = defaultText;
+        }
+    }
+
+    function isEmpty(/** @type {HTMLInputElement} */ el) {
+        var v = (el.value || '').trim();
+        // STEAM_0: is the placeholder-ish value the page handler
+        // re-emits after a failed validation; treat it as empty so
+        // the client-side check matches the server-side rule
+        // (page.submit.php does `$SteamID == "STEAM_0:" -> ""`).
+        return v === '' || v === 'STEAM_0:';
+    }
+
+    /** @type {(ev: Event) => void} */
+    function onSubmit(ev) {
+        if (isEmpty(steam) && isEmpty(ip)) {
+            ev.preventDefault();
+            setError(true);
+            // Focus the first of the two inputs so keyboard users
+            // land on the offending field; matches native
+            // `required` + `:invalid` UX.
+            steam.focus();
+            return;
+        }
+        setError(false);
+    }
+
+    /** Clear the error as soon as either input gets non-empty. */
+    function onInput() {
+        if (group.getAttribute('data-error') !== 'true') return;
+        if (!isEmpty(steam) || !isEmpty(ip)) setError(false);
+    }
+
+    form.addEventListener('submit', onSubmit);
+    steam.addEventListener('input', onInput);
+    ip.addEventListener('input', onInput);
+})();
+{/literal}
+</script>

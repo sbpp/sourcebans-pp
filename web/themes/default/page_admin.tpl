@@ -21,10 +21,12 @@
     "card visible but route 403's" can't drift between the two.
 
     Comms folds into the sidebar nav (admin/comms) per the mockup,
-    not a card here. Audit is a forward-looking card gated to owners
-    until a future ticket adds the c=audit route + page; until then
-    the legacy router's `default:` case returns this same admin
-    landing, so the link is a harmless self-loop rather than a 404.
+    not a card here. Audit is owner-gated and points at the live
+    `c=audit` route (admin.audit.php), introduced ahead of this
+    landing's redesign. The legacy router's `default:` case now
+    returns a 404 for any unrecognised c=… (#1207 ADM-1), so a
+    typo'd href would surface visibly rather than silently
+    rendering this same landing.
 
     Testability hooks per the issue's "Testability hooks" rule:
       - card grid carries role="list" + aria-label
@@ -107,8 +109,14 @@
 
         {if $can_overrides}
             <li>
+                {* The overrides editor is the `?section=overrides` slice of
+                   admin.admins.php's c=admins route — admin.overrides.php
+                   is `require`d there. Pre-#1275 this used a `#overrides`
+                   fragment to anchor inside a long-scroll page; #1275
+                   unified admin-admins on Pattern A so the editor has its
+                   own URL. *}
                 <a class="admin-card"
-                   href="index.php?p=admin&amp;c=admins"
+                   href="index.php?p=admin&amp;c=admins&amp;section=overrides"
                    data-testid="admin-card-overrides">
                     <div class="admin-card__icon" aria-hidden="true"><i data-lucide="key-round"></i></div>
                     <div class="admin-card__title">Overrides</div>
@@ -136,31 +144,12 @@
                    data-testid="admin-card-audit">
                     <div class="admin-card__icon" aria-hidden="true"><i data-lucide="scroll-text"></i></div>
                     <div class="admin-card__title">Audit log</div>
-                    <div class="admin-card__desc">Admin actions across the panel (coming soon).</div>
+                    <div class="admin-card__desc">Admin actions across the panel.</div>
                 </a>
             </li>
         {/if}
     </ul>
 </section>
-
-{*
-    Parity block - references the legacy default-theme variables that
-    AdminHomeView still declares so SmartyTemplateRule's "unused
-    property" check stays green for the sbpp2026 PHPStan leg without a
-    bespoke baseline entry. The if-false branch is unreachable at
-    render time, so the new theme never visibly renders the legacy
-    counts. Mirrors the unreachable parity reference HomeDashboardView
-    established (#1123 B3) using IN_SERVERS_PAGE. D1 deletes the legacy
-    theme + the matching props on AdminHomeView; this block leaves
-    with them.
-*}
-{if false}
-    {$access_admins}{$access_bans}{$access_groups}{$access_mods}
-    {$access_servers}{$access_settings}{$archived_protests}
-    {$archived_submissions}{$demosize}{$dev}{$total_admins}
-    {$total_bans}{$total_blocks}{$total_comms}{$total_protests}
-    {$total_servers}{$total_submissions}
-{/if}
 
 {literal}
 <style>
@@ -182,6 +171,22 @@
         list-style: none;
         margin: 0;
         padding: 0;
+    }
+    /* #1207 ADM-10: at <768px the auto-fill grid above only fits a
+       single 15rem column so the 8 admin cards stack vertically and
+       produce a long scroll. Force 2 columns at mobile instead — at
+       the iPhone-13's 375px viewport this lands ~165px-wide cards
+       (full-width minus 1rem body padding minus 0.75rem gap, halved)
+       with ~120px+ height each (2.25rem icon + 1.25rem padding +
+       title + description), well above the 44x44 tap-target floor.
+       Tablet (768–1023px) and desktop (>=1024px) keep the auto-fill
+       behaviour above so wider viewports still get 2-3-4 columns
+       depending on how much sidebar-less width is available. */
+    @media (max-width: 767.98px) {
+        .admin-cards {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
     }
 
     .admin-card {

@@ -1,0 +1,205 @@
+# SourceBans++ production compose stack (#1381 deliverable 4).
+#
+# Designed for self-hosters who want a one-command "spin up a panel that
+# survives reboots" deployment. Pulls the published image from GHCR;
+# does NOT build from source. Pair with `.env.example.prod` (copy to
+# `.env`, edit values, then `docker compose -f docker-compose.prod.yml
+# up -d`).
+#
+# Distinct from `docker-compose.yml` (the dev stack — `./sbpp.sh up`):
+#   - dev image bind-mounts the worktree, ships admin/admin, exposes
+#     the DB to host, defines SBPP_DEV_KEEP_INSTALL → install/-presence
+#     guard skips. ALL of those are dangerous outside a developer's
+#     laptop.
+#   - this stack pulls an immutable image; reads admin creds from env
+#     vars (operator's responsibility); never exposes the DB; the
+#     entrypoint physically removes install/+updater/ from the
+#     writable layer so the panel-runtime guard passes without the
+#     dev escape hatch.
+#
+# Volumes:
+#   - dbdata    — MariaDB data dir. Must persist (the panel's only
+#                 source of truth for ban / admin / log rows).
+#   - demos     — uploaded ban-evidence demos under web/demos/. Must
+#                 persist (admin-uploaded user content; not regenerable).
+#   - cache     — Smarty compile + sessions under web/cache/. Can be
+#                 ephemeral; will rebuild on first request after wipe
+#                 (operator just gets logged out, no data loss).
+#
+# config.php is rendered by the entrypoint into the image's writable
+# layer at /var/www/html/web/config.php on first boot. To persist
+# config.php across container recreations (rather than having the
+# entrypoint mint a fresh SB_SECRET_KEY every time the layer is reset),
+# set SB_SECRET_KEY in `.env` so the value survives. Volume-mounting
+# config.php from outside the container is supported via the
+# `SBPP_CONFIG_PATH` env var — see `.env.example.prod` for the
+# Docker-secret pattern.
+
+services:
+  web:
+    image: ghcr.io/sbpp/sourcebans-pp:${SBPP_IMAGE_TAG:-latest}
+    container_name: sbpp-prod-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Host: by default we bind to all interfaces. Self-hosters who
+      # front the panel with a reverse proxy (nginx, Caddy, Traefik,
+      # Cloudflare Tunnel) on the same host should set
+      # `SBPP_BIND=127.0.0.1:` so only the proxy can reach the panel
+      # — never the public internet. The trailing colon is intentional;
+      # it slots in front of the port mapping below.
+      - "${SBPP_BIND:-}${SBPP_HOST_PORT:-8080}:80"
+    environment:
+      # ----- Required: DB connection -----
+      # Either set DATABASE_URL OR the split DB_* vars below. The
+      # entrypoint parses DATABASE_URL into the split vars first; if
+      # either form is missing a field, the defaults below the URL
+      # parser kick in.
+      DATABASE_URL: "${DATABASE_URL:-}"
+      DB_HOST: "${DB_HOST:-db}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_NAME: "${DB_NAME:-sourcebans}"
+      DB_USER: "${DB_USER:-sourcebans}"
+      DB_PASS: "${DB_PASS:?set DB_PASS in .env or use DB_PASS_FILE for a Docker-secret-mounted file}"
+      DB_PREFIX: "${DB_PREFIX:-sb}"
+      DB_CHARSET: "${DB_CHARSET:-utf8mb4}"
+
+      # ----- Required: panel security key -----
+      # Persist the JWT signing key across container recreations.
+      # Generate once with:  openssl rand -base64 47
+      SB_SECRET_KEY: "${SB_SECRET_KEY:?run 'openssl rand -base64 47' and paste into .env so JWT cookies survive container restarts}"
+
+      # ----- Recommended: Steam Web API + admin email -----
+      STEAMAPIKEY: "${STEAMAPIKEY:-}"
+      SB_EMAIL: "${SB_EMAIL:-}"
+
+      # ----- First-boot install: initial admin -----
+      # The entrypoint's first-boot install pass seeds an Owner-flagged
+      # admin if all four are set; otherwise it skips and prints a
+      # next-step in the container logs (`docker compose logs web`).
+      INITIAL_ADMIN_NAME: "${INITIAL_ADMIN_NAME:-}"
+      INITIAL_ADMIN_STEAM: "${INITIAL_ADMIN_STEAM:-}"
+      INITIAL_ADMIN_EMAIL: "${INITIAL_ADMIN_EMAIL:-}"
+      INITIAL_ADMIN_PASSWORD: "${INITIAL_ADMIN_PASSWORD:-}"
+
+      # ----- App-platform / reverse-proxy aware -----
+      # PORT — when the app platform injects a port (Render / Fly /
+      # Heroku-style), the entrypoint rewrites Apache's Listen +
+      # vhost ports to match. Default 80 for plain Docker.
+      PORT: "${PORT:-80}"
+
+      # SBPP_TRUSTED_PROXIES — space-separated CIDR list of upstream
+      # proxies. When set, Apache uses mod_remoteip to rewrite
+      # REMOTE_ADDR to the original client IP from X-Forwarded-For,
+      # AND mirrors X-Forwarded-Proto into $_SERVER['HTTPS']. Empty
+      # by default so plain Docker deploys aren't trust-everyone.
+      # For Caddy / Traefik / nginx on the same compose network,
+      # the typical value is "172.16.0.0/12 10.0.0.0/8".
+      SBPP_TRUSTED_PROXIES: "${SBPP_TRUSTED_PROXIES:-}"
+
+      # SBPP_AUTO_INSTALL — set to "0" to opt OUT of the entrypoint's
+      # first-boot install pass (e.g. when pointing at a managed DB
+      # an operator already populated by hand). Default "1".
+      SBPP_AUTO_INSTALL: "${SBPP_AUTO_INSTALL:-1}"
+
+      # SBPP_CONFIG_PATH — when set, both the entrypoint's
+      # config.php writer AND the panel runtime's loader read/write
+      # config from this path. Used to mount config.php from a
+      # Docker-secret path outside the read-only image layer.
+      # Default: write into the image's writable layer at
+      # /var/www/html/web/config.php.
+      SBPP_CONFIG_PATH: "${SBPP_CONFIG_PATH:-}"
+    volumes:
+      # Demos: uploaded ban-evidence demos. MUST persist (admin
+      # uploads; not in DB, not regenerable from any other source).
+      - demos:/var/www/html/web/demos
+      # Cache: Smarty compile + PHP session files. Can be ephemeral —
+      # the panel rebuilds it on first request. Pinning to a named
+      # volume is purely a perf optimisation (compiled templates
+      # survive `docker compose down && up -d` cycles).
+      - cache:/var/www/html/web/cache
+      - smarty:/var/www/html/web/templates_c
+    healthcheck:
+      # The image's HEALTHCHECK fires every 30s; this block mirrors
+      # the same shape but with compose-style options. The
+      # container's HEALTHCHECK is the load-bearing one (Apache's
+      # status from inside the container); compose just surfaces
+      # it via `docker compose ps`.
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "8", "http://127.0.0.1/health.php"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+
+  db:
+    image: mariadb:11
+    container_name: sbpp-prod-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASS:?set DB_ROOT_PASS in .env (only used for first-boot DB creation; the panel itself uses DB_USER/DB_PASS)}"
+      MYSQL_DATABASE: "${DB_NAME:-sourcebans}"
+      MYSQL_USER: "${DB_USER:-sourcebans}"
+      MYSQL_PASSWORD: "${DB_PASS:?set DB_PASS in .env}"
+    volumes:
+      # The DB data dir. THIS IS THE ONLY PATH THAT MUST SURVIVE
+      # `docker compose down -v` — wiping it loses every ban / admin /
+      # log row. Compose binds the named volume; back it up with
+      # `docker compose exec db mariadb-dump -uroot -p...`.
+      - dbdata:/var/lib/mysql
+    # NO `ports:` — the DB is on the compose network only. The web
+    # container reaches it via the service-name DNS (`db:3306`).
+    # Self-hosters who explicitly want host-port access uncomment
+    # the block below; the dev compose exposes 3307 for the same
+    # reason but in prod the surface should default to closed.
+    #
+    # ports:
+    #   - "127.0.0.1:3307:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # -------- Reverse proxy (commented stub) --------
+  #
+  # Self-hosters who don't already run a reverse proxy on the host
+  # can uncomment the `caddy` block below to terminate TLS for the
+  # panel automatically (Let's Encrypt, no manual cert management).
+  # The Caddyfile is one line — `your.domain.tld { reverse_proxy
+  # web:80 }`. See `docker/caddy/Caddyfile.example` for the
+  # canonical shape.
+  #
+  # Operators with an existing nginx / Apache / HAProxy / Traefik
+  # in front of this compose stack do NOT need the Caddy service —
+  # they keep their existing chain and only add a single
+  # reverse_proxy directive pointing at the panel's published port.
+  #
+  # caddy:
+  #   image: caddy:2
+  #   container_name: sbpp-prod-caddy
+  #   restart: unless-stopped
+  #   depends_on:
+  #     web:
+  #       condition: service_healthy
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "443:443/udp"
+  #   volumes:
+  #     - ./docker/caddy/Caddyfile.example:/etc/caddy/Caddyfile:ro
+  #     - caddy-data:/data
+  #     - caddy-config:/config
+  #   environment:
+  #     # The Caddyfile reads $SBPP_DOMAIN to set the site address.
+  #     SBPP_DOMAIN: "${SBPP_DOMAIN:?set SBPP_DOMAIN in .env if you uncomment the caddy service}"
+
+volumes:
+  dbdata:
+  demos:
+  cache:
+  smarty:
+  # Uncomment alongside the caddy: service block above.
+  # caddy-data:
+  # caddy-config:

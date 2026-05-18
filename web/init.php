@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 use Smarty\Smarty;
 
 // ---------------------------------------------------
@@ -40,64 +26,139 @@ define("MMDB_PATH", ROOT . 'data/GeoLite2-Country.mmdb');
 define('IN_SB', true);
 
 // ---------------------------------------------------
-//  Are we installed?
+//  Are we installed? (Issue #1335 M1 + C1)
 // ---------------------------------------------------
-#DB Config
-if (!file_exists(ROOT.'/config.php')) {
-    die('SourceBans++ is not installed.');
-}
-require_once(ROOT.'/config.php');
+// Pre-#1335 these guards were three bare `die('text')` calls. The
+// CTA on the wizard's done page sends the operator straight here
+// before they delete `install/` or paste in the manual config
+// snippet, so the bare-text 200 response read like a server crash.
+// The recovery surface is loaded eagerly so each branch can call
+// `sbpp_render_install_blocked_page()` (a `: never` HTML render)
+// without each guard re-implementing inline HTML.
+//
+// `web/init-recovery.php` lives outside `web/install/` because the
+// `'install'` scenario fires precisely when `install/` exists and
+// the operator hasn't deleted it yet — we don't want that surface
+// to depend on files inside the directory it's nudging the operator
+// to remove. The file has zero `Sbpp\…` / Composer / Smarty
+// dependencies (mirror of `web/install/recovery.php`'s contract);
+// the panel runtime hits it BEFORE the `vendor/autoload.php`
+// require below.
+require_once(ROOT.'/init-recovery.php');
 
-if ($_SERVER['HTTP_HOST'] != "localhost" && !defined("IS_UPDATE")) {
-    if (file_exists(ROOT."/install")) {
-        die('Please delete the install directory before you use SourceBans++.');
-    } else if (file_exists(ROOT."/updater")) {
-        die('Please delete the updater directory before using SourceBans++.');
-    }
+#DB Config
+//
+// `SBPP_CONFIG_PATH` env var (#1381 deliverable 4d): the production
+// Docker image lets operators mount config.php from a Docker secret
+// path outside the read-only image layer. Falls back to the legacy
+// `<panel-root>/config.php` for tarball / wizard installs that don't
+// set the var. See sbpp_resolve_config_path() in init-recovery.php
+// for the contract.
+$sbppConfigPath = sbpp_resolve_config_path(ROOT . 'config.php');
+if (!file_exists($sbppConfigPath)) {
+    // M1 bonus: redirect to /install/ instead of a bare-text die.
+    // The wizard is the actionable next step for a panel without
+    // config.php, so dropping the operator there is strictly more
+    // helpful than a stark `die()`. `install/` may have been
+    // deleted post-install (the desired state once config.php
+    // exists), so this redirect only fires on a genuine "no
+    // panel here yet" first hit.
+    header('Location: install/');
+    exit;
+}
+require_once($sbppConfigPath);
+
+// SBPP_TRUSTED_PROXIES (#1381 CRIT-4): operator-defined list of
+// CIDR ranges whose `X-Forwarded-Proto` / `X-Forwarded-For` the
+// panel will trust. Format: whitespace-separated list of IP
+// literals or CIDR ranges (IPv4 + IPv6), e.g.
+// `'10.0.0.0/8 192.168.0.0/16 ::1'`. Empty / undefined disables
+// XFP / XFF consultation entirely.
+//
+// Resolution order:
+//   1. `config.php` `define('SBPP_TRUSTED_PROXIES', ...)` — wins.
+//   2. `SBPP_TRUSTED_PROXIES` env var (the Docker prod image
+//      exports this in `configure_apache`).
+//   3. Empty string — the secure default; `Host::isSecure()`
+//      ignores `X-Forwarded-Proto` and trusts only the
+//      authoritative `$_SERVER['HTTPS']` (which `mod_remoteip`
+//      + `SetEnvIfExpr` populate server-side after the proxy
+//      hop is validated by Apache).
+if (!defined('SBPP_TRUSTED_PROXIES')) {
+    $envProxies = getenv('SBPP_TRUSTED_PROXIES');
+    define('SBPP_TRUSTED_PROXIES', is_string($envProxies) ? $envProxies : '');
+}
+
+// Issue #1335 C1: pre-fix this guard exempted `HTTP_HOST ==
+// "localhost"`, which was a panel-takeover path on any panel
+// reachable via a `localhost` Host header (port-forward, SSH
+// tunnel, ngrok, Cloudflare Tunnel) and on any local-development
+// workflow where the operator never saw the warning they'd need to
+// act on once they deployed. The exemption is gone — the install /
+// updater directories are post-install / post-upgrade artefacts
+// that MUST be deleted on production panels.
+//
+// `SBPP_DEV_KEEP_INSTALL` is the explicit dev-only escape hatch:
+// the project's `docker/php/dev-prepend.php` defines it on every
+// request inside the dev container so the bind-mounted worktree
+// (which carries `install/` + `updater/` from git) doesn't fail
+// the guard. Production panels MUST NOT define this constant —
+// see `sbpp_check_install_guard()`'s docblock for the contract.
+// PHPStan sees `dev-prepend.php`'s `define(SBPP_DEV_KEEP_INSTALL,
+// true)` and would otherwise flag any `=== true` check here as
+// `identical.alwaysTrue`. The function takes a bool either way, so
+// the `defined()` check IS the gate — there's no path that defines
+// the constant to anything other than the literal `true`, and the
+// loud name makes accidental production-side defines visibly wrong.
+$blocked = sbpp_check_install_guard(
+    ROOT,
+    defined('IS_UPDATE'),
+    defined('SBPP_DEV_KEEP_INSTALL'),
+);
+if ($blocked !== null) {
+    sbpp_render_install_blocked_page($blocked);
 }
 
 #Composer autoload
 if (!file_exists(INCLUDES_PATH.'/vendor/autoload.php')) {
-    die('Compose autoload not found! Run `composer install` in the root directory of your SourceBans++ installation.');
+    sbpp_render_install_blocked_page('autoload');
 }
 require_once(INCLUDES_PATH.'/vendor/autoload.php');
 
 // ---------------------------------------------------
 //  Initial setup
 // ---------------------------------------------------
-require_once(INCLUDES_PATH.'/security/Crypto.php');
-require_once(INCLUDES_PATH.'/security/CSRF.php');
+// All classes below now live under Sbpp\… namespaces (issue #1290 phase B)
+// and are PSR-4 autoloaded from web/includes/. The require_once chain is
+// retained so each file's class_alias() shim runs eagerly — the legacy
+// global names (`Database`, `CUserManager`, `Auth`, `Log`, `CSRF`, …) need
+// to be registered before procedural code references them, and the
+// autoloader can't trigger those aliases on a global-name lookup. New
+// code can reference the namespaced symbols (e.g. `Sbpp\Db\Database`)
+// directly without any explicit require.
+require_once(INCLUDES_PATH.'/Security/Crypto.php');
+require_once(INCLUDES_PATH.'/Security/CSRF.php');
 
-require_once(INCLUDES_PATH.'/auth/JWT.php');
+require_once(INCLUDES_PATH.'/Auth/JWT.php');
 
-require_once(INCLUDES_PATH.'/auth/handler/NormalAuthHandler.php');
-require_once(INCLUDES_PATH.'/auth/handler/SteamAuthHandler.php');
+require_once(INCLUDES_PATH.'/Auth/Handler/NormalAuthHandler.php');
+require_once(INCLUDES_PATH.'/Auth/Handler/SteamAuthHandler.php');
 
-require_once(INCLUDES_PATH.'/auth/Auth.php');
-require_once(INCLUDES_PATH.'/auth/Host.php');
+require_once(INCLUDES_PATH.'/Auth/Auth.php');
+require_once(INCLUDES_PATH.'/Auth/Host.php');
 
-require_once(INCLUDES_PATH.'/CUserManager.php');
-require_once(INCLUDES_PATH.'/AdminTabs.php');
+require_once(INCLUDES_PATH.'/Auth/UserManager.php');
+require_once(INCLUDES_PATH.'/View/AdminTabs.php');
 
-$version = is_readable('configs/version.json')
-    ? @json_decode(file_get_contents('configs/version.json'), true)
-    : null;
+// Three-tier version resolution (#1207 CC-5): tarball JSON, git describe,
+// then the literal 'dev' sentinel. See \Sbpp\Version::resolve() for the
+// full rationale; this block just unpacks the result into the constants
+// the chrome and views consume. \Sbpp\Version is PSR-4 autoloaded via
+// composer (Sbpp\\ -> includes/), so no explicit require is needed.
+$version = \Sbpp\Version::resolve(ROOT . 'configs/version.json');
 
-if (!$version) {
-    $tag = trim((string) @shell_exec('git describe --tags --always 2>/dev/null'));
-    $sha = trim((string) @shell_exec('git rev-parse --short HEAD 2>/dev/null'));
-    if ($tag !== '' || $sha !== '') {
-        $version = [
-            'version' => $tag !== '' ? $tag : 'N/A',
-            'git' => $sha,
-            'dev' => true,
-        ];
-    }
-}
-
-define('SB_VERSION', $version['version'] ?? 'N/A');
-define('SB_GITREV', $version['git'] ??  0);
-define('SB_DEV', $version['dev'] ?? false);
+define('SB_VERSION', $version['version']);
+define('SB_GITREV', $version['git']);
 
 // ---------------------------------------------------
 //  Setup our DB
@@ -120,11 +181,10 @@ if (!defined('SB_EMAIL')) {
     define('SB_EMAIL', '');
 }
 
-require_once(INCLUDES_PATH.'/Database.php');
+require_once(INCLUDES_PATH.'/Db/Database.php');
 $GLOBALS['PDO'] = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
 require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
-\SteamID\SteamID::init($GLOBALS['PDO']);
 
 require_once(INCLUDES_PATH.'/Config.php');
 Config::init($GLOBALS['PDO']);
@@ -151,8 +211,25 @@ $userbank = new CUserManager(Auth::verify());
 // ---------------------------------------------------
 CSRF::init();
 
+require_once(INCLUDES_PATH.'/LogType.php');
+require_once(INCLUDES_PATH.'/LogSearchType.php');
+require_once(INCLUDES_PATH.'/BanType.php');
+require_once(INCLUDES_PATH.'/BanRemoval.php');
+require_once(INCLUDES_PATH.'/WebPermission.php');
 require_once(INCLUDES_PATH.'/Log.php');
 Log::init($GLOBALS['PDO'], $userbank);
+
+// Api / ApiError are loaded here (rather than at the top of the require
+// chain) because Sbpp\Api\Api `use Sbpp\Log;` and the legacy alias for
+// Log only exists once Log.php has been required above. ApiError must
+// come first: Sbpp\Api\Api references it internally (Api::error() etc.).
+// Without these requires the legacy global aliases (`Api`, `ApiError`)
+// would only resolve when web/api.php's own require_once fires — page
+// handlers that call `Api::redirect()` outside the JSON dispatcher
+// would die at runtime even though phpstan-bootstrap.php loads them
+// eagerly and the analyser would be happy.
+require_once(INCLUDES_PATH.'/Api/ApiError.php');
+require_once(INCLUDES_PATH.'/Api/Api.php');
 
 // ---------------------------------------------------
 //  Setup our custom error handler
@@ -160,19 +237,24 @@ Log::init($GLOBALS['PDO'], $userbank);
 set_error_handler('sbError');
 function sbError($errno, $errstr, $errfile, $errline)
 {
-    switch ($errno) {
-        case E_USER_ERROR:
-            Log::add('e', 'PHP Error', "[$errno] $errstr\nFatal Error on line $errline in file $errfile");
-            return true;
-        case E_USER_WARNING:
-            Log::add('w', 'PHP Warning', "[$errno] $errstr\nError on line $errline in file $errfile");
-            return true;
-        case E_USER_NOTICE:
-            Log::add('m', 'PHP Notice', "[$errno] $errstr\nNotice on line $errline in file $errfile");
-            return true;
-        default:
-            return false;
+    // Map E_USER_* into a (log-level, log-title, error-word) triplet so the
+    // dispatch is one table read; a `default => null` arm preserves the
+    // legacy switch's "unknown errno → return false" fall-through. `match`
+    // arms can't host `Log::add(...) + return true` directly because the
+    // expression must yield a single value — the logging side effect runs
+    // outside the match below the lookup.
+    $entry = match ($errno) {
+        E_USER_ERROR   => [LogType::Error,   'PHP Error',   'Fatal Error'],
+        E_USER_WARNING => [LogType::Warning, 'PHP Warning', 'Error'],
+        E_USER_NOTICE  => [LogType::Message, 'PHP Notice',  'Notice'],
+        default        => null,
+    };
+    if ($entry === null) {
+        return false;
     }
+    [$logLevel, $logTitle, $errorWord] = $entry;
+    Log::add($logLevel, $logTitle, "[$errno] $errstr\n$errorWord on line $errline in file $errfile");
+    return true;
 }
 
 $webflags = json_decode(file_get_contents(ROOT.'/configs/permissions/web.json'), true);
@@ -216,8 +298,6 @@ $theme->setCaching(Smarty::CACHING_OFF);
 $theme->setTemplateDir(SB_THEMES . $theme_name);
 $theme->setCacheDir(SB_CACHE);
 $theme->setEscapeHtml(true);
-$theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'help_icon', 'smarty_function_help_icon');
-$theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'sb_button', 'smarty_function_sb_button');
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'load_template', 'smarty_function_load_template');
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'csrf_field', 'smarty_function_csrf_field');
 $theme->registerPlugin(Smarty::PLUGIN_BLOCK, 'has_access', 'smarty_block_has_access');
@@ -236,3 +316,40 @@ $theme->assign('theme_url', 'themes/' . $theme_name);
 if ((isset($_GET['debug']) && $_GET['debug'] == 1) || DEBUG_MODE) {
     $theme->setForceCompile(true);
 }
+
+// Anonymous opt-out daily telemetry (#1126). Registered last so the
+// settings cache, version constants, theme name, and DB are all warm
+// — Telemetry::tickIfDue() reads each of them. Both index.php and
+// api.php require_once init.php, so registering once here covers
+// the panel + JSON API surfaces. tickIfDue() wraps its own body in
+// try/catch(\Throwable), so a misbehaving collector or a flapping
+// endpoint never leaks an exception out of the shutdown function.
+// On FPM, Telemetry calls fastcgi_finish_request() before the cURL
+// POST so the user's TCP socket closes first; non-FPM SAPIs fall
+// back to ob_end_flush + flush.
+register_shutdown_function([\Sbpp\Telemetry\Telemetry::class, 'tickIfDue']);
+
+// Daily project-announcements feed (admins-only banner on the home
+// dashboard). Source of truth: `docs/public/announcements.json` in
+// this repo, deployed to https://sbpp.github.io/announcements.json
+// on every push to main.
+//
+// `SB_ANNOUNCEMENTS_URL` is the operator-overridable destination —
+// the `if (!defined(...))` gate lets `config.php` win, including
+// the "" empty-string air-gap escape hatch documented in
+// `docs/src/content/docs/configuring/announcements.mdx`. Empty
+// short-circuits every fetch before flushing the response, so
+// disabling the feed costs nothing.
+//
+// Same shutdown-hook contract as Telemetry above: 24h TTL gate
+// inside tickIfDue() means at most one outbound fetch per install
+// per day regardless of request volume; outer try/catch(\Throwable)
+// guarantees a page render or JSON API call NEVER fails because
+// the upstream is flapping; fastcgi_finish_request() flushes the
+// response before the network round-trip on FPM. See
+// AnnouncementFetcher.php for the full lifecycle. Page renders
+// read the cache only — never block on the network.
+if (!defined('SB_ANNOUNCEMENTS_URL')) {
+    define('SB_ANNOUNCEMENTS_URL', 'https://sbpp.github.io/announcements.json');
+}
+register_shutdown_function([\Sbpp\Announce\AnnouncementFetcher::class, 'tickIfDue']);

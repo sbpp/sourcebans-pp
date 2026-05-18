@@ -404,81 +404,19 @@ id-based selectors keep working.
         };
     };
 
-    // ---------------------------------------------------------------
-    // Right-click context menu (replaces contextMenoo.js).
-    // ---------------------------------------------------------------
-    sb.contextMenu = function (selector, opts) {
-        opts = opts || {};
-        const items = opts.items || opts.menuItems || [];
-        const className = opts.className || 'protoMenu';
-        const headline  = opts.headline || '';
-
-        const build = () => {
-            const cont = document.createElement('div');
-            cont.className = className;
-            cont.style.position = 'absolute';
-            cont.style.display  = 'none';
-            cont.style.zIndex   = '10000';
-
-            if (headline) {
-                const h = document.createElement('b');
-                h.className = 'head';
-                h.innerHTML = headline;
-                cont.appendChild(h);
-            }
-            items.forEach((item) => {
-                if (item.separator) {
-                    const sep = document.createElement('div');
-                    sep.className = 'separator';
-                    cont.appendChild(sep);
-                    return;
-                }
-                const a = document.createElement('a');
-                a.href = '#';
-                a.title = item.name ?? '';
-                if (item.disabled) a.className = 'disabled';
-                a.innerHTML = item.name ?? '';
-                a.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    cont.style.display = 'none';
-                    if (!item.disabled && typeof item.callback === 'function') item.callback();
-                });
-                cont.appendChild(a);
-            });
-            document.body.appendChild(cont);
-            return cont;
-        };
-
-        /** @type {HTMLDivElement | null} */
-        let cont = null;
-        const hide = () => { if (cont) cont.style.display = 'none'; };
-        document.addEventListener('click', hide);
-        document.addEventListener('contextmenu', hide);
-
-        sb.$qsa(selector).forEach((el) => {
-            el.addEventListener('contextmenu', (/** @type {Event} */ rawEvent) => {
-                const e = /** @type {MouseEvent} */ (rawEvent);
-                e.preventDefault();
-                e.stopPropagation();
-                if (!cont) cont = build();
-                cont.style.left = e.pageX + 'px';
-                cont.style.top  = e.pageY + 'px';
-                cont.style.display = 'block';
-            });
-        });
-    };
-
-    // Register a context menu by selector — same name as the legacy global.
-    // The legacy global doesn't expose `fade`; we honour the original opts and
-    // ignore it. (sb.contextMenu doesn't animate.)
-    global.AddContextMenu = function (select, classNames, fader, headl, oLinks) {
-        void fader;
-        sb.ready(() => sb.contextMenu(select, {
-            className: classNames,
-            headline: headl,
-            items: oLinks,
-        }));
-    };
+    // The `sb.contextMenu` / global `AddContextMenu` shims (and the
+    // sibling `web/scripts/contextMenoo.js`) were vanilla replacements
+    // for the MooTools-era right-click menu the legacy `LoadServerHost`
+    // helper wired onto each player row on the public Servers page.
+    // `LoadServerHost` was deleted with `sourcebans.js` at #1123 D1
+    // and the v2.0.0 `page_servers.tpl` rewrite never re-registered
+    // the menu — leaving the helpers as dead code with no call sites
+    // anywhere in the panel. #1306 dropped the misleading help text
+    // that promised the missing menu and burned the unused helpers
+    // here. If a future feature wants a right-click menu, build it
+    // from scratch against the current event-delegate pattern (e.g.
+    // a single `document.addEventListener('contextmenu', …)` filtered
+    // by `closest('[data-context-menu]')`).
 
     global.sb = sb;
 })(typeof window !== 'undefined' ? window : this);

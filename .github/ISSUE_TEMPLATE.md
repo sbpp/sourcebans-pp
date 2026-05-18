@@ -1,5 +1,5 @@
 <!--(Thanks for reporting an issue! Please make sure you click the link above to view the issue guidelines, then fill out the blanks below.)-->
-<!--(Remember, an issue is not the place to ask questions! You can use the official SourceBans++ Discord https://discord.gg/4Bhj6NU for that.)-->
+<!--(Remember, an issue is not the place to ask questions! You can use the official SourceBans++ Discord https://discord.gg/tzqYqmAtF5 for that.)-->
 
 What are the steps to reproduce this issue?
 -------------------------------------------

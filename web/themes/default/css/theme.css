@@ -33,6 +33,16 @@
 
 /* ---- Tokens ---- */
 :root {
+  /* #1309 — pair the active palette with a CSS color-scheme so the
+     browser paints native UA surfaces (the open <select> dropdown
+     panel, native scrollbars, <input type="date|time|color"> pickers,
+     and form autofill highlighting) in the matching scheme. Without
+     this hook, html.dark only swaps tokens for DOM-rendered surfaces;
+     anything painted in the browser's top-layer system UI ignores it
+     and renders light, producing a jarring white panel slide-in over
+     a dark page on mobile <select>s. */
+  color-scheme: light;
+
   /* Brand */
   --brand-50:  #fff7ed; --brand-100: #ffedd5; --brand-200: #fed7aa;
   --brand-300: #fdba74; --brand-400: #fb923c; --brand-500: #f97316;
@@ -76,6 +86,7 @@
 }
 
 html.dark {
+  color-scheme: dark;
   --bg-page: var(--zinc-950);
   --bg-surface: var(--zinc-900);
   --bg-muted: var(--zinc-800);
@@ -109,24 +120,101 @@ a { color: inherit; text-decoration: none; }
 
 /* ---- App shell ---- */
 .app { min-height: 100vh; display: flex; }
+/* #1271 — the actual fix is structural and lives in
+   `core/footer.tpl`: `<footer class="app-footer">` is rendered INSIDE
+   `.app` (as the last flex item of `.main`), not as a body-level
+   sibling. `.sidebar`'s sticky containing block is `.app`, so for
+   sticky to stay pinned at viewport y=0 across the entire scroll
+   range (including the very bottom of the document), `.app`'s height
+   must match the document height. Pre-fix the footer lived outside
+   `.app`, leaving `.app` short by `footerHeight`; sticky correctly
+   released at the bottom and on barely-tall pages (e.g.
+   `?p=banlist` / `?p=admin&c=audit` on the bare e2e seed where
+   `docHeight - viewport ≤ footerHeight`) the entire scroll range was
+   in the release phase, which presented as "the sidebar scrolls with
+   the page". The original #1271 misdiagnosed this as a flex
+   `align-items: stretch` interaction; #1278 added the
+   `align-self: flex-start` below on that hypothesis. Per CSS
+   Flexbox §9.4 `stretch` only operates on `auto` cross-sizes — the
+   sidebar's explicit `height: 100vh` already wins, so `align-self`
+   was a no-op without the structural fix in this PR.
+
+   The `align-self` declaration is RETAINED below for a different
+   defensive reason than the comment originally framed: it is NOT
+   parity with the Pattern A inner rail in the mechanism sense.
+   `.admin-sidebar` (line ~562) lives in a CSS *grid*
+   (`.admin-sidebar-shell` is `display: grid; align-items: start`)
+   where `align-self: start` is load-bearing — without it the grid
+   item stretches to its cell height. `.sidebar` lives in a flex
+   row with an explicit `height: 100vh` where `align-self:
+   flex-start` is a no-op as long as the explicit height is in
+   place. The defensive job `align-self: flex-start` does here is
+   guard against a future refactor that DROPS `height: 100vh` from
+   `.sidebar` — at that point flex `align-items: stretch` would
+   stretch the sidebar to `.app`'s cross-axis (often >100vh on
+   tall pages), making it taller than the viewport and killing
+   sticky's "room to operate". The other defensive concern an
+   ancestor `transform` / `overflow: hidden` setting up a new
+   sticky containing block is independent and not addressed by
+   this declaration; it's just a known landmine to watch for.
+
+   At <=1024px the sidebar swaps to `position: fixed` (drawer mode
+   in the Responsive block below), so the desktop sticky contract
+   is the only thing this comment is asserting. */
 .sidebar {
   width: 15rem; flex-shrink: 0; height: 100vh; position: sticky; top: 0;
+  align-self: flex-start;
   background: var(--bg-surface); border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
 }
 .sidebar__brand { height: 3.5rem; padding: 0 1rem; display: flex; align-items: center; gap: 0.625rem; border-bottom: 1px solid var(--border); }
-.sidebar__brand-mark { width: 1.75rem; height: 1.75rem; border-radius: var(--radius-md); background: var(--brand-600); color: white; display: grid; place-items: center; font-weight: 700; font-size: var(--fs-sm); }
-.sidebar__nav { flex: 1; overflow-y: auto; padding: 0.75rem 0.5rem; }
-.sidebar__section { margin-bottom: 1.25rem; }
+/* #1235 — the brand mark renders as `<img src="…/template.logo">`,
+   so the rule no longer needs the orange-rounded-square + centered-letter
+   background that was designed for the pre-#1235 `<div class="…">S</div>`
+   shape. The new mark's visual identity (orange shield + cross) lives in
+   the favicon SVG itself. Sizing + flex behaviour stay so the brand row's
+   layout is unchanged. */
+.sidebar__brand-mark { width: 1.75rem; height: 1.75rem; flex-shrink: 0; }
+.sidebar__nav { flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding: 0.75rem 0.5rem; }
+.sidebar__section { display: flex; flex-direction: column; gap: 0.125rem; margin-bottom: 1.25rem; }
 .sidebar__section-label { padding: 0 0.75rem 0.375rem; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); }
 .sidebar__link {
   display: flex; align-items: center; gap: 0.625rem; padding: 0 0.75rem; height: 2rem;
   border-radius: var(--radius-md); color: var(--text); font-weight: 500;
   text-decoration: none; transition: background-color .15s; width: 100%; border: 0; background: transparent; text-align: left;
 }
+/* #1237 — sidebar Lucide icons sit next to font-weight: 500 labels. Lucide
+   ships SVG with stroke-width="2", which visually outweighs medium-weight
+   text. CSS `stroke-width` overrides the SVG attribute, no JS change needed.
+   Scoped to `.sidebar__link svg` only — topbar / drawer / palette icons live
+   on denser surfaces and intentionally stay at the default 2.0 weight. */
+.sidebar__link svg { stroke-width: 1.5; }
 .sidebar__link:hover { background: var(--bg-muted); }
 .sidebar__link[aria-current="page"] { background: var(--zinc-900); color: white; }
-html.dark .sidebar__link[aria-current="page"] { background: var(--zinc-100); color: var(--zinc-900); }
+/* #1207 CC-4 — dark-theme active nav state. The original
+   `bg: var(--zinc-100); color: var(--zinc-900)` was a near-white pill
+   sitting on the zinc-900 sidebar surface, which read as "hovered"
+   rather than "selected" in the audit screenshots. Re-paint with the
+   brand orange so the active row matches the brand and visibly
+   differs from the inactive rows above and below it.
+
+   We use `--brand-700` (#c2410c, the existing `--accent-hover` token)
+   rather than `--accent` (`--brand-600` = #ea580c) for accessibility:
+   `brand-600` on white is ~3.56:1, which clears WCAG AA Large Text
+   (3:1) and Non-text (3:1) but FAILS AA Normal Text (4.5:1) for the
+   14px / weight-500 nav label. `brand-700` on white is ~5.18:1 —
+   clears AA Normal Text. As a side benefit it also stays visually
+   distinct from the lighter `--accent` primary CTA, so "selected
+   nav" doesn't read as "the orange Save button next to me" on pages
+   that surface both at once.
+
+   The `var(--on-accent, #fff)` fallback is intentional shape: a
+   future PR that introduces a real `--on-accent` token (and a
+   semantic `--accent-strong` paired with brand-700) can drop the
+   literal here without re-touching the rule. The light-theme
+   treatment above is unchanged — black pill on zinc-50 page reads
+   correctly already (~17.7:1). */
+html.dark .sidebar__link[aria-current="page"] { background: var(--brand-700); color: var(--on-accent, #fff); }
 .sidebar__link-count { margin-left: auto; font-size: 0.625rem; padding: 0 0.375rem; height: 1rem; display: inline-flex; align-items: center; border-radius: var(--radius-sm); background: var(--bg-muted); color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -140,34 +228,555 @@ html.dark .sidebar__link[aria-current="page"] { background: var(--zinc-100); col
 html.dark .topbar { background: rgb(9 9 11 / 0.8); }
 .topbar__breadcrumbs { display: flex; align-items: center; gap: 0.375rem; font-size: var(--fs-base); color: var(--text-muted); }
 .topbar__breadcrumbs > [aria-current] { color: var(--text); font-weight: 500; }
+/* #1207 CC-1 + CC-3: the topbar palette trigger is icon-only at EVERY
+   viewport. CC-1 (slice 1, #1208) collapsed it at <=768px because the
+   labelled "search input + Ctrl-K hint" couldn't share a row with the
+   breadcrumb + theme toggle on mobile; CC-3 (this slice) extends the
+   same collapse to desktop because that labelled chrome was a duplicate
+   affordance for the `<dialog id="palette-root">` the ⌘K shortcut
+   already opens — both surfaces competed for attention and pulled the
+   user's eye twice. The palette itself owns the search semantically;
+   the trigger only opens it.
+
+   The button visually matches the sibling theme-toggle (a ghost icon
+   button — transparent bg, no border, hover paints `--bg-muted`) so
+   the topbar reads as `[hamburger] [breadcrumb] [spacer] [palette]
+   [theme]` with two equal-weight icon affordances on the right.
+
+   The .topbar__search-label / .topbar__search-kbd hooks stay in the
+   DOM (see core/title.tpl) but are visually hidden everywhere now so:
+     - SR users still hear "Open command palette …" via the existing
+       aria-label,
+     - theme.js's applyPlatformHints() can still rewrite the kbd glyph
+       to ⌘K on Mac after first paint without re-rendering — the
+       hidden node is the live mutation target,
+     - the kbd hints inside the palette result rows (DET-2) reuse the
+       same [data-modkey] swap mechanism applyPlatformHints() drives.
+
+   The desktop default size (2.25rem) matches `.btn--icon` so the
+   trigger lines up with the theme toggle without a custom rule;
+   the <=768px floor below bumps it to 2.75rem (44 CSS px) per the
+   slice 1 review's touch-target contract (WCAG 2.1 AAA / Apple HIG /
+   Material). */
 .topbar__search {
-  display: inline-flex; align-items: center; gap: 0.5rem; min-width: 16rem;
-  height: 2.25rem; padding: 0 0.75rem; border-radius: var(--radius-md);
-  border: 1px solid var(--border); background: var(--bg-page);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem; padding: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent; background: transparent;
   color: var(--text-muted); font-size: var(--fs-base);
+  transition: background-color .15s, color .15s;
 }
-.topbar__search kbd { margin-left: auto; padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.625rem; color: var(--text-muted); }
+.topbar__search:hover { background: var(--bg-muted); color: var(--text); }
+.topbar__search-label, .topbar__search-kbd { display: none; }
+@media (max-width: 768px) {
+  .topbar__search { width: 2.75rem; height: 2.75rem; }
+}
+
+/* ---- Theme toggle icon swap ----
+   The button renders both <i data-lucide="sun"> and <i data-lucide="moon">
+   placeholders; we show whichever matches the resolved theme. theme.js
+   only toggles `<html class="dark">` — no JS click work needed here.
+   "system" mode resolves to one of the two via applyTheme(); a third
+   `monitor` icon for system is a follow-up (#1185). */
+.theme-toggle__moon { display: none; }
+html.dark .theme-toggle__sun { display: none; }
+html.dark .theme-toggle__moon { display: inline-block; }
 
 /* ---- Buttons ---- */
+/* Buttons resolve colour through --btn-bg / --btn-color / --btn-border /
+   --btn-bg-hover so modifiers (.btn--primary, --secondary, --ghost,
+   --danger) override the rendered colour via the cascade. The dark-mode
+   base override is wrapped in :where() so its specificity drops to
+   (0,1,0) — matching .btn / .btn--primary — which lets later modifier
+   declarations win on source order. Without :where(), html.dark .btn
+   would have specificity (0,2,1) and outrank every .btn--* modifier
+   (orange CTA disappeared in dark mode — #1182). */
 .btn {
+  --btn-bg: var(--zinc-900);
+  --btn-color: white;
+  --btn-border: transparent;
+  --btn-bg-hover: var(--zinc-800);
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
   height: 2.25rem; padding: 0 0.875rem; border-radius: var(--radius-md);
-  font-size: var(--fs-base); font-weight: 500; border: 1px solid transparent;
-  background: var(--zinc-900); color: white; transition: background-color .15s, border-color .15s;
+  font-size: var(--fs-base); font-weight: 500;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg); color: var(--btn-color);
+  transition: background-color .15s, border-color .15s;
 }
-html.dark .btn { background: var(--zinc-100); color: var(--zinc-900); }
-.btn:hover { background: var(--zinc-800); }
-html.dark .btn:hover { background: white; }
-.btn--primary { background: var(--brand-600); color: white; }
-.btn--primary:hover { background: var(--brand-700); }
-.btn--secondary { background: var(--bg-surface); color: var(--text); border-color: var(--border); }
-.btn--secondary:hover { background: var(--bg-muted); }
-.btn--ghost { background: transparent; color: var(--text-muted); }
-.btn--ghost:hover { background: var(--bg-muted); color: var(--text); }
-.btn--danger { background: var(--danger); color: white; }
-.btn--danger:hover { background: #b91c1c; }
+.btn:hover { background: var(--btn-bg-hover); }
+:where(html.dark) .btn {
+  --btn-bg: var(--zinc-100);
+  --btn-color: var(--zinc-900);
+  --btn-bg-hover: white;
+}
+.btn--primary { --btn-bg: var(--brand-600); --btn-color: white; --btn-bg-hover: var(--brand-700); }
+.btn--secondary {
+  --btn-bg: var(--bg-surface);
+  --btn-color: var(--text);
+  --btn-border: var(--border);
+  --btn-bg-hover: var(--bg-muted);
+}
+/* #1230: stateful pressed treatment for binary toggles rendered as
+   secondary buttons — currently the public banlist + commslist
+   "Hide / Show inactive" toggle. Without this rule the icon swap
+   (eye ↔ eye-off) is the only visual cue that the list is currently
+   filtered, which reads as a one-shot action rather than a
+   sticky state. The active fill mirrors the sidebar nav's
+   `aria-current="page"` treatment (dark pill on light, brand orange
+   on dark, see CC-4 above) so binary toggles read consistently
+   across the app. The selector intentionally lands on any
+   `.btn--secondary[aria-pressed="true"]` so future toggles
+   (e.g. group-by switches, density toggles) inherit the chrome
+   without re-styling. */
+.btn--secondary[aria-pressed="true"] {
+  --btn-bg: var(--zinc-900);
+  --btn-color: white;
+  --btn-border: var(--zinc-900);
+  --btn-bg-hover: var(--zinc-800);
+}
+html.dark .btn--secondary[aria-pressed="true"] {
+  --btn-bg: var(--brand-700);
+  --btn-color: var(--on-accent, #fff);
+  --btn-border: var(--brand-700);
+  --btn-bg-hover: var(--brand-600);
+}
+/* --btn-border self-reset keeps .btn--ghost transparent even when a
+   sibling modifier (.btn--secondary, etc.) had set --btn-border earlier
+   in the cascade — see #1183 (icon-only ghost should never show a
+   border). */
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-color: var(--text-muted);
+  --btn-border: transparent;
+  --btn-bg-hover: var(--bg-muted);
+}
+.btn--ghost:hover { --btn-color: var(--text); }
+.btn--danger { --btn-bg: var(--danger); --btn-color: white; --btn-bg-hover: #b91c1c; }
 .btn--sm { height: 2rem; padding: 0 0.75rem; font-size: var(--fs-xs); }
 .btn--icon { width: 2.25rem; padding: 0; }
+/* .btn--xs sizes an icon-only button down to 1.5rem so it can sit
+   inline next to a single line of text (drawer ID copy buttons —
+   #1236) without dwarfing the value it copies. Pair with .btn--icon
+   so width/padding stay locked to the square shape. */
+.btn--xs { height: 1.5rem; width: 1.5rem; min-width: 1.5rem; }
+
+/* ---- In-flight action buttons (`window.SBPP.setBusy(btn, true)`) ----
+   Paired with the `setBusy` helper in `theme.js`. Inline page-tail
+   scripts that fire `sb.api.call(…)` from a click handler (the
+   `#bans-unban-dialog` / `#comms-unblock-dialog` / `#admins-delete-dialog`
+   Confirm buttons, server-delete / protests-archive / submissions-archive
+   row buttons, the addban / account / lostpassword / login forms,
+   etc.) flip the trigger to `data-loading="true"` on submit so the
+   user gets immediate visual feedback that the click was received
+   and the API call is in flight. Without this every Confirm modal
+   looked frozen between the click and the API response (it took 100s
+   of milliseconds on a typical install) and users instinctively
+   double-clicked to "make it work", queuing duplicate requests until
+   the disabled flag landed.
+
+   How the visual works
+   --------------------
+   The button's existing content (icon + label) is hidden via the
+   visibility-hidden / color-transparent combo (the icon is a child
+   element so `visibility: hidden` covers it; labels are direct text
+   nodes so `color: transparent !important` is the only way to hide
+   them in CSS), and a `::after` donut takes its place at the button's
+   center. The button's width stays locked because the original
+   content still occupies its layout space — no layout shift between
+   the busy and idle states. `pointer-events: none` is the visual
+   contract; the load-bearing gate against double-clicks is `disabled`
+   on the underlying `<button>` (theme.js sets both together).
+
+   `--btn-color` instead of `currentColor`
+   ---------------------------------------
+   `color: transparent !important` sets the rendered color of the
+   button to transparent; `currentColor` inside the pseudo-element
+   resolves to the inherited color, which would be transparent too
+   (an invisible spinner). Every `.btn--*` modifier sets `--btn-color`
+   to its semantic foreground colour, so the spinner can pull that
+   variable directly. The `currentColor` fallback covers third-party
+   button shapes that ride the loading class without going through
+   `.btn--primary` / `.btn--secondary` / etc. — they'll still get a
+   visible spinner, just in the inherited color.
+
+   Reduced motion
+   --------------
+   The spinner is essential feedback — without rotation it loses its
+   meaning entirely (a stationary donut reads as a decorative ring,
+   not as in-progress feedback). WCAG 2.3.3 Animation from Interactions
+   exempts essential motion (motion that conveys functionality or
+   information) from the reduced-motion contract, and every major
+   design system (GitHub Primer, Adobe Spectrum, Material UI,
+   Bootstrap, …) keeps loading spinners rotating regardless of the
+   user's motion preference for exactly this reason.
+
+   The global `prefers-reduced-motion: reduce` block (later in this
+   file) pins `animation-duration: 0.001ms !important` and
+   `animation-iteration-count: 1 !important` on every selector. The
+   override directly below this rule re-enables the rotation with
+   explicit `!important` on the same two longhands so that
+   `.btn[data-loading="true"]::after`'s higher specificity wins over
+   the universal `*::after` rule. Do NOT remove the per-longhand
+   override "for symmetry with the rest of the chrome" — pre-#1362
+   the spinner sat still under reduced motion (1361 RC1) and read as
+   a frozen UI, which is exactly the regression that motivated this
+   block. Honouring reduced motion for *animations of state* (the
+   drawer slide-in, the toast slide-in, the chevron rotation) stays
+   correct; spinners are the documented exception. */
+.btn[data-loading="true"] {
+  position: relative;
+  cursor: progress;
+  pointer-events: none;
+  color: transparent !important;
+  text-shadow: none !important;
+}
+.btn[data-loading="true"] > * { visibility: hidden; }
+.btn[data-loading="true"]::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 1em; height: 1em;
+  margin: -0.5em 0 0 -0.5em;
+  border-radius: 50%;
+  border: 2px solid var(--btn-color, currentColor);
+  border-right-color: transparent;
+  border-top-color: transparent;
+  animation: sbpp-btn-spin 0.6s linear infinite;
+}
+/* Explicit `from` so the interpolation isn't relying on `transform: none`
+   composing cleanly with `rotate(360deg)`; functionally identical in modern
+   browsers but reads as obviously-a-spin to the next person who opens this
+   file. */
+@keyframes sbpp-btn-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* Per the long comment above the spinner rule: spinners are essential
+   feedback and stay rotating even when the user requests reduced motion.
+   The `*::after` global reset further down would otherwise freeze the
+   rotation; the per-longhand `!important` here wins on specificity. */
+@media (prefers-reduced-motion: reduce) {
+  .btn[data-loading="true"]::after {
+    animation-duration: 0.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* #1207 AUTH-2 — "Continue with Steam" contrast in dark theme. The
+   button is rendered as `.btn--secondary` (page_login.tpl), which in
+   dark mode resolves to `--bg-surface` (zinc-900) on `--bg-page`
+   (zinc-950) — about 1.4:1 contrast, so the button reads as "disabled"
+   next to the orange primary "Sign in" CTA. Re-paint with Steam's
+   brand chrome (#1b2838 / #2a475e — the colours the Steam client itself
+   uses) only in dark mode; light theme keeps the secondary surface,
+   which already has plenty of contrast against the white card.
+   Computed contrast: white on #1b2838 ≈ 14.93:1, clears AAA.
+
+   --- On using `data-testid="login-steam"` as a CSS selector ---
+   AGENTS.md treats `data-testid` as a Playwright/screenshot-harness
+   hook, not a styling hook. This rule is the first place in the
+   theme that keys CSS off a testid, and it's a deliberate trade-off
+   over inventing a `.btn--steam` modifier:
+
+     - The testid is already in the DOM (set in #1123 B1) and is
+       guaranteed unique to this button — no other surface uses it.
+     - Adding a `.btn--steam` modifier would require a template touch
+       (page_login.tpl), which the audit explicitly suggested keeping
+       CSS-only.
+     - The testid contract and the visual contract for THIS button
+       are both load-bearing for the same reason — the button is the
+       Steam-login affordance — so coupling them is acceptable.
+
+   If a future change renames the testid, this rule needs to follow.
+   If a future PR introduces a `.btn--steam` modifier, swap the
+   selector to that and drop this comment.
+
+   The lucide gamepad icon picks up `currentColor` from `--btn-color`,
+   so the icon also turns white. */
+html.dark .btn[data-testid="login-steam"] {
+  --btn-bg: #1b2838;
+  --btn-color: #fff;
+  --btn-border: #1b2838;
+  --btn-bg-hover: #2a475e;
+}
+
+/* ---- Admin sub-tabs (intra-page section nav) ----
+   Pair: web/includes/View/AdminTabs.php +
+   web/themes/default/core/admin_tabs.tpl. The active tab carries
+   aria-current="page" (set by the template when $tab.name ==
+   $active_tab); the rule below underlines + bolds it so the strip
+   no longer reads as an undifferentiated row of buttons (#1186).
+   The selector intentionally targets any direct child carrying the
+   attribute so it works for both <button> tabs (this template) and
+   <a> tabs (page_admin_edit_admins_*.tpl) without per-element
+   scoping. ".admin-tabs__back" pushes the Back link to the right
+   edge so it visibly separates from the tab cluster. */
+.admin-tabs > [aria-current="page"] {
+  background: var(--bg-surface);
+  color: var(--text);
+  border-bottom: 2px solid var(--brand-600);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  font-weight: 600;
+}
+html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand-500); }
+.admin-tabs__back { margin-left: auto; }
+
+/* #1207 ADM-8: at <=768px the four-tab strip ("Add a ban · Ban
+   protests · Ban submissions · Import bans") wraps onto two lines
+   and the active-tab orange underline ends up under the wrapped
+   second line, not under the active tab. The `flex` on the wrapper
+   is the legacy default-wrap behaviour; switch to a horizontally
+   scrollable single-line strip with snap points so every tab is
+   reachable without wrap. The active tab additionally gets a
+   chip-style background so the active state reads at a glance even
+   while the underline is partly out of view. The selector chain
+   is `> [aria-current="page"]` so it lands on whichever direct
+   child carries the marker (works for both <button> and <a> tabs).
+   The `.admin-tabs__back` link still right-floats via
+   `margin-left: auto`; with `flex-wrap: nowrap` it would push the
+   tab cluster off-screen on a narrow viewport, so we drop it to
+   the in-flow position at mobile and let the cluster scroll
+   independently. */
+@media (max-width: 768px) {
+  .admin-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .admin-tabs::-webkit-scrollbar { display: none; }
+  .admin-tabs > * { flex-shrink: 0; scroll-snap-align: start; }
+  .admin-tabs > [aria-current="page"] {
+    background: var(--brand-600);
+    color: white;
+    border-bottom-color: transparent;
+    border-radius: var(--radius-md);
+  }
+  html.dark .admin-tabs > [aria-current="page"] {
+    background: var(--brand-500);
+    color: var(--zinc-950);
+  }
+  .admin-tabs__back { margin-left: 0; }
+}
+
+/* ---- Admin sidebar (Pattern A `?section=…` routes) ----
+   #1259 unified the chrome for sub-paged admin routes (servers / mods
+   / groups / settings) onto a single vertical sidebar partial
+   (`core/admin_sidebar.tpl` driven by `web/includes/View/AdminTabs.php`).
+   Pre-#1259 settings had its own inline sidebar markup with a
+   hardcoded `grid-template-columns:14rem 1fr` while servers/mods/
+   groups rendered the horizontal `core/admin_tabs.tpl` pill strip;
+   the layout below replaces both shapes.
+
+   Markup contract (see core/admin_sidebar.tpl + the page handlers
+   that call `new AdminTabs(...)` with a non-empty $sections):
+     .admin-sidebar-shell           outer wrapper (grid host on desktop,
+                                    single column at <1024px). Opened
+                                    by AdminTabs.php; closed by the
+                                    page handler after Renderer::render.
+       .admin-sidebar               <aside> with the link list
+         .admin-sidebar__details    <details open> on every viewport;
+                                    the open/close toggle only does
+                                    something at <1024px (mobile/
+                                    narrow-tablet accordion). At
+                                    >=1024px we force the contents
+                                    visible regardless of [open]
+                                    state so a stray click on the
+                                    summary can't strand the user
+                                    without navigation.
+         .admin-sidebar__summary    mobile-only chrome (hidden on
+                                    desktop)
+         .admin-sidebar__nav        <nav> wrapping the links
+         .admin-sidebar__link       per-link rule overlay on the
+                                    shared `.sidebar__link` from the
+                                    main app shell — keeps icon+label
+                                    spacing consistent with the
+                                    primary sidebar.
+       .admin-sidebar-content       the content column the sticky
+                                    sidebar pairs with at >=1024px
+
+   The active link reuses `.sidebar__link[aria-current="page"]` from
+   the main shell so the dark-pill / brand-orange treatment is
+   single-source. */
+/* #1275 — `.page-toc*` selectors removed alongside `page_toc.tpl`. The
+   page-level ToC pattern was the only consumer; admin-admins and
+   admin-bans now ride Pattern A (`?section=…`) like every other
+   sub-paged admin route, so the dual class names + dedicated CSS are
+   gone. Only `.admin-sidebar*` survives. */
+.admin-sidebar { font-size: var(--fs-sm); margin-bottom: 1rem; }
+.admin-sidebar__details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.admin-sidebar__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.admin-sidebar__summary::-webkit-details-marker { display: none; }
+.admin-sidebar__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
+.admin-sidebar__chevron {
+  transition: transform .15s ease;
+  color: var(--text-muted);
+}
+.admin-sidebar__details[open] .admin-sidebar__chevron { transform: rotate(180deg); }
+.admin-sidebar__nav {
+  padding: 0.5rem 0.5rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar__chevron { transition: none; }
+}
+
+/* Page-padding inset for the sidebar shell (#1266). Mirrors
+   `.page-section` — 1.5rem all-around, 1400px cap. Declared at the
+   base level so the inset applies at every viewport (including the
+   <1024px accordion shape); the desktop media-query block below adds
+   `display: grid` etc. on top, both sets of properties merge cleanly
+   via the cascade.
+
+   Pre-#1266 only the desktop block existed, so the shell carried
+   no padding while the inner Pattern A content templates wrapped
+   their body in a `.p-6` (1.5rem). `align-items: start` aligns
+   grid cells, not visible content inside them — so the sidebar
+   floated 1.5rem above the content column's first paint. Lifting
+   the inset onto the shell (and dropping the inner `.p-6` from
+   each Pattern A content template in the same diff) makes both
+   columns share the same top y. (#1275 dropped the parallel
+   `.page-toc-shell` inset that #1260 → #1263 originally added —
+   the page-level ToC pattern is gone.) */
+.admin-sidebar-shell {
+  padding: 1.5rem;
+  max-width: 1400px;
+}
+
+/* Pattern A content templates that wrap their body in `.page-section`
+   (servers/mods/edit-mod) would otherwise double up the 1.5rem
+   inset — the shell now carries that inset (#1266), so suppress the
+   nested `.page-section`'s own padding + max-width-cap when it sits
+   inside `.admin-sidebar-content`. Each template's own inline-style
+   max-width (e.g. `style="max-width:900px"` on `page_admin_servers_add.tpl`)
+   still wins by inline-style specificity, so per-template content
+   clamps for narrow forms keep working. The `.page-section`
+   semantic at the outer use site is preserved — the suppression is
+   strictly contextual. */
+.admin-sidebar-content .page-section {
+  padding: 0;
+  max-width: none;
+}
+
+/* Desktop layout — vertical sidebar floats next to the content
+   column. The aside is `position: sticky`, scoped to the shell, so
+   it stays pinned beneath the topbar (top: 4rem) while the user
+   scrolls through the active section. We force the <details>
+   contents visible regardless of [open] so accidental "collapse"
+   at desktop can't strand the user without navigation. */
+@media (min-width: 1024px) {
+  .admin-sidebar-shell {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .admin-sidebar {
+    position: sticky;
+    top: 4rem;
+    align-self: start;
+    margin-bottom: 0;
+  }
+  .admin-sidebar__details {
+    border: none;
+    background: transparent;
+  }
+  .admin-sidebar__summary { display: none; }
+  /* Keep the link list visible whether the user has toggled the
+     <details> closed or not — at desktop the sidebar is a permanent
+     navigation surface, the accordion gesture only matters at mobile. */
+  .admin-sidebar__details .admin-sidebar__nav { display: flex !important; }
+  .admin-sidebar__nav { padding: 0; }
+  .admin-sidebar-content { min-width: 0; }
+}
+
+/* ---- Collapsible filter card (#1303) ----
+
+   Wraps a filter `<form class="card">` in a `<details>` disclosure so
+   the unfiltered list paints above the fold. Default-collapsed; the
+   page handler emits `<details open>` when any filter slot is
+   populated so a post-submit paint shows the filter chrome (and the
+   Clear-filters affordance) without forcing the user to click again.
+
+   First user (#1303): `box_admin_admins_search.tpl`. The shape is
+   designed to be reusable on the public banlist / commslist filter
+   bars (`page_bans.tpl` / `page_comms.tpl`) when those follow per
+   the issue body's "Notes" section.
+
+   Visual vocabulary mirrors `.admin-sidebar__details` /
+   `.admin-sidebar__chevron` so the disclosure feels native to the
+   admin chrome. The chevron rotates 180° on `[open]`; the
+   `prefers-reduced-motion: reduce` global rule (later in this file)
+   already collapses the transition to ~0ms, so no per-rule override
+   needed here. */
+.filters-details { padding: 0; }
+.filters-details > .filters-details__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  border-radius: inherit;
+}
+.filters-details[open] > .filters-details__summary {
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.filters-details__summary::-webkit-details-marker { display: none; }
+.filters-details__summary:hover { background: var(--bg-muted); }
+.filters-details__summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(234 88 12 / 0.15);
+  border-color: var(--brand-500);
+}
+.filters-details__summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.filters-details__count {
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.filters-details__chevron {
+  transition: transform .15s ease;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.filters-details[open] .filters-details__chevron { transform: rotate(180deg); }
+.filters-details__form { display: contents; }
+/* The form inside the disclosure paints `display: contents` so the
+   `.card__header` + `.card__body` children inherit the card's grid /
+   spacing as if the form weren't there. The header drops its bottom
+   border because the summary already paints one when [open]. */
+.filters-details__header { border-bottom: none; padding-top: 0.5rem; }
+@media (prefers-reduced-motion: reduce) {
+  .filters-details__chevron { transition: none; }
+}
 
 /* ---- Inputs ---- */
 .input, .select, .textarea {
@@ -182,6 +791,96 @@ html.dark .btn:hover { background: white; }
 .textarea { height: auto; padding: 0.625rem 0.75rem; resize: vertical; min-height: 5rem; }
 .input--with-icon { padding-left: 2rem; }
 
+/* Global checkbox paint (#1256).
+
+   Style the native checkbox so it reads at the same scale as
+   `.text-sm` row labels (~14–16px). The browser default is ~13px
+   square in Chromium, which reads as undersized against the
+   1.5rem (24px) row padding on Settings → Features and the
+   `text-sm font-medium` label-pair on Settings → Main; on a
+   settings page where the checkbox IS the action, the
+   affordance disappears at the right edge of the row.
+
+   The native `<input type="checkbox">` is retained — only the
+   paint is custom. Keyboard semantics, screen-reader announcement
+   ("checked"/"unchecked"), and the label-pair click target are
+   unchanged. The rule is global on purpose: the same paint
+   applies to Settings → Main's existing checkboxes
+   (`config.debug`), the login form's "Remember me", and any
+   future check-style affordance, so the panel converges on one
+   visual treatment.
+
+   The check glyph is an inline SVG data URL (white stroke, brand
+   background when `:checked`) so we don't ship a separate asset
+   and the rule stays self-contained. The same glyph paints in
+   both themes; the brand colour token (`--brand-600`) is themed
+   via the root variables. */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: background-color .15s, border-color .15s;
+}
+input[type="checkbox"]:hover { border-color: var(--brand-600); }
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input[type="checkbox"]:checked {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+}
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 8 7 12 13 4'/%3E%3C/svg%3E");
+  background-size: 75% 75%;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+/* Defensive paint for the indeterminate state (review nit on #1276):
+   `appearance: none` strips the OS-native paint, so a checkbox with
+   `el.indeterminate = true` would otherwise fall back to the
+   unchecked look. No panel surface sets `.indeterminate` today —
+   only the bundled tinymce skin references the keyword — but the
+   gap is real, so paint a centered horizontal-bar glyph (mirroring
+   the `:checked` SVG approach) at the brand colour so the state
+   reads like the OS-native indeterminate. `:indeterminate` wins
+   over `:checked` on the cascade because both selectors share
+   the same specificity and this rule comes later. */
+input[type="checkbox"]:indeterminate {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+}
+input[type="checkbox"]:indeterminate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round'%3E%3Cline x1='3' y1='8' x2='13' y2='8'/%3E%3C/svg%3E");
+  background-size: 75% 75%;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* File-input wrapper (#1189). The native button is hidden via `hidden`
+   on the <input>; the styled <label class="btn btn--secondary"> is the
+   click target, and the sibling span mirrors the chosen filename. */
+.file-input { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
 .label { display: block; font-size: var(--fs-xs); font-weight: 500; color: var(--text); margin-bottom: 0.375rem; }
 
 /* ---- Card ---- */
@@ -191,17 +890,97 @@ html.dark .btn:hover { background: white; }
 .card__header p { margin: 0.25rem 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
 .card__body { padding: 1.25rem; }
 
+/* ---- Collapsible filter disclosure (#1303 + #1315) ----
+   Reusable `<details class="card filters-details">` shape that wraps a
+   filter form (or a `{load_template}`-emitted form-card). The disclosure
+   defaults to collapsed so the unfiltered list reaches above the fold;
+   `<details open>` is set on a post-submit paint so the filter chrome
+   (and the Clear-filters affordance) stays visible while the user
+   iterates. The chevron rotates 180° on `[open]`; `prefers-reduced-motion: reduce`
+   collapses the rotation transition to ~0ms via the global
+   `animation-duration` / `transition-duration` reset higher up in this
+   file (`@media (prefers-reduced-motion: reduce) { *, *::before, … {
+   transition-duration: 0.01ms !important; } }`), but we keep an explicit
+   per-rule override below as defensive parity.
+
+   Two consumer shapes:
+     1. A flat <form> child (admin-admins #1303 — `<form class="filters-details__form">`
+        uses `display: contents` so the form's children inherit the
+        disclosure's grid/spacing as if the form weren't there).
+     2. A `{load_template}`-emitted `<form class="card">` child wrapped
+        in `<div class="filters-details__body">` (banlist / commslist
+        #1315 — the inner form's `card` framing collapses inside the
+        body so the outer disclosure provides the only visual frame). */
+.filters-details { padding: 0; }
+.filters-details > .filters-details__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  border-radius: inherit;
+}
+.filters-details[open] > .filters-details__summary {
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.filters-details__summary::-webkit-details-marker { display: none; }
+.filters-details__summary:hover { background: var(--bg-muted); }
+.filters-details__summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(234 88 12 / 0.15);
+  border-color: var(--brand-500);
+}
+.filters-details__summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.filters-details__count {
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.filters-details__chevron {
+  transition: transform .15s ease;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.filters-details[open] .filters-details__chevron { transform: rotate(180deg); }
+.filters-details__form { display: contents; }
+.filters-details__header { border-bottom: none; padding-top: 0.5rem; }
+/* When the disclosure body wraps a `{load_template}`-emitted
+   `<form class="card">` (banlist / commslist), the inner card's frame
+   would double-up with the outer disclosure's. Suppress the inner
+   frame so the disclosure provides the only visual border, and round
+   the bottom of the inner form to match the disclosure. */
+.filters-details__body { display: block; }
+.filters-details__body > form.card {
+  margin: 0;
+  border: none;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+@media (prefers-reduced-motion: reduce) {
+  .filters-details__chevron { transition: none; }
+}
+
 /* ---- Status pill ---- */
 .pill { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0 0.5rem; height: 1.25rem; border-radius: var(--radius-full); font-size: 0.6875rem; font-weight: 500; box-shadow: inset 0 0 0 1px currentColor; }
 .pill--permanent { background: var(--danger-bg); color: #b91c1c; }
 .pill--active    { background: var(--warning-bg); color: #b45309; }
 .pill--expired   { background: var(--bg-muted); color: var(--text-muted); }
 .pill--unbanned  { background: var(--success-bg); color: #047857; }
+.pill--unmuted   { background: var(--success-bg); color: #047857; }
 .pill--online    { background: rgb(16 185 129 / 0.15); color: #047857; }
 .pill--offline   { background: var(--bg-muted); color: var(--text-muted); }
 html.dark .pill--permanent { color: #fca5a5; }
 html.dark .pill--active    { color: #fcd34d; }
 html.dark .pill--unbanned  { color: #6ee7b7; }
+html.dark .pill--unmuted   { color: #6ee7b7; }
 html.dark .pill--online    { color: #6ee7b7; }
 
 /* ---- Ban row state border ---- */
@@ -211,17 +990,126 @@ html.dark .pill--online    { color: #6ee7b7; }
 .ban-row--expired   { border-left-color: var(--zinc-300); }
 .ban-row--unbanned  { border-left-color: #10b981; }
 
+/* ---- Inline per-row comments disclosure ----
+   Restores v1.x's per-row comment surface (the deleted `mooaccordion`
+   sliding panel from `web/scripts/sourcebans.js`) as a native
+   <details> disclosure inside the player cell. The drawer's Overview
+   pane continues to render the same data via api_bans_detail; the
+   inline disclosure makes the comments visible WITHOUT requiring the
+   user to leave the row. See `page_bans.tpl` `data-testid="ban-comments-inline"`
+   for the markup and AGENTS.md "Per-ban comments visibility"
+   for the cross-surface contract.
+
+   The summary is laid out inline-flex so it sits as a chip-shaped
+   badge to the right of the player name (mirrors the visual weight
+   of the pre-fix `<span>[N]</span>` so the table column geometry
+   stays the same when the disclosure is collapsed). When opened the
+   <ul> body block-flows below the summary inside the same <td>; the
+   row grows to accommodate. No row-spanning trickery / no extra
+   <tr> / no width gymnastics — native <details> handles the toggle. */
+.ban-comments-inline { display: inline-block; margin-top: 0.125rem; }
+.ban-comments-inline__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  border: 1px solid transparent;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.ban-comments-inline__summary::-webkit-details-marker { display: none; }
+.ban-comments-inline__summary:hover {
+  background: var(--bg-surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+.ban-comments-inline__summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(234 88 12 / 0.15);
+  border-color: var(--brand-500);
+}
+.ban-comments-inline[open] > .ban-comments-inline__summary {
+  background: var(--bg-surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+.ban-comments-inline__label { color: inherit; }
+.ban-comments-inline__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  /* Cap the inline panel so a 30-comment ban doesn't push the row to
+     screen height; users with that many comments can still scroll
+     inside the panel or open the drawer for the unified Overview. */
+  max-height: 18rem;
+  overflow-y: auto;
+}
+.ban-comments-inline__item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.625rem;
+  background: var(--bg-surface);
+}
+.ban-comments-inline__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  margin-bottom: 0.25rem;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.ban-comments-inline__text {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.ban-comments-inline__text a { color: var(--brand-600); text-decoration: underline; }
+html.dark .ban-comments-inline__text a { color: var(--brand-400); }
+.ban-comments-inline__edit { margin-top: 0.25rem; }
+
 /* ---- Filter chip ---- */
 .chip {
   display: inline-flex; align-items: center; gap: 0.375rem; padding: 0 0.625rem;
   height: 1.75rem; border-radius: var(--radius-full); border: 1px solid var(--border);
   background: var(--bg-surface); color: var(--text-muted);
   font-size: var(--fs-xs); font-weight: 500; transition: background-color .15s, color .15s;
+  text-decoration: none;
 }
 .chip:hover { background: var(--bg-muted); color: var(--text); }
-.chip[aria-pressed="true"] { background: var(--zinc-900); color: white; border-color: var(--zinc-900); }
-html.dark .chip[aria-pressed="true"] { background: var(--zinc-100); color: var(--zinc-900); border-color: var(--zinc-100); }
+.chip[aria-pressed="true"],
+.chip[data-active="true"] { background: var(--zinc-900); color: white; border-color: var(--zinc-900); }
+/* #1207 CC-4 — dark-theme active chip (banlist `All / Permanent / Active /
+   Expired / Unbanned`, admin/bans `Current / Archive`). The original
+   near-white-on-zinc-900 pill blended with the surrounding inactive
+   chips; this rule paints the active state with `--brand-700`
+   (#c2410c) to match the active sidebar nav above. See the sidebar
+   rule's comment for the full rationale on `brand-700` vs `--accent`
+   (~5.18:1 vs ~3.56:1 on white text — chip text is 12px / weight 500,
+   normal text by WCAG, AA requires 4.5:1).
+
+   The `data-active="true"` and `aria-pressed="true"` selectors are
+   #1123 testability hooks the e2e suite already targets — we're only
+   changing the visual treatment, not the DOM contract. */
+html.dark .chip[aria-pressed="true"],
+html.dark .chip[data-active="true"] { background: var(--brand-700); color: var(--on-accent, #fff); border-color: var(--brand-700); }
 .chip__dot { width: 0.375rem; height: 0.375rem; border-radius: 50%; }
+/* Segmented chip group (e.g. admin/bans Current/Archive). The chips
+   inside inherit `.chip` styling; this just lays them out and gives
+   the row a consistent gap so it doesn't collapse onto the heading. */
+.chip-row { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 
 /* ---- Table ---- */
 .table { width: 100%; font-size: var(--fs-base); border-collapse: collapse; }
@@ -233,8 +1121,197 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; }
 .table tbody tr:hover { background: var(--bg-muted); }
 .table td { padding: 0.75rem; vertical-align: middle; }
-.table .row-actions { opacity: 0; transition: opacity .15s; display: flex; gap: 0.25rem; justify-content: flex-end; }
-.table tbody tr:hover .row-actions { opacity: 1; }
+/* #1207 ADM-5: row actions are *always* visible — the previous
+   `opacity: 0 → 1 on tr:hover` treatment was a discoverability dead
+   end (no hover on touch, hostile to `prefers-reduced-motion: reduce`,
+   and the audit's blocker for the comms list specifically). The
+   queue-row pattern (#1207 PUB-2) already drops the hover gate on
+   `<details>`-rendered queues; matching the table here means every
+   list surface in the panel exposes its actions the same way.
+
+   `flex-wrap: wrap` so buttons stack onto a second line when the row
+   doesn't have horizontal room for all of them. Before this guard the
+   banlist's row-actions cell carried up to 5 buttons with text labels
+   (Edit / Unban / Re-apply / Copy / Remove, #1354's parity sweep with
+   the commslist's already-wider Edit / Unmute / Re-apply / Remove
+   chain) on a single `<a class="btn btn--sm">` row, which pushed the
+   table's natural width well past the panel even after tier-2 / tier-3
+   columns hid — the table-scroll fallback then triggered an
+   in-card horizontal scrollbar with the rightmost Remove button
+   silently off-screen until the user noticed and scrolled. The two
+   sibling row-action surfaces (the mobile `.ban-card__actions` at
+   line ~1446 and the mobile `details.queue-row > summary > .row-actions`
+   at line ~1351) already use `flex-wrap: wrap`; this rule brings the
+   desktop table into line so every list in the panel handles the
+   "too many actions to fit" case identically. The matching cells
+   still carry `white-space: nowrap` (each button's content stays on
+   one line); only the BETWEEN-button gap is allowed to wrap. */
+.table .row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+  column-gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+/* PUB-1 (#1207): banlist column widths + horizontal-scroll fallback.
+   With realistic per-row content the auto-layout previously
+   compressed the BANNED date to 3 lines, clipped the STATUS header
+   to "STA…", and pushed the per-row pill partly off the right edge.
+   Two-part fix:
+
+   1. Pin the timestamp / length / admin / status / actions cells to
+      one line via `white-space: nowrap` so the column never
+      compresses below its natural content width. STATUS additionally
+      uses `width: 1%` — the canonical "shrink-to-content" trick for
+      table-layout: auto: the browser obeys the smallest width it
+      can give the cell without wrapping the content, so the column
+      ends up exactly as wide as the natural content of "Status"
+      (header) / its pill, freeing the rest of the row for the
+      truncate-able Player / Reason / Server columns.
+   2. Wrap the `<table>` in `.table-scroll` (page_bans.tpl AND
+      page_comms.tpl post-#1363) so when the parent is narrower than
+      the natural sum of column widths (1024-1100px viewport zone
+      after the sidebar collapses, plus any unusually long player /
+      reason combos) the table scrolls horizontally instead of
+      clipping the rightmost column. The card's rounded corners stay
+      intact because the card itself keeps its own `overflow: hidden`.
+
+   3. (#1363) Promote `.table-scroll` to a CSS container via
+      `container-type: inline-size` so the responsive column-tier
+      hiding below can react to the ACTUAL card width, not just the
+      viewport. Most page-section / list-page wrappers cap at 1400px
+      max-width (1352px usable card after 1.5rem padding); the bans
+      and comms lists specifically lift their cap to 1700px (#1363)
+      so wide-monitor users actually see tier-3 columns. Pre-#1363
+      the tier breakpoints were keyed off the viewport
+      (`@media (max-width: 1535px)` etc.) and missed both caps — a
+      1920px monitor saw the same scroll-required layout as a 1535px
+      laptop because both fell into the "all tiers visible" arm even
+      though the painted card was identical (1352px on the
+      pre-#1363 1400px-capped pages). */
+.table-scroll {
+  overflow-x: auto;
+  container-type: inline-size;
+  container-name: tablescroll;
+}
+.table .col-length,
+.table .col-banned,
+.table .col-admin,
+.table .col-ip,
+.table .col-status,
+.table .col-actions { white-space: nowrap; }
+.table .col-status { width: 1%; }
+/* #1363: cap the Length column. SecondsToString builds strings like
+   "1 mo, 2 wk, 4 d, 8 hr, 19 min, 33 sec" — six units of granularity
+   for one row of a list view, which pushed the column to ~280px on
+   the seeded medium-scale dataset and was the single biggest
+   contributor to the bans-list min-content blowing past the card
+   width. Pin to ~10rem (160px) and truncate; the title= attribute
+   on the cell carries the full string for hover / long-press, so no
+   information is lost — only the per-row real estate it eats. The
+   Length cell paints the truncated text + ellipsis directly via
+   `text-overflow: ellipsis` (no inner span needed). The col-banned
+   column does NOT get the same treatment: its content is a fixed-
+   width "YYYY-MM-DD HH:MM:SS" timestamp that doesn't vary per row
+   the way Length does, so capping it would just emit ellipsis on
+   every row without trimming anything meaningful. */
+.table .col-length {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive column-tier hiding (issue: "scroll table at the bottom of a
+   banlist, making the user experience not fluid"; #1359 expanded the
+   breakpoints after the #1354 row-action parity sweep pushed the
+   table well past the panel at common laptop viewports; #1363
+   migrated to container queries on `.table-scroll` to fix the
+   1440 / 1920 viewport regression where the page-section cap left
+   ~1352px of usable card on EVERY viewport >= 1688px while the
+   media-query-based breakpoints kept tier-2 / tier-3 visible there).
+   ----------------------------------------------------------------------
+   The banlist / commslist desktop tables carry 9-10 columns. The
+   sidebar collapses at <=1023px, so above that it eats 15rem (240px)
+   of horizontal real estate before the table even sees any pixels;
+   add the p-6 page padding (48px) and a 1280px laptop viewport
+   leaves the card with ~975px to paint a row that wants ~1247px
+   when every column is visible. The `.table-scroll` wrapper would
+   then fall back to horizontal scroll inside the card and the
+   rightmost row-action button silently sits off the visible edge
+   (#1359 was the user-reported regression: the Remove button hidden
+   behind in-card scroll after #1354 added the text-labelled Edit /
+   Unban / Re-apply / Copy / Remove chain; #1363 was the recurrence
+   on 1440 / 1920 viewports the #1359 viewport-based fix didn't
+   reach because the page-cap created a 1352px card ceiling there
+   too). Horizontal scroll on a list view is the canonical "broken
+   UX" smell on a touch viewport (no scrollbar; users have to swipe
+   inside a nested scroll container).
+
+   Two-tier responsive hide: every column carries a tier class on
+   BOTH the `<th>` AND the matching `<td>` so the column hides as a
+   unit and the column count stays consistent (otherwise rows go
+   out of alignment).
+
+     - Tier-1 (always visible): Player, SteamID, Reason (banlist) /
+       Type+Player (commslist), Status, Actions. The minimum row
+       still answers "who, why, what state, what can I do".
+     - Tier-3 (`.col-tier-3`): hidden first via `@container` when
+       the card is <=1500px. IP / Length / Banned / Started carry
+       the WIDEST per-row content — Length on the bans list is
+       SecondsToString's "1 mo, 2 wk, 4 d, 8 hr, 19 min, 33 sec"
+       format which alone occupies ~280px (capped to ~160px above
+       via `.col-length`'s max-width / truncate, but still the
+       single biggest contributor to the table min-content). The
+       trio hides ~552px at once; the 1500px threshold catches
+       every desktop card width on a 1400px page-cap (max card
+       ~1352px) so tier-3 is functionally always hidden on those
+       pages. On the bans / comms lists which lifted the page-cap
+       to 1700px (max card ~1652px), tier-3 surfaces at viewports
+       wider than ~1788px (card width = viewport - 240px sidebar -
+       48px padding > 1500). The data still reaches the moderator
+       via the player drawer (one click) and the mobile `.ban-cards`
+       chrome at <=768px regardless of which page is active.
+     - Tier-2 (`.col-tier-2`): hidden at <=1200px container. Server
+       and Admin — useful but not essential for moderation triage;
+       both surface on the player drawer / card detail anyway.
+       1200px catches the 1280-viewport laptop case (card ~975px),
+       so at the smallest desktop the table drops to its tier-1
+       core. Pre-#1363 tier-2 hid FIRST at <=1535 viewport — that
+       priority was inverted because the actual width contribution
+       of tier-2 (Server + Admin ≈ 219px) is much smaller than
+       tier-3 (~552px). Dropping the wider trio first is what
+       actually reclaims room.
+
+   `.table-scroll` carries the `container-type: inline-size`
+   container context (above) so these `@container` rules see the
+   ACTUAL painted width of the table card, not the viewport. Pages
+   with a 1400px page-cap have a fixed ~1352px card on every viewport
+   wide enough to hit it; the viewport-based predecessors couldn't
+   see that, so a 1920px monitor and a 1535px laptop both fell into
+   the "all tiers visible" arm even though the painted card was
+   identical. `.table-scroll` is a sibling of `.card`'s padding
+   boundary, so its inline-size IS the card's content width.
+
+   The mobile card layout (`.ban-cards` for bans, the comm-list's
+   own mobile rendering) takes over completely at <=768px (theme.css
+   `.table { display: none }`), so these tier classes never apply to
+   mobile chrome. They only collapse the desktop table at
+   intermediate viewports.
+
+   `.table-scroll` is also the runtime escape hatch — if a row's
+   content (long player name + long reason) still exceeds the card
+   after tier-3 hiding, it scrolls horizontally inside the card
+   rather than clipping the rightmost cell. The `flex-wrap: wrap`
+   on `.table .row-actions` above is the sister-guard that keeps
+   the row-action cell itself from being the single column that
+   blows the budget. */
+@container tablescroll (max-width: 1500px) {
+  .table .col-tier-3 { display: none; }
+}
+@container tablescroll (max-width: 1200px) {
+  .table .col-tier-2 { display: none; }
+}
 
 /* ---- Avatar ---- */
 .avatar { display: inline-grid; place-items: center; border-radius: 50%; color: white; font-weight: 600; flex-shrink: 0; }
@@ -243,28 +1320,390 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .toast-stack { position: fixed; top: 1rem; right: 1rem; z-index: 80; display: flex; flex-direction: column; gap: 0.5rem; width: min(22.5rem, calc(100vw - 2rem)); }
 .toast { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 0.75rem; display: flex; gap: 0.75rem; animation: slide-in .2s ease; }
 @keyframes slide-in { from { transform: translateX(100%); opacity: 0; } }
+/* #1207: honour prefers-reduced-motion. The drawer's slide-in
+   keyframe runs the element from translateX(100%) to its rest
+   position over 250ms; without this guard a Playwright spec that
+   measures a bounding box right after `data-drawer-open="true"`
+   settles can land mid-animation and read a transform-shifted
+   position. AGENTS.md's "Playwright E2E specifics" rule explicitly
+   calls out that animations should never gate visibility — this
+   is the canonical CSS opt-out for the entire chrome.
+   `animation-duration: 0.001s` is preferred over `animation: none`
+   because the latter cancels animation events fired at the start
+   of an animation; 0.001s lets them fire so any JS that listens
+   on `animationend` still works deterministically. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 .drawer-backdrop { position: fixed; inset: 0; background: rgb(9 9 11 / 0.4); backdrop-filter: blur(2px); z-index: 50; }
 .drawer { position: fixed; right: 0; top: 0; height: 100%; width: min(35rem, 100vw); background: var(--bg-page); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg); z-index: 51; display: flex; flex-direction: column; animation: slide-in .25s ease; }
+
+/* #1207 CC-2 + DET-1: mobile drawer rescue.
+   - The drawer container already collapses to 100vw via the
+     `min(35rem, 100vw)` cap above; what overflowed at iPhone-13 width
+     was the *content* (long SteamIDs, copy buttons, the four-tab
+     strip). The rules below let the id values wrap, give the tab
+     strip a deterministic horizontally scrollable lane with snap
+     points, and stop ANY mobile-browser-injected `<a href="tel:…">`
+     auto-link (the Steam3 / SteamID values look phone-like to
+     iOS Safari + Chrome's heuristics, which is the source of the
+     pinkish highlight in DET-1) from inheriting tap-to-dial color.
+     The header.tpl meta tag is the primary opt-out; this is the
+     defensive belt-and-suspenders for Android variants that ignore
+     `format-detection`.
+   - .drawer__ids overrides the inline `grid-template-columns`
+     6rem/1fr declared in player-drawer.tpl + theme.js: at <=768px
+     the 6rem label column eats almost a third of a 390px viewport
+     and the value column then can't fit a 17-character SteamID +
+     copy button without overflow. Drop the label column to 4.5rem
+     and let the value wrap (`min-width: 0` lets a grid track
+     actually shrink below its content's natural width). */
+/* `min-width: 0` lets the 1fr grid track shrink below its content's
+   natural min-content size; `overflow-wrap: anywhere` then breaks the
+   long SteamID at any character so the value column fits inside a 100vw
+   drawer without horizontal scroll. The non-standard `word-break:
+   break-word` alias was redundant with `overflow-wrap: anywhere` and
+   has been dropped (#1208 review finding 2). */
+.drawer .drawer__ids dd,
+.drawer .drawer__ban dd { min-width: 0; overflow-wrap: anywhere; }
+.drawer a[href^="tel:"],
+.drawer a[href^="sms:"] { color: inherit; text-decoration: none; pointer-events: none; }
+@media (max-width: 768px) {
+  .drawer .drawer__ids,
+  .drawer .drawer__ban { grid-template-columns: 4.5rem minmax(0, 1fr) !important; }
+  /* Tab strip: when the four labels (Overview · History · Comms ·
+     Notes) don't fit, let the strip scroll horizontally with snap
+     so each label lands in view as a unit instead of clipping
+     mid-word. The `.drawer__tabs` wrapper already has
+     `overflow-x:auto` baked into its inline style by
+     `renderDrawerBody` — these rules layer the snap behaviour on
+     top and ensure each tab button is full-width-shrink-resistant. */
+  .drawer .drawer__tabs { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .drawer .drawer__tabs > [role="tab"] { scroll-snap-align: start; flex-shrink: 0; }
+}
+
+/* Page-level scroll lock when the player drawer is open.
+   APPLIES AT EVERY VIEWPORT — this is intentional, not a misscoped
+   mobile fix. The drawer is a modal-style surface (Linear, Vercel,
+   Notion all do the same): while it's open the underlying page
+   content is non-interactive context, and letting wheel/touch scroll
+   bleed through to the page underneath produces the "I scrolled the
+   wrong thing" misclick the audit's CC-2 flagged on mobile. Locking
+   page scroll on desktop too keeps the drawer-open state symmetric
+   across viewports so a desktop test that asserts the lock matches
+   what a mobile user observes.
+   The <aside id="drawer-root" data-drawer-open="…"> mirror is set
+   by theme.js (showDrawer / closeDrawer) per #1123's "state in
+   attributes, not just styling" rule. The rule below is the only
+   way to gate body scroll without a JS body class — keeping the
+   gate purely declarative means a JS failure that leaves the
+   drawer half-rendered also leaves the body scrollable, which is
+   strictly better than the alternative (locked-body + invisible
+   drawer = trapped user). The selector is intentionally rooted at
+   `:has(#drawer-root[data-drawer-open="true"])` so it scopes to
+   the actual open state and unlocks automatically on close.
+   The mobile sibling rule below ALSO locks <body> because some
+   mobile chromes carry their own scroll context on <body> when
+   <html> is overflow:hidden (iOS Safari quirk) and the lock has to
+   take both.
+   Browser baseline note (#1208 review finding 4): `:has()` is a
+   Web Baseline 2023 feature (Chrome 105+, Safari 15.4+, Firefox
+   121+). This is the codebase's first usage. On older browsers the
+   selector silently doesn't match, the lock isn't applied, and the
+   page scrolls behind the drawer — the drawer itself still opens /
+   closes, so the failure mode is degraded UX, not broken state. */
+html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }
+@media (max-width: 768px) {
+  html:has(#drawer-root[data-drawer-open="true"]) body { overflow: hidden; }
+}
+
+/* Sidebar drawer click-dismiss backdrop (#1178). z-index 40 sits
+   above page chrome but below `.sidebar.is-open` (z-index 41 below)
+   so the open drawer remains tap-targetable. Visibility is gated by
+   the [data-visible] mirror that theme.js flips on open/close. */
+.sidebar-backdrop { position: fixed; inset: 0; background: rgb(9 9 11 / 0.4); backdrop-filter: blur(2px); z-index: 40; display: none; }
+.sidebar-backdrop[data-visible="true"] { display: block; }
 
 .palette-backdrop { position: fixed; inset: 0; background: rgb(9 9 11 / 0.4); backdrop-filter: blur(2px); z-index: 60; display: grid; place-items: start center; padding-top: 10vh; }
 .palette { width: min(36rem, calc(100vw - 2rem)); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); overflow: hidden; }
 .palette__input { display: flex; align-items: center; gap: 0.75rem; height: 3rem; padding: 0 1rem; border-bottom: 1px solid var(--border); }
 .palette__input input { flex: 1; border: 0; outline: none; background: transparent; color: var(--text); font-size: var(--fs-base); }
 
-/* ---- Skeleton ---- */
+/* #1207 DET-2: palette result-row hint group.
+   Every player-kind result row (`[data-result-kind="ban"]`) is built
+   by `renderPaletteResults` in theme.js and lays out as
+     [icon] [name+steam stack] [kbd hint group]
+   The `.palette__row-hints` container sits at the right edge via
+   `margin-left: auto` and surfaces the two interactions the row
+   supports — bare Enter opens the player drawer, Ctrl/Cmd+Enter
+   copies the SteamID via `navigator.clipboard.writeText`. The
+   keyboard handler lives in theme.js (`handlePaletteCopyShortcut`);
+   this CSS just lays out the hints.
+
+   The kbds are server-rendered in non-Mac form ("Ctrl" / "Enter");
+   theme.js's `applyPlatformHints` swaps `[data-modkey]` → ⌘ and
+   `[data-enterkey]` → ⏎ on Mac after each render so the visible
+   glyphs match the platform's modifier vocabulary.
+
+   The label spans (".palette__row-hint-label") collapse at narrow
+   viewports so the kbd glyphs alone fit alongside a long player
+   name + SteamID — the keyboard interactions still work; the verbose
+   prose ("to open drawer", "to copy steamid") just falls back to the
+   implied conventions on a tight viewport. The paired `aria-hidden`
+   on the wrapper keeps screen readers from announcing the hint group
+   over the row's actual content (the SR user navigates the rows via
+   arrow keys, not by listening to per-row decoration). */
+.palette__row-meta { min-width: 0; flex: 1 1 0; }
+.palette__row-hints {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.palette__row-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.palette__row-hints kbd {
+  display: inline-block;
+  padding: 0.0625rem 0.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+@media (max-width: 640px) {
+  .palette__row-hint-label { display: none; }
+}
+
+/* ---- Skeleton ----
+   `.skel` is the loading-placeholder visual used in two surfaces today
+   (#1361): the drawer's `renderDrawerLoading()` header skeleton blocks
+   and the lazy-pane `renderPaneSkeleton()` body blocks. The shimmer
+   sliding across the gradient IS the affordance — the gray rectangles
+   alone read as a layout placeholder / broken UI, not as
+   "in-flight, please wait".
+
+   The reduced-motion contract here matches the spinner's
+   (`.btn[data-loading="true"]::after`, far above): per WCAG 2.3.3
+   Animation from Interactions, essential motion (motion that conveys
+   functionality) is exempt from the reduced-motion preference. The
+   `*, *::before, *::after` global reset further up would otherwise pin
+   `animation-duration: 0.001ms` + `animation-iteration-count: 1` and
+   freeze the shimmer at its 100% keyframe — leaving a static gradient
+   that reads as a permanent placeholder (the v2.0 RC1 regression that
+   motivated this block alongside the spinner's). The per-longhand
+   `!important` override below the rule wins on specificity. Honouring
+   reduced motion for *motion-of-state* (drawer slide-in, toast
+   slide-in, chevron rotation) stays correct; the skeleton shimmer is
+   a documented exception for the same reason the spinner is. */
 @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
 .skel { background: linear-gradient(90deg, var(--zinc-100) 0, var(--zinc-200) 40px, var(--zinc-100) 80px); background-size: 200px 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--radius-sm); }
 html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zinc-700) 40px, var(--zinc-800) 80px); background-size: 200px 100%; }
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation-duration: 1.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* ---- Queue rows (admin submissions / protests) ----
+   PUB-2 (#1207): the admin moderation queues (page_admin_bans_*.tpl)
+   render each row as a `<details><summary>`. At desktop width the
+   row lays out as `[name+steam stack] [date] [Ban] [Remove]
+   [Contact]`; at mobile width that same horizontal pack pushes the
+   third action ("Contact") off the visible edge and forces the date
+   to wrap to two lines.
+
+   The fix promotes the public banlist's card chrome (see
+   `responsive-banlist-cards` in #1124) to these queues: at <=768px
+   the summary stacks vertically — name+steam on top, then a date /
+   action row below — so every action is reachable without a
+   horizontal scroll. The `[data-testid="row-action-*"]` hooks
+   stay primary (#1123 testability contract).
+
+   The `.queue-row__*` classes carry the layout (instead of inline
+   `style="flex-shrink:0"` on each child) so the mobile media query
+   can override `flex` / `order` without fighting inline-style
+   specificity. Selector qualifies `details.queue-row > summary` so
+   the rule only reaches `<details>` rows (current + archive
+   submissions and protests). The public banlist's mobile cards use
+   `<a class="ban-row …">`, not `<details>`, so they're unaffected
+   even if a future template typos `class="queue-row"` onto the
+   wrong element. */
+details.queue-row > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+details.queue-row > summary::-webkit-details-marker { display: none; }
+.queue-row__body { flex: 1 1 0; min-width: 0; }
+.queue-row__date {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+details.queue-row > summary > .row-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  details.queue-row > summary {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  /* `body` takes the full first row; `date` and `row-actions` share
+     a second row below. `order` keeps DOM source order intact for
+     screen readers / keyboard nav while letting the visual layout
+     match the banlist card pattern. The wrap on row-actions itself
+     means a fourth/fifth action (archive flow) re-wraps onto a
+     third visual row instead of overflowing the card. */
+  .queue-row__body { flex: 1 1 100%; }
+  .queue-row__date {
+    order: 2;
+    flex: 1 1 auto;
+    align-self: center;
+  }
+  details.queue-row > summary > .row-actions {
+    order: 3;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.375rem;
+  }
+}
+
+/* ---- Server card grid (#1316 — public + admin Server Management) ----
+   Shared `grid-template-columns` for the two surfaces that render
+   `:prefix_servers` rows as A2S-hydrated cards:
+
+     - public servers list (page_servers.tpl)
+     - admin Server Management list (page_admin_servers_list.tpl)
+
+   The pre-#1316 inline `style="grid-template-columns:repeat(auto-fill,
+   minmax(20rem,1fr))"` packed cards into a 20rem (320px) minimum
+   column. Both pages cap the page wrapper at 1400px (the public
+   page via the inline `max-width:1400px` on its outer div, the
+   admin page via `.page-section`'s `max-width: 1400px`), so on EVERY
+   viewport >= 1400px the available content area was identical:
+   ~1352px after the 1.5rem padding. With a 320px min the auto-fill
+   packed 4 columns at ~338px each — same width as a phone, hostname
+   truncated, and the "31" 4K monitor" reporter saw zero benefit
+   from their wide display.
+
+   28rem (448px) min, with the 1rem grid gap factored into the
+   auto-fill packing math (N tracks fit when
+   `N * 448 + (N-1) * 16 <= content_area`, then each track expands
+   to `1fr`):
+     - 1280px laptop (~992px content area):      2 cols  ~488px each
+     - 1400px+ at the page cap (~1352px):        2 cols  ~668px each
+     - <=768px mobile drops to 1 col by the
+       sibling rule below                         single full-width card
+
+   That gives the hostname column ~348px (1280 laptop) up to ~528px
+   (1400+ desktop) after the 36px mod-icon / 80px status pill / 24px
+   gaps, comfortably fitting a 40-70 char hostname (e.g. "Skial |
+   2Fort | Vanilla | New York #5" or "Trade Plaza | 24/7 | No Random
+   Crits | 100 Player Slots | EU FAST") at the shared 14px font size.
+   Very long hostnames (>70 chars) still need the `truncate` class'
+   ellipsis + the `title=` tooltip the templates already carry —
+   that contract is unchanged by the bump.
+
+   The outer page-section cap at 1400px is intentionally NOT lifted
+   here: lifting it would make the cards "fill the screen" on a 31"
+   4K monitor (~3500px wide → 7 cols at ~500px each), but that's a
+   broader UX call that affects every Pattern A admin route and the
+   public banlist / commslist. The reported symptom (truncated
+   hostname) is fully addressed by the column-min bump alone; the
+   cap-lift is a follow-up if users want the cards to scale BEYOND
+   1400px content width.
+
+   Theme forks that want a different min-width can override the rule
+   wholesale — the class is named so a fork's CSS doesn't have to
+   match-the-inline-style-attribute-string. */
+.servers-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(28rem, 1fr));
+}
+@media (max-width: 768px) {
+  /* On mobile, force a single full-width card so the auto-fill
+     doesn't drop one card to the right of the viewport when the
+     content area happens to be 28-29rem wide (e.g. a tablet-portrait
+     between 768px and the column-min). The page-cap doesn't kick
+     in below 1400px, so the available width is whatever the
+     viewport gives us minus padding + sidebar — this guarantees
+     a phone-portrait viewer still sees ONE card per row.
+
+     `minmax(0, 1fr)`, NOT bare `1fr`. Bare `1fr` is shorthand for
+     `minmax(auto, 1fr)`, where the `auto` minimum resolves to the
+     grid item's min-content size. The server card's hostname /
+     IP:port descendants both carry `truncate` (`white-space:
+     nowrap`), so the card's min-content is the rendered width of
+     the longest single line — typically wider than a phone
+     viewport. Bare `1fr` would inflate the track to that
+     min-content size and the card would silently overflow the
+     viewport (~110px right-edge spill on a 390px iPhone-13
+     viewport with a `203.0.113.10:27015`-shape IP:port fallback).
+     `minmax(0, 1fr)` overrides the auto-minimum to 0 so the track
+     resolves to exactly 100% of the grid container, the
+     `truncate`-CSS handles the overflow per its existing
+     ellipsis contract, and the page never horizontally scrolls. */
+  .servers-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- Comms mobile card actions ----
+   #1207 ADM-5: the comms list's mobile card is split into two siblings
+   — a clickable `.ban-card__summary` anchor that filters by SteamID,
+   and a `.ban-card__actions` row of Edit / Unmute / Remove / Re-apply
+   buttons. The buttons live OUTSIDE the anchor so we don't produce
+   nested-interactive HTML; the anchor's tap target stays the full
+   summary row (avatar + name + meta + chevron) so the card's primary
+   "filter by this player" affordance keeps working unchanged. */
+.ban-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  padding: 0 1rem 0.75rem;
+}
 
 /* ---- Responsive ---- */
+[data-mobile-menu] { display: none; }
 @media (max-width: 1024px) {
   .sidebar { display: none; }
   .sidebar.is-open { display: flex; position: fixed; inset: 0 auto 0 0; z-index: 41; box-shadow: var(--shadow-lg); }
+  [data-mobile-menu] { display: inline-flex; }
 }
 @media (max-width: 768px) {
   .table { display: none; }
   .ban-cards { display: block; }
+  /* #1181: filter chip rows wrap onto multiple lines on mobile
+     instead of horizontal-scrolling, so every chip is reachable
+     without a swipe. The .scroll-x desktop affordance is the
+     overflow fallback when the chip row would otherwise extend
+     past a wide viewport. */
+  .scroll-x { overflow-x: visible; flex-wrap: wrap; row-gap: 0.5rem; }
 }
 @media (min-width: 769px) {
   .ban-cards { display: none; }
@@ -283,6 +1722,18 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
 .tabular-nums { font-variant-numeric: tabular-nums; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; }
+
+/* Canonical inset for top-level page content. Mirrors the .p-6 utility
+ * used directly by templates that pre-date this rule (page_dashboard /
+ * page_bans / page_comms / page_admin_settings_*). New templates should
+ * prefer .page-section so the wrapper class encodes intent ("this is
+ * the page's outermost content shell") rather than a raw spacing token.
+ */
+.page-section {
+  padding: 1.5rem;
+  max-width: 1400px;
+}
+
 .m-0 { margin: 0; } .mt-2 { margin-top: 0.5rem; } .mt-4 { margin-top: 1rem; } .mt-6 { margin-top: 1.5rem; }
 .mb-2 { margin-bottom: 0.5rem; } .mb-4 { margin-bottom: 1rem; } .mb-6 { margin-bottom: 1.5rem; }
 .space-y-3 > * + * { margin-top: 0.75rem; } .space-y-4 > * + * { margin-top: 1rem; } .space-y-6 > * + * { margin-top: 1.5rem; }
@@ -290,3 +1741,529 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
 /* Hide scrollbars on chip rows */
 .scroll-x { overflow-x: auto; scrollbar-width: none; }
 .scroll-x::-webkit-scrollbar { display: none; }
+
+/* ---- Empty state (#1207 unified empty-state pattern) ----
+   Used everywhere a list / table / queue renders zero rows. Two
+   flavours, picked per surface in the template:
+
+     .empty-state              -- first-run (no data exists yet);
+                                  template emits a primary CTA
+                                  ("Add a ban", "Add a server", …)
+                                  gated on the matching ADMIN_* perm.
+     .empty-state[data-filtered="true"]
+                               -- filtered state (data exists, but
+                                  the active filter excludes every
+                                  row); CTA is a secondary "Clear
+                                  filters" anchor that resets the
+                                  search/chip state via plain GET.
+
+   The split follows the AGENTS.md "Empty states" convention. CTAs
+   live in `.empty-state__actions` so the icon + heading + body copy
+   stay vertically centered while the action row keeps its own gap.
+   `.empty-state__icon` uses the muted bg + faint foreground so it
+   reads as decorative (the heading + body are the load-bearing
+   copy). All children inherit the table/card colours, so dropping
+   the block into a `<td colspan>` (banlist/commslist) renders
+   identically to a card body. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.5rem;
+  color: var(--text-muted);
+}
+.empty-state__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-muted);
+  color: var(--text-faint);
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.25rem;
+}
+.empty-state__title {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text);
+}
+.empty-state__body {
+  margin: 0;
+  font-size: var(--fs-sm);
+  max-width: 28rem;
+}
+.empty-state__actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---- Settings save action row (#1207 SET-2) ----
+   The settings page's save row sits at the bottom of a tall form;
+   on mobile, with the page's `.p-6` (1.5rem) padding plus the
+   footer's own 1rem padding, the button visually butted against the
+   "SourceBans++ N/A" credit (#1207 SET-2). Adding a bottom margin
+   on the action row + a top border / extra top padding on the
+   shared footer below gives the row breathing room without a
+   sticky element. The selector is keyed to `.settings-actions` so
+   only the settings save row picks up the rule — other forms
+   (login, edit ban, …) keep their existing layouts. */
+.settings-actions {
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 768px) {
+  .settings-actions { margin-bottom: 2rem; }
+}
+
+/* ---- Settings fieldset (#1207 ADM-7) ----
+   Used by the "Authentication" block on the admin settings page where
+   three numeric inputs (auth.maxlife / auth.maxlife.remember /
+   auth.maxlife.steam) used to share one row. Pre-fix:
+   `.grid + grid-template-columns: repeat(3, 1fr)` left the inputs
+   narrower than their labels at desktop, and on mobile the help text
+   ("Token lifetimes (in minutes)") sat on the card header, divorced
+   from the field it qualified.
+
+   The fix replaces the `.card__header h3 + p` chrome with a real
+   `<fieldset>` + `<legend>`, stacks the three inputs vertically, and
+   ties each input to its own `.settings-fieldset__help` paragraph via
+   `aria-describedby`. The fieldset removes the browser-default
+   1px inset border + padding so it visually inherits the parent
+   `.card`'s chrome instead of double-painting it.
+
+   The `__legend` row mimics `.card__header`'s shape (title + muted
+   sub-line) so the fieldset reads as a card-section heading; the
+   `__body` re-applies the same padding `.card__body` uses so the
+   inputs sit at the same indent as sibling cards on the same form.
+
+   Inputs are width-clamped at 18rem max — wide enough that the
+   `<input type=number>` arrows + a 5-digit minute count both fit, and
+   meaningfully wider than the labels so the input never reads as a
+   smaller affordance than the prose introducing it. The clamp drops
+   to 100% at <=768px so mobile viewports never end up with an
+   18rem-locked input clipped under the chrome. */
+.settings-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.settings-fieldset__legend {
+  display: block;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.settings-fieldset__title {
+  display: block;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text);
+}
+.settings-fieldset__hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.settings-fieldset__hint code {
+  padding: 0 0.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+.settings-fieldset__body {
+  padding: 1.25rem;
+}
+.settings-fieldset__input {
+  width: 100%;
+  max-width: 18rem;
+}
+.settings-fieldset__help {
+  margin: 0.375rem 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+@media (max-width: 768px) {
+  .settings-fieldset__input { max-width: 100%; }
+}
+
+/* ---- "Your permissions" grid (#1207 ADM-9) ----
+   The pre-fix layout was a 2-column `.grid` (web side / SourceMod
+   side) where the web side was a flat 30-item bullet list, leaving
+   "Add Bans" visually equal to "Edit Groups" — hard to scan at a
+   glance and impossible to tell where bans-related flags ended and
+   admin-management ones began.
+
+   The fix splits each side into two layers:
+     - `.permissions-side` is the outer "Web" / "SourceMod" column.
+       It owns the heading + an inner grid that lays out one
+       `.permissions-group` `<section>` per category.
+     - `.permissions-group` is the per-category card. It carries
+       a small heading (`__title`) and the granted-permissions list
+       (`__list`).
+
+   Layout schedule:
+     - <1024px (mobile + small tablet): single column. The web side
+       and the SourceMod side stack; inside each side, every
+       `.permissions-group` also stacks. This is the touch-first
+       layout per #1123's mobile-first rules.
+     - >=1024px (desktop): the two sides sit side-by-side via a
+       2-column outer grid (`.permissions-card__body`), and inside
+       the web side the categories themselves expand to a 2-column
+       grid so an owner with all 7 categories doesn't end up with a
+       narrow scroll-strip.
+     - >=1280px: the web side bumps to 3 columns so a full-permissions
+       owner sees every category in one viewport without scrolling.
+
+   The `.permissions-group__title` style intentionally mirrors the
+   "uppercase muted" aesthetic of the original "WEB" / "SERVER"
+   subheaders the previous template used, so the visual hierarchy
+   feels familiar even though the structure underneath is new. */
+.permissions-card__body {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+.permissions-side__heading {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.permissions-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+.permissions-group {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-page);
+}
+.permissions-group__title {
+  margin: 0 0 0.375rem;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text);
+}
+.permissions-group__list {
+  list-style: disc;
+  margin: 0;
+  padding-left: 1.125rem;
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+.permissions-group__list li + li { margin-top: 0.125rem; }
+.permissions-empty {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+@media (min-width: 1024px) {
+  .permissions-card__body {
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+  .permissions-grid--web { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1280px) {
+  .permissions-grid--web { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ---- Footer (#1207 CC-6 + SET-2; #1271 layout fix) ----
+   The page-bottom credit footer in core/footer.tpl. A subtle
+   top border + a touch more vertical padding visually separates
+   it from form action rows above so the "Save changes" button on
+   the settings page no longer reads as overlapping the credit
+   (SET-2). The link is muted by default — footer renders inside
+   `.text-faint` (muted), but a raw <a> would inherit the
+   browser-default underlined link colour and stand out as a
+   stranded blue word; only reveal the affordance on hover/focus
+   so keyboard users still get a visible focus ring (CC-6).
+
+   `margin-top: auto` (#1271): the footer is now the last flex
+   column item of `.main` (see core/footer.tpl for why it lives
+   inside `.app` instead of as a body-level sibling). On short
+   pages where `.main`'s flex column has unused vertical space,
+   `auto` pushes the footer to the bottom of `.main` — the
+   classic "sticky footer" pattern — so the page doesn't paint
+   the credit halfway up the viewport with a band of empty space
+   below it. On tall pages where the column overflows, `auto`
+   resolves to 0 and the footer abuts the page content above it;
+   the 1.25rem `padding-top` + `border-top` are intentionally the
+   ONLY breathing room on tall pages now — the previous
+   `margin-top: 1rem` is dropped because the sticky-footer pattern
+   needs `auto` exclusively on this property (a margin-top can't
+   be "1rem on tall pages, auto on short pages" in a single
+   declaration), and the existing 20px padding-top above the
+   border was already enough visual separation from the SET-2
+   action rows. The structural #1271 fix would also work with
+   `padding-top: 2rem` instead of `1.25rem` if a future audit
+   wants to restore the prior 36px-total breathing room. */
+.app-footer {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+.app-footer a {
+  color: inherit;
+  text-decoration: none;
+}
+.app-footer a:hover,
+.app-footer a:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* ---- Dashboard intro Markdown editor + preview (#1207 SET-1) ----
+   Two-column grid that drops to one column on mobile. The textarea
+   stays a plain <textarea> by design (#1113 anti-pattern: no WYSIWYG).
+   The preview pane on the right is patched in place by the inline
+   JS in page_admin_settings_settings.tpl after a debounced call to
+   `system.preview_intro_text`, which renders through
+   `Sbpp\Markup\IntroRenderer` (CommonMark, html_input=escape,
+   allow_unsafe_links=false) — so what visitors see on `/` matches
+   exactly. */
+.dash-intro-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+.dash-intro-editor > .textarea { min-height: 14rem; }
+.dash-intro-preview {
+  position: relative;
+  min-height: 14rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-page);
+  overflow-y: auto;
+}
+.dash-intro-preview__label {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.dash-intro-preview__body { font-size: var(--fs-sm); }
+.dash-intro-preview__body > :first-child { margin-top: 0; }
+.dash-intro-preview__body > :last-child  { margin-bottom: 0; }
+.dash-intro-preview[data-loading="true"] .dash-intro-preview__body { opacity: 0.6; }
+@media (max-width: 768px) {
+  .dash-intro-editor { grid-template-columns: 1fr; }
+  .dash-intro-preview { min-height: 8rem; }
+}
+
+/* ---- Dashboard announcement strip (#announcements-feed) ----
+   Slim, admin-only banner sourced from
+   `https://sbpp.github.io/announcements.json` (see
+   `Sbpp\Announce\AnnouncementFetcher` + `docs/public/announcements.json`).
+   Lives between the stat-card grid and the recent-activity columns
+   on `page_dashboard.tpl` so it's visible without crowding the
+   `.card` chrome on either side.
+
+   Visual weight matches the existing `.card` / `.empty-state`
+   surfaces — `var(--bg-muted)` background, `1px solid var(--border)`,
+   `var(--radius-md)` corners — so it reads as part of the dashboard
+   chrome rather than a separate notification surface. The native
+   `<details>` / `<summary>` shape is the same disclosure idiom used
+   by `.filters-details` (admin advanced search) and the inline
+   per-row comment disclosures on the banlist; collapsed-by-default
+   keeps the page scroll budget unchanged for operators who don't
+   need the body. The chevron rotation honours the global
+   `prefers-reduced-motion: reduce` reset (motion-of-state, not
+   essential feedback) — no per-rule override here, parity with
+   the chrome's other disclosure surfaces. */
+.announcement-strip {
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.announcement-strip > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--fs-sm);
+  user-select: none;
+}
+.announcement-strip > details > summary::-webkit-details-marker { display: none; }
+.announcement-strip > details > summary::marker { content: ''; }
+.announcement-strip__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.announcement-strip__date {
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.announcement-strip > details > summary::after {
+  content: '';
+  flex: 0 0 auto;
+  width: 0; height: 0;
+  margin-left: 0.25rem;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--text-faint);
+  transform: rotate(-90deg);
+  transition: transform 150ms ease;
+}
+.announcement-strip > details[open] > summary::after { transform: rotate(0deg); }
+.announcement-strip > details > summary:hover .announcement-strip__title {
+  color: var(--text);
+}
+.announcement-strip > details > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.announcement-strip__body {
+  padding: 0 0.875rem 0.75rem;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.announcement-strip__body > :first-child { margin-top: 0; }
+.announcement-strip__body > :last-child  { margin-bottom: 0; }
+.announcement-strip__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0.875rem 0.75rem;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  text-decoration: none;
+}
+.announcement-strip__link:hover { text-decoration: underline; }
+.announcement-strip__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* #1275 — page-level ToC pattern (#1207 ADM-3 / #1239 / #1266) is
+   gone. The two consumers (admin-admins, admin-bans) migrated to
+   Pattern A (`?section=…`), so the cross-template `.page-toc-shell`
+   / `.page-toc-content` / `.page-toc-section` / `.page-toc-section__heading`
+   rules + the desktop grid layout were deleted alongside `page_toc.tpl`.
+   The `.admin-sidebar*` rules above (themselves a sibling of
+   `.admin-sidebar-shell`) cover every remaining sub-paged admin route. */
+
+/* ---- Player right-click context menu ----
+   Restored pre-v2.0.0 right-click menu on player rows in the public
+   servers list (see web/scripts/server-context-menu.js for the JS
+   contract). Visually a floating panel anchored at the cursor; opens
+   on contextmenu, closes on outside-click / Escape / scroll / resize.
+
+   `.context-menu-target` is applied to `<li data-testid="server-player">`
+   rows that carry SteamID + the rest of the data-attribute hooks the
+   menu needs; the cursor-shape change is the visible affordance that
+   tells admins "right-click does something here". Rows without the
+   class fall back to the native browser context menu.
+
+   The slide-in animation is `motion-of-state` (the menu IS the state),
+   not essential feedback like the busy spinner / skeleton shimmer, so
+   the global `prefers-reduced-motion: reduce` reset is the right
+   behaviour — under reduced motion the menu paints instantly with no
+   slide-in. No per-rule override here (cf. `.btn[data-loading="true"]::after`
+   and `.skel` above for the documented exceptions). */
+.context-menu-target { cursor: context-menu; }
+/* Hide the "Right-click a player" hint copy on touch-only devices.
+   Both `pointer: coarse` (the primary pointer is a finger, not a
+   mouse) AND `hover: none` (no precise hover state) — the
+   conjunction matches phone-portrait / tablet-without-mouse and
+   leaves desktop hybrids (Surface, tablet with Bluetooth mouse,
+   touchscreen laptops) showing the hint because their primary
+   pointer reports `pointer: fine` / `hover: hover`. The menu itself
+   stays functional wherever the browser fires `contextmenu` (it's
+   gated server-side via $can_use_context_menu — see page_servers.tpl). */
+@media (pointer: coarse) and (hover: none) {
+    .servers-rcon-hint { display: none; }
+}
+.context-menu {
+    position: fixed;
+    z-index: 90;
+    min-width: 12rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    animation: context-menu-in 0.12s ease-out;
+    font-size: var(--fs-sm);
+}
+.context-menu__header {
+    padding: 0.375rem 0.625rem 0.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.125rem;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 18rem;
+}
+.context-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: left;
+    font: inherit;
+}
+.context-menu__item:hover,
+.context-menu__item:focus,
+.context-menu__item:focus-visible {
+    background: var(--bg-muted);
+    color: var(--text);
+    outline: none;
+}
+.context-menu__item:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent);
+}
+@keyframes context-menu-in {
+    from { opacity: 0; transform: translateY(-2px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

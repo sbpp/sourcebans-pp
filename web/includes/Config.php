@@ -1,13 +1,17 @@
 <?php
 
+namespace Sbpp;
+
+use Sbpp\Db\Database;
+
 /**
  * Class Config
  */
-class Config
+final class Config
 {
     private static array $config = [];
 
-    private static ?\Database $dbh = null;
+    private static ?Database $dbh = null;
 
     public static function init(Database $dbh): void
     {
@@ -15,20 +19,12 @@ class Config
         self::$config = self::getAll();
     }
 
-    /**
-     * @param string $setting
-     * @return mixed|null
-     */
     public static function get(string $setting): mixed
     {
         return self::$config[$setting] ?? null;
     }
 
 
-    /**
-     * @param array $keys Settings to retrieve
-     * @return array
-     */
     public static function getMulti(array $keys): array
     {
         $values = [];
@@ -41,19 +37,11 @@ class Config
         return $values;
     }
 
-    /**
-     * @param string $setting
-     * @return bool
-     */
     public static function getBool(string $setting): bool
     {
         return (bool)self::get($setting);
     }
 
-    /**
-     * @param int $timestamp
-     * @return string
-     */
     public static function time(int $timestamp): string
     {
         $format = self::get('config.dateformat');
@@ -61,9 +49,6 @@ class Config
         return date($format, $timestamp);
     }
 
-    /**
-     * @return array
-     */
     private static function getAll(): array
     {
         $config = [];
@@ -74,3 +59,8 @@ class Config
         return $config;
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\Config::get(...)` / `\Config::init(...)` until the call-site
+// sweep PR.
+class_alias(\Sbpp\Config::class, 'Config');

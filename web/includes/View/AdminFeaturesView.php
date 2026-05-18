@@ -24,7 +24,6 @@ final class AdminFeaturesView extends View
         public readonly bool $steamapi,
         public readonly bool $can_web_settings,
         public readonly bool $can_owner,
-        public readonly string $active_section,
         public readonly bool $export_public,
         public readonly bool $enable_kickit,
         public readonly bool $enable_groupbanning,
@@ -33,6 +32,7 @@ final class AdminFeaturesView extends View
         public readonly bool $enable_steamlogin,
         public readonly bool $enable_normallogin,
         public readonly bool $enable_publiccomments,
+        public readonly bool $telemetry_enabled,
     ) {
     }
 }

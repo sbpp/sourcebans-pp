@@ -13,7 +13,7 @@
         "wiki": "https://sbpp.github.io/faq/",
         "source": "https://github.com/sbpp/sourcebans-pp",
         "docs": "https://sbpp.github.io/docs/",
-        "chat": "https://discord.gg/4Bhj6NU"
+        "chat": "https://discord.gg/tzqYqmAtF5"
     },
     "config": {
         "vendor-dir": "includes/vendor"
@@ -24,10 +24,10 @@
         "maxmind-db/reader": "~1.0",
         "smarty/smarty": "^v5.4",
         "xpaw/php-source-query-class": "^6.0.0",
-        "symfony/mailer": "^7.2",
+        "symfony/mailer": "^8.0",
         "ext-pdo": "*",
         "ext-openssl": "*",
-        "php": ">=8.2"
+        "php": ">=8.5"
     },
 
     "autoload": {
@@ -40,7 +40,8 @@
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^11",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpunit/phpunit": "^13",
         "staabm/phpstan-dba": "^0.4"
     },
     "scripts": {

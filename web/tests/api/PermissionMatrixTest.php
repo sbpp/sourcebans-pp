@@ -54,7 +54,6 @@ final class PermissionMatrixTest extends TestCase
             'admins.add'                  => ['perm' => ADMIN_OWNER | ADMIN_ADD_ADMINS,    'requireAdmin' => false, 'public' => false],
             'admins.remove'               => ['perm' => ADMIN_OWNER | ADMIN_DELETE_ADMINS, 'requireAdmin' => false, 'public' => false],
             'admins.edit_perms'           => ['perm' => ADMIN_OWNER | ADMIN_EDIT_ADMINS,   'requireAdmin' => false, 'public' => false],
-            'admins.update_perms'         => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'admins.generate_password'    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
 
             // -- auth (only public surface).
@@ -69,6 +68,11 @@ final class PermissionMatrixTest extends TestCase
             // format stays consistent with what the HTML page would have
             // shown the same caller. See api_bans_detail() docblock.
             'bans.detail'                 => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
+            // bans.player_history is public for the same reason
+            // bans.detail is — the drawer's History tab matches the public
+            // ban-list reach. Admin-only fields (admin name, removed-by)
+            // are gated inside the handler.
+            'bans.player_history'         => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
             'bans.setup_ban'              => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.prepare_reban'          => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.paste'                  => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
@@ -83,6 +87,15 @@ final class PermissionMatrixTest extends TestCase
             'bans.send_message'           => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.view_community'         => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.search'                 => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            // bans.unban drives the visible row action on the public ban
+            // list (#1301). Dispatcher gate is "any unban-ish flag"; the
+            // handler then enforces the per-row own/group precision check
+            // that the legacy `?p=banlist&a=unban` GET path uses (and
+            // requires a non-empty `ureason` so the audit log carries it).
+            'bans.unban'                  => [
+                'perm' => ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS,
+                'requireAdmin' => false, 'public' => false,
+            ],
 
             // -- blockit.
             'blockit.load_servers'        => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
@@ -93,13 +106,28 @@ final class PermissionMatrixTest extends TestCase
             'comms.prepare_reblock'           => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'comms.paste'                     => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
             'comms.prepare_block_from_ban'    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            // comms.detail is intentionally public for the same reason
+            // bans.detail is — same reach as the public commslist page,
+            // hide-* gating enforced inside the handler. Powers the
+            // player drawer when opened from a comms-list row.
+            'comms.detail'                    => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
+            // comms.player_history follows bans.player_history (#1165).
+            'comms.player_history'            => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
+            // comms.unblock + comms.delete drive the visible row actions
+            // on the comms list (#1207 ADM-5/ADM-6). Dispatcher gate for
+            // unblock is "any unban-ish flag"; the handler then enforces
+            // the per-row own/group precision check that the legacy
+            // `?p=commslist&a=ungag|unmute` GET path uses.
+            'comms.unblock'                   => [
+                'perm' => ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS,
+                'requireAdmin' => false, 'public' => false,
+            ],
+            'comms.delete'                    => ['perm' => ADMIN_OWNER | ADMIN_DELETE_BAN, 'requireAdmin' => false, 'public' => false],
 
             // -- groups.
             'groups.add'                      => ['perm' => ADMIN_OWNER | ADMIN_ADD_GROUP,    'requireAdmin' => false, 'public' => false],
             'groups.remove'                   => ['perm' => ADMIN_OWNER | ADMIN_DELETE_GROUPS,'requireAdmin' => false, 'public' => false],
             'groups.edit'                     => ['perm' => ADMIN_OWNER | ADMIN_EDIT_GROUPS,  'requireAdmin' => false, 'public' => false],
-            'groups.update_perms'             => ['perm' => 0, 'requireAdmin' => true, 'public' => false],
-            'groups.add_server_group_name'    => ['perm' => ADMIN_OWNER | ADMIN_EDIT_GROUPS,  'requireAdmin' => false, 'public' => false],
 
             // -- kickit.
             'kickit.load_servers'             => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
@@ -108,6 +136,13 @@ final class PermissionMatrixTest extends TestCase
             // -- mods.
             'mods.add'                        => ['perm' => ADMIN_OWNER | ADMIN_ADD_MODS,    'requireAdmin' => false, 'public' => false],
             'mods.remove'                     => ['perm' => ADMIN_OWNER | ADMIN_DELETE_MODS, 'requireAdmin' => false, 'public' => false],
+
+            // -- notes (player-detail drawer's Notes tab, #1165). Admin-only
+            // surface — the drawer hides the tab for non-admins via the
+            // `notes_visible` flag in `bans.detail`.
+            'notes.list'                      => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            'notes.add'                       => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            'notes.delete'                    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
 
             // -- protests.
             'protests.remove'                 => ['perm' => ADMIN_OWNER | ADMIN_BAN_PROTESTS, 'requireAdmin' => false, 'public' => false],
@@ -141,6 +176,7 @@ final class PermissionMatrixTest extends TestCase
             'system.sel_theme'                => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
             'system.apply_theme'              => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
             'system.clear_cache'              => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
+            'system.preview_intro_text'       => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
         ];
     }
 

@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
@@ -34,15 +20,19 @@ use Sbpp\View\Renderer;
  * Section routing (B18 redesign).
  *
  * Each section is its own page request keyed on
- * `?section=settings|features|logs|themes`; the sub-nav at the top of
- * each template carries `aria-current="page"` on the active tab. CSRF
- * is enforced globally by `route()` in includes/page-builder.php.
+ * `?section=settings|features|logs|themes`; the sub-nav (vertical
+ * sidebar since #1259 — see AGENTS.md "Sub-paged admin routes")
+ * carries `aria-current="page"` on the active link. CSRF is enforced
+ * globally by `route()` in includes/page-builder.php.
  *
- * Any third-party theme that forked the pre-v2.0.0 default and still
- * renders the four sub-tabs inside `.tabcontent` divs (toggled by the
- * removed `AdminTabs` / `openTab()` JS) renders each section
- * standalone here; templates that need the legacy checkbox-restore
- * helper can include it themselves.
+ * #1239 brought the rest of the admin family onto this same shape —
+ * servers / mods / groups now route via `?section=…` too.
+ * #1259 unified the chrome on the Settings-style vertical sidebar
+ * (`core/admin_sidebar.tpl` driven by `web/includes/View/AdminTabs.php`),
+ * replacing the Settings-only inline `<nav>` block that lived in
+ * every page_admin_settings_*.tpl. See AGENTS.md "Sub-paged admin
+ * routes" for the convention; this file remains the long-standing
+ * reference.
  */
 $validSections = ['settings', 'features', 'logs', 'themes'];
 $section = (string)($_GET['section'] ?? 'settings');
@@ -50,15 +40,57 @@ if (!in_array($section, $validSections, true)) {
     $section = 'settings';
 }
 
+/*
+ * Sidebar sections.
+ *
+ * Every entry is gated behind ADMIN_OWNER|ADMIN_WEB_SETTINGS — the
+ * Settings page itself requires the flag, so the gate per row mirrors
+ * what the dispatcher would render anyway. `icon` keys feed the
+ * Lucide glyph in `core/admin_sidebar.tpl`; the vocabulary mirrors
+ * what the inline pre-#1259 templates declared (settings / toggle-
+ * right / scroll-text / palette).
+ */
+/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
+$sections = [
+    [
+        'slug'       => 'settings',
+        'name'       => 'Main',
+        'permission' => ADMIN_OWNER | ADMIN_WEB_SETTINGS,
+        'url'        => 'index.php?p=admin&c=settings&section=settings',
+        'icon'       => 'settings',
+    ],
+    [
+        'slug'       => 'features',
+        'name'       => 'Features',
+        'permission' => ADMIN_OWNER | ADMIN_WEB_SETTINGS,
+        'url'        => 'index.php?p=admin&c=settings&section=features',
+        'icon'       => 'toggle-right',
+    ],
+    [
+        'slug'       => 'logs',
+        'name'       => 'System Log',
+        'permission' => ADMIN_OWNER | ADMIN_WEB_SETTINGS,
+        'url'        => 'index.php?p=admin&c=settings&section=logs',
+        'icon'       => 'scroll-text',
+    ],
+    [
+        'slug'       => 'themes',
+        'name'       => 'Themes',
+        'permission' => ADMIN_OWNER | ADMIN_WEB_SETTINGS,
+        'url'        => 'index.php?p=admin&c=settings&section=themes',
+        'icon'       => 'palette',
+    ],
+];
+
 if (isset($_GET['log_clear']) && $_GET['log_clear'] === 'true') {
-    if ($userbank->HasAccess(ADMIN_OWNER)) {
+    if ($userbank->HasAccess(WebPermission::Owner)) {
         $GLOBALS['PDO']->query("TRUNCATE TABLE `:prefix_log`")->execute();
     } else {
-        Log::add('w', 'Hacking Attempt', $userbank->GetProperty('user') . " tried to clear the logs, but doesn't have access.");
+        Log::add(LogType::Warning, 'Hacking Attempt', $userbank->GetProperty('user') . " tried to clear the logs, but doesn't have access.");
     }
 }
 
-$canSettings = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS);
+$canSettings = (bool) $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::WebSettings));
 
 /*
  * Post-save flash, emitted at the bottom of this file.
@@ -163,7 +195,7 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
                     (string) ($_POST['auth_maxlife_steam'] ?? ''),
                     ...$smtpConfig,
                 ]);
-            Log::add('m', 'Settings updated', 'Main settings were updated.');
+            Log::add(LogType::Message, 'Settings updated', 'Main settings were updated.');
             $savedSection = 'settings';
         }
     }
@@ -177,6 +209,27 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
         $steamloginopt  = (isset($_POST['enable_steamlogin'])     && $_POST['enable_steamlogin']     === 'on') ? 1 : 0;
         $normalloginopt = (isset($_POST['enable_normallogin'])    && $_POST['enable_normallogin']    === 'on') ? 1 : 0;
         $publiccomments = (isset($_POST['enable_publiccomments']) && $_POST['enable_publiccomments'] === 'on') ? 1 : 0;
+        $telemetryNew   = (isset($_POST['telemetry_enabled'])     && $_POST['telemetry_enabled']     === 'on') ? 1 : 0;
+
+        // Telemetry enable/disable transitions are audit-logged once
+        // here (not on every ping — that would flood sb_log). On
+        // opt-out we also clear telemetry.instance_id so a re-enable
+        // mints a fresh ID and the Worker can't link the two states
+        // (#1126).
+        $telemetryOld = Config::getBool('telemetry.enabled') ? 1 : 0;
+        if ($telemetryOld !== $telemetryNew) {
+            $verb = $telemetryNew === 1 ? 'enabled' : 'disabled';
+            Log::add(
+                LogType::Message,
+                'Telemetry',
+                'Telemetry ' . $verb . ' by ' . (string) $userbank->GetProperty('user')
+            );
+            if ($telemetryNew === 0) {
+                $GLOBALS['PDO']->query(
+                    "UPDATE `:prefix_settings` SET `value` = '' WHERE `setting` = 'telemetry.instance_id'"
+                )->execute();
+            }
+        }
 
         $GLOBALS['PDO']->query("REPLACE INTO `:prefix_settings` (`value`, `setting`) VALUES
             (" . $exportpub      . ", 'config.exportpublic'),
@@ -186,8 +239,9 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
             (" . $adminrehash    . ", 'config.enableadminrehashing'),
             (" . $publiccomments . ", 'config.enablepubliccomments'),
             (" . $steamloginopt  . ", 'config.enablesteamlogin'),
-            (" . $normalloginopt . ", 'config.enablenormallogin')")->execute();
-        Log::add('m', 'Settings updated', 'Feature toggles were updated.');
+            (" . $normalloginopt . ", 'config.enablenormallogin'),
+            (" . $telemetryNew   . ", 'telemetry.enabled')")->execute();
+        Log::add(LogType::Message, 'Settings updated', 'Feature toggles were updated.');
         $savedSection = 'features';
     }
 
@@ -287,11 +341,18 @@ $currentScreenshotImg = '<img width="250px" height="170px" src="' . htmlspecialc
  */
 $perms = Perms::for($userbank);
 
+/*
+ * Open the sidebar shell (#1259). AdminTabs emits the outer
+ * `<div class="admin-sidebar-shell">` + the <aside> + the opening
+ * `<div class="admin-sidebar-content">`. Closing tags live near the
+ * bottom of this file — search for "/.admin-sidebar-shell".
+ */
+new AdminTabs($sections, $userbank, $theme, $section, 'Settings sections');
+
 if ($section === 'themes') {
     Renderer::render($theme, new AdminThemesView(
         can_web_settings:  $perms['can_web_settings'],
         can_owner:         $perms['can_owner'],
-        active_section:    $section,
         current_theme_dir: SB_THEME,
         theme_list:        $validThemes,
         theme_name:        strip_tags((string) constant('theme_name')),
@@ -314,7 +375,7 @@ if ($section === 'themes') {
         $searchlink = '';
     }
 
-    $logCount = (int) Log::getCount('');
+    $logCount = (int) Log::getCount();
     $log      = Log::getAll($listStart, SB_BANS_PER_PAGE);
 
     $prev = '';
@@ -354,8 +415,7 @@ if ($section === 'themes') {
     Renderer::render($theme, new AdminLogsView(
         can_web_settings: $perms['can_web_settings'],
         can_owner:        $perms['can_owner'],
-        active_section:   $section,
-        clear_logs:       $userbank->HasAccess(ADMIN_OWNER) ? "( <a href='javascript:ClearLogs();'>Clear Log</a> )" : '',
+        clear_logs:       $userbank->HasAccess(WebPermission::Owner) ? "( <a href='javascript:ClearLogs();'>Clear Log</a> )" : '',
         page_numbers:     $pageNumbers,
         log_items:        $logList,
     ));
@@ -363,7 +423,6 @@ if ($section === 'themes') {
     Renderer::render($theme, new AdminFeaturesView(
         can_web_settings:      $perms['can_web_settings'],
         can_owner:             $perms['can_owner'],
-        active_section:        $section,
         steamapi:              adminSettingsHasSteamApiKey(),
         export_public:         Config::getBool('config.exportpublic'),
         enable_kickit:         Config::getBool('config.enablekickit'),
@@ -373,6 +432,7 @@ if ($section === 'themes') {
         enable_steamlogin:     Config::getBool('config.enablesteamlogin'),
         enable_normallogin:    Config::getBool('config.enablenormallogin'),
         enable_publiccomments: Config::getBool('config.enablepubliccomments'),
+        telemetry_enabled:     Config::getBool('telemetry.enabled'),
     ));
 } else {
     $rawCustomReasons = Config::getBool('bans.customreasons')
@@ -393,37 +453,67 @@ if ($section === 'themes') {
         (string) Config::get('smtp.port'),
     ];
 
+    $dashText = (string) Config::get('dash.intro.text');
+    /*
+     * #1232: server-rendered first paint for the per-input duration
+     * echo on the Authentication fieldset. The minute-typed integers
+     * stay as the wire-format source of truth (the SourceMod plugin
+     * reads `auth.maxlife*` in minutes too); these `_human` props are
+     * the operator-readable strings ("≈ 7 days" / "1 hour" / etc.)
+     * the template emits in muted spans next to each input. The
+     * page-tail JS re-implements the same formula so the echo stays
+     * live as the operator types — see the matching `humanizeMinutes`
+     * in `page_admin_settings_settings.tpl`.
+     */
+    $authMaxlife         = (int) Config::get('auth.maxlife');
+    $authMaxlifeRemember = (int) Config::get('auth.maxlife.remember');
+    $authMaxlifeSteam    = (int) Config::get('auth.maxlife.steam');
+
     Renderer::render($theme, new AdminSettingsView(
-        can_web_settings:          $perms['can_web_settings'],
-        can_owner:                 $perms['can_owner'],
-        active_section:            $section,
-        config_title:              (string) Config::get('template.title'),
-        config_logo:               (string) Config::get('template.logo'),
-        config_min_password:       (int) MIN_PASS_LENGTH,
-        config_dateformat:         (string) Config::get('config.dateformat'),
-        config_dash_title:         (string) Config::get('dash.intro.title'),
-        config_dash_text:          (string) Config::get('dash.intro.text'),
-        auth_maxlife:              (int) Config::get('auth.maxlife'),
-        auth_maxlife_remember:     (int) Config::get('auth.maxlife.remember'),
-        auth_maxlife_steam:        (int) Config::get('auth.maxlife.steam'),
-        config_debug:              Config::getBool('config.debug'),
-        enable_submit:             Config::getBool('config.enablesubmit'),
-        enable_protest:            Config::getBool('config.enableprotest'),
-        enable_commslist:          Config::getBool('config.enablecomms'),
-        protest_emailonlyinvolved: Config::getBool('protest.emailonlyinvolved'),
-        dash_lognopopup:           Config::getBool('dash.lognopopup'),
-        config_default_page:       (int) Config::get('config.defaultpage'),
-        config_bans_per_page:      (int) SB_BANS_PER_PAGE,
-        banlist_hideadmname:       Config::getBool('banlist.hideadminname'),
-        banlist_nocountryfetch:    Config::getBool('banlist.nocountryfetch'),
-        banlist_hideplayerips:     Config::getBool('banlist.hideplayerips'),
-        bans_customreason:         $customReasons,
-        config_smtp:               $smtpTuple,
-        config_smtp_verify_peer:   Config::getBool('smtp.verify_peer'),
-        config_mail_from_email:    (string) Config::get('config.mail.from_email'),
-        config_mail_from_name:     (string) Config::get('config.mail.from_name'),
+        can_web_settings:            $perms['can_web_settings'],
+        can_owner:                   $perms['can_owner'],
+        config_title:                (string) Config::get('template.title'),
+        config_logo:                 (string) Config::get('template.logo'),
+        config_min_password:         (int) MIN_PASS_LENGTH,
+        config_dateformat:           (string) Config::get('config.dateformat'),
+        config_dash_title:           (string) Config::get('dash.intro.title'),
+        config_dash_text:            $dashText,
+        // #1207 SET-1: server-rendered first paint for the live preview.
+        // JS-side updates call system.preview_intro_text on input.
+        config_dash_text_preview:    \Sbpp\Markup\IntroRenderer::renderIntroText($dashText),
+        auth_maxlife:                $authMaxlife,
+        auth_maxlife_remember:       $authMaxlifeRemember,
+        auth_maxlife_steam:          $authMaxlifeSteam,
+        auth_maxlife_human:          \Sbpp\Util\Duration::humanizeMinutes($authMaxlife),
+        auth_maxlife_remember_human: \Sbpp\Util\Duration::humanizeMinutes($authMaxlifeRemember),
+        auth_maxlife_steam_human:    \Sbpp\Util\Duration::humanizeMinutes($authMaxlifeSteam),
+        config_debug:                Config::getBool('config.debug'),
+        enable_submit:               Config::getBool('config.enablesubmit'),
+        enable_protest:              Config::getBool('config.enableprotest'),
+        enable_commslist:            Config::getBool('config.enablecomms'),
+        protest_emailonlyinvolved:   Config::getBool('protest.emailonlyinvolved'),
+        dash_lognopopup:             Config::getBool('dash.lognopopup'),
+        config_default_page:         (int) Config::get('config.defaultpage'),
+        config_bans_per_page:        (int) SB_BANS_PER_PAGE,
+        banlist_hideadmname:         Config::getBool('banlist.hideadminname'),
+        banlist_nocountryfetch:      Config::getBool('banlist.nocountryfetch'),
+        banlist_hideplayerips:       Config::getBool('banlist.hideplayerips'),
+        bans_customreason:           $customReasons,
+        config_smtp:                 $smtpTuple,
+        config_smtp_verify_peer:     Config::getBool('smtp.verify_peer'),
+        config_mail_from_email:      (string) Config::get('config.mail.from_email'),
+        config_mail_from_name:       (string) Config::get('config.mail.from_name'),
     ));
 }
+
+/*
+ * Close the sidebar shell (#1259) — paired with the `new AdminTabs(...)`
+ * call above. The `<div class="admin-sidebar-content">` and outer
+ * `<div class="admin-sidebar-shell">` were both opened by AdminTabs;
+ * the post-save flash <script> below sits OUTSIDE the shell so it
+ * never lands inside the content column.
+ */
+echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
 
 /*
  * Post-save flash + bounce.

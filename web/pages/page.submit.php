@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 global $userbank, $theme;
 
@@ -28,8 +14,20 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
+
+// Toast emission consolidated onto `Sbpp\View\Toast::emit` (#1403). The
+// previous local `emitSubmitToast()` helper was the prototype shape this
+// surface used to work around the v1.x `<script>ShowBox(…)</script>`
+// blobs throwing `ReferenceError` after #1123 D1 deleted
+// `web/scripts/sourcebans.js`. The lift unifies that pattern with the
+// five sister pages the #1403 audit caught still emitting raw
+// `<script>ShowBox(...)</script>` (lostpassword / protest / banlist /
+// commslist / admin.edit.comms) so every chrome-toast emission goes
+// through one helper + one wire format. See `web/includes/View/Toast.php`
+// for the contract.
+
 if (!Config::getBool('config.enablesubmit')) {
-    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
+    \Sbpp\View\Toast::emit('error', 'Submissions disabled', 'This page is disabled. You should not be here.');
     PageDie();
 }
 if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
@@ -41,13 +39,13 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     $Email         = "";
     $SID           = -1;
 } else {
-    $SteamID       = trim($_POST['SteamID']);
-    $BanIP         = trim($_POST['BanIP']);
-    $PlayerName    = $_POST['PlayerName'];
-    $BanReason     = $_POST['BanReason'];
-    $SubmitterName = $_POST['SubmitName'];
-    $Email         = trim($_POST['EmailAddr']);
-    $SID           = (int) $_POST['server'];
+    $SteamID       = trim((string) ($_POST['SteamID']    ?? ''));
+    $BanIP         = trim((string) ($_POST['BanIP']      ?? ''));
+    $PlayerName    = (string) ($_POST['PlayerName']  ?? '');
+    $BanReason     = (string) ($_POST['BanReason']   ?? '');
+    $SubmitterName = (string) ($_POST['SubmitName']  ?? '');
+    $Email         = trim((string) ($_POST['EmailAddr']  ?? ''));
+    $SID           = (int) ($_POST['server']         ?? -1);
     $validsubmit   = true;
     $errors        = "";
     if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !\SteamID\SteamID::isValidID($SteamID)) {
@@ -56,6 +54,19 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     }
     if (strlen($BanIP) != 0 && !filter_var($BanIP, FILTER_VALIDATE_IP)) {
         $errors .= '* Please type a valid IP-address.<br>';
+        $validsubmit = false;
+    }
+    // #1207 PUB-4: at least one of Steam ID / IP must be provided.
+    // Mirrors the inline guard in `page_submitban.tpl` so JS-off
+    // visitors can't sneak an empty pair past the form. The "STEAM_0:"
+    // sentinel is what the page handler re-emits when the user blanked
+    // the Steam ID after a previous bounce (see `STEAMID:` assignment
+    // around L293 below) — treat it as empty for this rule too.
+    if (
+        (strlen($SteamID) == 0 || $SteamID == "STEAM_0:")
+        && strlen($BanIP) == 0
+    ) {
+        $errors .= '* Please enter a Steam ID or an IP address before submitting.<br>';
         $validsubmit = false;
     }
     if (strlen($PlayerName) == 0) {
@@ -90,7 +101,15 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
 
 
     if (!$validsubmit) {
-        print "<script>ShowBox('Error', '$errors', 'red');</script>";
+        // Validation errors are accumulated as `* msg<br>` HTML
+        // fragments (legacy ShowBox markup). Convert <br> separators
+        // to plain spaces so the toast `body` (rendered as text via
+        // theme.js's escapeHtml) reads as a single line per error.
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Please fix the following',
+            (string) preg_replace('#<br\s*/?>#i', ' ', $errors),
+        );
     }
 
     if ($validsubmit) {
@@ -161,11 +180,12 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
 
             $admins = $userbank->GetAllAdmins();
-            $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") - 5);
+            $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+            $requri = substr($requestUri, 0, (int) strrpos($requestUri, ".php") - 5);
             $mailDests = [];
 
             foreach ($admins as $admin) {
-                if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS, $admin['aid']) || $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid'])) {
+                if ($userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanSubmissions), $admin['aid']) || $userbank->HasAccess(WebPermission::NotifySub, $admin['aid'])) {
                     $mailDests []= $admin['email'];
                 }
             }
@@ -182,14 +202,27 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                     '{server}' => $mailserver,
                     '{reason}' => $_POST['BanReason'],
                     '{home}' => Host::complete(true),
-                    '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans#%5E2'
+                    // #1275 — admin-bans is Pattern A; the legacy `#^2`
+                    // anchor that targeted the old page-toc chrome is no
+                    // longer wired. Link directly to the submissions
+                    // section so the email recipient lands on the queue
+                    // they're being asked to review.
+                    '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans&section=submissions'
                 ]);
             }
 
-            print "<script>ShowBox('Successful', 'Your submission has been added into the database, and will be reviewed by one of our admins.', 'green');</script>";
+            \Sbpp\View\Toast::emit(
+                'success',
+                'Submitted',
+                'Your submission has been added into the database, and will be reviewed by one of our admins.',
+            );
         } else {
-            print "<script>ShowBox('Error', 'There was an error uploading your demo to the server. Please try again later.', 'red');</script>";
-            Log::add("e", "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
+            \Sbpp\View\Toast::emit(
+                'error',
+                'Upload failed',
+                'There was an error uploading your demo to the server. Please try again later.',
+            );
+            Log::add(LogType::Error, "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
         }
     }
 }

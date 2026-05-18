@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Sbpp\View;
 
 /**
- * "List admins" tab on the admin admins page — binds to
+ * "List admins" section on the admin admins page — binds to
  * `page_admin_admins_list.tpl`.
  *
  * Permission booleans follow the {@see Perms::for()} `can_<flag>` naming
@@ -14,6 +14,14 @@ namespace Sbpp\View;
  * PHPStan can't prove the splat fills these named params and reports
  * `argument.missing` — see the rationale comment on the `Renderer::render`
  * call site.
+ *
+ * #1275 — page-level ToC removed in favour of Pattern A `?section=…`
+ * routing. Pre-#1275 this View also carried `toc_id` / `toc_label` /
+ * `toc_entries` because `page_admin_admins_list.tpl` `{include
+ * file="page_toc.tpl"}` and `SmartyTemplateRule` walks includes
+ * transitively. The unification on Pattern A (#1275) makes the page
+ * render exactly one section per request via `AdminTabs`, so the
+ * cross-template ToC + its three properties are gone.
  */
 final class AdminAdminsListView extends View
 {

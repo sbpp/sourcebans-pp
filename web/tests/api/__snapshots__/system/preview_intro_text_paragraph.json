@@ -1,0 +1,6 @@
+{
+    "ok": true,
+    "data": {
+        "html": "<p>Hello <strong>world</strong> with <a href=\"https://example.test\">a link</a>.</p>\n"
+    }
+}

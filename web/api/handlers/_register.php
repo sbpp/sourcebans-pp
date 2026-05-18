@@ -23,6 +23,7 @@ require_once __DIR__ . '/comms.php';
 require_once __DIR__ . '/groups.php';
 require_once __DIR__ . '/kickit.php';
 require_once __DIR__ . '/mods.php';
+require_once __DIR__ . '/notes.php';
 require_once __DIR__ . '/protests.php';
 require_once __DIR__ . '/servers.php';
 require_once __DIR__ . '/submissions.php';
@@ -38,6 +39,22 @@ Api::register('auth.lost_password', 'api_auth_lost_password', 0, false, true);
 // + is_admin(), matching page.banlist.php exactly so we don't leak
 // fields the page intentionally suppresses.
 Api::register('bans.detail',        'api_bans_detail',        0, false, true);
+// bans.player_history + comms.player_history feed the drawer's History
+// and Comms tabs (#1165). Same public reach as `bans.detail` so the
+// drawer's tab chrome behaves identically for anonymous and admin
+// callers; `banlist.hideadminname` is honoured inside each handler.
+// Both handlers also accept an `authid` param as an alternative to
+// `bid` so the comm-focal drawer (opened from `?p=commslist` rows)
+// can populate the History / Comms tabs without an anchor bid.
+Api::register('bans.player_history',  'api_bans_player_history',  0, false, true);
+Api::register('comms.player_history', 'api_comms_player_history', 0, false, true);
+// comms.detail: sister of bans.detail for the public comms-list
+// drawer (this PR). Same public reach + per-field hide-* gating as
+// bans.detail; the focal record is a `:prefix_comms` row instead of
+// a `:prefix_bans` row, so the envelope keys it under `block` instead
+// of `ban` and the state vocab uses `'unmuted'` instead of `'unbanned'`.
+// See api_comms_detail() docblock.
+Api::register('comms.detail',         'api_comms_detail',         0, false, true);
 
 // ---- account: dispatcher enforces login; handler enforces aid match ---
 Api::register('account.check_password',     'api_account_check_password');
@@ -50,7 +67,6 @@ Api::register('account.change_email',       'api_account_change_email');
 Api::register('admins.add',               'api_admins_add',               ADMIN_OWNER | ADMIN_ADD_ADMINS);
 Api::register('admins.remove',            'api_admins_remove',            ADMIN_OWNER | ADMIN_DELETE_ADMINS);
 Api::register('admins.edit_perms',        'api_admins_edit_perms',        ADMIN_OWNER | ADMIN_EDIT_ADMINS);
-Api::register('admins.update_perms',      'api_admins_update_perms',      0, true);
 Api::register('admins.generate_password', 'api_admins_generate_password', 0, true);
 
 // ---- auth groups (SteamCommunity ban features) ------------------------
@@ -69,6 +85,12 @@ Api::register('bans.kick_player',         'api_bans_kick_player',          ADMIN
 Api::register('bans.send_message',        'api_bans_send_message',         0, true);
 Api::register('bans.view_community',      'api_bans_view_community',       0, true);
 Api::register('bans.search',              'api_bans_search',               0, true);
+// bans.unban dispatcher gate matches the legacy GET handler: any of the
+// four "unban-ish" flags lets the request through; the handler then
+// does the precise per-row check (own/group bans). #1301 — restored
+// the v1.x "confirm + reason required" UX (modal in page_bans.tpl;
+// `ureason` is non-empty-validated here).
+Api::register('bans.unban', 'api_bans_unban', ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS);
 
 // ---- blockit (single-page admin.blockit.php iframe) -------------------
 Api::register('blockit.load_servers', 'api_blockit_load_servers', ADMIN_OWNER | ADMIN_ADD_BAN);
@@ -79,13 +101,16 @@ Api::register('comms.add',                    'api_comms_add',                  
 Api::register('comms.prepare_reblock',        'api_comms_prepare_reblock',        0, true);
 Api::register('comms.paste',                  'api_comms_paste',                  ADMIN_OWNER | ADMIN_ADD_BAN);
 Api::register('comms.prepare_block_from_ban', 'api_comms_prepare_block_from_ban', 0, true);
+// comms.unblock dispatcher gate matches the legacy GET handler: any of the
+// four "lift-a-block" flags lets the request through; the handler then
+// does the precise per-row check (own/group bans). #1207 ADM-5/ADM-6.
+Api::register('comms.unblock', 'api_comms_unblock', ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS);
+Api::register('comms.delete',  'api_comms_delete',  ADMIN_OWNER | ADMIN_DELETE_BAN);
 
 // ---- groups -----------------------------------------------------------
 Api::register('groups.add',                   'api_groups_add',                   ADMIN_OWNER | ADMIN_ADD_GROUP);
 Api::register('groups.remove',                'api_groups_remove',                ADMIN_OWNER | ADMIN_DELETE_GROUPS);
 Api::register('groups.edit',                  'api_groups_edit',                  ADMIN_OWNER | ADMIN_EDIT_GROUPS);
-Api::register('groups.update_perms',          'api_groups_update_perms',          0, true);
-Api::register('groups.add_server_group_name', 'api_groups_add_server_group_name', ADMIN_OWNER | ADMIN_EDIT_GROUPS);
 
 // ---- kickit (single-page admin.kickit.php iframe) --------------------
 Api::register('kickit.load_servers', 'api_kickit_load_servers', ADMIN_OWNER | ADMIN_ADD_BAN);
@@ -95,6 +120,14 @@ Api::register('kickit.kick_player',  'api_kickit_kick_player',  ADMIN_OWNER | AD
 Api::register('mods.add',    'api_mods_add',    ADMIN_OWNER | ADMIN_ADD_MODS);
 Api::register('mods.remove', 'api_mods_remove', ADMIN_OWNER | ADMIN_DELETE_MODS);
 
+// ---- notes (player-detail drawer's Notes tab, #1165) ------------------
+// Admin-only: the drawer hides the Notes tab for non-admins via the
+// `notes_visible` flag in `bans.detail`, so the dispatcher gate here is
+// the load-bearing one.
+Api::register('notes.list',   'api_notes_list',   0, true);
+Api::register('notes.add',    'api_notes_add',    0, true);
+Api::register('notes.delete', 'api_notes_delete', 0, true);
+
 // ---- protests ---------------------------------------------------------
 Api::register('protests.remove', 'api_protests_remove', ADMIN_OWNER | ADMIN_BAN_PROTESTS);
 
@@ -102,6 +135,20 @@ Api::register('protests.remove', 'api_protests_remove', ADMIN_OWNER | ADMIN_BAN_
 Api::register('servers.add',                 'api_servers_add',                 ADMIN_OWNER | ADMIN_ADD_SERVER);
 Api::register('servers.remove',              'api_servers_remove',              ADMIN_OWNER | ADMIN_DELETE_SERVERS);
 Api::register('servers.setup_edit',          'api_servers_setup_edit',          ADMIN_OWNER | ADMIN_EDIT_SERVERS);
+// servers.refresh + the server-query family below mirror the public
+// servers page's reach: every visitor of `?p=servers` (and any
+// third-party theme that still emits the legacy `__sbppLoadServerHost`
+// helper from `page.servers.php`) needs the live A2S `GetInfo` /
+// `GetPlayers` data, so the actions are anonymous-callable. The A2S
+// amplification this used to enable (#1311) is contained inside the
+// handlers via `Sbpp\Servers\SourceQueryCache` (per-`(ip, port)`
+// on-disk cache, ~30s window, negative caching for unreachable
+// servers) — without that cache, a hand-mash of the per-tile Re-query
+// button or `for i in $(seq 1 100); do curl ?p=servers; done` would
+// translate 1:1 to UDP queries leaving the panel host. Don't widen
+// the perm gate or drop the public reach without re-evaluating the
+// cache contract; don't drop the cache without re-introducing some
+// other rate limit at the dispatcher.
 Api::register('servers.refresh',             'api_servers_refresh',             0, false, true);
 Api::register('servers.host_players',        'api_servers_host_players',        0, false, true);
 Api::register('servers.host_property',       'api_servers_host_property',       0, false, true);
@@ -119,3 +166,8 @@ Api::register('system.check_version',         'api_system_check_version',       
 Api::register('system.sel_theme',             'api_system_sel_theme',             ADMIN_OWNER | ADMIN_WEB_SETTINGS);
 Api::register('system.apply_theme',           'api_system_apply_theme',           ADMIN_OWNER | ADMIN_WEB_SETTINGS);
 Api::register('system.clear_cache',           'api_system_clear_cache',           ADMIN_OWNER | ADMIN_WEB_SETTINGS);
+// #1207 SET-1: live Markdown preview for admin-authored display text
+// (currently only the dashboard intro). Gated on the same flag as the
+// settings page so we don't accidentally expose the renderer to
+// non-settings surfaces.
+Api::register('system.preview_intro_text',    'api_system_preview_intro_text',    ADMIN_OWNER | ADMIN_WEB_SETTINGS);

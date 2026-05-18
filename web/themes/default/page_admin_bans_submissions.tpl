@@ -48,22 +48,33 @@
         </div>
 
         {if $submission_list|@count == 0}
+            {* #1207 empty-state unification — queue-empty. Like the
+               protests queue, "empty" here means inbox-zero, so the
+               surface stays copy-only. *}
             <div class="card" data-testid="submissions-empty">
-                <div class="card__body">
-                    <p class="text-sm text-muted m-0">No pending submissions. The queue is clear.</p>
+                <div class="empty-state">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="inbox" style="width:18px;height:18px"></i>
+                    </span>
+                    <h2 class="empty-state__title">No pending submissions</h2>
+                    <p class="empty-state__body">The queue is clear. Player-reported bans will show up here for review when they're filed.</p>
                 </div>
             </div>
         {else}
             <div class="card" style="overflow:hidden" data-testid="submissions-list">
                 {foreach from=$submission_list item="sub"}
-                    <details class="ban-row ban-row--active"
+                    {* PUB-2 (#1207): `queue-row` is the layout class for
+                       the summary; `ban-row` keeps the state border-left
+                       (orange "active" stripe). theme.css owns the flex
+                       row + mobile card-stack rules — see the
+                       `.queue-row` block there. *}
+                    <details class="queue-row ban-row ban-row--active"
                              id="sid_{$sub.subid}"
                              data-testid="submission-row"
                              data-id="{$sub.subid}"
                              style="border-bottom:1px solid var(--border)">
-                        <summary class="flex items-center gap-3 p-4"
-                                 style="cursor:pointer;list-style:none">
-                            <div style="flex:1;min-width:0">
+                        <summary>
+                            <div class="queue-row__body">
                                 <div class="font-medium text-sm truncate" data-testid="submission-row-name">
                                     {* nofilter: sub.name is wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true) in admin.bans.php — already entity-escaped, only `<br />` reintroduced. *}
                                     {$sub.name nofilter}
@@ -72,17 +83,33 @@
                                     {if $sub.SteamId != ""}{$sub.SteamId|escape}{else}{$sub.sip|escape}{/if}
                                 </div>
                             </div>
-                            <div class="text-xs text-muted" style="flex-shrink:0">
+                            <div class="queue-row__date">
                                 {$sub.submitted|escape}
                             </div>
-                            <div class="row-actions" style="opacity:1;flex-shrink:0">
-                                <button type="button"
-                                        class="btn btn--secondary btn--sm"
-                                        data-testid="row-action-ban"
-                                        data-action="submission-ban"
-                                        data-subid="{$sub.subid}">
+                            {* #1229 — Ban is the canonical approve path on this
+                               queue, so it carries the .btn--primary weight;
+                               Remove is a ghost button without the inline danger
+                               color so it stops competing visually with Ban.
+                               The Remove button is also gated behind a
+                               click-again-to-confirm step (see the inline JS
+                               below) — a single misfire no longer silently
+                               archives the submission. *}
+                            <div class="row-actions">
+                                {* #1275 — Pattern A. Pre-#1275 Ban was a JS button
+                                   (data-action="submission-ban") that called
+                                   Actions.BansSetupBan and prefilled the Add Ban
+                                   form on the same page via __sbppApplyBanFields,
+                                   then swapTab(0) to scroll up. Pattern A puts
+                                   the Add Ban form on its own URL — the button
+                                   is now a normal anchor to
+                                   ?section=add-ban&fromsub=<subid>; the add-ban
+                                   handler calls BansSetupBan + __sbppApplyBanFields
+                                   after the form mounts. Same UX, real URL. *}
+                                <a class="btn btn--primary btn--sm"
+                                   data-testid="row-action-ban"
+                                   href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;fromsub={$sub.subid|escape:'url'}">
                                     Ban
-                                </button>
+                                </a>
                                 {if $permissions_editsub}
                                     <button type="button"
                                             class="btn btn--ghost btn--sm"
@@ -90,9 +117,8 @@
                                             data-action="submission-archive"
                                             data-subid="{$sub.subid}"
                                             data-name="{$sub.name|smarty_stripslashes|escape}"
-                                            data-archiv="1"
-                                            style="color:var(--danger)">
-                                        Remove
+                                            data-archiv="1">
+                                        <span data-confirm-label>Remove</span>
                                     </button>
                                 {/if}
                                 <a class="btn btn--ghost btn--sm"
@@ -201,53 +227,141 @@
 {* Inline action wiring — works in both themes, sb.api.call + Actions are
    loaded by both core/header.tpl variants. The legacy theme also exposes
    LoadSetupBan/RemoveSubmission via sourcebans.js; we prefer the inline
-   handler so the buttons behave identically in either chrome. *}
+   handler so the buttons behave identically in either chrome.
+
+   #1229 — `submission-archive` is gated behind a click-again-to-confirm
+   step instead of `window.confirm()`. The first click arms the button
+   (label flips to "Click to confirm", `data-pending="true"` flag set,
+   3s revert timer); the second click within that window actually
+   archives. This replaces the browser-native dialog (which the audit
+   flagged as both intrusive and easily dismissed) without expanding
+   the toast API. The submission is recoverable from the archived
+   submissions page if the operator wants to restore it.
+
+   No `// @ts-check` here because the file is rendered by Smarty;
+   ts-check only runs against `.js` sources in `web/scripts`. The
+   shape mirrors the inline handler in `page_comms.tpl`. *}
 {literal}
 <script>
 (function () {
     'use strict';
-    function api() { return (window.sb && window.sb.api) || null; }
-    function actions() { return window.Actions || null; }
+
+    /** How long a click-armed Remove button waits for the second click. */
+    var PENDING_TIMEOUT_MS = 3000;
+
+    /** @returns {{call: (a:string,p?:object)=>Promise<any>}|null} */
+    function api()     { return (window.sb && window.sb.api) || null; }
+    /** @returns {Record<string,string>|null} */
+    function actions() { return /** @type {any} */ (window).Actions || null; }
     function toast(kind, title, body) {
         if (window.sb && window.sb.message && window.sb.message[kind]) {
             window.sb.message[kind](title, body || '');
         }
     }
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     * @param {Element|null} btn
+     * @param {boolean} [busy] defaults to true
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = /** @type {any} */ (window).SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else /** @type {HTMLButtonElement} */ (btn).disabled = busy === undefined ? true : !!busy;
+    }
+
+    /** @type {WeakMap<HTMLElement, number>} */
+    var pendingTimers = new WeakMap();
+
+    /**
+     * Is this Remove button currently armed (one click landed; waiting
+     * for the second within PENDING_TIMEOUT_MS).
+     * @param {HTMLElement} btn
+     * @returns {boolean}
+     */
+    function isPending(btn) {
+        return btn.getAttribute('data-pending') === 'true';
+    }
+
+    /**
+     * Move the button into the "click again to confirm" state. Caches
+     * the original label on the inner `[data-confirm-label]` span so
+     * disarm() can restore it byte-for-byte; falls back to the button
+     * itself if the span isn't present (defensive — the template ships
+     * the span).
+     * @param {HTMLElement} btn
+     * @returns {void}
+     */
+    function arm(btn) {
+        var labelEl = /** @type {HTMLElement} */ (btn.querySelector('[data-confirm-label]') || btn);
+        if (labelEl.getAttribute('data-original-label') === null) {
+            labelEl.setAttribute('data-original-label', labelEl.textContent || '');
+        }
+        labelEl.textContent = 'Click to confirm';
+        btn.setAttribute('data-pending', 'true');
+        btn.setAttribute('aria-label', 'Click again within 3 seconds to confirm removal');
+        var prev = pendingTimers.get(btn);
+        if (prev) window.clearTimeout(prev);
+        var t = window.setTimeout(function () { disarm(btn); }, PENDING_TIMEOUT_MS);
+        pendingTimers.set(btn, t);
+    }
+
+    /**
+     * Restore the original label and clear the pending state + revert
+     * timer.
+     * @param {HTMLElement} btn
+     * @returns {void}
+     */
+    function disarm(btn) {
+        var labelEl = /** @type {HTMLElement} */ (btn.querySelector('[data-confirm-label]') || btn);
+        var orig = labelEl.getAttribute('data-original-label');
+        if (orig !== null) labelEl.textContent = orig;
+        btn.removeAttribute('data-pending');
+        btn.removeAttribute('aria-label');
+        var t = pendingTimers.get(btn);
+        if (t !== undefined) {
+            window.clearTimeout(t);
+            pendingTimers.delete(btn);
+        }
+    }
+
     document.addEventListener('click', function (e) {
-        var t = e.target;
+        var t = /** @type {Element|null} */ (e.target);
         if (!t || !t.closest) return;
-        var btn = t.closest('[data-action]');
+        var btn = /** @type {HTMLElement|null} */ (t.closest('[data-action]'));
         if (!btn) return;
         var act = btn.getAttribute('data-action');
-        if (act === 'submission-ban') {
-            e.preventDefault();
-            var subid = Number(btn.dataset.subid);
-            var a = api(), A = actions();
-            if (!a || !A || !Number.isFinite(subid)) return;
-            a.call(A.BansSetupBan, { subid: subid }).then(function (r) {
-                if (r && r.ok && r.data && typeof window.applyBanFields === 'function') {
-                    window.applyBanFields(r.data);
-                }
-                if (typeof window.swapTab === 'function') window.swapTab(0);
-            });
-            return;
-        }
+        // #1275 — the `submission-ban` data-action handler that called
+        // BansSetupBan + __sbppApplyBanFields + swapTab is gone; the Ban
+        // button is now an anchor to ?section=add-ban&fromsub=<subid>
+        // and the add-ban handler does the prefill on landing.
         if (act === 'submission-archive') {
             e.preventDefault();
+            // First click on a non-armed button → arm it and bail.
+            // The archive call only fires on the second click within
+            // PENDING_TIMEOUT_MS; otherwise the revert timer disarms
+            // and the operator hasn't lost the submission.
+            if (!isPending(btn)) {
+                arm(btn);
+                return;
+            }
+            disarm(btn);
             var sid = Number(btn.dataset.subid);
-            var name = btn.dataset.name || ('submission #' + sid);
-            var archiv = btn.dataset.archiv || '1';
-            var msg;
-            if (archiv === '2') msg = 'Restore the ban submission for "' + name + '" from the archive?';
-            else if (archiv === '1') msg = 'Move the ban submission for "' + name + '" to the archive?';
-            else msg = 'Delete the ban submission for "' + name + '"?';
-            if (!window.confirm(msg)) return;
+            // This template only fires archiv=1 (archive a live
+            // submission). The archived-submissions template uses a
+            // separate `submission-archive-toggle` action for restore
+            // (archiv=2) and delete (archiv=0), so the dead-code
+            // branches that handled those values here have been
+            // removed.
             var a2 = api(), A2 = actions();
             if (!a2 || !A2 || !Number.isFinite(sid)) return;
-            btn.disabled = true;
-            a2.call(A2.SubmissionsRemove, { sid: sid, archiv: archiv }).then(function (r) {
+            setBusy(btn, true);
+            a2.call(A2.SubmissionsRemove, { sid: sid, archiv: '1' }).then(function (r) {
                 if (!r || r.ok === false) {
-                    btn.disabled = false;
+                    setBusy(btn, false);
                     toast('error', 'Action failed', (r && r.error && r.error.message) || 'Unknown error');
                     return;
                 }
@@ -255,7 +369,7 @@
                 if (node && node.parentNode) node.parentNode.removeChild(node);
                 var counter = document.getElementById('subcount');
                 if (counter) counter.textContent = String(Math.max(0, Number(counter.textContent) - 1));
-                toast('success', 'Done', 'Submission updated.');
+                toast('success', 'Submission archived', 'Restore from the archived submissions page if needed.');
             });
         }
     });

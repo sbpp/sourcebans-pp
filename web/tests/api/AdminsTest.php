@@ -9,7 +9,7 @@ use Sbpp\Tests\Fixture;
  * Per-handler coverage for web/api/handlers/admins.php. End-to-end
  * add+remove of an admin lives in tests/integration/AdminFlowTest;
  * here we lock validation paths, the perm-edit handler, and the
- * stateless update_perms / generate_password helpers.
+ * stateless generate_password helper.
  */
 final class AdminsTest extends ApiTestCase
 {
@@ -135,6 +135,110 @@ final class AdminsTest extends ApiTestCase
         $this->assertSnapshot('admins/remove_owner_blocked', $env);
     }
 
+    /**
+     * #1352 — `ureason` is appended to the audit-log entry when supplied.
+     *
+     * The reason is OPTIONAL on this surface (vs required for `bans.unban`
+     * / `comms.unblock`) — admin deletion is a lifecycle action, not a
+     * moderation flip. The handler just trims and conditionally appends
+     * the canonical "Reason: …" suffix; the previous test
+     * (`testRemoveDeletesRow`) covers the no-reason path so the audit
+     * body stays bare.
+     */
+    public function testRemoveAppendsReasonToAuditLog(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'ReasonTarget',
+            'steam' => 'STEAM_0:0:9988',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int)$add['data']['aid'];
+
+        $env = $this->api('admins.remove', ['aid' => $aid, 'ureason' => 'left the team']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertNull($this->row('admins', ['aid' => $aid]));
+
+        $message = $this->latestLogMessage('Admin Deleted');
+        $this->assertSame(
+            'Admin (ReasonTarget) has been deleted. Reason: left the team',
+            $message
+        );
+    }
+
+    /**
+     * #1352 — empty / whitespace `ureason` falls through to the bare audit
+     * body. Keeps the audit log readable on the no-JS path (where the
+     * dialog wouldn't run) and on the dispatcher-missing fallback (where
+     * the JS would skip the param entirely).
+     */
+    public function testRemoveOmitsReasonSuffixWhenEmpty(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'EmptyReason',
+            'steam' => 'STEAM_0:0:9989',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int)$add['data']['aid'];
+
+        // Whitespace-only reason: the trim path strips it back to '' and
+        // the audit suffix is omitted.
+        $env = $this->api('admins.remove', ['aid' => $aid, 'ureason' => "   \n\t   "]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $message = $this->latestLogMessage('Admin Deleted');
+        $this->assertSame(
+            'Admin (EmptyReason) has been deleted.',
+            $message
+        );
+    }
+
+    /**
+     * #1352 — omitted `ureason` (no key in the params bag) is treated the
+     * same as empty. Pins the back-compat for the snapshot regression
+     * (`remove_success.json`) and the `data-fallback-href` no-JS path
+     * which doesn't surface the reason field at all.
+     */
+    public function testRemoveAcceptsMissingReasonParam(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'NoParam',
+            'steam' => 'STEAM_0:0:9990',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int)$add['data']['aid'];
+
+        $env = $this->api('admins.remove', ['aid' => $aid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $message = $this->latestLogMessage('Admin Deleted');
+        $this->assertSame(
+            'Admin (NoParam) has been deleted.',
+            $message
+        );
+    }
+
+    /**
+     * Pull the most recent audit-log message for a given title, ordered
+     * by lid (auto-increment, monotonic). The {@see ApiTestCase::row()}
+     * helper has no ORDER BY surface — adding an `ORDER BY` arg there
+     * would touch every existing caller — so the lookup is inlined.
+     */
+    private function latestLogMessage(string $title): string
+    {
+        $pdo  = Fixture::rawPdo();
+        $stmt = $pdo->prepare(sprintf(
+            'SELECT message FROM `%s_log` WHERE `title` = ? ORDER BY lid DESC LIMIT 1',
+            DB_PREFIX
+        ));
+        $stmt->execute([$title]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $this->assertIsArray($row, 'Expected an audit-log entry titled "' . $title . '"');
+        return (string) $row['message'];
+    }
+
     public function testEditPermsRequiresAid(): void
     {
         $this->loginAsAdmin();
@@ -191,31 +295,61 @@ final class AdminsTest extends ApiTestCase
         $this->assertSame('index.php?p=login&m=no_access', $env['redirect'] ?? null);
     }
 
-    public function testUpdatePermsReturnsTemplateBlobForWebGroup(): void
+    /**
+     * #1402 adversarial review HIGH 1 — `api_admins_add` must reject
+     * `mask & ADMIN_OWNER` when the caller doesn't hold OWNER. Mirrors
+     * the existing `testEditPermsBlocksGrantingOwnerWithoutOwner` shape
+     * because the two handlers share the same escalation surface
+     * (set web flags on an admin row).
+     *
+     * Pre-fix `api_admins_add` had no such check — a non-owner with
+     * `ADMIN_ADD_ADMINS` (a common delegation level) could create a
+     * brand-new admin with the OWNER bit set on their `extraflags`,
+     * full panel takeover. The UI side gates the OWNER checkbox on
+     * `can_grant_owner`; the server-side check below is the
+     * load-bearing half (UI gate is defense-in-depth).
+     */
+    public function testAddBlocksGrantingOwnerWithoutOwner(): void
     {
-        $this->loginAsAdmin();
-        $env = $this->api('admins.update_perms', ['type' => 1, 'value' => 'c']);
-        $this->assertTrue($env['ok']);
-        $this->assertSame('web', $env['data']['id']);
-        $this->assertNotEmpty($env['data']['permissions']);
-        $this->assertTrue($env['data']['is_owner']);
-        $this->assertSnapshot('admins/update_perms_web', $env, ['data.permissions']);
+        // Seed a non-owner admin with ADMIN_ADD_ADMINS (the registry-
+        // declared perm for `admins.add`) and log in as them.
+        $pdo  = Fixture::rawPdo();
+        $hash = password_hash('admin', PASSWORD_BCRYPT);
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins` (user, authid, password, gid, email, validate, extraflags, immunity)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            DB_PREFIX
+        ))->execute(['nonowner-add', 'STEAM_0:0:111', $hash, -1, 'noown-add@own.test', null, ADMIN_ADD_ADMINS, 0]);
+        $nonOwnerAid = (int)$pdo->lastInsertId();
+
+        $this->loginAs($nonOwnerAid);
+        $env = $this->api('admins.add', $this->adminParams([
+            'name'  => 'TargetOwner',
+            'steam' => 'STEAM_0:0:9001',
+            'mask'  => ADMIN_OWNER,
+        ]));
+        // The handler returns Api::redirect on the OWNER escalation attempt.
+        $this->assertFalse($env['ok'] ?? true);
+        $this->assertSame('index.php?p=login&m=no_access', $env['redirect'] ?? null);
+        // And no row landed on disk.
+        $this->assertNull($this->row('admins', ['authid' => 'STEAM_0:0:9001']));
     }
 
-    public function testUpdatePermsReturnsTemplateBlobForServerGroup(): void
+    /**
+     * Sibling positive case: an owner can still create OWNER admins.
+     * Locks in that the new guard isn't over-zealous on the happy path
+     * (an owner-only operation that legitimately needs the bit).
+     */
+    public function testAddAllowsGrantingOwnerForOwner(): void
     {
-        $this->loginAsAdmin();
-        $env = $this->api('admins.update_perms', ['type' => 2, 'value' => 'c']);
-        $this->assertTrue($env['ok']);
-        $this->assertSame('server', $env['data']['id']);
-        $this->assertNotEmpty($env['data']['permissions']);
-    }
-
-    public function testUpdatePermsRejectsAnonymous(): void
-    {
-        // requireAdmin=true → dispatcher rejects non-admins.
-        $env = $this->api('admins.update_perms', ['type' => 1, 'value' => 'c']);
-        $this->assertEnvelopeError($env, 'forbidden');
+        $this->loginAsAdmin(); // The seeded admin holds ADMIN_OWNER.
+        $env = $this->api('admins.add', $this->adminParams([
+            'name'  => 'AnotherOwner',
+            'steam' => 'STEAM_0:0:9002',
+            'mask'  => ADMIN_OWNER,
+        ]));
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertNotNull($this->row('admins', ['authid' => 'STEAM_0:0:9002']));
     }
 
     public function testGeneratePasswordReturnsString(): void

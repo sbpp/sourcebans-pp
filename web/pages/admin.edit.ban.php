@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
@@ -76,14 +62,19 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 }
 $_GET['id'] = (int) $_GET['id'];
 
+// Native PDO prepares (#1175 / Slice 3) reject the same named placeholder
+// reused across positions, so split the bid lookup into two distinct
+// names and bind both. The subquery's `:demo_bid` and the outer
+// `:bid` both pull from `$_GET['id']`, which is already int-cast above.
 $GLOBALS['PDO']->query("
-    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, (SELECT origname FROM `:prefix_demos` WHERE demtype = 'b' AND demid = :id) AS dname
+    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, (SELECT origname FROM `:prefix_demos` WHERE demtype = 'b' AND demid = :demo_bid) AS dname
     				FROM `:prefix_bans` AS ba
     				LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
     				LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid
     				LEFT JOIN `:prefix_mods` AS mo ON mo.mid = se.modid
-    				WHERE bid = :id");
-$GLOBALS['PDO']->bind(':id', $_GET['id']);
+    				WHERE bid = :bid");
+$GLOBALS['PDO']->bind(':bid', $_GET['id']);
+$GLOBALS['PDO']->bind(':demo_bid', $_GET['id']);
 $res = $GLOBALS['PDO']->single();
 
 isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pagelink = "";
@@ -93,9 +84,9 @@ if (!$res) {
     PageDie();
 }
 
-$canEditBan = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS)
-    || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res['aid'] == $userbank->GetAid())
-    || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res['gid'] == $userbank->GetProperty('gid'));
+$canEditBan = (bool) $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans))
+    || ($userbank->HasAccess(WebPermission::EditOwnBans) && $res['aid'] == $userbank->GetAid())
+    || ($userbank->HasAccess(WebPermission::EditGroupBans) && $res['gid'] == $userbank->GetProperty('gid'));
 
 if (!$canEditBan) {
     emitEditBanToastAndRedirect('red', 'Error', "You don't have access to this!", 'index.php?p=admin&c=bans');
@@ -119,23 +110,24 @@ $validationErrors = [];
 $postSuccess = false;
 
 if (isset($_POST['name'])) {
-    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
-    $_POST['type']  = (int) $_POST['type'];
+    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim((string) ($_POST['steam'] ?? '')));
+    $_POST['type']  = (int) ($_POST['type'] ?? 0);
+    $postBanType    = BanType::tryFrom((int) $_POST['type']) ?? BanType::Steam;
 
     // Form Validation
     $error = 0;
     // If they didn't type a steamid
-    if (empty($_POST['steam']) && $_POST['type'] == 0) {
+    if (empty($_POST['steam']) && $postBanType === BanType::Steam) {
         $error++;
         $validationErrors['steam'] = 'You must type a Steam ID or Community ID';
-    } elseif ($_POST['type'] == 0 && !\SteamID\SteamID::isValidID($_POST['steam'])) {
+    } elseif ($postBanType === BanType::Steam && !\SteamID\SteamID::isValidID($_POST['steam'])) {
         $error++;
         $validationErrors['steam'] = 'Please enter a valid Steam ID or Community ID';
-    } elseif (empty($_POST['ip']) && $_POST['type'] == 1) {
+    } elseif (empty($_POST['ip']) && $postBanType === BanType::Ip) {
         // Didn't type an IP
         $error++;
         $validationErrors['ip'] = 'You must type an IP';
-    } elseif ($_POST['type'] == 1 && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
+    } elseif ($postBanType === BanType::Ip && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
         $error++;
         $validationErrors['ip'] = 'You must type a valid IP';
     }
@@ -150,18 +142,22 @@ if (isset($_POST['name'])) {
     PruneBans();
 
     if ($error == 0) {
-        // Check if the new steamid is already banned
-        if ($_POST['type'] == 0) {
-            $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_bans` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' AND bid != :bid");
+        // Check if the new steamid is already banned. Surface the
+        // conflicting bid so the admin can investigate the OTHER
+        // active row that's blocking this edit (mirrors the same
+        // wording the JSON `bans.add` action emits — see
+        // `web/api/handlers/bans.php::api_bans_add`).
+        if ($postBanType === BanType::Steam) {
+            $GLOBALS['PDO']->query("SELECT bid FROM `:prefix_bans` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' AND bid != :bid ORDER BY bid DESC LIMIT 1");
             $GLOBALS['PDO']->bindMultiple([
                 ':authid' => $_POST['steam'],
                 ':bid'    => (int) $_GET['id'],
             ]);
             $chk = $GLOBALS['PDO']->single();
 
-            if ((int) $chk['count'] > 0) {
+            if ($chk) {
                 $error++;
-                $validationErrors['steam'] = 'This SteamID is already banned';
+                $validationErrors['steam'] = 'This SteamID is already banned by ban #' . (int) $chk['bid'];
             } else {
                 // Check if player is immune
                 $admchk = $userbank->GetAllAdmins();
@@ -173,23 +169,23 @@ if (isset($_POST['name'])) {
                     }
                 }
             }
-        } elseif ($_POST['type'] == 1) {
+        } elseif ($postBanType === BanType::Ip) {
             // Check if the ip is already banned
-            $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_bans` WHERE ip = :ip AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != :bid");
+            $GLOBALS['PDO']->query("SELECT bid FROM `:prefix_bans` WHERE ip = :ip AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != :bid ORDER BY bid DESC LIMIT 1");
             $GLOBALS['PDO']->bindMultiple([
                 ':ip'  => $_POST['ip'],
                 ':bid' => (int) $_GET['id'],
             ]);
             $chk = $GLOBALS['PDO']->single();
 
-            if ((int) $chk['count'] > 0) {
+            if ($chk) {
                 $error++;
-                $validationErrors['ip'] = 'This IP is already banned';
+                $validationErrors['ip'] = 'This IP is already banned by ban #' . (int) $chk['bid'];
             }
         }
     }
 
-    $_POST['ip'] = preg_replace('#[^\d\.]#', '', $_POST['ip']); //strip ip of all but numbers and dots
+    $_POST['ip'] = preg_replace('#[^\d\.]#', '', (string) ($_POST['ip'] ?? '')); //strip ip of all but numbers and dots
     $reason = $_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason'];
 
     if (!$_POST['banlength']) {
@@ -223,7 +219,7 @@ if (isset($_POST['name'])) {
         );
         $GLOBALS['PDO']->bindMultiple([
             ':name'   => $_POST['name'],
-            ':type'   => $_POST['type'],
+            ':type'   => $postBanType->value,
             ':reason' => $reason,
             ':authid' => $_POST['steam'],
             ':length' => $_POST['banlength'],
@@ -265,7 +261,7 @@ if (isset($_POST['name'])) {
         }
 
         if ($_POST['banlength'] != $lengthrev['length']) {
-            Log::add("m", "Ban length edited", "Ban length for ({$lengthrev['authid']}) has been updated."
+            Log::add(LogType::Message, "Ban length edited", "Ban length for ({$lengthrev['authid']}) has been updated."
                 . " Before: {$lengthrev['length']}; Now: {$_POST['banlength']}.");
         }
         $postSuccess = true;

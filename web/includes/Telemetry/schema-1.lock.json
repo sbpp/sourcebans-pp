@@ -1,0 +1,211 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://raw.githubusercontent.com/sbpp/cf-analytics/main/schema/1.lock.json",
+    "title": "SourceBans++ telemetry payload, schema 1",
+    "description": "Canonical wire-format contract for the daily anonymous telemetry ping documented in sbpp/sourcebans-pp#1126. Vendored byte-for-byte from sbpp/cf-analytics (manual sync via `make sync-telemetry-schema`); the panel-side parity tests in `web/tests/integration/TelemetrySchemaParityTest.php` and `web/tests/integration/TelemetryReadmeParityTest.php` lock both extractors and docs against this file.",
+    "type": "object",
+    "required": ["schema", "instance_id", "panel", "env", "scale", "features"],
+    "additionalProperties": false,
+    "properties": {
+        "schema": {
+            "type": "integer",
+            "const": 1,
+            "description": "Wire-format version. Pinned at 1 for the lifetime of this lock file; subtractive / repurposing changes bump to schema 2 with a sibling `Schema2` helper. Required."
+        },
+        "instance_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$",
+            "description": "32-char lowercase hex of `random_bytes(16)`. Generated and persisted in `:prefix_settings.telemetry.instance_id` on first ping; cleared on opt-out so an opt-out / opt-in cycle issues a fresh ID. Not a hash of anything — collisions don't matter, attribution does. Required."
+        },
+        "panel": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["version", "git", "dev", "theme"],
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "`SB_VERSION` resolved by `Sbpp\\Version::resolve()`. Three-tier fallback: `configs/version.json` (release tarball) → `git describe --tags --always` (git checkout) → the `'dev'` sentinel."
+                },
+                "git": {
+                    "type": "string",
+                    "description": "Short git SHA (`git rev-parse --short HEAD`) when available, empty string otherwise. Mirrors `SB_GITREV`'s string surface."
+                },
+                "dev": {
+                    "type": "boolean",
+                    "description": "True iff `SB_VERSION === Sbpp\\Version::DEV_SENTINEL` (the `'dev'` sentinel). Lets the Worker distinguish dev-checkout panels from tarball / tag installs without parsing the version string."
+                },
+                "theme": {
+                    "type": "string",
+                    "enum": ["default", "custom"],
+                    "description": "`'default'` if the active theme is the panel's shipped default; `'custom'` otherwise. The actual fork theme name is never reported (would leak community names)."
+                }
+            }
+        },
+        "env": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["php", "db_engine", "db_version", "web_server", "os_family"],
+            "properties": {
+                "php": {
+                    "type": "string",
+                    "pattern": "^[0-9]+\\.[0-9]+$",
+                    "description": "PHP `major.minor` only (e.g. `8.5`). Patch versions intentionally elided — they don't drive any roadmap decision and tighten the fingerprint."
+                },
+                "db_engine": {
+                    "type": "string",
+                    "enum": ["mariadb", "mysql"],
+                    "description": "Lowercase engine name, derived from `SELECT VERSION()` via substring match."
+                },
+                "db_version": {
+                    "type": "string",
+                    "pattern": "^[0-9]+\\.[0-9]+$",
+                    "description": "DB `major.minor` parsed from `SELECT VERSION()` (e.g. `10.11`). Patch elided for the same reason as `env.php`."
+                },
+                "web_server": {
+                    "type": "string",
+                    "enum": ["apache", "nginx", "litespeed", "iis", "caddy", "other"],
+                    "description": "Substring match against `$_SERVER['SERVER_SOFTWARE']`. The raw header is never forwarded."
+                },
+                "os_family": {
+                    "type": "string",
+                    "enum": ["linux", "windows", "mac", "bsd", "other"],
+                    "description": "Lowercased `PHP_OS_FAMILY`."
+                }
+            }
+        },
+        "scale": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "admins",
+                "servers_enabled",
+                "bans_active",
+                "bans_total",
+                "comms_active",
+                "comms_total",
+                "submissions_30d",
+                "protests_30d"
+            ],
+            "properties": {
+                "admins": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_admins`. Includes the seeded `CONSOLE` row (`aid = 0`)."
+                },
+                "servers_enabled": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_servers WHERE enabled = 1`."
+                },
+                "bans_active": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_bans WHERE (ends > UNIX_TIMESTAMP() OR length = 0) AND RemoveType IS NULL`. Mirrors `page.banlist.php`'s active-ban definition."
+                },
+                "bans_total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_bans` (every row, active + expired + removed)."
+                },
+                "comms_active": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_comms WHERE (ends > UNIX_TIMESTAMP() OR length = 0) AND RemoveType IS NULL`."
+                },
+                "comms_total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_comms`."
+                },
+                "submissions_30d": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_submissions WHERE submitted >= UNIX_TIMESTAMP() - 2592000`."
+                },
+                "protests_30d": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_protests WHERE datesubmitted >= UNIX_TIMESTAMP() - 2592000`."
+                }
+            }
+        },
+        "features": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "submit",
+                "protest",
+                "comms",
+                "kickit",
+                "exportpublic",
+                "publiccomments",
+                "steamlogin",
+                "normallogin",
+                "groupbanning",
+                "friendsbanning",
+                "adminrehashing",
+                "smtp_configured",
+                "steam_api_key_set",
+                "geoip_present"
+            ],
+            "properties": {
+                "submit": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enablesubmit')`."
+                },
+                "protest": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enableprotest')`."
+                },
+                "comms": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enablecomms')`."
+                },
+                "kickit": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enablekickit')`."
+                },
+                "exportpublic": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.exportpublic')`."
+                },
+                "publiccomments": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enablepubliccomments')`."
+                },
+                "steamlogin": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enablesteamlogin')`."
+                },
+                "normallogin": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enablenormallogin')`."
+                },
+                "groupbanning": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enablegroupbanning')`."
+                },
+                "friendsbanning": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enablefriendsbanning')`."
+                },
+                "adminrehashing": {
+                    "type": "boolean",
+                    "description": "`Config::getBool('config.enableadminrehashing')`."
+                },
+                "smtp_configured": {
+                    "type": "boolean",
+                    "description": "True iff `:prefix_settings.smtp.host` is non-empty (the panel-controlled SMTP indicator the Settings → Main form drives). The actual host / credentials are never reported."
+                },
+                "steam_api_key_set": {
+                    "type": "boolean",
+                    "description": "True iff `STEAMAPIKEY` is `define()`d to a non-empty value in `config.php`. The key value itself is never reported."
+                },
+                "geoip_present": {
+                    "type": "boolean",
+                    "description": "True iff `data/GeoLite2-Country.mmdb` exists and is readable on disk (`MMDB_PATH`). Maxmind data is the panel's only IP-to-country source."
+                }
+            }
+        }
+    }
+}

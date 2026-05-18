@@ -1,0 +1,74 @@
+---
+title: SourceBans++
+description: Self-hostable ban management for Source-engine game servers — install, upgrade, operate.
+template: splash
+hero:
+  tagline: |
+    Self-hosted ban management for Source-engine game servers.
+    Install in minutes, upgrade safely, troubleshoot fast.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Get started
+      link: /getting-started/overview/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/sbpp/sourcebans-pp
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+SourceBans++ is a free, open-source admin and ban-management system
+for Source-engine games (Team Fortress 2, Counter-Strike, Garry's Mod,
+and friends). It has two halves that talk to each other:
+
+- A **web panel** your admins use to manage bans, mutes, server access,
+  and admin permissions.
+- A set of **SourceMod plugins** running on your game servers that
+  enforce those bans in-game and report new admin actions back to the
+  panel.
+
+You install both, point them at the same database, and the rest is
+day-to-day moderation work.
+
+## Where to start
+
+<CardGrid stagger>
+  <Card title="New here?" icon="information">
+    Read the [Overview](/getting-started/overview/) for a quick map of
+    how the panel and plugin halves fit together, then move on to the
+    install guide.
+  </Card>
+
+  <Card title="Install it" icon="rocket">
+    The [Quickstart](/getting-started/quickstart/) walks you through a
+    fresh install end-to-end: database, web panel, plugin, and your
+    first server.
+  </Card>
+
+  <Card title="Connect your servers" icon="setting">
+    Once the panel is live, [add a game server](/setup/adding-server/)
+    and wire its `ServerID` into the SourceMod plugin's config.
+  </Card>
+
+  <Card title="Already running it?" icon="approve-check">
+    See [Updating](/updating/) for the safe upgrade path — and the
+    dedicated [1.8.x → 2.0.x guide](/updating/1-8-to-2-0/) if you're
+    crossing the v2.0 boundary.
+  </Card>
+
+  <Card title="Something broken?" icon="warning">
+    The [Troubleshooting](/troubleshooting/panel-not-loading/)
+    section catalogs the usual culprits — database errors, missing
+    PHP extensions, blank pages, and server-connection issues.
+  </Card>
+
+  <Card title="Need a hand?" icon="comment">
+    Drop into our [Discord](https://discord.gg/tzqYqmAtF5) and ask in
+    `#help-support`. The [FAQ](/faq/) covers the questions we answer
+    most often.
+  </Card>
+</CardGrid>

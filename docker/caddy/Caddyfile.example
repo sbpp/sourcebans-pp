@@ -1,0 +1,44 @@
+# SourceBans++ Caddyfile example (#1381 deliverable 4).
+#
+# Minimal "panel behind Caddy with automatic Let's Encrypt TLS" config.
+# Pair with the commented `caddy:` service block in
+# `docker-compose.prod.yml`.
+#
+# Usage:
+#   1. Point your domain's A/AAAA records at the host running this
+#      compose stack.
+#   2. Set SBPP_DOMAIN in `.env` to that domain.
+#   3. Set SBPP_TRUSTED_PROXIES in `.env` so the panel trusts Caddy's
+#      forwarded headers:
+#
+#          SBPP_TRUSTED_PROXIES=172.16.0.0/12 10.0.0.0/8
+#
+#   4. Uncomment the `caddy:` service block in
+#      docker-compose.prod.yml.
+#   5. `docker compose -f docker-compose.prod.yml up -d`
+#
+# Caddy provisions the TLS cert automatically on first request.
+#
+# {$SBPP_DOMAIN} is substituted at Caddy startup from the env var.
+
+{$SBPP_DOMAIN} {
+	# Forward to the panel container on the compose network.
+	# `web` is the service name from docker-compose.prod.yml; Caddy
+	# resolves it via Docker's embedded DNS.
+	reverse_proxy web:80
+
+	# Caddy automatically sets X-Forwarded-For + X-Forwarded-Proto +
+	# X-Forwarded-Host on reverse_proxy directives. The panel
+	# entrypoint configures Apache's mod_remoteip to honour them
+	# when SBPP_TRUSTED_PROXIES covers the Docker bridge range.
+
+	# Gzip / zstd response compression.
+	encode zstd gzip
+
+	# Server-side cache headers for the panel's static assets
+	# (theme.css, theme.js, lucide.min.js, *.png). The panel itself
+	# emits sensible Cache-Control on dynamic responses; this rule
+	# adds a year-long max-age for the static surface.
+	@static path *.css *.js *.png *.jpg *.jpeg *.gif *.webp *.svg *.ico *.woff *.woff2
+	header @static Cache-Control "public, max-age=31536000, immutable"
+}

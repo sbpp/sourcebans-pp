@@ -63,12 +63,17 @@
             <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))">
                 <div>
                     <label class="label" for="type">Ban type</label>
+                    {* Smart-default Ban type via `?type=…` (paired with
+                       `?steam=…` — see admin.bans.php for the allowlist).
+                       Default is 0 (Steam ID) when no smart-default is
+                       active, matching the form's pre-#PLAYER_CTX_MENU
+                       shape. *}
                     <select class="select"
                             id="type"
                             name="type"
                             data-testid="addban-type">
-                        <option value="0">Steam ID</option>
-                        <option value="1">IP Address</option>
+                        <option value="0"{if $prefill_type == 0} selected{/if}>Steam ID</option>
+                        <option value="1"{if $prefill_type == 1} selected{/if}>IP Address</option>
                     </select>
                 </div>
                 <div>
@@ -119,22 +124,32 @@
 
             <div>
                 <label class="label" for="steam">Steam ID / Community ID</label>
+                {* Smart-default SteamID via `?steam=…&type=0` (admin.bans.php
+                   allowlists STEAM_X:Y:Z / [U:1:N] / SteamID64 before this
+                   value reaches the template, so the auto-escape is the
+                   belt-and-braces). Used by the public servers list's
+                   right-click context menu's "Ban player" item. *}
                 <input type="text"
                        class="input font-mono"
                        id="steam"
                        name="steam"
                        data-testid="addban-steam"
+                       value="{if $prefill_type == 0}{$prefill_steam}{/if}"
                        placeholder="STEAM_0:1:23498765">
                 <div class="text-xs mt-2" id="steam.msg" style="color:var(--danger);display:none"></div>
             </div>
 
             <div>
                 <label class="label" for="ip">IP address</label>
+                {* Smart-default IP via `?steam=…&type=1` — same shape as the
+                   Steam field above, but only populated when the prefill
+                   declared an IP type. *}
                 <input type="text"
                        class="input font-mono"
                        id="ip"
                        name="ip"
                        data-testid="addban-ip"
+                       value="{if $prefill_type == 1}{$prefill_steam}{/if}"
                        placeholder="203.0.113.10">
                 <div class="text-xs mt-2" id="ip.msg" style="color:var(--danger);display:none"></div>
             </div>
@@ -251,6 +266,18 @@
             window.sb.message[kind](title, body || '');
         }
     }
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
+    }
     function validate(type) {
         var err = 0;
         var reason = '';
@@ -307,7 +334,7 @@
         if (reason === null) return;
         var a = api(), A = actions();
         if (!a || !A) return;
-        btn.disabled = true;
+        setBusy(btn, true);
         a.call(A.BansAdd, {
             nickname: $id('nickname').value,
             type: type,
@@ -319,7 +346,7 @@
             reason: reason,
             fromsub: Number(($id('fromsub') && $id('fromsub').value) || 0)
         }).then(function (r) {
-            btn.disabled = false;
+            setBusy(btn, false);
             if (!r || r.ok === false) {
                 toast('error', 'Add ban failed', (r && r.error && r.error.message) || 'Unknown error');
                 return;

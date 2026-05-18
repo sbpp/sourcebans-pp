@@ -45,7 +45,7 @@ Legend:
         and an action-to-permission matrix lock
         (`PermissionMatrixTest`)
 13. * Configurable SMTP `From Email` / `From Name` (#1109)
-14. * Local Docker dev stack (PHP 8.2 + Apache, MariaDB, Adminer,
+14. * Local Docker dev stack (PHP 8.5 + Apache, MariaDB, Adminer,
         Mailpit) driven by `./sbpp.sh`
 15. * Static analysis: PHPStan level 5 + custom Smarty rule +
         staabm/phpstan-dba SQL type-checking against the live schema
@@ -82,16 +82,35 @@ Legend:
         Mailer
 32. ! Gated normal-login flow on its own `config.enablenormallogin`
         setting (#1102)
-33. ? PHP 8.2 minimum; Smarty 5; lcobucci/jwt for the auth cookie;
-        league/commonmark for admin Markdown
+33. ? PHP 8.5 minimum (was 8.2); Smarty 5; lcobucci/jwt for the
+        auth cookie; league/commonmark for admin Markdown (#1289
+        bumped the floor pre-tag)
 34. ? `web/themes/default/` is the new default theme; the previous
         default ships as a compatibility shape (legacy property
         names, alias keys) so third-party themes that forked it
         keep rendering off the same View DTOs
 35. ? Documentation overhaul: `ARCHITECTURE.md` (codebase tour) +
         `AGENTS.md` (workflow / conventions) live alongside
-        `README.md`
+        `README.md`; user-facing install / upgrade / configure
+        guides moved to the Starlight site at sbpp.github.io
 ```
+
+### Privacy
+
+This release ships **default-on anonymous telemetry** (#1126). Once per
+day per install, the panel sends a small JSON payload to a SourceBans++
+Cloudflare Worker so maintainers can see what versions, environments,
+and feature toggles are actually in use. The payload is random
+per-install ID + categorical / count fields only — **no** hostnames,
+IPs, admin names, SteamIDs, ban reasons, or any other PII. The toggle
+lives at **Admin → Settings → Features → Privacy → Anonymous telemetry**;
+disabling it clears the per-install ID so re-enabling later issues a
+fresh one. The complete field list lives in the code at
+[`web/includes/Telemetry/schema-1.lock.json`](web/includes/Telemetry/schema-1.lock.json);
+the upgrade-time disclosure (and self-hosted-collector escape hatch)
+lives on the docs site at
+[Upgrading from 1.8.x to 2.0.x](https://sbpp.github.io/updating/1.8-to-2.0/#telemetry).
+Companion Worker repo: [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics).
 
 (10/11/24): Version 1.8.1 (**Run updater required**)
 -----------------------

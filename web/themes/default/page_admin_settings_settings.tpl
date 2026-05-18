@@ -5,8 +5,20 @@
     Sbpp\View\AdminSettingsView + web/pages/admin.settings.php (which
     routes by ?section=settings|features|logs|themes and renders one
     View per request — no AdminTabs JS tab-switching, no .tabcontent
-    wrapper divs). The active section is reflected in the sub-nav at
-    the top of every settings template via aria-current="page".
+    wrapper divs).
+
+    #1259 — sidebar lifted into a shared partial
+    --------------------------------------------
+    Pre-#1259 every page_admin_settings_*.tpl carried its own inline
+    `<nav>` block declaring four `<a class="sidebar__link">` rows and
+    a hardcoded `grid-template-columns:14rem 1fr` layout. The chrome
+    is now driven by `core/admin_sidebar.tpl` (parameterized partial)
+    via `web/includes/View/AdminTabs.php`; the page handler
+    (admin.settings.php) opens the shell + sidebar + content column
+    BEFORE this template renders. This template's outer wrapper is
+    just the page-level padding + heading + form content — no grid,
+    no sidebar markup. See AGENTS.md "Sub-paged admin routes" for
+    the convention.
 
     Variable contract (kept in sync by SmartyTemplateRule):
         Permission gates:
@@ -16,11 +28,15 @@
             $can_owner — kept for parity with sibling settings views;
                 this template doesn't gate any UI on it directly but
                 the View constructor requires it for cross-tab parity.
-        Section nav: $active_section.
         Settings values: $config_title, $config_logo,
             $config_min_password, $config_dateformat,
             $config_dash_title, $config_dash_text, $auth_maxlife,
             $auth_maxlife_remember, $auth_maxlife_steam,
+            $auth_maxlife_human, $auth_maxlife_remember_human,
+            $auth_maxlife_steam_human (#1232 — server-rendered first
+            paint for the per-input duration echoes; the page-tail JS
+            mirrors `Sbpp\Util\Duration::humanizeMinutes()` so the
+            spans update live as the operator types),
             $config_debug, $enable_submit, $enable_protest,
             $enable_commslist, $protest_emailonlyinvolved,
             $dash_lognopopup, $config_default_page,
@@ -31,8 +47,11 @@
             $config_mail_from_email, $config_mail_from_name.
 
     Testability hooks:
-        - Sub-nav <a> elements: data-testid="settings-tab-<key>"
-          + aria-current="page" on the active tab.
+        - Sidebar <a> elements: data-testid="admin-tab-<slug>" (#1259
+          unified hook on `core/admin_sidebar.tpl`; the legacy
+          `settings-tab-<slug>` hook is gone — the chrome is now
+          shared with servers / mods / groups so the testid uses the
+          common `admin-tab-<slug>` shape).
         - Each <label>/<input> row: data-testid="setting-row" +
           data-key="<setting.key>" so end-to-end tests can target
           a setting by its persisted name (e.g. "template.title")
@@ -49,49 +68,31 @@
     Documented in AGENTS.md "Anti-patterns" + "Admin-authored display
     text". The help icon links to the CommonMark cheat-sheet so admins
     can discover the syntax without losing the safe-on-render contract.
+
+    #1266 — outer `.p-6` removed
+    ----------------------------
+    The page padding now lives on the `.admin-sidebar-shell` (the grid
+    host opened by AdminTabs.php), so this template no longer wraps
+    its body in `<div class="p-6">`. Without that change the sidebar's
+    first row floated 1.5rem above the page heading because
+    `align-items: start` aligned grid cells, not visible content
+    inside them. The `.mb-6` heading wrapper inside this template is
+    intentionally kept so the heading still gets its bottom gap to
+    the first card.
 *}
-<div class="p-6">
+<div>
     <div class="mb-6">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
         <p class="text-sm text-muted m-0 mt-2">Site-wide configuration. Changes apply immediately.</p>
     </div>
 
-    <div class="grid gap-4" style="grid-template-columns:14rem 1fr;align-items:start">
-        <nav aria-label="Settings sections" role="tablist">
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=settings"
-               role="tab"
-               data-testid="settings-tab-settings"
-               {if $active_section == 'settings'}aria-current="page"{/if}>
-                <i data-lucide="settings"></i> Main
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=features"
-               role="tab"
-               data-testid="settings-tab-features"
-               {if $active_section == 'features'}aria-current="page"{/if}>
-                <i data-lucide="toggle-right"></i> Features
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=logs"
-               role="tab"
-               data-testid="settings-tab-logs"
-               {if $active_section == 'logs'}aria-current="page"{/if}>
-                <i data-lucide="scroll-text"></i> System Log
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=themes"
-               role="tab"
-               data-testid="settings-tab-themes"
-               {if $active_section == 'themes'}aria-current="page"{/if}>
-                <i data-lucide="palette"></i> Themes
-            </a>
-        </nav>
-
-        <div>
-            {if NOT $can_web_settings}
-                <div class="card">
-                    <div class="card__body">
-                        <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
-                    </div>
-                </div>
-            {else}
+    {if NOT $can_web_settings}
+        <div class="card">
+            <div class="card__body">
+                <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
+            </div>
+        </div>
+    {else}
                 <form action="?p=admin&amp;c=settings&amp;section=settings" method="post" class="space-y-4" id="form-settings-main">
                     {csrf_field}
                     <input type="hidden" name="settingsGroup" value="mainsettings">
@@ -105,7 +106,12 @@
                             </div>
                             <div data-testid="setting-row" data-key="template.logo">
                                 <label class="label" for="template_logo">Logo path</label>
-                                <input class="input" type="text" id="template_logo" name="template_logo" value="{$config_logo}">
+                                <input class="input" type="text" id="template_logo" name="template_logo" value="{$config_logo}" aria-describedby="template_logo_help">
+                                <p class="settings-fieldset__help"
+                                   id="template_logo_help"
+                                   data-testid="setting-help-template.logo">
+                                    Path to the brand mark image rendered in the sidebar and sign-in card, resolved relative to the active theme directory (<code class="font-mono">themes/&lt;theme&gt;/</code>). Default: <code class="font-mono">images/favicon.svg</code> &mdash; the SourceBans++ shield from the favicon set. Any theme-relative SVG / PNG works; <code class="font-mono">logos/sbpp_logo.png</code> ships as a 512&times;512 PNG render of the same shield for installs that need a raster brand mark.
+                                </p>
                             </div>
                             <div data-testid="setting-row" data-key="config.password.minlength">
                                 <label class="label" for="config_password_minlength">Minimum password length</label>
@@ -124,24 +130,148 @@
                         </div>
                     </div>
 
+                    {*
+                        #1207 ADM-7: token-lifetime inputs stacked,
+                        with per-input help.
+
+                        Pre-fix shape: a 3-column `display: grid` with
+                        the labels "Default", "Remember me",
+                        "Steam login" side-by-side. The labels were
+                        unequal width and the inputs themselves were
+                        narrower than their labels at desktop
+                        ("the input boxes are narrower than their
+                        labels"); on mobile the grid collapsed to a
+                        single column but the explanatory copy
+                        ("Token lifetimes (in minutes)") stayed on
+                        the card header so the user couldn't tell
+                        which input the unit applied to.
+
+                        Fix:
+
+                          - Use a `<fieldset>` + `<legend>` so the
+                            section heading is the form group's a11y
+                            label (replacing the card-level `<h3>`
+                            chrome — the outer `.card` chrome is kept
+                            for visual consistency with sibling
+                            settings sections).
+                          - Each input lives in its own `<div
+                            data-testid="setting-row">` with a
+                            description paragraph below the input so
+                            the unit ("in minutes") and the meaning
+                            ("when the user ticks Remember me", "when
+                            signed in via the Continue with Steam
+                            button") sit next to the field they apply
+                            to. The paragraphs are tied to the
+                            inputs via `aria-describedby` so screen
+                            readers announce them as the input's
+                            description.
+                          - The labels are renamed away from
+                            "Default" / "Remember me" / "Steam login"
+                            to "Default sign-in" / "\"Remember me\"
+                            sign-in" / "Steam sign-in" so users
+                            scanning the form don't have to read the
+                            section heading to know what "Default"
+                            applies to.
+                          - The vertical stack layout works the same
+                            on desktop and mobile, so the
+                            help-text-detached-from-the-card-header
+                            bug at <=768px goes away too.
+                    *}
                     <div class="card">
-                        <div class="card__header"><div><h3>Authentication</h3><p>Token lifetimes (in minutes).</p></div></div>
-                        <div class="card__body space-y-4">
-                            <div class="grid gap-4" style="grid-template-columns:repeat(3,1fr)">
+                        <fieldset class="settings-fieldset"
+                                  data-testid="settings-token-lifetimes">
+                            <legend class="settings-fieldset__legend">
+                                <span class="settings-fieldset__title">Authentication</span>
+                                <span class="settings-fieldset__hint">Session token lifetimes, measured in minutes. Set a value to <code>0</code> to disable a sign-in path.</span>
+                            </legend>
+                            <div class="settings-fieldset__body space-y-5">
+                                {*
+                                    #1232: per-input duration echo.
+
+                                    Each input gets a `data-duration-input`
+                                    marker attribute and an adjacent muted
+                                    span keyed by `data-duration-echo-for=
+                                    "<input-id>"`. The span carries
+                                    `aria-live="polite"` so screen-reader
+                                    users hear the conversion as they edit.
+
+                                    The span is server-rendered with the
+                                    `*_human` props from `AdminSettingsView`
+                                    (populated by
+                                    `Sbpp\Util\Duration::humanizeMinutes()`
+                                    in admin.settings.php) so the page works
+                                    without JS. The page-tail
+                                    `<script>` re-implements the same
+                                    formula and updates the span on every
+                                    `input` event — see the IIFE near the
+                                    bottom of this template.
+
+                                    The span sits between the input and the
+                                    `.settings-fieldset__help` paragraph.
+                                    On desktop the input is clamped at
+                                    18rem (`.settings-fieldset__input`)
+                                    so the inline span flows next to it
+                                    on the same line; on mobile (<=768px)
+                                    the input expands to 100% and the
+                                    span wraps below — both shapes are
+                                    fine because the span is short.
+                                *}
                                 <div data-testid="setting-row" data-key="auth.maxlife">
-                                    <label class="label" for="auth_maxlife">Default</label>
-                                    <input class="input" type="number" min="0" id="auth_maxlife" name="auth_maxlife" value="{$auth_maxlife}">
+                                    <label class="label" for="auth_maxlife">Default sign-in</label>
+                                    <input class="input settings-fieldset__input"
+                                           type="number" min="0"
+                                           id="auth_maxlife"
+                                           name="auth_maxlife"
+                                           value="{$auth_maxlife}"
+                                           data-duration-input
+                                           aria-describedby="auth_maxlife_help">
+                                    <span class="text-muted text-xs"
+                                          data-duration-echo-for="auth_maxlife"
+                                          aria-live="polite">{$auth_maxlife_human}</span>
+                                    <p class="settings-fieldset__help"
+                                       id="auth_maxlife_help"
+                                       data-testid="setting-help-auth.maxlife">
+                                        How long a regular sign-in session lasts before the user is signed out, in minutes.
+                                    </p>
                                 </div>
                                 <div data-testid="setting-row" data-key="auth.maxlife.remember">
-                                    <label class="label" for="auth_maxlife_remember">Remember me</label>
-                                    <input class="input" type="number" min="0" id="auth_maxlife_remember" name="auth_maxlife_remember" value="{$auth_maxlife_remember}">
+                                    <label class="label" for="auth_maxlife_remember">&ldquo;Remember me&rdquo; sign-in</label>
+                                    <input class="input settings-fieldset__input"
+                                           type="number" min="0"
+                                           id="auth_maxlife_remember"
+                                           name="auth_maxlife_remember"
+                                           value="{$auth_maxlife_remember}"
+                                           data-duration-input
+                                           aria-describedby="auth_maxlife_remember_help">
+                                    <span class="text-muted text-xs"
+                                          data-duration-echo-for="auth_maxlife_remember"
+                                          aria-live="polite">{$auth_maxlife_remember_human}</span>
+                                    <p class="settings-fieldset__help"
+                                       id="auth_maxlife_remember_help"
+                                       data-testid="setting-help-auth.maxlife.remember">
+                                        Used when the user ticks the &ldquo;Remember me&rdquo; checkbox on the login form. Typically much longer than the default session.
+                                    </p>
                                 </div>
                                 <div data-testid="setting-row" data-key="auth.maxlife.steam">
-                                    <label class="label" for="auth_maxlife_steam">Steam login</label>
-                                    <input class="input" type="number" min="0" id="auth_maxlife_steam" name="auth_maxlife_steam" value="{$auth_maxlife_steam}">
+                                    <label class="label" for="auth_maxlife_steam">Steam sign-in</label>
+                                    <input class="input settings-fieldset__input"
+                                           type="number" min="0"
+                                           id="auth_maxlife_steam"
+                                           name="auth_maxlife_steam"
+                                           value="{$auth_maxlife_steam}"
+                                           data-duration-input
+                                           aria-describedby="auth_maxlife_steam_help">
+                                    <span class="text-muted text-xs"
+                                          data-duration-echo-for="auth_maxlife_steam"
+                                          aria-live="polite">{$auth_maxlife_steam_human}</span>
+                                    <p class="settings-fieldset__help"
+                                       id="auth_maxlife_steam_help"
+                                       data-testid="setting-help-auth.maxlife.steam">
+                                        Lifetime of a session opened via the &ldquo;Continue with Steam&rdquo; button.
+                                    </p>
                                 </div>
                             </div>
-                        </div>
+                        </fieldset>
                     </div>
 
                     <div class="card">
@@ -155,10 +285,75 @@
                                 <label class="label" for="dash_intro_text">
                                     Intro body
                                     <span class="text-muted text-xs">
-                                        — Markdown supported (<a href="https://commonmark.org/help/" target="_blank" rel="noopener">CommonMark cheat-sheet</a>). Raw HTML is escaped on render.
+                                        — Markdown supported
+                                        (<a href="https://commonmark.org/help/"
+                                            target="_blank"
+                                            rel="noopener"
+                                            data-testid="dash-intro-cheatsheet-link">CommonMark cheat-sheet</a>).
+                                        Raw HTML is escaped on render.
                                     </span>
                                 </label>
-                                <textarea class="textarea" id="dash_intro_text" name="dash_intro_text" rows="10" style="width:100%;font-family:var(--font-mono);font-size:var(--fs-sm)">{$config_dash_text}</textarea>
+                                {*
+                                    #1207 SET-1: live preview pane.
+
+                                    The textarea on the left stays a plain
+                                    <textarea> by design (re-introducing a
+                                    WYSIWYG was the source of #1113 — see
+                                    AGENTS.md "Anti-patterns"). The preview
+                                    pane on the right calls the new
+                                    `system.preview_intro_text` JSON action
+                                    which pipes the value through
+                                    `Sbpp\Markup\IntroRenderer` server-side,
+                                    so the rendered HTML matches what the
+                                    public dashboard would emit byte-for-byte.
+
+                                    Layout: the grid drops to one column
+                                    below 768px so the preview stacks
+                                    underneath on mobile rather than
+                                    crushing the textarea.
+
+                                    The preview frame's `nofilter` is the
+                                    only `nofilter` use here; safety
+                                    annotation is on the `{$rendered}` line
+                                    below for the initial server-rendered
+                                    paint, and the JS-side update goes
+                                    through `el.innerHTML = r.data.html`
+                                    where `r.data.html` is the same
+                                    IntroRenderer output (`html_input:
+                                    'escape'`, `allow_unsafe_links:
+                                    'false'`).
+                                *}
+                                <div class="dash-intro-editor"
+                                     data-testid="dash-intro-editor">
+                                    <textarea class="textarea"
+                                              id="dash_intro_text"
+                                              name="dash_intro_text"
+                                              rows="10"
+                                              style="width:100%;font-family:var(--font-mono);font-size:var(--fs-sm)"
+                                              data-testid="dash-intro-textarea">{$config_dash_text}</textarea>
+                                    <div class="dash-intro-preview"
+                                         data-testid="dash-intro-preview"
+                                         data-loading="false"
+                                         aria-label="Markdown preview">
+                                        <div class="dash-intro-preview__label">Preview</div>
+                                        {*
+                                            aria-live sits on the body (not the wrapper)
+                                            so assistive tech announces only the rendered
+                                            content on each keystroke — not the static
+                                            "Preview" label above it.
+                                        *}
+                                        <div class="dash-intro-preview__body"
+                                             data-testid="dash-intro-preview-body"
+                                             aria-live="polite">
+                                            {if $config_dash_text_preview != ''}
+                                                {* nofilter: $config_dash_text_preview is `IntroRenderer::renderIntroText()` output (CommonMark + html_input=escape + allow_unsafe_links=false) — the same render path the public dashboard uses, see AGENTS.md "Admin-authored display text". *}
+                                                {$config_dash_text_preview nofilter}
+                                            {else}
+                                                <p class="text-xs text-muted m-0" data-empty>Type Markdown on the left to see how it renders to visitors.</p>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div data-testid="setting-row" data-key="dash.lognopopup">
                                 <label class="flex items-center gap-2">
@@ -295,7 +490,14 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-end gap-2">
+                    {*
+                        #1207 SET-2: `.settings-actions` keeps clear of
+                        the page footer on mobile. The class adds a
+                        bottom margin so the "Save changes" button no
+                        longer reads as overlapping the
+                        `<footer class="app-footer">` underneath.
+                    *}
+                    <div class="settings-actions flex items-center justify-end gap-2">
                         <button type="button" class="btn btn--secondary btn--sm" onclick="clearCacheBtn();">
                             <i data-lucide="brush"></i> Clear cache
                         </button>
@@ -304,9 +506,7 @@
                         </button>
                     </div>
                 </form>
-            {/if}
-        </div>
-    </div>
+    {/if}
 </div>
 
 <script>
@@ -343,6 +543,141 @@
             window.alert('Cache cleared.');
         });
     };
+
+    /**
+     * #1207 SET-1: live Markdown preview.
+     *
+     * Debounced input handler that POSTs the textarea's current value
+     * to `system.preview_intro_text`, receives the rendered HTML back
+     * (rendered by `Sbpp\Markup\IntroRenderer` — same path the public
+     * dashboard uses), and patches the preview pane in place. The
+     * `[data-loading]` flips to `true` while a call is in flight so
+     * the contract from `_base.ts`'s `waitForReady()` (data-loading
+     * settles to "false" before tests proceed) keeps holding.
+     *
+     * The first render comes from PHP (see the `{if
+     * $config_dash_text|trim != ''}` block above); JS only kicks in
+     * once the user starts typing, so the page works without JS too —
+     * the saved-form bounce flow re-renders the page with fresh PHP
+     * markup either way.
+     */
+    var ta = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('dash_intro_text'));
+    var preview = /** @type {HTMLElement|null} */ (
+        document.querySelector('[data-testid="dash-intro-preview"]')
+    );
+    var previewBody = /** @type {HTMLElement|null} */ (
+        document.querySelector('[data-testid="dash-intro-preview-body"]')
+    );
+
+    if (ta && preview && previewBody && window.sb && window.sb.api && window.Actions) {
+        var emptyHtml = '<p class="text-xs text-muted m-0" data-empty>Type Markdown on the left to see how it renders to visitors.</p>';
+
+        /** @type {number|null} */
+        var pending = null;
+        /** @type {string} */
+        var lastSent = ta.value;
+
+        function refresh() {
+            if (!ta || !preview || !previewBody) return;
+            var current = ta.value;
+            if (current === lastSent && pending === null) return;
+            lastSent = current;
+            if (current.trim() === '') {
+                previewBody.innerHTML = emptyHtml;
+                preview.setAttribute('data-loading', 'false');
+                return;
+            }
+            preview.setAttribute('data-loading', 'true');
+            window.sb.api.call(window.Actions.SystemPreviewIntroText, { markdown: current }).then(function (r) {
+                if (!preview || !previewBody) return;
+                preview.setAttribute('data-loading', 'false');
+                if (r && r.ok && r.data && typeof r.data.html === 'string') {
+                    // r.data.html is IntroRenderer output (CommonMark
+                    // with html_input=escape, allow_unsafe_links=false);
+                    // safe to drop in via innerHTML for the same reason
+                    // the server-rendered first paint above is safe
+                    // behind `nofilter`. Caveat: do NOT swap this for
+                    // a third-party Markdown library — see AGENTS.md
+                    // "Admin-authored display text" for the contract.
+                    previewBody.innerHTML = r.data.html;
+                }
+            }, function () {
+                if (preview) preview.setAttribute('data-loading', 'false');
+            });
+        }
+
+        ta.addEventListener('input', function () {
+            if (pending !== null) window.clearTimeout(pending);
+            pending = window.setTimeout(function () {
+                pending = null;
+                refresh();
+            }, 200);
+        });
+    }
+
+    /**
+     * #1232: live "minutes -> human" echo for the Authentication
+     * fieldset. Mirrors `Sbpp\Util\Duration::humanizeMinutes()` (PHP)
+     * so the muted span next to each `[data-duration-input]` updates
+     * as the operator types. The first paint is server-rendered (see
+     * `$auth_maxlife_human` etc. in the template), so this block only
+     * runs when the user actually edits a value.
+     *
+     * @param {number} minutes
+     * @returns {string}
+     */
+    function humanizeMinutes(minutes) {
+        if (!Number.isFinite(minutes) || minutes <= 0) return 'disabled';
+        var n = Math.floor(minutes);
+        if (n < 60) return n === 1 ? '1 minute' : n + ' minutes';
+        if (n < 1440) {
+            if (n % 60 === 0) {
+                var h = n / 60;
+                return h === 1 ? '1 hour' : h + ' hours';
+            }
+            var hStr = trimZero(n / 60);
+            return '\u2248 ' + hStr + ' ' + (hStr === '1' ? 'hour' : 'hours');
+        }
+        if (n % 1440 === 0) {
+            var d = n / 1440;
+            return d === 1 ? '1 day' : d + ' days';
+        }
+        var dStr = trimZero(n / 1440);
+        return '\u2248 ' + dStr + ' ' + (dStr === '1' ? 'day' : 'days');
+    }
+
+    /**
+     * Format a number to one decimal and drop a trailing `.0` so values
+     * that round to a whole number render without a redundant decimal.
+     * Mirrors the PHP helper's `trimZero()`.
+     *
+     * @param {number} value
+     * @returns {string}
+     */
+    function trimZero(value) {
+        var s = (Math.round(value * 10) / 10).toFixed(1);
+        return s.charAt(s.length - 1) === '0' && s.charAt(s.length - 2) === '.'
+            ? s.slice(0, -2)
+            : s;
+    }
+
+    var durationInputs = /** @type {NodeListOf<HTMLInputElement>} */ (
+        document.querySelectorAll('[data-duration-input]')
+    );
+    durationInputs.forEach(function (input) {
+        var echo = /** @type {HTMLElement|null} */ (
+            document.querySelector('[data-duration-echo-for="' + input.id + '"]')
+        );
+        if (!echo) return;
+        input.addEventListener('input', function () {
+            // Empty input -> treat as 0 (matches the "disabled" sentinel
+            // the PHP helper returns; the `<input type=number>` clears
+            // to "" rather than "0" on backspace).
+            var raw = input.value.trim();
+            var n = raw === '' ? 0 : parseInt(raw, 10);
+            echo.textContent = humanizeMinutes(Number.isNaN(n) ? 0 : n);
+        });
+    });
 })();
 {/literal}
 </script>

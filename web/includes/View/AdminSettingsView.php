@@ -38,9 +38,28 @@ final class AdminSettingsView extends View
         public readonly string $config_dateformat,
         public readonly string $config_dash_title,
         public readonly string $config_dash_text,
+        // #1207 SET-1: pre-rendered HTML for the live-preview pane's
+        // first paint. Source value is `config_dash_text` (raw
+        // Markdown); the page handler runs it through
+        // `Sbpp\Markup\IntroRenderer::renderIntroText()` so the
+        // template can drop the result into the preview pane behind
+        // `nofilter` without the JS round-trip. The JS preview update
+        // (debounced on textarea input) calls
+        // `system.preview_intro_text` for fresh renders.
+        public readonly string $config_dash_text_preview,
         public readonly int $auth_maxlife,
         public readonly int $auth_maxlife_remember,
         public readonly int $auth_maxlife_steam,
+        // #1232: human-readable echoes for the three minute-typed
+        // auth lifetime fields. The wire format stays minutes (these
+        // are display-only spans next to each `<input type="number">`);
+        // the strings come from `Sbpp\Util\Duration::humanizeMinutes()`
+        // and are mirrored client-side by the page-tail JS so the echo
+        // updates as the operator types. First paint is server-rendered
+        // so the page works without JS.
+        public readonly string $auth_maxlife_human,
+        public readonly string $auth_maxlife_remember_human,
+        public readonly string $auth_maxlife_steam_human,
         public readonly int $config_bans_per_page,
         public readonly array $config_smtp,
         public readonly string $config_mail_from_email,
@@ -48,7 +67,6 @@ final class AdminSettingsView extends View
         public readonly array $bans_customreason,
         public readonly bool $can_web_settings,
         public readonly bool $can_owner,
-        public readonly string $active_section,
         public readonly bool $config_debug,
         public readonly bool $enable_submit,
         public readonly bool $enable_protest,

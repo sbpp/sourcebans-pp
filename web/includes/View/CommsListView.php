@@ -73,11 +73,30 @@ final class CommsListView extends View
         public readonly array $servers,
         public readonly array $pagination,
         public readonly bool $hide_inactive,
+        // #1274: union of the session "Hide inactive" flag AND the
+        // chip strip's `?state=active` URL surface. Both surfaces
+        // narrow the list to active-only rows; the template uses
+        // this single flag to drive the toggle button's pressed/
+        // label state and the Active chip's pressed state, so
+        // clicking either surface keeps the chrome consistent
+        // regardless of click order. `hide_inactive` (just the
+        // session flag) stays in the View for third-party themes
+        // that forked the v1.x default and only know about the
+        // session toggle.
+        public readonly bool $is_active_only,
         public readonly string $hide_inactive_toggle_url,
         public readonly bool $can_add_comm,
         public readonly bool $can_edit_comm,
         public readonly bool $can_unmute_gag,
         public readonly bool $can_delete_comm,
+        // #1207: detects whether the current request applied any filter
+        // (search text / server / time / state / type / hide-inactive).
+        // Drives the first-run-vs-filtered split in the empty-state
+        // shape — when zero rows AND no filter, the empty state shows
+        // "no comm blocks recorded yet" with an "Add a comm block" CTA;
+        // with a filter, it stays "No comm blocks match those filters"
+        // + "Clear filters".
+        public readonly bool $is_filtered,
         // Legacy template variables — preserved on the View (rather
         // than left as raw $theme->assign() calls in the handler) so
         // SmartyTemplateRule can verify any third-party theme that
@@ -96,6 +115,18 @@ final class CommsListView extends View
         public readonly bool $hideadminname,
         public readonly bool $view_comments,
         public readonly bool $view_bans,
+        // #1315: drives the `<details class="filters-details">`
+        // disclosure that wraps the advanced-search box at the top
+        // of `page_comms.tpl`. True iff the request URL carries the
+        // `?advSearch=&advType=` legacy-shim pair (the v1.x power-
+        // user surface re-exposed as a default-collapsed disclosure).
+        // Bare `?p=commslist` / simple-bar filters (`?searchText=` /
+        // `?server=` / `?time=` / `?type=` / `?state=`) intentionally
+        // leave the disclosure closed — those filters are visible on
+        // the inline sticky bar and don't need the larger card open.
+        // Mirrors the post-submit auto-open contract #1303 introduced
+        // for admin-admins.
+        public readonly bool $is_advanced_search_open,
     ) {
     }
 }

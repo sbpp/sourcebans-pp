@@ -17,8 +17,8 @@
 
 declare(strict_types=1);
 
-use Sbpp\PhpStan\SbppNullReflector;
-use Sbpp\PhpStan\SbppPrefixAwareReflector;
+use Sbpp\PHPStan\SbppNullReflector;
+use Sbpp\PHPStan\SbppPrefixAwareReflector;
 use staabm\PHPStanDba\QueryReflection\PdoMysqlQueryReflector;
 use staabm\PHPStanDba\QueryReflection\QueryReflection;
 use staabm\PHPStanDba\QueryReflection\QueryReflector;

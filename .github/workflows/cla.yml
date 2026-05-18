@@ -1,0 +1,72 @@
+name: CLA Assistant
+
+# Gates PRs that touch the dual-licensable web panel (web/**) on a signed
+# Contributor License Agreement. The CLA itself lives at CLA.md; the
+# rationale and how-to-sign instructions live in CONTRIBUTING.md.
+#
+# Scope: only PRs touching `web/**` trigger the check. Plugin-only PRs
+# under `game/addons/sourcemod/**` are GPLv3 and intentionally not gated.
+#
+# Allowlist: the maintainer (rumblefrog) plus all GitHub App bots.
+# Update the `allowlist:` field below to onboard additional maintainers.
+#
+# Storage: signatures land in `signatures/cla.json` on an orphan branch
+# `cla-signatures` that the action creates on its first successful run.
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize, reopened]
+    paths:
+      - 'web/**'
+      - 'CLA.md'
+      - '.github/workflows/cla.yml'
+
+# `pull_request_target` runs in the base-repo context, which is required so
+# the action can write to the `cla-signatures` branch in this repo. Never
+# switch this to `pull_request` — the fork-context token can't push.
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla:
+    name: CLA signature check
+    # Gate execution so non-signing comments on PRs (and `pull_request_target`
+    # events that already passed the paths filter) don't burn action minutes.
+    # `recheck` is the documented manual re-trigger for maintainers.
+    if: |
+      (github.event_name == 'issue_comment' &&
+        (github.event.comment.body == 'recheck' ||
+         github.event.comment.body == 'I have read the CLA Document and I hereby sign the CLA')) ||
+      github.event_name == 'pull_request_target'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: CLA Assistant
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path-to-signatures: 'signatures/cla.json'
+          path-to-document: 'https://github.com/sbpp/sourcebans-pp/blob/main/CLA.md'
+          branch: 'cla-signatures'
+          allowlist: 'rumblefrog,dependabot[bot],*[bot]'
+          lock-pullrequest-aftermerge: true
+          custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
+          custom-notsigned-prcomment: |
+            Thanks for the PR! This change touches `web/**` (the SourceBans++ web panel),
+            which is covered by the project's [Contributor License Agreement](https://github.com/sbpp/sourcebans-pp/blob/main/CLA.md).
+
+            To sign, comment exactly the following line on this PR:
+
+            > I have read the CLA Document and I hereby sign the CLA
+
+            You only need to sign once — your signature applies to every future
+            web-panel PR you open against this repo. Plugin-only PRs
+            (`game/addons/sourcemod/**`) don't need a signature.
+
+            See [`CONTRIBUTING.md`](https://github.com/sbpp/sourcebans-pp/blob/main/CONTRIBUTING.md)
+            for the rationale.

@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
- *************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 /**
  * SourceBans "Error Connecting()" Debug
  * Checks for the ports being forwarded correctly
@@ -530,7 +516,7 @@ if (!$sock) {
             
             <h3 style="margin-top: 20px;">Need More Help?</h3>
             <p>Join the SourceBans++ Discord community for additional support:</p>
-            <a href="https://discord.gg/4Bhj6NU" target="_blank" class="discord-button">Join Discord</a>
+            <a href="https://discord.gg/tzqYqmAtF5" target="_blank" class="discord-button">Join Discord</a>
         </div>
 
         <div class="sdr-warning">

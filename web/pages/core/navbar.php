@@ -84,9 +84,18 @@ $admin = [
     ]
 ];
 
-$active = $_GET['p'] ?? null;
+$active    = $_GET['p'] ?? null;
+$activeCat = $_GET['c'] ?? null;
 foreach ($navbar as $key => $tab) {
-    $navbar[$key]['state'] = ($active === $tab['endpoint']) ? 'active' : 'nonactive';
+    $isActive = ($active === $tab['endpoint']);
+    // The 'admin' parent is the leaf only when no sub-route is selected.
+    // On ?p=admin&c=<sub> the sub-route's own entry owns the active
+    // state; otherwise both rows would carry aria-current="page", which
+    // misreports the current location to assistive tech (#1233).
+    if ($tab['endpoint'] === 'admin' && $activeCat !== null && $activeCat !== '') {
+        $isActive = false;
+    }
+    $navbar[$key]['state'] = $isActive ? 'active' : 'nonactive';
 
     if (!$tab['permission']) {
         unset($navbar[$key]);

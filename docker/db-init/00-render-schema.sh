@@ -54,14 +54,17 @@ VALUES
     ('admin', 'STEAM_0:0:0', '${ADMIN_HASH}', -1, 'admin@example.test', NULL, 16777216, 100);
 SQL
 
-# `./sbpp.sh test` runs PHPUnit as the `${MYSQL_USER}` user against a
-# dedicated `sourcebans_test` database that the fixture drops + recreates
-# between runs. By default the user only has rights on the panel DB, which
-# breaks the fixture with `Access denied`. Mirror the GRANT that
-# .github/workflows/test.yml does so dev tests work out of the box.
+# `./sbpp.sh test` and `./sbpp.sh e2e` run their fixtures as the
+# `${MYSQL_USER}` user against dedicated `sourcebans_test` and
+# `sourcebans_e2e` databases respectively, both of which the fixture
+# drops + recreates between runs. By default the user only has rights
+# on the panel DB, which breaks the fixture with `Access denied`.
+# Mirror the GRANT that .github/workflows/test.yml does so both gates
+# work out of the box on a fresh dev stack.
 PANEL_USER="${MYSQL_USER:-sourcebans}"
 mariadb -uroot <<SQL
 GRANT ALL PRIVILEGES ON \`sourcebans_test\`.* TO '${PANEL_USER}'@'%';
+GRANT ALL PRIVILEGES ON \`sourcebans_e2e\`.*  TO '${PANEL_USER}'@'%';
 GRANT CREATE, DROP ON *.* TO '${PANEL_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL

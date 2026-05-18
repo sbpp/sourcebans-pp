@@ -23,7 +23,7 @@ function api_account_check_password(array $params): array
     // admin's password through the API.
     if ($aid !== $userbank->GetAid()) {
         $affected = $userbank->GetProperty('user', $aid);
-        Log::add('w', 'Hacking Attempt',
+        Log::add(LogType::Warning, 'Hacking Attempt',
             $userbank->GetProperty('user') . " tried to check {$affected}'s password, but doesn't have access.");
         return Api::redirect('index.php?p=login&m=no_access');
     }
@@ -43,7 +43,7 @@ function api_account_check_srv_password(array $params): array
 
     if (!$userbank->is_logged_in() || $aid !== $userbank->GetAid()) {
         $affected = $userbank->GetProperty('user', $aid);
-        Log::add('w', 'Hacking Attempt',
+        Log::add(LogType::Warning, 'Hacking Attempt',
             $userbank->GetProperty('user') . " tried to check {$affected}'s server password, but doesn't have access.");
         return Api::redirect('index.php?p=login&m=no_access');
     }
@@ -63,8 +63,8 @@ function api_account_change_password(array $params): array
     $newPass = (string)($params['new_password'] ?? '');
     $oldPass = (string)($params['old_password'] ?? '');
 
-    if ($aid !== $userbank->GetAid() && !$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-        Log::add('w', 'Hacking Attempt',
+    if ($aid !== $userbank->GetAid() && !$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
+        Log::add(LogType::Warning, 'Hacking Attempt',
             ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . " tried to change a password without permission.");
         return Api::redirect('index.php?p=login&m=no_access');
     }
@@ -82,7 +82,7 @@ function api_account_change_password(array $params): array
     $GLOBALS['PDO']->bind(':aid', $aid);
     $admin = $GLOBALS['PDO']->single();
 
-    Log::add('m', 'Password Changed', "Password changed for admin ({$admin['user']})");
+    Log::add(LogType::Message, 'Password Changed', "Password changed for admin ({$admin['user']})");
     Auth::logout();
 
     return Api::redirect('index.php?p=login');
@@ -96,7 +96,7 @@ function api_account_change_srv_password(array $params): array
 
     if (!$userbank->is_logged_in() || $aid !== $userbank->GetAid()) {
         $affected = $userbank->GetProperty('user', $aid);
-        Log::add('w', 'Hacking Attempt',
+        Log::add(LogType::Warning, 'Hacking Attempt',
             "$username tried to change {$affected}'s server password, but doesn't have access.");
         return Api::redirect('index.php?p=login&m=no_access');
     }
@@ -112,7 +112,7 @@ function api_account_change_srv_password(array $params): array
         $GLOBALS['PDO']->execute();
     }
 
-    Log::add('m', 'Srv Password Changed', "Password changed for admin ($aid)");
+    Log::add(LogType::Message, 'Srv Password Changed', "Password changed for admin ($aid)");
 
     return [
         'message' => [
@@ -132,7 +132,7 @@ function api_account_change_email(array $params): array
     $password = (string)($params['password'] ?? '');
 
     if (!$userbank->is_logged_in() || $aid !== $userbank->GetAid()) {
-        Log::add('w', 'Hacking Attempt',
+        Log::add(LogType::Warning, 'Hacking Attempt',
             "$username tried to change " . $userbank->GetProperty('user', $aid) . "'s email, but doesn't have access.");
         return Api::redirect('index.php?p=login&m=no_access');
     }
@@ -149,7 +149,7 @@ function api_account_change_email(array $params): array
     $GLOBALS['PDO']->bind(':aid', $aid);
     $GLOBALS['PDO']->execute();
 
-    Log::add('m', 'E-mail Changed', "E-mail changed for admin ($aid).");
+    Log::add(LogType::Message, 'E-mail Changed', "E-mail changed for admin ($aid).");
 
     return [
         'message' => [

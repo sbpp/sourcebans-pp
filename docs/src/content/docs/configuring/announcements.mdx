@@ -1,0 +1,138 @@
+---
+title: Project announcements
+description: How the dashboard's "Latest announcement" strip works, where the content comes from, and how to opt out.
+sidebar:
+  order: 1
+  label: Project announcements
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+
+The home dashboard surfaces a slim "Latest announcement" strip
+between the stat cards and the recent-activity panels — visible only
+to logged-in administrators. Content is sourced from a JSON feed
+the SourceBans++ maintainers publish at:
+
+<Code lang="text" code="https://sbpp.github.io/announcements.json" />
+
+The panel fetches the feed once per install per day in the
+background, caches it on disk, and renders the freshest non-expired
+entry on every dashboard render thereafter. The fetch uses the same
+opt-out-by-default architecture as the panel's update check (a
+shutdown hook fires after the user's response is flushed; it never
+delays a request and never fails one if the upstream is unreachable).
+
+## What gets fetched
+
+The published feed is a public, anonymous-readable JSON file. You
+can open it in your browser and read it yourself — there's no
+hidden state. A typical entry looks like this:
+
+```json
+[
+  {
+    "id": "2026-05-rc1",
+    "title": "v2.0.0 RC1 is now available",
+    "body_md": "Read the [release notes](https://github.com/sbpp/sourcebans-pp/releases/tag/v2.0.0-rc1).",
+    "url": "https://github.com/sbpp/sourcebans-pp/releases/tag/v2.0.0-rc1",
+    "published_at": "2026-05-15T00:00:00Z",
+    "expires_at": "2026-08-15T00:00:00Z"
+  }
+]
+```
+
+Field-by-field:
+
+- `id` — short stable identifier (≤64 chars). Required.
+- `title` — one-line headline. Required.
+- `body_md` — optional Markdown body. Rendered through CommonMark in
+  safe mode (raw HTML is escaped, `javascript:` / `data:` URLs are
+  stripped). Same renderer your dashboard intro uses.
+- `url` — optional "read more" link. Must be `http://` or `https://`.
+- `published_at` — optional ISO-8601 timestamp; sets the displayed
+  date and the sort order.
+- `expires_at` — optional ISO-8601 timestamp. The panel stops
+  rendering the entry after this time and silently drops it from
+  the cache.
+
+## What's NOT sent
+
+The fetch is a plain HTTP `GET` with no query parameters, no
+cookies, no tracking pixels. The only outbound metadata is the
+`User-Agent` header, which carries your panel's version number
+(parity with the existing update-check call):
+
+<Code lang="text" code="User-Agent: SourceBans++/<version> (announcements)" />
+
+## Why this is opt-out by default
+
+The strip is intentionally narrow — single banner, admin-only
+visibility, low-frequency content (security advisories,
+release announcements, occasional release-blocker heads-up). The
+maintainers want to be able to reach panel operators with one-click
+visibility for things like:
+
+- A critical CVE is published — please update.
+- A backwards-incompatible upgrade just landed — read the upgrade
+  notes before running the updater.
+- A new SourceMod / MariaDB version requirement is shipping.
+
+Operators audit content via the **public diff history** of the
+[`docs/public/announcements.json`](https://github.com/sbpp/sourcebans-pp/blob/main/docs/public/announcements.json)
+file. Every change ships through a pull request with the same
+review process as the rest of the project. There's no separate
+"announcements server" or admin-only API endpoint that could be
+compromised independently — the upstream is just a static file in
+this git repo.
+
+The cost of "always on" is one HTTPS GET per install per day to
+sbpp.github.io, capped at 256 KiB of response body, with a 5-second
+timeout. If the upstream is unreachable, the panel keeps showing
+the previously cached announcement until a successful fetch
+overwrites it.
+
+## How to disable the fetch
+
+If your panel runs in an air-gapped environment, or you don't want
+the outbound network call regardless, define
+`SB_ANNOUNCEMENTS_URL` to the empty string in your `config.php`:
+
+```php
+// In web/config.php (or wherever your install keeps it)
+define('SB_ANNOUNCEMENTS_URL', '');
+```
+
+When the constant is the empty string, the shutdown hook
+short-circuits before flushing the response — no network call ever
+fires, the cache file is never written, and the dashboard simply
+omits the strip. There is no in-panel toggle by design: the JSON
+feed is intentionally low-frequency and audit-friendly, so the only
+sensible "off" position is the air-gap escape hatch above.
+
+<Aside type="note">
+The `define()` must run BEFORE `init.php`'s default define fires —
+`config.php` is loaded first, so this works as written. Don't put it
+in a hook that runs later.
+</Aside>
+
+## How announcements are proposed
+
+If you maintain a fork or care about a specific upcoming
+announcement, the workflow is the same as any other change to the
+docs site:
+
+1. Open a PR against
+   [`sbpp/sourcebans-pp`](https://github.com/sbpp/sourcebans-pp).
+2. Edit `docs/public/announcements.json` to prepend your entry
+   (newest-first ordering — the panel sorts by `published_at` but
+   the file convention is "newest at the top of the array" so
+   reviewers see the most relevant change first).
+3. The maintainers will review and merge. The
+   [docs deploy trigger workflow](https://github.com/sbpp/sourcebans-pp/blob/main/.github/workflows/docs-deploy-trigger.yml)
+   ships the updated file to `https://sbpp.github.io/announcements.json`
+   within a few minutes of merge.
+
+The strict schema, audit history, and one-file source-of-truth are
+the load-bearing properties: any operator with internet access can
+inspect every announcement that has ever been pushed before it
+lands on their dashboard.

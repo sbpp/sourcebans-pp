@@ -170,6 +170,33 @@ final class BansTest extends ApiTestCase
         $this->assertSnapshot('bans/add_already_banned', $second);
     }
 
+    public function testAddDuplicateErrorIncludesConflictingBid(): void
+    {
+        // Pre-seed a non-#1 ban so this asserts the bid is actually
+        // substituted into the error message rather than always rendering
+        // `#1` because the duplicate is the second row in the table.
+        // The reported regression (#STEAM_0:0:1000119) confused operators
+        // because the bare "is already banned" string gave them no anchor
+        // to look up the conflicting row — they saw an unbanned row in
+        // the UI and reasonably concluded the panel was lying. The fix
+        // surfaces the conflicting bid; this test pins that contract.
+        $this->seedBan('STEAM_0:1:7000', 'first-noise');
+        $this->seedBan('STEAM_0:1:7001', 'second-noise');
+        $conflictBid = $this->seedBan('STEAM_0:1:9999', 'active-original');
+
+        $this->loginAsAdmin();
+        $env = $this->api('bans.add', [
+            'nickname' => 'Reban', 'type' => 0, 'steam' => 'STEAM_0:1:9999',
+            'ip' => '', 'length' => 0, 'dfile' => '', 'dname' => '',
+            'reason' => 'reban-attempt', 'fromsub' => 0,
+        ]);
+        $this->assertEnvelopeError($env, 'already_banned');
+        $this->assertSame(
+            'SteamID: STEAM_0:1:9999 is already banned by ban #' . $conflictBid . '.',
+            $env['error']['message']
+        );
+    }
+
     public function testSetupBanReturnsSubmissionData(): void
     {
         $this->loginAsAdmin();
@@ -239,6 +266,7 @@ final class BansTest extends ApiTestCase
         $this->assertNull($env['data']['admin']['name'],  'admin should be hidden for public + hideadminname');
         $this->assertFalse($env['data']['comments_visible'], 'comments should be hidden when public + flag off');
         $this->assertSame([], $env['data']['comments']);
+        $this->assertFalse($env['data']['notes_visible'], 'notes_visible should be false for public callers (#1165)');
         $this->assertSnapshot('bans/detail_public_hidden', $env, ['data.bid', 'data.ban.banned_at', 'data.ban.banned_at_human', 'data.ban.expires_at', 'data.ban.expires_at_human']);
     }
 
@@ -270,6 +298,7 @@ final class BansTest extends ApiTestCase
         $this->assertSame('STEAM_0:1:2020', $env['data']['player']['steam_id']);
         $this->assertNotNull($env['data']['admin']['name']);
         $this->assertTrue($env['data']['comments_visible']);
+        $this->assertTrue($env['data']['notes_visible'], 'notes_visible should be true for admin callers (#1165)');
         $this->assertCount(1, $env['data']['comments']);
         $this->assertSame('note for the drawer', $env['data']['comments'][0]['text']);
         $this->assertSnapshot('bans/detail_admin_view', $env, [
@@ -282,6 +311,45 @@ final class BansTest extends ApiTestCase
             'data.comments.0.added',
             'data.comments.0.added_human',
         ]);
+    }
+
+    public function testDetailReportsUnbannedForPre2AdminLiftWithRemoveTypeNull(): void
+    {
+        // #1352: pre-2.0 admin-lifted bans whose `RemoveType IS NULL`
+        // (some v1.x panels left the column NULL even when admin lifted
+        // the ban — see web/updater/data/810.php's backfill migration)
+        // must surface as `state: 'unbanned'` from the JSON detail
+        // endpoint. Pre-fix the handler hit the default `'active'`
+        // branch since `length > 0 && ends > now`, leaving the drawer's
+        // detail surface visibly contradicting the page-side
+        // `?state=unbanned` SQL filter that pulled the row in.
+        $pdo = Fixture::rawPdo();
+        $now = time();
+        $aid = Fixture::adminAid();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_bans` (created, type, ip, authid, name, ends, length, reason, ureason, aid, adminIp, RemovedBy, RemovedOn, RemoveType)
+             VALUES (?, 0, "", ?, ?, ?, ?, ?, ?, ?, "127.0.0.1", ?, ?, NULL)',
+            DB_PREFIX,
+        ))->execute([
+            $now - 7 * 86400,
+            'STEAM_0:1:54321',
+            'Pre2Lifted',
+            $now + 7 * 86400,
+            14 * 86400,
+            'wallhack v1',
+            'pre-2.0 unban',
+            $aid,
+            $aid,
+            $now - 86400,
+        ]);
+        $bid = (int) $pdo->lastInsertId();
+
+        $env = $this->api('bans.detail', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('unbanned', $env['data']['ban']['state'],
+            'pre-2.0 admin-lifted row (RemoveType IS NULL but RemovedBy > 0) '
+            . 'must surface as state=unbanned via the defensive fallback in '
+            . 'api_bans_detail (parity with the page handler\'s SQL filter)');
     }
 
     public function testAddCommentInsertsRow(): void
@@ -559,5 +627,188 @@ final class BansTest extends ApiTestCase
         $this->assertTrue($env['ok'], json_encode($env));
         // bid is an autoincrement; redact so the snapshot only locks shape.
         $this->assertSnapshot('bans/search_success', $env, ['data.bans.0.bid']);
+    }
+
+    // -- bans.unban (#1301) ------------------------------------------------
+
+    public function testUnbanRejectsAnonymous(): void
+    {
+        $env = $this->api('bans.unban', ['bid' => 1, 'ureason' => 'whatever']);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    public function testUnbanBadRequestOnMissingBid(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('bans.unban', ['ureason' => 'no bid here']);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('bid', $env['error']['field']);
+    }
+
+    /**
+     * #1301: a non-empty `ureason` is mandatory. v1.x prompted via
+     * sourcebans.js's UnbanBan helper and required a reason; v2.0
+     * silently accepted '', so the audit log lost the *why*.
+     */
+    public function testUnbanRejectsEmptyUreason(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:1301', 'cheating');
+
+        // Missing entirely.
+        $env = $this->api('bans.unban', ['bid' => $bid]);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('ureason', $env['error']['field']);
+
+        // Whitespace-only counts as empty after trim().
+        $env = $this->api('bans.unban', ['bid' => $bid, 'ureason' => "  \n\t  "]);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('ureason', $env['error']['field']);
+
+        // Confirms the row was NOT touched on rejection.
+        $row = $this->row('bans', ['bid' => $bid]);
+        $this->assertNull($row['RemoveType']);
+        $this->assertNull($row['RemovedBy']);
+    }
+
+    public function testUnbanNotFoundForUnknownBid(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('bans.unban', ['bid' => 99999, 'ureason' => 'test']);
+        $this->assertEnvelopeError($env, 'not_found');
+    }
+
+    public function testUnbanLiftsActiveBanAndPersistsState(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:1302', 'cheating');
+
+        $env = $this->api('bans.unban', [
+            'bid'     => $bid,
+            'ureason' => 'mistaken ban',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('unbanned', $env['data']['state']);
+        $this->assertSame($bid,       (int)$env['data']['bid']);
+
+        // Persisted: RemoveType='U', RemovedBy=admin aid, ureason stored.
+        $after = $this->row('bans', ['bid' => $bid]);
+        $this->assertSame('U',                 $after['RemoveType']);
+        $this->assertSame(Fixture::adminAid(), (int)$after['RemovedBy']);
+        $this->assertSame('mistaken ban',      $after['ureason']);
+    }
+
+    public function testUnbanRejectsAlreadyLiftedRow(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:1303', 'cheating');
+
+        $first = $this->api('bans.unban', ['bid' => $bid, 'ureason' => 'lift it']);
+        $this->assertTrue($first['ok'], json_encode($first));
+
+        // Second call against the same already-lifted row should refuse.
+        $env = $this->api('bans.unban', ['bid' => $bid, 'ureason' => 'try again']);
+        $this->assertEnvelopeError($env, 'not_active');
+    }
+
+    /**
+     * #1301: the audit log carries the unban reason verbatim so admins
+     * reading the log later can see *why* the ban was lifted.
+     */
+    public function testUnbanRecordsReasonInAuditLog(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:1304', 'cheating');
+
+        $env = $this->api('bans.unban', [
+            'bid'     => $bid,
+            'ureason' => 'appeal accepted',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $logs = $this->rows('log', ['title' => 'Player Unbanned']);
+        $this->assertNotEmpty($logs, 'audit log row was created');
+        $latest = end($logs);
+        $this->assertStringContainsString('appeal accepted', (string) $latest['message']);
+        $this->assertStringContainsString('STEAM_0:1:1304', (string) $latest['message']);
+    }
+
+    // -- bans.player_history with `authid` parameter (#COMMS-DRAWER) -------
+
+    public function testPlayerHistoryAcceptsAuthidWithoutBid(): void
+    {
+        // Drawer parity: the comm-focal drawer JS sends
+        // `{authid: <steamid>}` to bans.player_history because there's
+        // no anchor `bid` in :prefix_bans (the focal record is on
+        // :prefix_comms). The handler must accept the authid path,
+        // skip the bid lookup, and skip the focal-ban exclusion clause
+        // (no focal bid to exclude — every matching row is "other").
+        $this->loginAsAdmin();
+        $this->seedBan('STEAM_0:1:6060', 'first');
+        $this->seedBan('STEAM_0:1:6060', 'second');
+
+        $env = $this->api('bans.player_history', ['authid' => 'STEAM_0:1:6060']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(2, (int)$env['data']['total']);
+        $this->assertCount(2, $env['data']['items']);
+    }
+
+    public function testPlayerHistoryRejectsCallWithoutBidOrAuthid(): void
+    {
+        // Pre-#COMMS-DRAWER the handler validated only `bid`; now either
+        // shape is accepted, but a call with neither is still a
+        // bad_request to preserve the legacy contract.
+        $env = $this->api('bans.player_history', []);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('bid', $env['error']['field']);
+    }
+
+    public function testPlayerHistoryAuthidPathReturnsEmptyForUnknownPlayer(): void
+    {
+        // No ban rows for this authid -> empty feed (NOT 404). The
+        // handler's empty-feed branch lets the drawer render the
+        // "No prior bans on file" empty state cleanly.
+        $env = $this->api('bans.player_history', ['authid' => 'STEAM_0:1:9999999']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(0, (int)$env['data']['total']);
+        $this->assertSame([], $env['data']['items']);
+    }
+
+    public function testPlayerHistoryBidPathExcludesFocalBan(): void
+    {
+        // Bans-focal drawer contract: the History tab calls
+        // `bans.player_history({bid: <focal>})` and the handler's
+        // `BA.bid <> ?` clause excludes the focal record so the
+        // Overview pane and the History pane never render the same
+        // row twice. Sister regression to
+        // `testPlayerHistoryCidPathExcludesFocalRecord` on
+        // CommsTest — both paths share the focal-exclusion contract.
+        $this->loginAsAdmin();
+        $focalBid    = $this->seedBan('STEAM_0:1:6065', 'focal ban');
+        $siblingBid  = $this->seedBan('STEAM_0:1:6065', 'sibling ban');
+
+        $env = $this->api('bans.player_history', ['bid' => $focalBid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(1, (int)$env['data']['total']);
+        $this->assertCount(1, $env['data']['items']);
+        $this->assertSame($siblingBid, (int)$env['data']['items'][0]['bid']);
+    }
+
+    public function testPlayerHistoryBidPathReturnsEmptyWhenOnlyFocalExists(): void
+    {
+        // Lone-ban / first-ban-on-file path: the handler must return
+        // an empty feed (NOT a 404, NOT the focal itself) so the
+        // drawer's History pane renders its "No prior bans on file"
+        // empty state cleanly. A regression that flipped `BA.bid <> ?`
+        // to a tautology (or reused the bid as authid) would silently
+        // pass the focal-exclusion test above (still excluded) but
+        // fail here (sibling=focal would slip through).
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:6066', 'lone ban');
+
+        $env = $this->api('bans.player_history', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(0, (int)$env['data']['total']);
+        $this->assertSame([], $env['data']['items']);
     }
 }

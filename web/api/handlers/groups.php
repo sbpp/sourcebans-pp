@@ -58,7 +58,7 @@ function api_groups_add(array $params): array
         )->execute([$next, $name]);
     }
 
-    Log::add('m', 'Group Created', "A new group was created ($name).");
+    Log::add(LogType::Message, 'Group Created', "A new group was created ($name).");
 
     return [
         'reload'  => true,
@@ -123,7 +123,7 @@ function api_groups_remove(array $params): array
         throw new ApiError('delete_failed', 'There was a problem deleting the group from the database. Check the logs for more info');
     }
 
-    Log::add('m', 'Group Deleted', "Group ($gid) has been deleted.");
+    Log::add(LogType::Message, 'Group Deleted', "Group ($gid) has been deleted.");
 
     return [
         'remove'  => "gid_$gid",
@@ -227,7 +227,7 @@ function api_groups_edit(array $params): array
         foreach ($rows as $r) $allservers[] = $r['sid'];
     }
 
-    Log::add('m', 'Group Updated', "Group ($name) has been updated.");
+    Log::add(LogType::Message, 'Group Updated', "Group ($name) has been updated.");
 
     return [
         'reload'  => true,
@@ -239,46 +239,4 @@ function api_groups_edit(array $params): array
             'redir' => 'index.php?p=admin&c=groups',
         ],
     ];
-}
-
-function api_groups_update_perms(array $params): array
-{
-    global $userbank;
-    $gid = (int)($params['gid'] ?? 0);
-
-    $permissions = '';
-    if ($gid === 1) {
-        $permissions = (string)@file_get_contents(TEMPLATES_PATH . '/groups.web.perm.php');
-        $permissions = str_replace('{title}', 'Web Admin Permissions', $permissions);
-    } elseif ($gid === 2) {
-        $permissions = (string)@file_get_contents(TEMPLATES_PATH . '/groups.server.perm.php');
-        $permissions = str_replace('{title}', 'Server Admin Permissions', $permissions);
-    }
-
-    return [
-        'permissions' => $permissions,
-        'is_owner'    => $userbank->HasAccess(ADMIN_OWNER),
-    ];
-}
-
-function api_groups_add_server_group_name(array $params): array
-{
-    $inject = <<<EOT
-<td valign='top'>
-    <div class='rowdesc'>
-        <img align='absbottom' src='images/help.png' class='tip'
-        title='Server Group Name::Please type the name of the new group you wish to create.'/>
-    </div>
-</td>
-<td>
-    <div align="left">
-        <input type="text"
-        style="border: 1px solid #000000; width: 105px; font-size: 14px; background-color: rgb(215, 215, 215);width: 200px;"
-        id="sgroup" name="sgroup" />
-    </div>
-    <div id="group_name.msg" style="color:#CC0000;width:195px;display:none;"></div>
-</td>
-EOT;
-
-    return ['html' => $inject];
 }

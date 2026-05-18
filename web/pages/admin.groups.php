@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
@@ -23,10 +9,64 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
-new AdminTabs([
-    ['name' => 'List groups', 'permission' => ADMIN_OWNER|ADMIN_LIST_GROUPS],
-    ['name' => 'Add a group', 'permission' => ADMIN_OWNER|ADMIN_ADD_GROUP]
-], $userbank, $theme);
+/*
+ * Section routing (#1239 — Pattern A, settings-page shape).
+ *
+ * Mirrors `admin.servers.php`: read `?section=list|add`, render one
+ * View per request. #1259 unified the chrome on the Settings-style
+ * vertical sidebar (`core/admin_sidebar.tpl`).
+ *
+ * Note: legacy callers reach this page with `?gid=<n>` to focus the
+ * master-detail editor on a specific group; that's a *list* concern,
+ * so it always lands on the list section.
+ */
+$canList = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListGroups));
+$canAdd  = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddGroup));
+
+/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
+$sections = [
+    [
+        'slug'       => 'list',
+        'name'       => 'List groups',
+        'permission' => ADMIN_OWNER | ADMIN_LIST_GROUPS,
+        'url'        => 'index.php?p=admin&c=groups&section=list',
+        'icon'       => 'users',
+    ],
+    [
+        'slug'       => 'add',
+        'name'       => 'Add a group',
+        'permission' => ADMIN_OWNER | ADMIN_ADD_GROUP,
+        'url'        => 'index.php?p=admin&c=groups&section=add',
+        'icon'       => 'plus',
+    ],
+];
+
+$validSlugs = ['list', 'add'];
+$section    = (string) ($_GET['section'] ?? '');
+if (!in_array($section, $validSlugs, true)) {
+    if ($canList) {
+        $section = 'list';
+    } elseif ($canAdd) {
+        $section = 'add';
+    } else {
+        $section = 'list';
+    }
+}
+
+// AdminTabs opens the sidebar shell + emits the <aside> + opens the
+// content column. Closing tags live at the bottom of this file. The
+// PHP block here is followed by a `<script>` HTML island in the
+// default theme — the closing divs are emitted via PHP `echo` BEFORE
+// the file's closing PHP delimiter so the markup nests correctly.
+new AdminTabs($sections, $userbank, $theme, $section, 'Group sections');
+
+if ($section === 'add') {
+    \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsAddView(
+        permission_addgroup: $canAdd,
+    ));
+    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
+    return;
+}
 
 // ------------------------------------------------------------------
 // Web admin groups (`:prefix_groups` WHERE type != 3).
@@ -97,12 +137,20 @@ $server_admin_group_count = count($server_group_list);
 // ------------------------------------------------------------------
 // Server groups (`:prefix_groups` WHERE type = 3).
 //
-// `LoadServerHostPlayersList(...)` inline scripts are still emitted
-// for any third-party theme that forked the pre-v2.0.0 default and
-// renders an accordion-revealed server list per row. The shipped
-// template omits the accordion entirely (the marquee surface is the
-// master-detail flag grid above, not these server-of-servers
-// groupings) and ignores the script tags.
+// #1404 dropped the pre-fix `<script>LoadServerHostPlayersList(...)`
+// echo + the literal "Servers populate via the legacy ... hook."
+// placeholder + the `<div id="servers_{gid}">` slot. #1406 is the
+// additive replacement: the per-group `servers` array (sid / ip /
+// port) we load here drives a vertical stack of
+// `[data-testid="server-tile"]` cards in the template, hydrated
+// client-side via the shared `web/scripts/server-tile-hydrate.js`
+// helper that already powers the public Server List + admin Server
+// Management + dashboard widget. The bare `IP:port` per row stays
+// as the SSR / cache-cold / no-JS fallback inside
+// `[data-testid="server-host"]`. The hydration helper auto-runs on
+// first paint for every `[data-server-hydrate="auto"]` container
+// and fires `Actions.ServersHostPlayers` per tile, so no new JSON
+// action is registered for this surface.
 // ------------------------------------------------------------------
 $server_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
 $server_list   = [];
@@ -110,22 +158,45 @@ $server_counts = [];
 foreach ($server_group_rows as $row) {
     $row['gid'] = (int) $row['gid'];
 
-    $GLOBALS['PDO']->query("SELECT COUNT(server_id) AS cnt FROM `:prefix_servers_groups` WHERE `group_id` = :gid");
+    // INNER JOIN against `:prefix_servers` so groups that retain
+    // dangling `:prefix_servers_groups` rows from a deleted server
+    // (the schema has no cascade) silently drop those rows from
+    // the card list — there's nothing useful to render for a sid
+    // that no longer exists, and the hydration helper would hit
+    // the "server not found" arm of `api_servers_host_players` on
+    // every page load. ORDER BY S.sid keeps the render order stable
+    // across page loads so a refresh doesn't shuffle the cards.
+    //
+    // `S.enabled` rides the projection (post-review): disabled
+    // servers should STILL surface ("this group is bound to N
+    // servers, here are their addresses" stays useful even when
+    // some are disabled — silently filtering them out would hide
+    // the bound-but-disabled relationship from the admin), but
+    // the template tags each `<li>` with `data-server-skip="1"`
+    // so `server-tile-hydrate.js` short-circuits before firing
+    // `Actions.ServersHostPlayers` against a server the panel
+    // already knows is offline by config. Mirrors the sibling
+    // contract in `page_admin_servers_list.tpl`.
+    $GLOBALS['PDO']->query(
+        "SELECT S.sid, S.ip, S.port, S.enabled
+         FROM `:prefix_servers_groups` AS SG
+         INNER JOIN `:prefix_servers` AS S ON S.sid = SG.server_id
+         WHERE SG.group_id = :gid
+         ORDER BY S.sid ASC"
+    );
     $GLOBALS['PDO']->bind(':gid', $row['gid']);
-    $cnt = $GLOBALS['PDO']->single();
-    $row['server_count'] = (int) $cnt['cnt'];
+    $serverRows = $GLOBALS['PDO']->resultset();
 
-    $GLOBALS['PDO']->query("SELECT server_id FROM `:prefix_servers_groups` WHERE group_id = :gid");
-    $GLOBALS['PDO']->bind(':gid', $row['gid']);
-    $servers_in_group = $GLOBALS['PDO']->resultset();
-
-    $server_arr = "";
-    foreach ($servers_in_group as $server) {
-        $server_arr .= $server['server_id'] . ";";
-    }
-    echo "<script>";
-    echo "LoadServerHostPlayersList('" . $server_arr . "', 'id', 'servers_" . $row['gid'] . "');";
-    echo "</script>";
+    $row['servers'] = array_map(static fn (array $s): array => [
+        'sid'     => (int)    $s['sid'],
+        'ip'      => (string) $s['ip'],
+        'port'    => (int)    $s['port'],
+        // `:prefix_servers.enabled` is `TINYINT NOT NULL DEFAULT '1'`
+        // — cast to bool here so the template's `{if !$server.enabled}`
+        // gate doesn't have to know the on-disk shape.
+        'enabled' => (bool)   $s['enabled'],
+    ], $serverRows);
+    $row['server_count'] = count($row['servers']);
 
     $server_list[]   = $row;
     $server_counts[] = $row['server_count'];
@@ -184,15 +255,12 @@ if (!empty($web_group_list)) {
     ];
 }
 
-echo '<div id="admin-page-content">';
-
-// List groups tab.
-echo '<div class="tabcontent" id="List groups">';
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsListView(
-    permission_listgroups:    $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS),
-    permission_editgroup:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_GROUPS),
-    permission_deletegroup:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_GROUPS),
-    permission_editadmin:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS),
+    permission_listgroups:    $canList,
+    permission_editgroup:     $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditGroups)),
+    permission_deletegroup:   $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteGroups)),
+    permission_editadmin:     $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins)),
+    permission_addgroup:      $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddGroup)),
     web_group_count:          $web_group_count,
     web_admins:               $web_admins,
     web_admins_list:          $web_admins_list,
@@ -208,14 +276,8 @@ echo '<div class="tabcontent" id="List groups">';
     all_flags:                $all_flags,
     selected_group:           $selected_group,
 ));
-echo '</div>';
 
-// Add a group tab.
-echo '<div class="tabcontent" id="Add a group">';
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsAddView(
-    permission_addgroup: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP),
-));
-echo '</div>';
+echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
 ?>
 <script>
 // sb.accordion (sb.js) is the actual implementation, so call it directly.
@@ -224,4 +286,3 @@ echo '</div>';
 // side effect.
 sb.ready(function () { sb.accordion('tr.opener', 'div.opener', 'mainwrapper', -1); });
 </script>
-</div>

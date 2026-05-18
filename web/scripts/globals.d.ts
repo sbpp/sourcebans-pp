@@ -1,11 +1,11 @@
 // Ambient declarations for the SourceBans++ vanilla-JS panel.
 //
-// The runtime files (sb.js, api.js, contextMenoo.js) ship as classic
-// <script> tags rather than ESM modules and stash their public surface
-// on `window` from inside an IIFE. tsc --checkJs cannot see those
-// assignments without help, so we restate the public contract here.
-// Keep this in sync with sb.js / api.js / api-contract.js when the
-// runtime contract changes.
+// The runtime files (sb.js, api.js) ship as classic <script> tags
+// rather than ESM modules and stash their public surface on `window`
+// from inside an IIFE. tsc --checkJs cannot see those assignments
+// without help, so we restate the public contract here. Keep this in
+// sync with sb.js / api.js / api-contract.js when the runtime
+// contract changes.
 
 /** Element id, raw element, or null (the latter passes through every helper). */
 type SbElLike = string | HTMLElement | null;
@@ -68,14 +68,6 @@ interface SbWrappedElement extends HTMLElement {
     removeEvent(type: string, fn: EventListener): SbWrappedElement;
     adopt(child: Node): SbWrappedElement;
     getCoordinates(): { left: number; top: number; right: number; bottom: number; width: number; height: number };
-}
-
-/** Contract subset accepted by sb.contextMenu / AddContextMenu. */
-interface SbContextMenuItem {
-    name?: string;
-    callback?: () => void;
-    disabled?: boolean;
-    separator?: boolean;
 }
 
 /** Generic JSON envelope returned by /api.php. */
@@ -148,7 +140,6 @@ interface SbNamespace {
     tooltip(selector: string, opts?: { className?: string }): void;
     tabs: SbTabsNamespace;
     accordion(togglerSel: string, elementSel: string, container?: SbElLike, openIndex?: number): SbAccordionController | null;
-    contextMenu(selector: string, opts?: { items?: SbContextMenuItem[]; menuItems?: SbContextMenuItem[]; className?: string; headline?: string }): void;
     api: SbApiNamespace;
 }
 
@@ -159,24 +150,6 @@ declare var $: (idOrEl: string | HTMLElement | null) => SbWrappedElement | null;
 // `composer api-contract`). tsc picks up the literal types from the
 // Object.freeze({...}) initialiser there, so we don't need to redeclare
 // them — and doing so loosely here would conflict (TS2403).
-
-/** Vanilla replacement for the legacy contextMenoo MooTools class. */
-declare var contextMenoo: (opts: {
-    selector?: string;
-    className?: string;
-    pageOffset?: number;
-    fade?: boolean;
-    headline?: string;
-    menuItems?: SbContextMenuItem[];
-}) => void;
-
-declare var AddContextMenu: (
-    select: string,
-    classNames: string | undefined,
-    fader: boolean | undefined,
-    headl: string | undefined,
-    oLinks: SbContextMenuItem[]
-) => void;
 
 /**
  * Per-page hooks defined ad-hoc in inline templates (account.php, etc.)
@@ -198,6 +171,47 @@ interface Window {
     swapTab?: (tabNo: number | string) => void;
     Swap2ndPane?: (n: number | string, type: string) => void;
     demo?: (filename: string, origname: string) => void;
+    /**
+     * SourceBans++ shared theme namespace — assembled across
+     * `web/themes/default/js/theme.js` (showToast / openDrawer / …) and
+     * `web/scripts/server-tile-hydrate.js` (hydrateServerTiles, #1313).
+     * All members are optional because pages that omit the relevant
+     * `<script>` tag drop the surface entirely; call sites should
+     * narrow with `if (window.SBPP && window.SBPP.foo) …`.
+     */
+    SBPP?: {
+        /**
+         * Render a toast in the chrome's toast stack. Accepts the
+         * `ToastOpts` object documented inline in `theme.js`:
+         * `{kind?, title, body?, durationMs?}`. `durationMs` is the
+         * #1409 follow-up to `Sbpp\View\Toast::emit`'s `duration_ms`
+         * wire-format field — `undefined` falls through to
+         * `SHOWTOAST_DEFAULT_DURATION` (~4000ms), `0` is persistent
+         * (user must click the X button), `> 0` is an explicit
+         * override in milliseconds.
+         */
+        showToast?: (opts: {
+            kind?: 'info' | 'success' | 'warn' | 'error';
+            title: string;
+            body?: string;
+            durationMs?: number;
+        }) => void;
+        openDrawer?: (bid: number | string) => void;
+        /**
+         * Hydrate every `[data-testid="server-tile"]` inside a
+         * container with the live A2S response. Defined in
+         * `web/scripts/server-tile-hydrate.js`; consumed by
+         * `page_servers.tpl` and `page_admin_servers_list.tpl`.
+         * Pass `{ container }` to scope a hydration to one
+         * surface; omit to walk every `[data-server-hydrate]`
+         * container in the document.
+         */
+        hydrateServerTiles?: (opts?: {
+            container?: ParentNode;
+            openedIndex?: number;
+            trunchostname?: number;
+        }) => void;
+    };
 }
 
 /** Per-page accordion handle from InitAccordion(). */

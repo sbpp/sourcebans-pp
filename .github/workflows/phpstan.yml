@@ -46,8 +46,8 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
-          extensions: pdo, pdo_mysql, openssl, gmp, mbstring, sodium
+          php-version: '8.5'
+          extensions: pdo, pdo_mysql, openssl, mbstring, sodium
           coverage: none
           tools: composer:v2
 

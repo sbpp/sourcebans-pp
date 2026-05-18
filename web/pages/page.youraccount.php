@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 global $userbank, $theme;
 
@@ -33,11 +19,18 @@ $GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
 $res      = $GLOBALS['PDO']->single();
 $srvpwset = !empty($res['srv_password']);
 
+// #1207 ADM-9: group the granted web permissions by display category
+// (Bans, Servers, Admins, …) so the "Your permissions" card renders a
+// 2–3 column grid instead of a 30-item bullet wall. The category list
+// + grouping logic lives in `Sbpp\View\PermissionCatalog`; see that
+// class's docblock for the rationale.
+$webExtraFlags = (int) $userbank->GetProperty("extraflags");
+
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\YourAccountView(
-    srvpwset:           $srvpwset,
-    email:              (string) ($res['email'] ?? ''),
-    user_aid:           (int) $userbank->GetAid(),
-    web_permissions:    BitToString($userbank->GetProperty("extraflags")),
-    server_permissions: SmFlagsToSb($userbank->GetProperty("srv_flags")),
-    min_pass_len:       (int) MIN_PASS_LENGTH,
+    srvpwset:                $srvpwset,
+    email:                   (string) ($res['email'] ?? ''),
+    user_aid:                (int) $userbank->GetAid(),
+    web_permissions_grouped: \Sbpp\View\PermissionCatalog::groupedDisplayFromMask($webExtraFlags),
+    server_permissions:      SmFlagsToSb($userbank->GetProperty("srv_flags")),
+    min_pass_len:            (int) MIN_PASS_LENGTH,
 ));

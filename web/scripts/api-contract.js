@@ -44,12 +44,23 @@
  * @typedef {Object} ApiAdminsGeneratePasswordResponse
  */
 /**
+ * Delete an admin row + their server group memberships (#1352).  Modern JSON
+ * twin of the v1.x sourcebans.js `RemoveAdmin()` helper (deleted at #1123 D1)
+ * — `page_admin_admins_list.tpl` wires the trash-can button through
+ * `Actions.AdminsRemove` via the `#admins-delete-dialog` confirm + reason
+ * modal. There is no legacy GET fallback for `o=remove` (the v1.x JS helper
+ * went straight to xajax then to this handler), so this is the single delete
+ * path; the modal's no-JS / no-dispatcher fallback just lands the operator
+ * back on the admins list.  Inputs: - `aid`     (int, required)    — the
+ * admin id to remove. The handler refuses to delete a row that holds
+ * `ADMIN_OWNER`. - `ureason` (string, optional) — admin-supplied reason. We
+ * trim it and append `Reason: …` to the audit-log entry when non-empty.
+ * Empty / omitted is allowed (the modal carries `aria-required="false"`);
+ * admin deletion is a lifecycle action, not a moderation flip, so we don't
+ * gate the call on it the way `bans.unban` / `comms.unblock` do.
+ *
  * @typedef {Object} ApiAdminsRemoveRequest
- * @typedef {Object} ApiAdminsRemoveResponse
- */
-/**
- * @typedef {Object} ApiAdminsUpdatePermsRequest
- * @typedef {Object} ApiAdminsUpdatePermsResponse
+ * @typedef {{ remove: string, counter: { admincount: number }, rehash: string|null, message: { title: string, body: string, kind: string, redir: string } }} ApiAdminsRemoveResponse
  */
 /**
  * @typedef {Object} ApiAuthLoginRequest
@@ -88,7 +99,7 @@
  * page.banlist.php's `$view_comments` switch.
  *
  * @typedef {Object} ApiBansDetailRequest
- * @typedef {{ bid: number, player: {name: string, type: number, steam_id: string, steam_id_3: string, community_id: string, ip: string|null, country: string|null}, ban: {reason: string, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unban_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null}, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, demo_count: number, history_count: number, comments_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiBansDetailResponse
+ * @typedef {{ bid: number, player: {name: string, type: number, steam_id: string, steam_id_3: string, community_id: string, ip: string|null, country: string|null}, ban: {reason: string, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unban_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null}, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, demo_count: number, history_count: number, comments_visible: boolean, notes_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiBansDetailResponse
  */
 /**
  * @typedef {Object} ApiBansEditCommentRequest
@@ -109,6 +120,26 @@
 /**
  * @typedef {Object} ApiBansPasteRequest
  * @typedef {Object} ApiBansPasteResponse
+ */
+/**
+ * Sibling-bans feed for the player-detail drawer's History tab (#1165). 
+ * Returns the player's other bans (same authid for type=0, same IP for type=1)
+ * excluding the bid the drawer is currently displaying. The Overview tab
+ * already shows the current ban; the History tab is "what else is on file for
+ * this player". Action is registered public to match `bans.detail`'s reach so
+ * the drawer's tab chrome behaves identically for anonymous and admin callers
+ * — IP exposure follows the same `banlist.hideplayerips` / admin gate
+ * `bans.detail` enforces, and admin names follow `banlist.hideadminname`. 
+ * Inputs: `bid` (int, the drawer's current ban id) — OR `authid` (string,
+ * SteamID), supplied directly. The `authid` path lets the drawer call this
+ * handler when the focal record is a comm (`api_comms_detail`) and there's no
+ * anchor `bid` in `:prefix_bans` to do the type/authid/ip lookup against. When
+ * `authid` is provided, the handler matches Steam bans only (`BA.type = 0 AND
+ * BA.authid = ?`) because IP matching needs an IP from the focal record and
+ * the comm focal has none. When neither is provided, returns `bad_request`.
+ *
+ * @typedef {Object} ApiBansPlayerHistoryRequest
+ * @typedef {{ items: Array<{ bid: number, type: number, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, reason: string, admin_name: string|null, removed_by: string|null, removed_at: number|null, removed_at_human: string|null, server_name: string|null }>, total: number }} ApiBansPlayerHistoryResponse
  */
 /**
  * @typedef {Object} ApiBansPrepareRebanRequest
@@ -144,6 +175,33 @@
  * @typedef {Object} ApiBansSetupBanResponse
  */
 /**
+ * Lift an active ban (#1301).  Modern JSON twin of the legacy
+ * `?p=banlist&a=unban&id=…&key=…` GET handler in `page.banlist.php`. The
+ * legacy GET path stays put (no-JS fallback for the icon-only theme leg +
+ * third-party themes that still ship the v1.x action links), but the banlist's
+ * visible-action affordance now wires through this action so the row can
+ * update in-place + show a toast without a full page reload.  Permission gate
+ * mirrors the legacy GET handler exactly:  ADMIN_OWNER | ADMIN_UNBAN     —
+ * unconditional, lift any row. ADMIN_UNBAN_OWN_BANS          — only the
+ * row's own admin (`aid`). ADMIN_UNBAN_GROUP_BANS        — only rows where
+ * the issuing admin's `gid` matches the caller's `gid`.  The dispatcher gate
+ * is `ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS |
+ * ADMIN_UNBAN_GROUP_BANS` — the broadest "any unban-ish flag" match — and
+ * the per-row precision check happens inside the handler, since the dispatcher
+ * can't see which row the caller wants to act on.  #1301: `ureason` is
+ * **required**. v1.x prompted via sourcebans.js's UnbanBan() helper and
+ * required a non-empty reason; v2.0 silently accepted '', so the audit log
+ * lost the *why*. Both this handler and the legacy GET fallback now bounce
+ * empty reasons.  Inputs: - `bid`     (int, required)    — the ban id. -
+ * `ureason` (string, required) — admin-supplied unban reason; we trim and
+ * store as-is. Stored raw in `ureason` (per the "store raw, escape on display"
+ * anti-pattern); the column lives behind the same Smarty auto-escape pipeline
+ * as `reason`.
+ *
+ * @typedef {Object} ApiBansUnbanRequest
+ * @typedef {{ bid: number, state: string }} ApiBansUnbanResponse
+ */
+/**
  * @typedef {Object} ApiBansViewCommunityRequest
  * @typedef {Object} ApiBansViewCommunityResponse
  */
@@ -160,8 +218,89 @@
  * @typedef {Object} ApiCommsAddResponse
  */
 /**
+ * Delete a comm row (#1207 ADM-5).  Modern JSON twin of
+ * `?p=commslist&a=delete&id=…&key=…`. Hard-deletes the row and, if the row
+ * was still active, runs `sc_fw_un{mute,gag}` on every enabled server so the
+ * in-game state matches.  Permission gate (dispatcher-enforced) is
+ * `ADMIN_OWNER | ADMIN_DELETE_BAN`, mirroring the legacy GET handler. Note the
+ * broader "delete any comm row" reach: comm rows don't have the per-admin /
+ * per-group delete flag the bans table has, so a single dispatcher gate is
+ * enough.  Input: `bid` (int, required).
+ *
+ * @typedef {Object} ApiCommsDeleteRequest
+ * @typedef {{ bid: number, deleted: boolean }} ApiCommsDeleteResponse
+ */
+/**
+ * Player-detail drawer envelope for a comm-block focal record.  Sister handler
+ * to `api_bans_detail` — same envelope shape, same field-by-field hide-*
+ * gating, but the focal record is a comm-block (`:prefix_comms` row) instead
+ * of a ban. Powers the player drawer when it's opened from a row in the public
+ * comms list (the `data-drawer-cid` trigger added in the same change), giving
+ * comms the parity-with-banlist UX users expect: click a name, see player id +
+ * the focal block + comments, hop into the History / Comms / Notes tabs
+ * without leaving the page.  Mirroring `api_bans_detail` (rather than rolling
+ * a leaner shape): - `player`, `admin`, `server`, `comments`,
+ * `comments_visible`, `notes_visible` keep the SAME keys so the drawer JS can
+ * render either focal kind through the shared `renderOverviewPane` branches
+ * without per-shape forks. - The focal record itself lives under `block` (vs
+ * `ban`) with comm-flavoured fields: `type` / `type_label` for mute/gag,
+ * `started_at*` (vs `banned_at*`), `unblock_reason` (vs `unban_reason`), and
+ * the `state` vocab swaps `'unbanned'` for `'unmuted'` to match the comm
+ * column conventions (`api_comms_unblock`'s return shape). Same vocab the
+ * existing mobile card chrome uses (`pill--unmuted`). - `cid` echoes the focal
+ * id (vs `bid`). `bid` is intentionally omitted from the envelope so a future
+ * caller can't accidentally bind the comm's own id into a `bans.*` action by
+ * mistake — the drawer's lazy panes consume `player.steam_id` directly per
+ * the `authid` extension on `bans.player_history` / `comms.player_history`. -
+ * Fields `bans.detail` carries that don't apply to a comm-block (`demo_count`,
+ * `history_count`) are dropped — the comms table has no demo column and the
+ * History tab doesn't read `history_count` off the envelope (the lazy fetch's
+ * items count is the source of truth there).  Public action: matches the
+ * public reach of `?p=commslist`. Field- level hide-gating
+ * (`banlist.hideplayerips` / `banlist.hideadminname` /
+ * `config.enablepubliccomments`) is enforced INSIDE the handler so an
+ * anonymous caller sees the same data the public commslist page would show
+ * them. Comm rows don't store an IP (`:prefix_comms` has no `ip` column —
+ * see the schema dump in `web/install/includes/sql/struc.sql` vs
+ * `:prefix_bans`), so `player.ip` is always `null` here regardless of
+ * `banlist.hideplayerips`. Carrying the field anyway keeps the envelope shape
+ * symmetric with `bans.detail` so `renderOverviewPane` doesn't have to branch
+ * on missing keys.  Comments are pulled from `:prefix_comments WHERE C.type =
+ * 'C' AND C.bid = ?` — the same shape `page.commslist.php`'s comment loader
+ * reads, just rebound to the comm focal row's id (the column is named `bid` on
+ * `:prefix_comments` even when it points at a comm row id; the disambiguator
+ * is the `type` letter `'B'`/`'C'`/`'P'`).  Inputs: `cid` (int, the focal
+ * comm-block id — matches the `data-drawer-cid` attribute the comms-list
+ * template emits).
+ *
+ * @typedef {Object} ApiCommsDetailRequest
+ * @typedef {{ cid: number, player: { name: string, steam_id: string, steam_id_3: string, community_id: string, ip: null, country: string|null }, block: { type: number, type_label: string, reason: string, started_at: number, started_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unblock_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null }, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, comments_visible: boolean, notes_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiCommsDetailResponse
+ */
+/**
  * @typedef {Object} ApiCommsPasteRequest
  * @typedef {Object} ApiCommsPasteResponse
+ */
+/**
+ * Comm-block feed for the player-detail drawer's Comms tab (#1165).  Returns
+ * every gag/mute on file for the player anchored by the supplied identifier.
+ * Action is registered public to match `bans.detail` / `bans.player_history`
+ * — comms-list is a public surface (`?p=commslist`) so the drawer's Comms
+ * tab follows the same reach. Admin-name exposure is gated by
+ * `banlist.hideadminname` for non-admin callers, mirroring how `bans.detail`
+ * handles it.  Inputs (resolved in priority order): 1. `cid` (int) —
+ * comm-focal drawer path (#COMMS-DRAWER). Resolves to authid via
+ * `:prefix_comms`, EXCLUDES that focal cid from the result (`C.bid <> ?`) so
+ * the Overview pane and the Comms tab don't render the same record twice. 2.
+ * `bid` (int) — legacy bans-focal drawer path. Resolves to authid via
+ * `:prefix_bans`. No comm exclusion (cid and bid live in different tables, so
+ * the focal bid never appears in the comm feed anyway). 3. `authid` (string)
+ * — caller-supplied steam id. Useful for paths that already know the
+ * player's authid; no exclusion (the caller must filter the focal record on
+ * their side if needed).  `bad_request` (field=`cid`) when none of the three
+ * is provided — preserves the legacy "must supply *something*" contract.
+ *
+ * @typedef {Object} ApiCommsPlayerHistoryRequest
+ * @typedef {{ items: Array<{ bid: number, type: number, type_label: string, created: number, created_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, reason: string, admin_name: string|null, removed_by: string|null, removed_at: number|null, removed_at_human: string|null }>, total: number }} ApiCommsPlayerHistoryResponse
  */
 /**
  * @typedef {Object} ApiCommsPrepareBlockFromBanRequest
@@ -172,12 +311,35 @@
  * @typedef {Object} ApiCommsPrepareReblockResponse
  */
 /**
- * @typedef {Object} ApiGroupsAddRequest
- * @typedef {Object} ApiGroupsAddResponse
+ * Lift an active gag/mute on a comm row (#1207 ADM-5/ADM-6).  Modern JSON twin
+ * of the legacy `?p=commslist&a=ungag|unmute&id=…&key=…` GET handlers in
+ * `page.commslist.php`. The legacy GET path stays put (no-JS fallback for the
+ * icon-only theme leg + third-party themes that still ship the v1.x action
+ * links), but the comms list's visible-action affordance now wires through
+ * this action so the row can update in-place + show a toast without a full
+ * page reload. Permission gate mirrors the legacy GET handler exactly: 
+ * ADMIN_OWNER | ADMIN_UNBAN     — unconditional, lift any row.
+ * ADMIN_UNBAN_OWN_BANS          — only the row's own admin (`aid`).
+ * ADMIN_UNBAN_GROUP_BANS        — only rows where `gid` matches the caller's
+ * `gid`.  The dispatcher gate is `ADMIN_OWNER | ADMIN_UNBAN |
+ * ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS` — the broadest "any
+ * unban-ish flag" match — and the per-row precision check happens inside the
+ * handler, since the dispatcher can't see which row the caller wants to act
+ * on.  #1301: `ureason` is **required**. v1.x prompted via sourcebans.js's
+ * UnMute()/UnGag() helpers and required a non-empty reason; v2.0 silently
+ * accepted '', so the audit log lost the *why*. Both this handler and the
+ * legacy GET fallback now bounce empty reasons.  Inputs: - `bid`     (int,
+ * required)    — the comm-block id. - `ureason` (string, required) —
+ * admin-supplied unblock reason; we trim and store as-is. Stored raw in
+ * `ureason` (per the "store raw, escape on display" anti-pattern); the column
+ * lives behind the same Smarty auto-escape pipeline as `reason`.
+ *
+ * @typedef {Object} ApiCommsUnblockRequest
+ * @typedef {{ bid: number, state: string, type: number }} ApiCommsUnblockResponse
  */
 /**
- * @typedef {Object} ApiGroupsAddServerGroupNameRequest
- * @typedef {Object} ApiGroupsAddServerGroupNameResponse
+ * @typedef {Object} ApiGroupsAddRequest
+ * @typedef {Object} ApiGroupsAddResponse
  */
 /**
  * @typedef {Object} ApiGroupsEditRequest
@@ -186,10 +348,6 @@
 /**
  * @typedef {Object} ApiGroupsRemoveRequest
  * @typedef {Object} ApiGroupsRemoveResponse
- */
-/**
- * @typedef {Object} ApiGroupsUpdatePermsRequest
- * @typedef {Object} ApiGroupsUpdatePermsResponse
  */
 /**
  * Try to kick a single player on a single server. Used per-row by the iframe's
@@ -210,8 +368,47 @@
  * @typedef {Object} ApiModsAddResponse
  */
 /**
+ * Delete a mod row + its on-disk icon (#1397).  Modern JSON twin of the v1.x
+ * sourcebans.js `RemoveMod()` helper (deleted at #1123 D1) —
+ * `page_admin_mods_list.tpl` wires the trash-can button through
+ * `Actions.ModsRemove` via the `#mod-delete-dialog` confirm + reason modal.
+ * There is no legacy GET fallback for `o=remove` here (the v1.x JS helper went
+ * straight to xajax then to this handler), so this is the single delete path;
+ * the modal's no-JS / no-dispatcher fallback just lands the operator back on
+ * the mods list.  Inputs: - `mid`     (int, required)    — the mod id to
+ * remove. - `ureason` (string, optional) — admin-supplied reason. We trim it
+ * and append `Reason: …` to the audit-log entry when non-empty. Empty /
+ * omitted is allowed (the modal carries `aria-required="false"`); mod deletion
+ * is a lifecycle action, not a moderation flip, so we don't gate the call on
+ * it the way `bans.unban` / `comms.unblock` do.
+ *
  * @typedef {Object} ApiModsRemoveRequest
- * @typedef {Object} ApiModsRemoveResponse
+ * @typedef {{ remove: string, message: { title: string, body: string, kind: string, redir: string } }} ApiModsRemoveResponse
+ */
+/**
+ * Add a note for the given Steam ID. The current admin's `aid` is recorded as
+ * the author; the body is stored raw UTF-8 and escaped on display.  Inputs:
+ * `steam_id` (string), `body` (string, 1..4000 chars after trim).
+ *
+ * @typedef {Object} ApiNotesAddRequest
+ * @typedef {{nid: number, item: {nid: number, body: string, created: number, created_human: string, author: string|null, author_aid: number}}} ApiNotesAddResponse
+ */
+/**
+ * Delete a single note. Only the note's author or an `ADMIN_OWNER` may delete
+ * it; any other admin gets `forbidden` so the casual reader of the Notes tab
+ * can't blow away another admin's pinned context.  Inputs: `nid` (int).
+ *
+ * @typedef {Object} ApiNotesDeleteRequest
+ * @typedef {{nid: number}} ApiNotesDeleteResponse
+ */
+/**
+ * List the notes attached to a Steam ID, newest first. Returns the same
+ * `{items, total}` shape `bans.player_history` / `comms.player_history` use so
+ * the drawer's pane builders can share a list renderer.  Inputs: `steam_id`
+ * (string, Steam2 form — `STEAM_0:1:N`).
+ *
+ * @typedef {Object} ApiNotesListRequest
+ * @typedef {{items: Array<{nid: number, body: string, created: number, created_human: string, author: string|null, author_aid: number}>, total: number}} ApiNotesListResponse
  */
 /**
  * @typedef {Object} ApiProtestsRemoveRequest
@@ -223,7 +420,30 @@
  */
 /**
  * Returns server info + player list for the requested server. Pure data —
- * the client decides how to render it.
+ * the client decides how to render it.  The A2S `GetInfo + GetPlayers`
+ * round-trip is delegated to `Sbpp\Servers\SourceQueryCache` so back-to-back
+ * calls (a hand-mashed Re-query button, a `for` loop hitting `?p=servers`)
+ * coalesce into ONE UDP probe per `(ip, port)` per ~30s window. The handler
+ * still maps the cached payload through the per-caller permission check
+ * (`is_owner` / `can_ban`) and the per-call hostname truncation, so the cache
+ * stays user-agnostic. See #1311 for the threat model.  Per-player SteamID
+ * surfacing (restoring the pre-v2.0.0 right-click context menu on the public
+ * servers list — see `web/scripts/server-context-menu.js`): the A2S
+ * `GetPlayers` UDP response does NOT carry SteamIDs. To surface them we issue
+ * a paired RCON `status` round-trip per server via
+ * `Sbpp\Servers\RconStatusCache::fetch` (sid-keyed, ~30s cache, negative
+ * caches failures) and match by exact player name.  The SteamID surfacing is
+ * the side-channel that's permission-gated, NOT the action registration:
+ * `servers.host_players` stays public so anonymous viewers continue to see
+ * hostname / map / online-count. SteamIDs are attached ONLY when the caller
+ * holds `WebPermission::Owner | WebPermission::AddBan` AND has per-server RCON
+ * access via `_api_servers_admin_can_rcon`. The handler itself is the
+ * load-bearing gate; the client feature-detects the `steamid` field on each
+ * row and skips rows that don't carry it (bots, players without a name match
+ * between the A2S and RCON responses). The new `can_ban_player` boolean
+ * signals to the client whether to render the kick/ban/block menu items at all
+ * — separate from the existing `can_ban` flag which the legacy ban-row
+ * affordance already uses.
  *
  * @typedef {Object} ApiServersHostPlayersRequest
  * @typedef {Object} ApiServersHostPlayersResponse
@@ -265,12 +485,38 @@
  * @typedef {Object} ApiSystemApplyThemeResponse
  */
 /**
+ * Public action: report whether a newer SourceBans++ release is available.
+ * Sources from `api.github.com/repos/sbpp/sourcebans-pp/releases/latest` with
+ * a 1-day on-disk cache + stale-while-error fallback (the cached payload is
+ * served regardless of TTL when the upstream call fails) so a busy panel can't
+ * blow through GitHub's 60 req/hr unauthenticated limit and a transient GitHub
+ * blip doesn't paint the panel red.
+ *
  * @typedef {Object} ApiSystemCheckVersionRequest
- * @typedef {Object} ApiSystemCheckVersionResponse
+ * @typedef {{release_latest: string, release_url: string, release_msg: string, release_update: boolean}} ApiSystemCheckVersionResponse
  */
 /**
  * @typedef {Object} ApiSystemClearCacheRequest
  * @typedef {Object} ApiSystemClearCacheResponse
+ */
+/**
+ * Render an admin-authored Markdown snippet (currently used by the dashboard
+ * `dash.intro.text` setting; #1207 SET-1) through the same
+ * `Sbpp\Markup\IntroRenderer` the public dashboard uses, so the settings page
+ * can show a live "this is what visitors will see" preview without forcing the
+ * admin to save + navigate to `/`.  Critical: NEVER render the supplied
+ * Markdown with anything other than `IntroRenderer::renderIntroText`. The
+ * renderer wraps league/commonmark with `html_input: 'escape'` and
+ * `allow_unsafe_links: false` — that's the only safe path documented in
+ * AGENTS.md ("Admin-authored display text"). #1113 was a stored XSS rooted in
+ * a parallel render path; ducking back into a plain CommonMark/Parsedown call
+ * here would re-open the vector.  Gated on `ADMIN_OWNER | ADMIN_WEB_SETTINGS`
+ * because the only caller is the settings page (gated on the same flag), and
+ * we'd rather refuse a stray call from another surface than discover a new
+ * caller exists.
+ *
+ * @typedef {Object} ApiSystemPreviewIntroTextRequest
+ * @typedef {{html: string}} ApiSystemPreviewIntroTextResponse
  */
 /**
  * @typedef {Object} ApiSystemRehashAdminsRequest
@@ -299,7 +545,6 @@ var Actions = Object.freeze({
     AdminsEditPerms: 'admins.edit_perms',
     AdminsGeneratePassword: 'admins.generate_password',
     AdminsRemove: 'admins.remove',
-    AdminsUpdatePerms: 'admins.update_perms',
     AuthLogin: 'auth.login',
     AuthLostPassword: 'auth.lost_password',
     BansAdd: 'bans.add',
@@ -312,27 +557,34 @@ var Actions = Object.freeze({
     BansGroupBan: 'bans.group_ban',
     BansKickPlayer: 'bans.kick_player',
     BansPaste: 'bans.paste',
+    BansPlayerHistory: 'bans.player_history',
     BansPrepareReban: 'bans.prepare_reban',
     BansRemoveComment: 'bans.remove_comment',
     BansSearch: 'bans.search',
     BansSendMessage: 'bans.send_message',
     BansSetupBan: 'bans.setup_ban',
+    BansUnban: 'bans.unban',
     BansViewCommunity: 'bans.view_community',
     BlockitBlockPlayer: 'blockit.block_player',
     BlockitLoadServers: 'blockit.load_servers',
     CommsAdd: 'comms.add',
+    CommsDelete: 'comms.delete',
+    CommsDetail: 'comms.detail',
     CommsPaste: 'comms.paste',
+    CommsPlayerHistory: 'comms.player_history',
     CommsPrepareBlockFromBan: 'comms.prepare_block_from_ban',
     CommsPrepareReblock: 'comms.prepare_reblock',
+    CommsUnblock: 'comms.unblock',
     GroupsAdd: 'groups.add',
-    GroupsAddServerGroupName: 'groups.add_server_group_name',
     GroupsEdit: 'groups.edit',
     GroupsRemove: 'groups.remove',
-    GroupsUpdatePerms: 'groups.update_perms',
     KickitKickPlayer: 'kickit.kick_player',
     KickitLoadServers: 'kickit.load_servers',
     ModsAdd: 'mods.add',
     ModsRemove: 'mods.remove',
+    NotesAdd: 'notes.add',
+    NotesDelete: 'notes.delete',
+    NotesList: 'notes.list',
     ProtestsRemove: 'protests.remove',
     ServersAdd: 'servers.add',
     ServersHostPlayers: 'servers.host_players',
@@ -347,6 +599,7 @@ var Actions = Object.freeze({
     SystemApplyTheme: 'system.apply_theme',
     SystemCheckVersion: 'system.check_version',
     SystemClearCache: 'system.clear_cache',
+    SystemPreviewIntroText: 'system.preview_intro_text',
     SystemRehashAdmins: 'system.rehash_admins',
     SystemSelTheme: 'system.sel_theme',
     SystemSendMail: 'system.send_mail',

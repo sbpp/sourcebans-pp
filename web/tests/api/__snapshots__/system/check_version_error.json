@@ -1,0 +1,9 @@
+{
+    "ok": true,
+    "data": {
+        "release_latest": "Error",
+        "release_url": "",
+        "release_msg": "Error retrieving latest release.",
+        "release_update": false
+    }
+}

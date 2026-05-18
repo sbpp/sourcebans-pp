@@ -53,7 +53,11 @@ register_shutdown_function(function (): void {
 
 include_once __DIR__ . '/init.php';
 require_once INCLUDES_PATH . '/system-functions.php';
-require_once INCLUDES_PATH . '/Api.php';
+// Api / ApiError are eagerly required by init.php (#1290 phase B) so the
+// `Api` / `ApiError` global aliases register before any procedural code
+// references them. The require_once below is a defensive no-op kept so
+// the file path stays self-documenting.
+require_once INCLUDES_PATH . '/Api/Api.php';
 
 Api::bootstrap();
 Api::dispatch();

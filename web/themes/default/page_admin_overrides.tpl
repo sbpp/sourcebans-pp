@@ -10,8 +10,19 @@
       - The bottom "add" row maps to `new_override_*` POST fields.
       - {csrf_field} is required because the dispatcher invokes
         CSRF::rejectIfInvalid() on every POST.
+
+    #1275 — Pattern A `?section=…` routing
+    --------------------------------------
+    Pre-#1275 this template lived inside the cross-template
+    `.page-toc-shell` opened by page_admin_admins_list.tpl, with two
+    `<section id="…">` anchor targets ("overrides" and "add-override")
+    that the page-level ToC scrolled between. #1275 unifies on
+    Pattern A: this template renders by itself when the URL is
+    `?section=overrides`, so the section is the whole page. The
+    "add an override" form sits inline below the editable table —
+    one `<form>`, one Save button, both rows submit together.
 *}
-<div class="tabcontent" id="Overrides">
+<div data-testid="admin-admins-section-overrides">
 {if not $permission_addadmin}
     <div class="card">
         <div class="card__body">
@@ -19,6 +30,11 @@
         </div>
     </div>
 {else}
+    <div class="mb-4">
+        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Command &amp; group overrides</h1>
+        <p class="text-sm text-muted m-0 mt-2">Override the flags required to run any SourceMod command, globally or per-group.</p>
+    </div>
+
     {if $overrides_error != ""}
         <div class="card mb-4" role="alert" style="border-color:var(--danger);background:var(--danger-bg)">
             <div class="card__body" style="color:#b91c1c">
@@ -36,17 +52,15 @@
         </div>
     {/if}
 
-    <form method="post" action="index.php?p=admin&amp;c=admins" data-testid="overrides-form">
+    <form method="post" action="index.php?p=admin&amp;c=admins&amp;section=overrides" data-testid="overrides-form">
         {csrf_field}
 
         <div class="card mb-4">
             <div class="card__header">
                 <div>
-                    <h3>Command &amp; group overrides</h3>
+                    <h3>Existing overrides</h3>
                     <p>
-                        Override the flags required to run any SourceMod command, globally
-                        or per-group, without editing plugin source. Blank out a name to
-                        delete that override on save.
+                        Blank out a name to delete that override on save.
                         See <a href="https://wiki.alliedmods.net/Overriding_Command_Access_%28SourceMod%29"
                               target="_blank" rel="noopener noreferrer">overriding command access</a>
                         in the AlliedModders wiki for a flag reference.
@@ -95,7 +109,7 @@
             </div>
         </div>
 
-        <div class="card mb-4">
+        <div class="card mb-4" data-testid="admin-admins-section-add-override">
             <div class="card__header">
                 <div>
                     <h3>Add an override</h3>

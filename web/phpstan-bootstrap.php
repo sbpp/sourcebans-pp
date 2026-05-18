@@ -3,6 +3,35 @@
 // runtime defines from init.php and config.php so static analysis sees the
 // same constant surface the application sees at runtime.
 
+// Issue #1290 phase B: register the legacy global-name shims for the
+// namespaced classes in web/includes/ before any analysis runs. The
+// runtime equivalent is the require_once chain at the top of init.php /
+// tests/bootstrap.php; PHPStan needs the aliases registered too because
+// the procedural code in pages/*.php / api/handlers/*.php / updater/*.php
+// still references the global names (`Config::`, `Log::`, `Database`,
+// `Host::`, `Crypto::`, `CSRF::`, `Auth::`, `JWT`, `CUserManager`, …)
+// and `class_alias()` is a runtime call PHPStan can't statically see.
+// Each require_once fires the class_alias() line at the bottom of the
+// namespaced file, making both names visible to the analyser. Burned in
+// the call-site sweep PR (alongside the runtime aliases) once
+// `rg '\b(Database|CUserManager|…)\b' web/pages web/api web/updater` is
+// empty.
+$_includes = __DIR__ . '/includes';
+require_once $_includes . '/Security/Crypto.php';
+require_once $_includes . '/Security/CSRF.php';
+require_once $_includes . '/Auth/JWT.php';
+require_once $_includes . '/Auth/Handler/NormalAuthHandler.php';
+require_once $_includes . '/Auth/Handler/SteamAuthHandler.php';
+require_once $_includes . '/Auth/Auth.php';
+require_once $_includes . '/Auth/Host.php';
+require_once $_includes . '/Auth/UserManager.php';
+require_once $_includes . '/View/AdminTabs.php';
+require_once $_includes . '/Db/Database.php';
+require_once $_includes . '/Config.php';
+require_once $_includes . '/Log.php';
+require_once $_includes . '/Api/ApiError.php';
+require_once $_includes . '/Api/Api.php';
+
 // Web/SourceMod permission flags — defined at runtime from JSON in init.php.
 foreach (['web.json', 'sourcemod.json'] as $file) {
     $path = __DIR__ . '/configs/permissions/' . $file;

@@ -99,6 +99,18 @@
             window.sb.message[kind](title, body || '');
         }
     }
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
+    }
     /** @param {string} type @param {number} id */
     window.CheckEmail = function (type, id) {
         var err = 0;
@@ -110,12 +122,15 @@
         if (err > 0) return;
         var a = api(), A = actions();
         if (!a || !A) return;
+        var submitBtn = $id('aemail');
+        setBusy(submitBtn, true);
         a.call(A.SystemSendMail, {
             subject: subject.value,
             message: message.value,
             type: type,
             id: id
         }).then(function (r) {
+            setBusy(submitBtn, false);
             if (!r || r.ok === false) {
                 toast('error', 'Email failed', (r && r.error && r.error.message) || 'Unknown error');
                 return;

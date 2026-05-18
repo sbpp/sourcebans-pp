@@ -24,6 +24,9 @@ Run things inside containers:
   phpstan         Run phpstan from web/phpstan.neon inside the web container.
   test [args...]  Run PHPUnit (web/phpunit.xml) inside the web container.
   ts-check        Run tsc --checkJs over web/scripts (npm-installs typescript on demand).
+  e2e [args...]   Run the Playwright E2E suite inside the web container.
+                  Lazily npm-installs @playwright/test + chromium on first run;
+                  forwards args to `npx playwright test` (e.g. `--grep @screenshot`).
   exec <cmd...>   Run an arbitrary command in the web container.
   mysql           Open a mysql client connected to the dev DB.
 
@@ -31,6 +34,11 @@ Database:
   db-dump [file]  Dump the DB to file (default: dump-YYYYMMDD-HHMMSS.sql).
   db-load <file>  Load a SQL dump into the dev DB.
   db-reset        Drop the DB volume and re-seed (faster than full reset).
+  db-seed [args]  Populate the dev DB with realistic synthetic data.
+                  Accepts --scale=small|medium|large (default medium) and
+                  --seed=<int> (default pinned in code). Idempotent: every
+                  run truncates synth-owned tables first. Refuses to touch
+                  any DB other than `sourcebans`.
 
 URLs once "up":
   http://localhost:${SBPP_WEB_PORT:-8080}        SourceBans++ panel  (admin / admin)
@@ -122,6 +130,86 @@ case "$cmd" in
         # `--prefer-offline`.
         dc exec web bash -lc 'cd /var/www/html/web && npm install --silent --no-audit --no-fund --prefer-offline && npm run --silent ts-check'
         ;;
+    e2e)
+        # Playwright E2E gate added in #1124. Mirrors `ts-check`'s
+        # lazy-install pattern: first run apt-installs chromium's
+        # system deps via `playwright install --with-deps chromium`,
+        # subsequent runs are sub-second to start.
+        #
+        # We auto-bring-up the dev stack if it's not already running
+        # so `./sbpp.sh e2e` works from a fresh checkout. The suite
+        # then runs INSIDE the web container and hits Apache on the
+        # in-container port 80 (E2E_BASE_URL=http://localhost). The
+        # DB seeder (web/tests/e2e/fixtures/db.ts) flips
+        # E2E_IN_CONTAINER=1 so it calls `php` directly instead of
+        # `docker compose exec` (we're already inside the container,
+        # the Docker socket isn't reachable from here).
+        if [ -z "$(dc ps -q web 2>/dev/null)" ]; then dc up -d; fi
+        # Idempotent grant: ensures `sourcebans_e2e` is writable by
+        # the panel user even on dev stacks whose db-init/ ran before
+        # this script started provisioning the e2e DB. Fresh stacks
+        # already get the grant from docker/db-init/00-render-schema.sh.
+        dc exec -T db mariadb -uroot -proot -e "
+            GRANT ALL PRIVILEGES ON \`sourcebans_e2e\`.* TO 'sourcebans'@'%';
+            GRANT CREATE, DROP ON *.* TO 'sourcebans'@'%';
+            FLUSH PRIVILEGES;" >/dev/null
+        # Pin the panel at the e2e DB for the duration of the run, then
+        # restore on exit. docker/php/web-entrypoint.sh renders config.php
+        # once at container start with `define('DB_NAME', 'sourcebans')`
+        # — the dev DB. Apache+mod_php holds that constant for the life
+        # of the container, so the `-e DB_NAME=sourcebans_e2e` below only
+        # affects the bash shell that drives `npx playwright test` (and
+        # the truncate shim it shells into). Without this swap the panel
+        # the test browser hits writes to `sourcebans` while the fixture
+        # truncates `sourcebans_e2e`, and any spec that mutates DB state
+        # is non-hermetic across runs (#1124 Slice 3 was the first slice
+        # to exercise the write path; Slice 0's smoke specs only login,
+        # which masked the gap). Apache re-reads config.php on every
+        # request so an in-place sed takes effect immediately with no
+        # restart; the trap restores the dev-DB value so the developer's
+        # browser session is unaffected once the suite finishes.
+        e2e_db="${E2E_DB_NAME:-sourcebans_e2e}"
+        dc exec -T web bash -c "
+            set -e
+            cfg=/var/www/html/web/config.php
+            stash=/var/www/html/web/config.php.e2e-stash
+            [ ! -f \$stash ] && cp \$cfg \$stash
+            sed -i \"s/define('DB_NAME', '[^']*');/define('DB_NAME', '${e2e_db}');/\" \$cfg
+        "
+        restore_panel_db() {
+            dc exec -T web bash -c '
+                cfg=/var/www/html/web/config.php
+                stash=/var/www/html/web/config.php.e2e-stash
+                if [ -f $stash ]; then mv $stash $cfg; fi
+            ' 2>/dev/null || true
+        }
+        trap restore_panel_db EXIT INT TERM
+        dc exec -T \
+            -e E2E_BASE_URL="${E2E_BASE_URL:-http://localhost}" \
+            -e E2E_IN_CONTAINER=1 \
+            -e SCREENSHOTS="${SCREENSHOTS:-}" \
+            -e CI="${CI:-}" \
+            -e DB_HOST=db -e DB_PORT=3306 \
+            -e DB_NAME="${e2e_db}" \
+            -e DB_USER=sourcebans -e DB_PASS=sourcebans \
+            -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 \
+            web bash -lc '
+                set -e
+                cd /var/www/html/web/tests/e2e
+                if [ ! -d node_modules/@playwright/test ]; then
+                    npm install --silent --no-audit --no-fund --prefer-offline
+                fi
+                # Browser install is also lazy. The marker file is
+                # what `playwright install` drops once it has finished
+                # provisioning chromium + the Debian deps under
+                # ~/.cache/ms-playwright. If the user nukes the cache,
+                # the next run reinstalls.
+                if [ ! -d "$HOME/.cache/ms-playwright" ] || [ -z "$(ls "$HOME/.cache/ms-playwright" 2>/dev/null)" ]; then
+                    npx playwright install --with-deps chromium
+                fi
+                exec npx playwright test "$@"
+            ' -- "$@"
+        ;;
     exec)
         dc exec web "$@"
         ;;
@@ -141,6 +229,24 @@ case "$cmd" in
         dc rm -fsv db
         docker volume rm "$(basename "$PWD")_dbdata" 2>/dev/null || true
         dc up -d db
+        ;;
+    db-seed)
+        # Dev-only synthetic data populator (#1238). Mirrors `e2e`'s
+        # auto-bring-up shim so `./sbpp.sh db-seed` works from a fresh
+        # checkout. The CLI driver lives at
+        # `web/tests/scripts/seed-dev-db.php`; the synthesizer is
+        # `Sbpp\Tests\Synthesizer`. Always truncate+reseed by design;
+        # `--scale=small|medium|large` and `--seed=<int>` are the only
+        # accepted flags. DB_NAME is pinned to `sourcebans` (the dev
+        # panel's DB) — the driver refuses any other value, including
+        # `sourcebans_test` / `sourcebans_e2e`.
+        if [ -z "$(dc ps -q web 2>/dev/null)" ]; then dc up -d; fi
+        dc exec \
+            -e DB_HOST=db -e DB_PORT=3306 \
+            -e DB_NAME=sourcebans \
+            -e DB_USER=sourcebans -e DB_PASS=sourcebans \
+            -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 \
+            web php /var/www/html/web/tests/scripts/seed-dev-db.php "$@"
         ;;
     -h|--help|help|"")
         usage

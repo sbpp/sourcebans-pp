@@ -4,9 +4,10 @@
 #   ./sbpp.sh logs         # tail web/db logs
 #   open http://localhost:8080  # panel — login admin / admin
 #
-# This file is for development only. Do NOT use it in production: it disables
-# the install-folder safety check, ships a known admin password, and exposes
-# the database port to the host.
+# This file is for development only. Do NOT use it in production: it ships a
+# known admin password, exposes the database port to the host, and the dev
+# image defines `SBPP_DEV_KEEP_INSTALL` (issue #1335 C1) so init.php's
+# install/ + updater/ presence guard skips during dev.
 
 services:
   web:

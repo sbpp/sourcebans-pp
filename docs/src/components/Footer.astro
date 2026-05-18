@@ -1,0 +1,110 @@
+---
+// Override of Starlight's default Footer component.
+//
+// The override exists to surface a small "Support SourceBans++ on
+// GitHub Sponsors" affordance at the bottom of every page. The
+// topbar already carries a heart-icon social link (see the `social`
+// array in astro.config.mjs), and the landing page carries a one-
+// liner under the navigation CardGrid — the footer is the third
+// surface so anyone who reads to the end of a docs page can find
+// the link without scrolling back to the top.
+//
+// This file re-renders Starlight's stock per-page footer (EditLink +
+// LastUpdated + Pagination + the optional Built-with-Starlight kudos)
+// and appends a small sponsor affordance below it. The stock sub-
+// components are pulled straight from Starlight's `virtual:` namespace
+// rather than re-implementing them so a Starlight upgrade that adds
+// new footer affordances picks them up automatically.
+
+import EditLink from 'virtual:starlight/components/EditLink';
+import LastUpdated from 'virtual:starlight/components/LastUpdated';
+import Pagination from 'virtual:starlight/components/Pagination';
+import config from 'virtual:starlight/user-config';
+import { Icon } from '@astrojs/starlight/components';
+---
+
+<footer class="sl-flex">
+	<div class="meta sl-flex">
+		<EditLink />
+		<LastUpdated />
+	</div>
+	<Pagination />
+
+	<div class="sbpp-footer-extra sl-flex">
+		<a
+			class="sbpp-sponsor-link sl-flex"
+			href="https://github.com/sponsors/rumblefrog"
+			rel="noopener"
+		>
+			<Icon name="heart" size="1em" />
+			<span>Support SourceBans++ on GitHub Sponsors</span>
+		</a>
+	</div>
+
+	{
+		config.credits && (
+			<a class="kudos sl-flex" href="https://starlight.astro.build">
+				<Icon name="starlight" /> {Astro.locals.t('builtWithStarlight.label')}
+			</a>
+		)
+	}
+</footer>
+
+<style>
+	footer {
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	.meta {
+		gap: 0.75rem 3rem;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		margin-top: 3rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.meta > :global(p:only-child) {
+		margin-inline-start: auto;
+	}
+
+	.kudos {
+		align-items: center;
+		gap: 0.5em;
+		margin: 1.5rem auto;
+		font-size: var(--sl-text-xs);
+		text-decoration: none;
+		color: var(--sl-color-gray-3);
+	}
+	.kudos :global(svg) {
+		color: var(--sl-color-orange);
+	}
+	.kudos:hover {
+		color: var(--sl-color-white);
+	}
+
+	/* Sponsor affordance lives below the per-page footer chrome on
+	   every page. Subdued styling — discovery hook, not a primary CTA
+	   — but always visible so users who hit the bottom of any docs
+	   page can find the sponsor link without scrolling back to the
+	   topbar. */
+	.sbpp-footer-extra {
+		justify-content: center;
+		margin-top: 1.25rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--sl-color-hairline);
+	}
+	.sbpp-sponsor-link {
+		align-items: center;
+		gap: 0.45em;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+		text-decoration: none;
+	}
+	.sbpp-sponsor-link:hover,
+	.sbpp-sponsor-link:focus-visible {
+		color: var(--sl-color-text-accent);
+	}
+	.sbpp-sponsor-link :global(svg) {
+		color: var(--sl-color-orange);
+	}
+</style>

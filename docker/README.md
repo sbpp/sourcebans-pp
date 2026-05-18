@@ -5,6 +5,17 @@ PHP/Apache, MariaDB, Adminer, and Mailpit, seeds the database, and creates a
 ready-to-use admin login. Source under `web/` is bind-mounted, so edits show
 up on the next request — no rebuilds needed.
 
+> **Dev or prod?** This page documents the **development** stack. For
+> the **production** install path (immutable image pulled from GHCR,
+> hardened entrypoint, no install wizard, multi-arch / cosign-signed)
+> see the
+> [Docker quickstart](https://sbpp.github.io/getting-started/quickstart-docker/)
+> docs page plus `docker-compose.prod.yml` + `.env.example.prod` at the
+> repo root. The two stacks are deliberately separate — the dev stack
+> ships `admin/admin`, bind-mounts the worktree, defines
+> `SBPP_DEV_KEEP_INSTALL` (a panel-takeover guard bypass), and exposes
+> the DB to host. None of that is safe outside a developer's laptop.
+
 ## Prerequisites
 
 - Docker 24+ with the Compose plugin (`docker compose`, not `docker-compose`)
@@ -38,7 +49,7 @@ To stop:
 ## What's in the box
 
 ```
-Dockerfile               php:8.2-apache + pdo_mysql, gmp, intl, zip, mbstring, opcache, composer
+Dockerfile               php:8.5-apache + pdo_mysql, intl, zip, mbstring, opcache, composer
 docker-compose.yml       web, db, adminer, mailpit
 docker/php/
     web-entrypoint.sh    waits for DB, renders config.php, runs composer install, fixes cache perms
@@ -62,20 +73,56 @@ don't leak onto the host filesystem.
 ./sbpp.sh composer install        # run composer in the web container
 ./sbpp.sh phpstan                 # phpstan analyse with the project's phpstan.neon
 ./sbpp.sh ts-check                # tsc --checkJs gate over web/scripts (mirror of CI)
+./sbpp.sh e2e                     # Playwright E2E gate (lazy chromium install) against the running stack
 ./sbpp.sh db-dump backup.sql      # mysqldump to host file
 ./sbpp.sh db-load fixtures.sql    # pipe a SQL file into the DB
 ./sbpp.sh db-reset                # drop just the DB volume and re-seed
+./sbpp.sh db-seed                 # populate the dev DB with realistic synthetic data
 ./sbpp.sh rebuild                 # `--no-cache` rebuild of the web image
 ```
 
+`db-seed` lights up every data-driven panel surface — banlist + commslist
+beyond a single page, dashboard "Latest …" cards, the drawer's history /
+comments / notes panes, admin moderation queues (submissions and
+protests), admin audit log, multiple groups/admins/servers — without
+touching `data.sql` / `struc.sql` (the install path stays minimal).
+Idempotent: every run truncates the synthesizer-owned tables first and
+re-seeds. Deterministic given `--seed=<int>` so two devs see the same
+data; pinned default seed in code. Three scale tiers:
+
+```sh
+./sbpp.sh db-seed                 # default scale (~200 bans, ~100 comms)
+./sbpp.sh db-seed --scale=small   # ~30 bans, fast iteration
+./sbpp.sh db-seed --scale=large   # ~2000 bans, pagination / perf
+./sbpp.sh db-seed --seed=42       # alternate RNG seed
+```
+
+Refusal guard: the seeder strictly refuses any `DB_NAME` other than
+`sourcebans`, so the PHPUnit DB (`sourcebans_test`) and Playwright DB
+(`sourcebans_e2e`) cannot be wiped by accident. The Synthesizer source
+is at `web/tests/Synthesizer.php` (`Sbpp\Tests\Synthesizer`); the CLI
+driver is `web/tests/scripts/seed-dev-db.php`.
+
+Re-login required after each run — the seeder truncates `sb_login_tokens`
+along with the rest of the user-data tables, which invalidates any open
+browser session against the dev panel. Just hit `/index.php?p=login`
+again with `admin` / `admin`.
+
 ## Quality gates
 
-Three gates run in CI on every PR; each has a one-shot wrapper for local runs.
+Six gates run in CI on every PR; the first five each have a one-shot
+wrapper for local runs. The sixth (plugin compile) is CI-only — the
+dev stack ships no spcomp, and panel-only PRs never trigger it.
 
 ```sh
 ./sbpp.sh phpstan                 # static analysis (web/phpstan.neon, baseline at web/phpstan-baseline.neon)
 ./sbpp.sh test                    # PHPUnit against the dedicated sourcebans_test DB
 ./sbpp.sh ts-check                # tsc --checkJs over web/scripts (#1098)
+./sbpp.sh composer api-contract   # regenerate web/scripts/api-contract.js (#1112)
+./sbpp.sh e2e                     # Playwright + axe against the dev stack (#1124)
+
+# Plugin compile (no sbpp.sh wrapper — install spcomp locally if you want to mirror it)
+(cd game/addons/sourcemod/scripting && spcomp -i include sbpp_*.sp)
 ```
 
 `ts-check` runs the TypeScript compiler in `--checkJs` mode against the
@@ -84,6 +131,14 @@ vanilla JS in `web/scripts/`, using `web/scripts/tsconfig.json` plus the
 inside a fresh container does an `npm install` (cached afterwards) — total
 cold cost is a few seconds, subsequent runs are sub-second. There is no
 build step; nothing in `web/node_modules/` ships to production.
+
+`e2e` runs the Playwright suite under `web/tests/e2e/` inside the web
+container against a dedicated `sourcebans_e2e` database (so dev data
+and PHPUnit's `sourcebans_test` are both untouched). First run installs
+`@playwright/test` + the chromium browser + its system dependencies via
+`npx playwright install --with-deps chromium`; subsequent runs reuse
+the cached install. Forwards args to `npx playwright test`, e.g.
+`./sbpp.sh e2e --grep @screenshot` for the per-PR screenshot gallery.
 
 ## Static analysis with phpstan-dba
 

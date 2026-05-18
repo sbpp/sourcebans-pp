@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-namespace Sbpp\PhpStan;
+namespace Sbpp\PHPStan;
 
 use PHPStan\Type\Type;
 use staabm\PHPStanDba\Error;

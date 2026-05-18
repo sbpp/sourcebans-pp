@@ -59,6 +59,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Composer is run against the staged tree (NOT the source checkout)
+      # so the source checkout stays clean and the resulting vendor/
+      # tree carries production-only deps with the optimized autoloader
+      # the release zip ships. See issue #1332 — pre-fix the release zip
+      # omitted vendor/ entirely (it's gitignored), so unzipping a
+      # tarball + visiting /install/ hard-failed on init.php's
+      # autoload check ("Compose autoload not found! Run `composer
+      # install`"). The docs site (Quickstart + the per-version upgrade
+      # pages under updating/) promises vendor/ ships in the release
+      # tarball; this step honours that promise.
+      - name: Setup PHP + Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer
+          coverage: none
+
       - name: Create webpanel package
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
@@ -70,7 +87,41 @@ jobs:
               "dev": false
           }
           EOF
+          composer install \
+              --working-dir="/tmp/${pkg}" \
+              --no-dev \
+              --optimize-autoloader \
+              --no-interaction \
+              --prefer-dist
           (cd /tmp && zip -rq "${GITHUB_WORKSPACE}/${pkg}.zip" "${pkg}")
+
+      # Smoke-check the actual zip (not the staged tree) so a future
+      # change that makes `zip` silently drop vendor/ — a stray
+      # .zipignore, an exclusion flag, etc. — fails the build loudly
+      # instead of shipping a broken artifact. Two anchor files:
+      #   - includes/vendor/autoload.php — the file init.php gates on.
+      #   - includes/vendor/smarty/smarty/src/Smarty.php — the highest-
+      #     value transitive dep (templates won't render without it).
+      #     This is the file that backs `use Smarty\Smarty;` in
+      #     web/init.php via Smarty 5.x's PSR-4 autoload (`Smarty\` =>
+      #     `src/`); the legacy libs/Smarty.class.php is only a back-
+      #     compat shim for non-composer callers, which the panel isn't.
+      - name: Verify vendor/ is bundled in the zip
+        run: |
+          pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
+          missing=0
+          for f in \
+              "${pkg}/includes/vendor/autoload.php" \
+              "${pkg}/includes/vendor/smarty/smarty/src/Smarty.php"; do
+              if ! unzip -l "${pkg}.zip" "${f}" >/dev/null 2>&1; then
+                  echo "::error::Missing required artifact file in ${pkg}.zip: ${f}"
+                  missing=1
+              fi
+          done
+          if [ "$missing" -ne 0 ]; then
+              echo "::error::Webpanel zip is missing bundled composer dependencies; release would ship broken to self-hosters."
+              exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:

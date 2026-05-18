@@ -15,7 +15,11 @@
 {if NOT $permission_addgroup}
     <div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>
 {else}
-<div class="p-6" style="max-width:48rem">
+{* #1266 — outer `.p-6` removed; the 1.5rem page inset now lives on
+   `.admin-sidebar-shell` (the AdminTabs grid host). The `max-width:
+   48rem` form clamp stays so the form column doesn't grow past a
+   readable line length on wide viewports. *}
+<div style="max-width:48rem">
     <div class="mb-4">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Create a group</h1>
         <p class="text-sm text-muted m-0 mt-2">Pick a name and a type. You can edit permission flags from the <strong>List groups</strong> tab once the group exists.</p>
@@ -67,7 +71,7 @@
         </div>
         <div class="card__header" style="border-top:1px solid var(--border);border-bottom:0;justify-content:flex-end">
             <div class="flex gap-2">
-                <a class="btn btn--ghost" href="?p=admin&c=groups" data-testid="add-group-cancel">Cancel</a>
+                <a class="btn btn--ghost" href="?p=admin&c=groups&section=list" data-testid="add-group-cancel">Cancel</a>
                 <button class="btn btn--primary" type="submit" data-testid="add-group-submit">Create group</button>
             </div>
         </div>
@@ -82,6 +86,15 @@ function SbppGroupsAddTypeChanged(sel) {
     srvBlock.style.display = (sel.value === '2') ? 'block' : 'none';
 }
 
+// Local wrapper around window.SBPP.setBusy with a `disabled`-only fallback
+// so a third-party theme that strips theme.js still gates against double-clicks.
+function SbppGroupsAddSetBusy(btn, busy) {
+    if (!btn) return;
+    var S = window.SBPP;
+    if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+    else btn.disabled = busy === undefined ? true : !!busy;
+}
+
 function SbppGroupsAdd(event) {
     event.preventDefault();
     var form = event.target;
@@ -89,6 +102,8 @@ function SbppGroupsAdd(event) {
     var type = form.querySelector('select[name="type"]').value;
     var srvflagsEl = form.querySelector('input[name="srvflags"]');
     var srvflags = srvflagsEl ? srvflagsEl.value : '';
+    var submitBtn = form.querySelector('[data-testid="add-group-submit"]');
+    SbppGroupsAddSetBusy(submitBtn, true);
     sb.api.call(Actions.GroupsAdd, {
         name: name,
         type: type,
@@ -101,8 +116,9 @@ function SbppGroupsAdd(event) {
         // sb.message is the legacy fallback (no-ops under sbpp2026 since #dialog-* is
         // legacy-default-only, but kept so a third-party theme that never wired SBPP
         // still gets some signal).
-        if (!r) return;
+        if (!r) { SbppGroupsAddSetBusy(submitBtn, false); return; }
         if (r.redirect) return;
+        SbppGroupsAddSetBusy(submitBtn, false);
         if (r.ok === false) {
             var em = (r.error && r.error.message) || 'Unknown error';
             if (window.SBPP && typeof window.SBPP.showToast === 'function') {
@@ -121,6 +137,9 @@ function SbppGroupsAdd(event) {
             sb.message.success(title, body, data.message ? data.message.redir : '');
         }
         if (data.reload) {
+            // Re-arm before the reload so a stale render briefly shows the
+            // disabled state, then leaves the form re-enabled if reload fails.
+            SbppGroupsAddSetBusy(submitBtn, true);
             setTimeout(function () { window.location.reload(); }, 2000);
         }
     });

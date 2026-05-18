@@ -2,6 +2,6 @@
     "ok": false,
     "error": {
         "code": "already_blocked",
-        "message": "SteamID: STEAM_0:0:99 is already blocked."
+        "message": "SteamID: STEAM_0:0:99 is already blocked by block #1."
     }
 }

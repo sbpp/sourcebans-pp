@@ -39,7 +39,9 @@ function api_bans_add(array $params): array
     // raw bytes and let the Smarty auto-escape layer (see #1087) turn
     // `<Msg>` into `&lt;Msg&gt;` at display time.
     $nickname = (string)($params['nickname'] ?? '');
-    $type     = (int)($params['type'] ?? 0);
+    $rawType  = (int)($params['type'] ?? 0);
+    $banType  = BanType::tryFrom($rawType) ?? BanType::Steam;
+    $type     = $banType->value;
     $steam    = SteamID::toSteam2(trim((string)($params['steam'] ?? '')));
     $ip       = preg_replace('#[^\d\.]#', '', (string)($params['ip'] ?? ''));
     $length   = (int)($params['length'] ?? 0);
@@ -48,16 +50,16 @@ function api_bans_add(array $params): array
     $reason   = (string)($params['reason'] ?? '');
     $fromsub  = (int)($params['fromsub'] ?? 0);
 
-    if (empty($steam) && $type === 0) {
+    if (empty($steam) && $banType === BanType::Steam) {
         throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
     }
-    if ($type === 0 && !SteamID::isValidID($steam)) {
+    if ($banType === BanType::Steam && !SteamID::isValidID($steam)) {
         throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
     }
-    if (empty($ip) && $type === 1) {
+    if (empty($ip) && $banType === BanType::Ip) {
         throw new ApiError('validation', 'You must type an IP', 'ip');
     }
-    if ($type === 1 && !filter_var($ip, FILTER_VALIDATE_IP)) {
+    if ($banType === BanType::Ip && !filter_var($ip, FILTER_VALIDATE_IP)) {
         throw new ApiError('validation', 'You must type a valid IP', 'ip');
     }
     if ($length < 0) {
@@ -73,14 +75,30 @@ function api_bans_add(array $params): array
     $len = $length ? $length * 60 : 0;
 
     PruneBans();
-    if ($type === 0) {
+    // Surface the conflicting bid in the error envelope so a Re-apply
+    // attempt against an unbanned/expired row gives the admin enough
+    // context to investigate the OTHER active row that's blocking the
+    // re-add (the row visibly says unbanned/expired but a sibling
+    // active ban for the same identity makes the duplicate-check fire
+    // — without the bid the admin sees "already banned" with no way
+    // to tell which row, and the Re-apply UX reads as broken). The
+    // production-realistic case (one ban, lifted, re-applied) was
+    // never affected because the unbanned row's `RemovedBy IS NOT NULL`
+    // already excludes it from the check; the bid call-out is for the
+    // multi-ban shape (legacy data, race, or admin adding a second
+    // ban while the first is still active). `LIMIT 1 ORDER BY bid DESC`
+    // picks the most recent active row, which is the one the admin
+    // most likely wants to look at.
+    if ($banType === BanType::Steam) {
         $chk = $GLOBALS['PDO']->query(
-            "SELECT count(bid) AS count FROM `:prefix_bans`
+            "SELECT bid FROM `:prefix_bans`
             WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP())
-            AND RemovedBy IS NULL AND type = '0'"
+            AND RemovedBy IS NULL AND type = '0'
+            ORDER BY bid DESC LIMIT 1"
         )->single([$steam]);
-        if ((int)$chk['count'] > 0) {
-            throw new ApiError('already_banned', "SteamID: $steam is already banned.");
+        if ($chk) {
+            $existingBid = (int)$chk['bid'];
+            throw new ApiError('already_banned', "SteamID: $steam is already banned by ban #$existingBid.");
         }
 
         foreach ($userbank->GetAllAdmins() as $admin) {
@@ -89,21 +107,23 @@ function api_bans_add(array $params): array
             }
         }
     }
-    if ($type === 1) {
+    if ($banType === BanType::Ip) {
         $chk = $GLOBALS['PDO']->query(
-            "SELECT count(bid) AS count FROM `:prefix_bans`
+            "SELECT bid FROM `:prefix_bans`
             WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP())
-            AND RemovedBy IS NULL AND type = '1'"
+            AND RemovedBy IS NULL AND type = '1'
+            ORDER BY bid DESC LIMIT 1"
         )->single([$ip]);
-        if ((int)$chk['count'] > 0) {
-            throw new ApiError('already_banned', "IP: $ip is already banned.");
+        if ($chk) {
+            $existingBid = (int)$chk['bid'];
+            throw new ApiError('already_banned', "IP: $ip is already banned by ban #$existingBid.");
         }
     }
 
     $GLOBALS['PDO']->query(
         "INSERT INTO `:prefix_bans`(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
         (UNIX_TIMESTAMP(),?,?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)"
-    )->execute([$type, $ip, $steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
+    )->execute([$banType->value, $ip, $steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
     $newId = (int)$GLOBALS['PDO']->lastInsertId();
 
     if ($dname && $dfile && preg_match('/^[a-z0-9]*$/i', $dfile)) {
@@ -128,12 +148,12 @@ function api_bans_add(array $params): array
         ->execute([$userbank->GetAid(), $steam]);
 
     $kickit = Config::getBool('config.enablekickit');
-    Log::add('m', 'Ban Added', "Ban against (" . ($type === 0 ? $steam : $ip) . ") has been added. Reason: $reason; Length: $length");
+    Log::add(LogType::Message, 'Ban Added', "Ban against (" . ($banType === BanType::Steam ? $steam : $ip) . ") has been added. Reason: $reason; Length: $length");
 
     return [
         'bid'    => $newId,
         'reload' => true,
-        'kickit' => $kickit ? ['check' => $type === 0 ? $steam : $ip, 'type' => $type] : null,
+        'kickit' => $kickit ? ['check' => $banType === BanType::Steam ? $steam : $ip, 'type' => $banType->value] : null,
         'message' => $kickit ? null : [
             'title' => 'Ban Added',
             'body'  => 'The ban has been successfully added',
@@ -155,13 +175,15 @@ function api_bans_setup_ban(array $params): array
     $GLOBALS['PDO']->bind(':subid', $subid);
     $demo = $GLOBALS['PDO']->single();
 
+    $inferredType = (trim($ban['SteamId'] ?? '') === '') ? BanType::Ip : BanType::Steam;
+
     return [
         'subid'    => $subid,
         'nickname' => $ban['name']    ?? '',
         'steam'    => $ban['SteamId'] ?? '',
         'ip'       => $ban['sip']     ?? '',
         'length'   => 0,
-        'type'     => (trim($ban['SteamId'] ?? '') === '') ? 1 : 0,
+        'type'     => $inferredType->value,
         'reason'   => $ban['reason']  ?? '',
         'demo'     => $demo ? ['filename' => $demo['filename'], 'origname' => $demo['origname']] : null,
     ];
@@ -175,13 +197,15 @@ function api_bans_prepare_reban(array $params): array
         ->single([$bid]);
     $demo = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_demos` WHERE demid = ? AND demtype = 'B';")->single([$bid]);
 
+    $banType = BanType::tryFrom((int)($ban['type'] ?? 0)) ?? BanType::Steam;
+
     return [
         'bid'      => $bid,
         'nickname' => $ban['name']   ?? '',
         'steam'    => $ban['authid'] ?? '',
         'ip'       => $ban['ip']     ?? '',
         'length'   => (int)($ban['length'] ?? 0),
-        'type'     => (int)($ban['type']   ?? 0),
+        'type'     => $banType->value,
         'reason'   => $ban['reason'] ?? '',
         'demo'     => $demo ? ['filename' => $demo['filename'], 'origname' => $demo['origname']] : null,
     ];
@@ -191,7 +215,6 @@ function api_bans_paste(array $params): array
 {
     $sid  = (int)($params['sid']  ?? 0);
     $name = (string)($params['name'] ?? '');
-    $type = (int)($params['type'] ?? 0);
 
     $ret = rcon('status', $sid);
     if (!$ret) {
@@ -208,7 +231,7 @@ function api_bans_paste(array $params): array
                 'nickname' => $player['name'],
                 'steam'    => SteamID::toSteam2($player['steamid']),
                 'ip'       => $player['ip'] ?? '',
-                'type'     => 0,
+                'type'     => BanType::Steam->value,
             ];
         }
     }
@@ -225,11 +248,17 @@ function api_bans_add_comment(array $params): array
     $page  = (int)($params['page']  ?? -1);
 
     $pagelink = $page !== -1 ? '&page=' . $page : '';
+    // #1275 — admin-bans is Pattern A (`?section=…`); the legacy
+    // `#^2` / `#^1` fragment anchors that targeted the old page-toc
+    // chrome are no longer wired (the page handler renders ONE
+    // section per request now). Redirect callers back to the section
+    // they came from so adding a comment doesn't ricochet to the
+    // default add-ban surface.
     $redir = match ($ctype) {
         'B' => '?p=banlist' . $pagelink,
         'C' => '?p=commslist' . $pagelink,
-        'S' => '?p=admin&c=bans#^2',
-        'P' => '?p=admin&c=bans#^1',
+        'S' => '?p=admin&c=bans&section=submissions',
+        'P' => '?p=admin&c=bans&section=protests',
         default => null,
     };
     if ($redir === null) {
@@ -240,7 +269,7 @@ function api_bans_add_comment(array $params): array
         "INSERT INTO `:prefix_comments`(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())"
     )->execute([$bid, $ctype, $userbank->GetAid(), $ctext]);
 
-    Log::add('m', 'Comment Added', "$username added a comment for ban #$bid");
+    Log::add(LogType::Message, 'Comment Added', "$username added a comment for ban #$bid");
 
     return [
         'reload'  => true,
@@ -262,11 +291,13 @@ function api_bans_edit_comment(array $params): array
     $page  = (int)($params['page']  ?? -1);
 
     $pagelink = $page !== -1 ? '&page=' . $page : '';
+    // #1275 — see api_bans_add_comment for the rationale; submissions
+    // / protests redirect back into their own Pattern A sections.
     $redir = match ($ctype) {
         'B' => '?p=banlist' . $pagelink,
         'C' => '?p=commslist' . $pagelink,
-        'S' => '?p=admin&c=bans#^2',
-        'P' => '?p=admin&c=bans#^1',
+        'S' => '?p=admin&c=bans&section=submissions',
+        'P' => '?p=admin&c=bans&section=protests',
         default => null,
     };
     if ($redir === null) {
@@ -277,7 +308,7 @@ function api_bans_edit_comment(array $params): array
         "UPDATE `:prefix_comments` SET commenttxt = ?, editaid = ?, edittime = UNIX_TIMESTAMP() WHERE cid = ?"
     )->execute([$ctext, $userbank->GetAid(), $cid]);
 
-    Log::add('m', 'Comment Edited', "$username edited comment #$cid");
+    Log::add(LogType::Message, 'Comment Edited', "$username edited comment #$cid");
 
     return [
         'reload'  => true,
@@ -298,14 +329,19 @@ function api_bans_remove_comment(array $params): array
     $page  = (int)($params['page']  ?? -1);
 
     $pagelink = $page !== -1 ? '&page=' . $page : '';
+    // #1275 — match the section-aware redirect shape from
+    // api_bans_add_comment / api_bans_edit_comment so a deleted
+    // comment lands the admin back on the queue they were on.
     $redir = match ($ctype) {
         'B' => '?p=banlist' . $pagelink,
         'C' => '?p=commslist' . $pagelink,
+        'S' => '?p=admin&c=bans&section=submissions',
+        'P' => '?p=admin&c=bans&section=protests',
         default => '?p=admin&c=bans',
     };
 
     $GLOBALS['PDO']->query("DELETE FROM `:prefix_comments` WHERE cid = ?")->execute([$cid]);
-    Log::add('m', 'Comment Deleted', "$username deleted comment #$cid");
+    Log::add(LogType::Message, 'Comment Deleted', "$username deleted comment #$cid");
 
     return [
         'message' => [
@@ -402,7 +438,7 @@ function api_bans_ban_member_of_group(array $params): array
             VALUES (UNIX_TIMESTAMP(), :type, :ip, :authid, :name, UNIX_TIMESTAMP(), :length, :reason, :aid, :adminIp)"
         );
         $GLOBALS['PDO']->bindMultiple([
-            ':type'    => 0,
+            ':type'    => BanType::Steam->value,
             ':ip'      => '',
             ':authid'  => SteamID::toSteam2($player['steamid']),
             ':name'    => $player['personaname'],
@@ -418,7 +454,7 @@ function api_bans_ban_member_of_group(array $params): array
         }
     }
 
-    Log::add('m', 'Group Banned',
+    Log::add(LogType::Message, 'Group Banned',
         "Banned " . ($amount['total'] - $amount['before'] - $amount['failed']) . "/{$amount['total']} players of group ($grpurl). {$amount['before']} were banned already. {$amount['failed']} failed.");
 
     return [
@@ -493,7 +529,7 @@ function api_bans_ban_friends(array $params): array
     $data = $raw ? json_decode($raw, true) : null;
     $friends = $data['friendslist']['friends'] ?? null;
 
-    if (is_null($friends)) {
+    if ($friends === null) {
         throw new ApiError('private_profile', 'There was an error retrieving the friend list.');
     }
 
@@ -532,7 +568,7 @@ function api_bans_ban_friends(array $params): array
         throw new ApiError('no_friends', "There was an error retrieving the friend list. Check if the profile isn't private or if he hasn't got any friends!");
     }
 
-    Log::add('m', 'Friends Banned',
+    Log::add(LogType::Message, 'Friends Banned',
         'Banned ' . ($total - $before - $error) . "/$total friends of $name. $before were banned already. $error failed.");
 
     return [
@@ -573,7 +609,7 @@ function api_bans_kick_player(array $params): array
 
             if ($immune <= $userbank->GetProperty('srv_immunity')) {
                 rcon("sm_kick #{$player['id']} You have been kicked from this server", $sid);
-                Log::add('m', 'Player kicked', "$username kicked player {$player['name']} ({$player['steamid']})");
+                Log::add(LogType::Message, 'Player kicked', "$username kicked player {$player['name']} ({$player['steamid']})");
                 return [
                     'message' => [
                         'title' => 'Success',
@@ -619,7 +655,7 @@ function api_bans_send_message(array $params): array
         }
     }
 
-    Log::add('m', 'Message sent to player', "The following message was sent to $name on server (#$sid): $message");
+    Log::add(LogType::Message, 'Message sent to player', "The following message was sent to $name on server (#$sid): $message");
 
     return [
         'message' => [
@@ -678,6 +714,7 @@ function api_bans_view_community(array $params): array
  *   demo_count: int,
  *   history_count: int,
  *   comments_visible: bool,
+ *   notes_visible: bool,
  *   comments: list<array{cid: int, added: int, added_human: string, author: string|null, text: string, edited_at: int|null, edited_by: string|null}>
  * }
  */
@@ -725,7 +762,8 @@ function api_bans_detail(array $params): array
         throw new ApiError('not_found', 'Ban not found.', null, 404);
     }
 
-    $type      = (int)$row['type'];
+    $banType   = BanType::tryFrom((int)$row['type']) ?? BanType::Steam;
+    $type      = $banType->value;
     $authid    = (string)$row['authid'];
     $banIp     = (string)($row['ip'] ?? '');
     $created   = (int)$row['created'];
@@ -737,11 +775,25 @@ function api_bans_detail(array $params): array
     // RemoveType marks deleted/unbanned/expired explicitly; otherwise
     // an `ends` timestamp in the past collapses to "expired" even
     // without a row update (PruneBans() catches those eventually).
-    $removeType = (string)($row['RemoveType'] ?? '');
-    if ($removeType === 'U' || $removeType === 'D') {
+    //
+    // #1352: pre-2.0 admin-lifted rows whose `RemoveType IS NULL` (the
+    // v1.x admin-unban write path didn't always populate the column —
+    // see `web/updater/data/810.php`'s backfill migration) get tagged
+    // `unbanned` via the `RemovedOn IS NOT NULL && RemovedBy > 0`
+    // disjunction, mirroring the same arm in `page.banlist.php`'s
+    // post-loop state computation. Without this branch the API would
+    // return `state: 'active'` for rows the page-side `?state=unbanned`
+    // SQL filter just pulled in — visibly broken on the drawer's
+    // detail surface.
+    $removal      = BanRemoval::tryFrom((string)($row['RemoveType'] ?? ''));
+    $removedByInt = $row['RemovedBy'] !== null ? (int)$row['RemovedBy'] : 0;
+    $isPre2AdminLift = $removal === null && $removedOn !== null && $removedByInt > 0;
+    if ($removal === BanRemoval::Unbanned || $removal === BanRemoval::Deleted) {
         $state = 'unbanned';
-    } elseif ($removeType === 'E') {
+    } elseif ($removal === BanRemoval::Expired) {
         $state = 'expired';
+    } elseif ($isPre2AdminLift) {
+        $state = 'unbanned';
     } elseif ($length === 0) {
         $state = 'permanent';
     } elseif ($ends > 0 && $ends < time()) {
@@ -830,6 +882,11 @@ function api_bans_detail(array $params): array
         'demo_count'       => (int)$row['demo_count'],
         'history_count'    => (int)$row['history_count'],
         'comments_visible' => $commentsVisible,
+        // notes_visible is the drawer's signal for whether to render the
+        // Notes tab at all (#1165). It mirrors the dispatcher gate on
+        // `notes.list` (requireAdmin=true) so a public visitor sees three
+        // tabs (Overview / History / Comms) and an admin sees four.
+        'notes_visible'    => $isAdmin,
         'comments'         => $comments,
     ];
 }
@@ -906,4 +963,348 @@ function api_bans_search(array $params): array
         ];
     }
     return ['bans' => $out];
+}
+
+/**
+ * Sibling-bans feed for the player-detail drawer's History tab (#1165).
+ *
+ * Returns the player's other bans (same authid for type=0, same IP for
+ * type=1) excluding the bid the drawer is currently displaying. The
+ * Overview tab already shows the current ban; the History tab is "what
+ * else is on file for this player". Action is registered public to
+ * match `bans.detail`'s reach so the drawer's tab chrome behaves
+ * identically for anonymous and admin callers — IP exposure follows the
+ * same `banlist.hideplayerips` / admin gate `bans.detail` enforces, and
+ * admin names follow `banlist.hideadminname`.
+ *
+ * Inputs: `bid` (int, the drawer's current ban id) — OR `authid`
+ * (string, SteamID), supplied directly. The `authid` path lets the
+ * drawer call this handler when the focal record is a comm
+ * (`api_comms_detail`) and there's no anchor `bid` in `:prefix_bans`
+ * to do the type/authid/ip lookup against. When `authid` is provided,
+ * the handler matches Steam bans only (`BA.type = 0 AND BA.authid = ?`)
+ * because IP matching needs an IP from the focal record and the comm
+ * focal has none. When neither is provided, returns `bad_request`.
+ *
+ * @return array{
+ *   items: list<array{
+ *     bid: int, type: int, banned_at: int, banned_at_human: string,
+ *     length_seconds: int, length_human: string,
+ *     expires_at: int|null, expires_at_human: string|null,
+ *     state: string, reason: string,
+ *     admin_name: string|null, removed_by: string|null,
+ *     removed_at: int|null, removed_at_human: string|null,
+ *     server_name: string|null
+ *   }>,
+ *   total: int
+ * }
+ */
+function api_bans_player_history(array $params): array
+{
+    global $userbank;
+
+    $isAdmin = $userbank->is_admin();
+    $hideAdmin = Config::getBool('banlist.hideadminname') && !$isAdmin;
+
+    // Two-shape input: either a `bid` (existing bans-focal drawer path,
+    // looks up the anchor ban so we can match siblings by the same
+    // authid for type=0 or the same IP for type=1) OR an `authid`
+    // (new comm-focal drawer path — there's no anchor bid because the
+    // drawer was opened from a comm row, and the player may have no
+    // bans on file at all). When `authid` is supplied, we match Steam
+    // bans only — IP matching needs an IP from the anchor and the comm
+    // focal record has none.
+    $authidParam = trim((string)($params['authid'] ?? ''));
+    if ($authidParam !== '') {
+        $anchorType = BanType::Steam;
+        $authid     = $authidParam;
+        $ip         = '';
+        $bid        = 0;
+    } else {
+        $bid = (int)($params['bid'] ?? 0);
+        if ($bid <= 0) {
+            throw new ApiError('bad_request', 'bid or authid is required', 'bid');
+        }
+
+        // Look up the anchor ban so we can match siblings by the same
+        // authid (type=0) or the same IP (type=1). Both columns are
+        // forwarded as plain string params; `:prefix_bans` is the same
+        // table the dispatcher's existing handlers read so phpstan-dba
+        // type-checks the SQL.
+        $anchor = $GLOBALS['PDO']->query(
+            "SELECT type, authid, ip FROM `:prefix_bans` WHERE bid = ?"
+        )->single([$bid]);
+        if (!$anchor) {
+            throw new ApiError('not_found', 'Ban not found.', null, 404);
+        }
+
+        $anchorType = BanType::tryFrom((int)$anchor['type']) ?? BanType::Steam;
+        $authid     = (string)$anchor['authid'];
+        $ip         = (string)($anchor['ip'] ?? '');
+    }
+
+    // No anchor identifier -> no siblings to match against. This also
+    // shields the SQL from a `WHERE authid = ''` sweep on legacy rows
+    // that have a blank authid + blank ip.
+    if (($anchorType === BanType::Steam && $authid === '') || ($anchorType === BanType::Ip && $ip === '')) {
+        return ['items' => [], 'total' => 0];
+    }
+
+    $matchClause = $anchorType === BanType::Ip
+        ? "BA.type = 1 AND BA.ip = ? AND BA.ip <> ''"
+        : "BA.type = 0 AND BA.authid = ? AND BA.authid <> ''";
+    $matchParam  = $anchorType === BanType::Ip ? $ip : $authid;
+
+    // The bid-keyed path needs `BA.bid <> ?` to exclude the focal ban
+    // from the list of "other bans"; the authid-keyed path has no
+    // focal ban to exclude (the drawer's focal is a comm), so we drop
+    // the `<> ?` clause when bid is 0. Adding a `BA.bid <> 0` clause
+    // would be a no-op (auto_increment guarantees no row has bid=0)
+    // but keeping the SQL identical between paths makes the explain
+    // plan clearer.
+    if ($bid > 0) {
+        $rows = $GLOBALS['PDO']->query(
+            "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
+                    BA.RemovedOn, BA.RemovedBy, BA.RemoveType,
+                    AD.user AS admin_name,
+                    SE.ip AS server_ip, SE.port AS server_port
+               FROM `:prefix_bans` AS BA
+          LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
+          LEFT JOIN `:prefix_admins`  AS AD ON BA.aid = AD.aid
+              WHERE " . $matchClause . " AND BA.bid <> ?
+           ORDER BY BA.created DESC, BA.bid DESC
+              LIMIT 100"
+        )->resultset([$matchParam, $bid]);
+    } else {
+        $rows = $GLOBALS['PDO']->query(
+            "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
+                    BA.RemovedOn, BA.RemovedBy, BA.RemoveType,
+                    AD.user AS admin_name,
+                    SE.ip AS server_ip, SE.port AS server_port
+               FROM `:prefix_bans` AS BA
+          LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
+          LEFT JOIN `:prefix_admins`  AS AD ON BA.aid = AD.aid
+              WHERE " . $matchClause . "
+           ORDER BY BA.created DESC, BA.bid DESC
+              LIMIT 100"
+        )->resultset([$matchParam]);
+    }
+
+    $items = [];
+    foreach ($rows as $r) {
+        $created = (int)$r['created'];
+        $length  = (int)$r['length'];
+        $ends    = (int)$r['ends'];
+        $rowRemoval = BanRemoval::tryFrom((string)($r['RemoveType'] ?? ''));
+
+        // #1352: same pre-2.0 admin-lift fallback as `api_bans_detail`
+        // above — rows where v1.x left `RemoveType IS NULL` despite
+        // `RemovedOn` + `RemovedBy` being set. The drawer's history
+        // pane is a primary surface for this case (it's where players
+        // see their full ban arc), so the parity matters.
+        $removedOn       = $r['RemovedOn'] !== null ? (int)$r['RemovedOn'] : null;
+        $rowRemovedBy    = $r['RemovedBy'] !== null ? (int)$r['RemovedBy'] : 0;
+        $rowIsPre2Lift   = $rowRemoval === null && $removedOn !== null && $rowRemovedBy > 0;
+
+        if ($rowRemoval === BanRemoval::Unbanned || $rowRemoval === BanRemoval::Deleted) {
+            $state = 'unbanned';
+        } elseif ($rowRemoval === BanRemoval::Expired) {
+            $state = 'expired';
+        } elseif ($rowIsPre2Lift) {
+            $state = 'unbanned';
+        } elseif ($length === 0) {
+            $state = 'permanent';
+        } elseif ($ends > 0 && $ends < time()) {
+            $state = 'expired';
+        } else {
+            $state = 'active';
+        }
+        $removedByName = null;
+        if ($r['RemovedBy'] !== null && (int)$r['RemovedBy'] > 0 && !$hideAdmin) {
+            $removedRow = $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = ?")
+                ->single([(int)$r['RemovedBy']]);
+            if ($removedRow && !empty($removedRow['user'])) {
+                $removedByName = (string)$removedRow['user'];
+            }
+        }
+
+        $serverName = null;
+        if (!empty($r['server_ip'])) {
+            $serverName = $r['server_ip'] . (!empty($r['server_port']) ? ':' . $r['server_port'] : '');
+        }
+
+        $items[] = [
+            'bid'              => (int)$r['bid'],
+            'type'             => (int)$r['type'],
+            'banned_at'        => $created,
+            'banned_at_human'  => Config::time($created),
+            'length_seconds'   => $length,
+            'length_human'     => $length === 0 ? 'Permanent' : SecondsToString($length),
+            'expires_at'       => $length === 0 ? null : $ends,
+            'expires_at_human' => $length === 0 ? null : Config::time($ends),
+            'state'            => $state,
+            'reason'           => (string)$r['reason'],
+            'admin_name'       => $hideAdmin ? null : ($r['admin_name'] !== null ? (string)$r['admin_name'] : null),
+            'removed_by'       => $removedByName,
+            'removed_at'       => $removedOn,
+            'removed_at_human' => $removedOn !== null ? Config::time($removedOn) : null,
+            'server_name'      => $serverName,
+        ];
+    }
+
+    return ['items' => $items, 'total' => count($items)];
+}
+
+/**
+ * Lift an active ban (#1301).
+ *
+ * Modern JSON twin of the legacy `?p=banlist&a=unban&id=…&key=…` GET
+ * handler in `page.banlist.php`. The legacy GET path stays put (no-JS
+ * fallback for the icon-only theme leg + third-party themes that still
+ * ship the v1.x action links), but the banlist's visible-action
+ * affordance now wires through this action so the row can update
+ * in-place + show a toast without a full page reload.
+ *
+ * Permission gate mirrors the legacy GET handler exactly:
+ *
+ *   ADMIN_OWNER | ADMIN_UNBAN     — unconditional, lift any row.
+ *   ADMIN_UNBAN_OWN_BANS          — only the row's own admin (`aid`).
+ *   ADMIN_UNBAN_GROUP_BANS        — only rows where the issuing
+ *                                   admin's `gid` matches the
+ *                                   caller's `gid`.
+ *
+ * The dispatcher gate is `ADMIN_OWNER | ADMIN_UNBAN |
+ * ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS` — the broadest "any
+ * unban-ish flag" match — and the per-row precision check happens
+ * inside the handler, since the dispatcher can't see which row the
+ * caller wants to act on.
+ *
+ * #1301: `ureason` is **required**. v1.x prompted via sourcebans.js's
+ * UnbanBan() helper and required a non-empty reason; v2.0 silently
+ * accepted '', so the audit log lost the *why*. Both this handler and
+ * the legacy GET fallback now bounce empty reasons.
+ *
+ * Inputs:
+ *   - `bid`     (int, required)    — the ban id.
+ *   - `ureason` (string, required) — admin-supplied unban reason; we
+ *     trim and store as-is. Stored raw in `ureason` (per the
+ *     "store raw, escape on display" anti-pattern); the column lives
+ *     behind the same Smarty auto-escape pipeline as `reason`.
+ *
+ * @return array{ bid: int, state: string }
+ */
+function api_bans_unban(array $params): array
+{
+    global $userbank;
+
+    $bid = (int)($params['bid'] ?? 0);
+    if ($bid <= 0) {
+        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
+    }
+    $ureason = trim((string)($params['ureason'] ?? ''));
+    if ($ureason === '') {
+        throw new ApiError(
+            'validation',
+            'You must supply a reason when unbanning a player.',
+            'ureason'
+        );
+    }
+
+    $row = $GLOBALS['PDO']->query(
+        "SELECT B.bid, B.ip, B.authid, B.name, B.created, B.sid, B.type,
+                B.length, B.ends, B.RemoveType, B.aid,
+                A.gid AS gid,
+                M.steam_universe,
+                UNIX_TIMESTAMP() AS now
+           FROM `:prefix_bans` AS B
+      LEFT JOIN `:prefix_servers` AS S ON S.sid = B.sid
+      LEFT JOIN `:prefix_mods`    AS M ON M.mid = S.modid
+      LEFT JOIN `:prefix_admins`  AS A ON A.aid = B.aid
+          WHERE B.bid = ?"
+    )->single([$bid]);
+
+    if (!$row) {
+        throw new ApiError('not_found', 'Ban not found.', null, 404);
+    }
+
+    $rowAid = (int)($row['aid'] ?? 0);
+    $rowGid = (int)($row['gid'] ?? 0);
+    $callerGid = (int)$userbank->GetProperty('gid');
+    $allowed =
+        $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::Unban))
+        || ($userbank->HasAccess(WebPermission::UnbanOwnBans)   && $rowAid === $userbank->GetAid())
+        || ($userbank->HasAccess(WebPermission::UnbanGroupBans) && $rowGid === $callerGid);
+    if (!$allowed) {
+        throw new ApiError('forbidden', "You don't have access to this ban.", null, 403);
+    }
+
+    if (!empty($row['RemoveType'])) {
+        throw new ApiError('not_active', 'Ban has already been lifted.', null, 409);
+    }
+    $length = (int)$row['length'];
+    $ends   = (int)$row['ends'];
+    if ($length > 0 && $ends <= time()) {
+        throw new ApiError('not_active', 'Ban has already expired.', null, 409);
+    }
+
+    $GLOBALS['PDO']->query(
+        "UPDATE `:prefix_bans`
+            SET `RemovedBy`  = ?,
+                `RemoveType` = ?,
+                `RemovedOn`  = UNIX_TIMESTAMP(),
+                `ureason`    = ?
+          WHERE `bid` = ?"
+    )->execute([$userbank->GetAid(), BanRemoval::Unbanned->value, $ureason, $bid]);
+
+    // Mirror the legacy GET handler: archive any open protests for this
+    // ban so they don't keep showing up in the moderation queue.
+    $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = '4' WHERE bid = ?")
+        ->execute([$bid]);
+
+    // Mirror the legacy GET handler's RCON-based in-game cleanup: any
+    // server the player was banned on within the last 5 minutes (per the
+    // banlog) gets a `removeid` / `removeip` so the in-game state
+    // matches the panel state immediately. Same lookback (300s) as
+    // page.banlist.php.
+    $blocked = $GLOBALS['PDO']->query(
+        "SELECT s.sid, m.steam_universe
+           FROM `:prefix_banlog` AS bl
+     INNER JOIN `:prefix_servers` AS s ON s.sid = bl.sid
+     INNER JOIN `:prefix_mods`    AS m ON m.mid = s.modid
+          WHERE bl.bid = ?
+            AND (UNIX_TIMESTAMP() - bl.time <= 300)"
+    )->resultset([$bid]);
+
+    $rowBanType = BanType::tryFrom((int)$row['type']) ?? BanType::Steam;
+    $type       = $rowBanType === BanType::Steam ? (string)$row['authid'] : (string)$row['ip'];
+
+    foreach ($blocked as $tempban) {
+        if ($rowBanType === BanType::Steam) {
+            rcon('removeid STEAM_' . (string)$tempban['steam_universe'] . substr((string)$row['authid'], 7), (int)$tempban['sid']);
+        } else {
+            rcon('removeip ' . (string)$row['ip'], (int)$tempban['sid']);
+        }
+    }
+    $blockedSids = array_map(static fn(array $b): int => (int)$b['sid'], $blocked);
+    $createdAt   = (int)$row['created'];
+    $now         = (int)$row['now'];
+    $banSid      = (int)$row['sid'];
+    if (($now - $createdAt) <= 300 && $banSid !== 0 && !in_array($banSid, $blockedSids, true)) {
+        if ($rowBanType === BanType::Steam) {
+            rcon('removeid STEAM_' . (string)$row['steam_universe'] . substr((string)$row['authid'], 7), $banSid);
+        } else {
+            rcon('removeip ' . (string)$row['ip'], $banSid);
+        }
+    }
+
+    Log::add(
+        LogType::Message,
+        'Player Unbanned',
+        sprintf('%s (%s) has been unbanned. Reason: %s', (string)$row['name'], $type, $ureason)
+    );
+
+    return [
+        'bid'   => $bid,
+        'state' => 'unbanned',
+    ];
 }

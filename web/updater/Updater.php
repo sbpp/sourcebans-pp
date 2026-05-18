@@ -34,7 +34,10 @@ class Updater
     private function getLatestVersion()
     {
         if (!is_null($this->updateList)) {
-            $this->latestVersion = array_pop(array_keys($this->updateList));
+            // array_pop() requires a reference; passing array_keys() directly
+            // emits "Notice: Only variables should be passed by reference"
+            // visible at the top of every /updater/index.php response (#1269).
+            $this->latestVersion = array_key_last($this->updateList);
         }
     }
 

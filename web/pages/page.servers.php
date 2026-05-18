@@ -1,23 +1,9 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-global $theme;
+global $theme, $userbank;
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
@@ -81,11 +67,28 @@ foreach ($rows as $row) {
     $i++;
 }
 
+// Pull per-flag perms by name rather than splatting `Perms::for(...)`
+// whole — the helper returns every ADMIN_* flag, but PHP 8.1 throws
+// "Unknown named parameter" on any key the View doesn't declare.
+// Listing by hand also makes the View's permission surface
+// self-documenting (matches the admin.settings.php / admin.admins.php
+// pattern).
+$serversPerms = \Sbpp\View\Perms::for($userbank);
 $serversView = new \Sbpp\View\ServersView(
-    access_bans: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
     server_list: $servers,
-    IN_SERVERS_PAGE: !defined('IN_HOME'),
     opened_server: $number,
+    can_add_server: $serversPerms['can_add_server'],
+    // Right-click context-menu hint + JS include are gated on
+    // ADMIN_OWNER | ADMIN_ADD_BAN (the `can_add_ban` slot in the
+    // Perms::for() snapshot). The SteamID side-channel the menu
+    // reads off `Actions.ServersHostPlayers` is independently
+    // server-side gated on the same permission AND per-server RCON
+    // access, so a partial-permission caller without the second
+    // check still only sees rows that have no `steamid` field
+    // (`renderPlayers` skips the menu wiring on those). Mirroring
+    // the gate here keeps the chrome consistent with what the
+    // backend actually surfaces.
+    can_use_context_menu: $serversPerms['can_add_ban'],
 );
 
 if (!defined('IN_HOME')) {

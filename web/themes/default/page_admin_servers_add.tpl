@@ -30,7 +30,7 @@
         <form id="addserver-form"
               class="card"
               method="post"
-              action="index.php?p=admin&c=servers"
+              action="{if $edit_server}{else}index.php?p=admin&c=servers{/if}"
               data-testid="server-add-form"
               autocomplete="off">
             {csrf_field}
@@ -113,8 +113,8 @@
                         <input type="checkbox"
                                id="enabled"
                                name="enabled"
-                               value="1"
-                               checked
+                               value="on"
+                               {if $enabled}checked{/if}
                                data-testid="addserver-enabled">
                         <span class="text-sm">Enable on the public servers list</span>
                     </label>
@@ -134,7 +134,8 @@
                                            value="{$group.gid}"
                                            id="g_{$group.gid}"
                                            name="groups[]"
-                                           data-testid="addserver-group">
+                                           data-testid="addserver-group"
+                                           {foreach $assigned_groups as $ag}{if $ag == $group.gid}checked{/if}{/foreach}>
                                     <span class="text-xs truncate">{$group.name|escape}</span>
                                 </label>
                             {/foreach}
@@ -166,6 +167,11 @@
         </form>
     {/if}
 </section>
+{* The Add-server JS is gated on `!$edit_server` because the edit
+   handler (admin.edit.server.php) processes the form natively as a
+   POST round-trip; binding `Actions.ServersAdd` there would create
+   a duplicate row. *}
+{if !$edit_server}
 {* Smarty default delimiters are { and }; the JSDoc + object literals
    below would otherwise be parsed as template tags. {literal}…{/literal}
    keeps the entire script body verbatim. *}
@@ -240,3 +246,4 @@
 })();
 </script>
 {/literal}
+{/if}

@@ -18,8 +18,31 @@
     "nav-<endpoint>" and aria-current="page" when active.
 *}
 <aside class="sidebar" id="sidebar" data-mobile-open="false">
-    <div class="sidebar__brand">
-        <div class="sidebar__brand-mark">S</div>
+    {* #1271 — `data-testid="sidebar-brand"` is the canonical hook for
+       the user-visible canary in the sidebar-sticky regression test
+       (`web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts`). The
+       brand is the first element to scroll off the top if sticky
+       drifts up by `footerHeight`, so anchoring the spec on this
+       testid (rather than the `.sidebar__brand` class chain) keeps
+       the assertion compliant with AGENTS.md's "Selectors must use
+       testability hooks; never CSS class chains as the primary
+       selector" rule.
+
+       #1235 — the brand mark renders the operator-configurable
+       `template.logo` setting (Admin → Settings → General → Logo
+       path), resolved relative to the active theme's directory.
+       `$logo` is assigned by `core/header.php` (which runs before
+       this template per page-builder.php's lifecycle:
+       header → navbar → title → page → footer), so it's always in
+       scope here. Default ships as `images/favicon.svg` — the
+       canonical SourceBans++ shield-with-cross mark from the
+       favicon set; admins can repoint at any theme-relative path
+       (PNG / SVG / etc). The setting was vestigial in v2.0 until
+       this PR wired it back in; sees `web/updater/data/809.php`
+       for the upgrade-path migration that converts the v1.x
+       `logos/sb-large.png` default forward. *}
+    <div class="sidebar__brand" data-testid="sidebar-brand">
+        <img class="sidebar__brand-mark" src="{$theme_url}/{$logo}" alt="">
         <div>
             <div class="font-semibold text-sm">SourceBans++</div>
         </div>
@@ -69,15 +92,13 @@
         {/if}
     </nav>
 
-    <div style="border-top: 1px solid var(--border); padding: 0.5rem;">
+    <div style="border-top: 1px solid var(--border); padding: 0.5rem; display: flex; flex-direction: column; gap: 0.125rem;">
         {if $login}
             <a class="sidebar__link"
                href="index.php?p=account"
                data-testid="nav-account">
                 <i data-lucide="user"></i>
-                <div style="flex:1;min-width:0">
-                    <div class="font-semibold text-xs truncate">{$username}</div>
-                </div>
+                <div class="truncate" style="flex:1;min-width:0">{$username}</div>
             </a>
             <a class="sidebar__link"
                href="index.php?p=logout"

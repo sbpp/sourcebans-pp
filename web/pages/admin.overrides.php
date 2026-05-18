@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2026 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 /*
  * SourceMod command/group override editor — extracted from
@@ -71,7 +57,7 @@ try {
                 $GLOBALS['PDO']->query("UPDATE `:prefix_overrides` SET name = ?, type = ?, flags = ? WHERE id = ?")->execute([
                     $_POST['override_name'][$index],
                     $_POST['override_type'][$index],
-                    trim($_POST['override_flags'][$index]),
+                    trim((string) ($_POST['override_flags'][$index] ?? '')),
                     $id,
                 ]);
             }
@@ -97,7 +83,7 @@ try {
             $GLOBALS['PDO']->query("INSERT INTO `:prefix_overrides` (type, name, flags) VALUES (?, ?, ?)")->execute([
                 $_POST['new_override_type'],
                 $_POST['new_override_name'],
-                trim($_POST['new_override_flags']),
+                trim((string) ($_POST['new_override_flags'] ?? '')),
             ]);
         }
 
@@ -120,7 +106,7 @@ foreach ($overrides_rows as $row) {
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminOverridesView(
-    permission_addadmin: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS),
+    permission_addadmin: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddAdmins)),
     overrides_error: $overrides_error,
     overrides_save_success: $overrides_save_success,
     overrides_list: $overrides_list,

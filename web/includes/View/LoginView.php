@@ -33,6 +33,15 @@ namespace Sbpp\View;
  *     the actual login wiring posts via
  *     `sb.api.call(Actions.AuthLogin, …)` with a hardcoded
  *     `redirect: ''` (post-login destination is the dashboard).
+ *   - `$brand_logo_url`   — Pre-resolved URL for the brand mark image
+ *     in the sign-in card header (`<img src="-{$brand_logo_url}-">`).
+ *     The page handler joins `$theme_url` (`themes/<theme>`, set by
+ *     init.php) with `Config::get('template.logo')` (the v1.x setting
+ *     resurrected by #1235 — default `images/favicon.svg`, the new
+ *     SourceBans++ shield mark; admins can repoint at any
+ *     theme-relative path). Pre-resolving here keeps `theme_url` and
+ *     `logo` out of the View property surface (`core/header.tpl`'s
+ *     globally-assigned `$theme_url` doesn't bleed into page Views).
  */
 final class LoginView extends View
 {
@@ -56,6 +65,35 @@ final class LoginView extends View
         public readonly bool $normallogin_show,
         public readonly bool $steamlogin_show,
         public readonly string $redir,
+        public readonly string $brand_logo_url,
     ) {
+    }
+
+    /**
+     * Breadcrumb shape for the login page (#1207 AUTH-3).
+     *
+     * Single-segment "Sign in" rather than the default
+     * "Home > $title" pair. A logged-out visitor doesn't have a
+     * meaningful "Home" — the link in the default breadcrumb just
+     * bounces them back to the public dashboard, which isn't where
+     * they arrived to be. The single-segment shape preserves the
+     * breadcrumb's a11y contract (`<a aria-current="page">` is still
+     * the last element so `core/title.tpl`'s testability hook is
+     * unchanged) without offering a misleading parent link.
+     *
+     * `core/title.php` consults this via `$_GET['p'] === 'login'`
+     * BEFORE the page handler runs (per the page-builder lifecycle:
+     * header → navbar → title → page → footer), which is why the
+     * shape lives on the View as a static rather than as an
+     * instance property — the View instance doesn't exist yet at
+     * breadcrumb-emit time.
+     *
+     * @return list<array{title: string, url: string}>
+     */
+    public static function breadcrumb(): array
+    {
+        return [
+            ['title' => 'Sign in', 'url' => 'index.php?p=login'],
+        ];
     }
 }

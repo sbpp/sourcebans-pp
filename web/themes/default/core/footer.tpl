@@ -1,10 +1,25 @@
 {*
     SourceBans++ 2026 — chrome / footer.tpl
 
-    Closes <main>, .main, .app, then mounts the drawer + palette
-    scaffolds and loads vendored Lucide + theme.js. Pair:
-    web/pages/core/footer.php (assigns $version, $git, $query — same
-    contract as web/themes/default/core/footer.tpl).
+    Closes <main> + the page footer + .main + .app, then mounts the
+    drawer + palette scaffolds and loads vendored Lucide + theme.js.
+    Pair: web/pages/core/footer.php (assigns $version, $git, $query —
+    same contract as web/themes/default/core/footer.tpl).
+
+    Layout note (#1271 — actual fix): `<footer class="app-footer">`
+    lives INSIDE `<div class="app">` (specifically as the last flex
+    item of `<div class="main">`, after `</main>`). `.sidebar` is
+    `position: sticky; top: 0; height: 100vh` and its sticky
+    containing block is `.app`; if the footer were a sibling of `.app`
+    (the pre-fix shape), `.app`'s height would fall short of the
+    document by `footerHeight` and the sticky sidebar would release at
+    the bottom — brand cut off, on barely-tall pages the entire
+    scroll range would be in the release phase and the sidebar would
+    appear to track the scroll. Keeping the footer inside `.app` makes
+    the sticky containing block extend through the whole document so
+    `.sidebar` stays pinned at viewport y=0 to the very bottom. See
+    `responsive/sidebar-sticky.spec.ts` for the regression guard +
+    AGENTS.md "Where to find what".
 
     The drawer + palette scaffolds use semantic <aside> + <dialog> with
     role/aria-label per the issue's "Testability hooks" rule that
@@ -15,6 +30,22 @@
     sb.api.call(Actions.BansSearch). The `data-palette-open`
     attribute mirrors the dialog's open/closed state for tests +
     CSS so selectors don't have to probe the `hidden` property.
+    Both are intentionally siblings of `.app` (not nested inside)
+    because they're conceptually top-layer overlays — the drawer is
+    `position: fixed; right: 0; top: 0; height: 100%` (right-pinned
+    panel, not full-bleed; `inset: 0` is on the separate
+    `.drawer-backdrop`) and `<dialog>` promotes to the top layer
+    when `showModal()`-ed. Keeping them outside `.app` is
+    defensiveness against the CSS containing-block scoping rules:
+    a future refactor that declares `transform` / `filter` /
+    `contain: layout` on `.app` (or any descendant in the drawer's
+    would-be ancestry) would re-establish the containing block for
+    `position: fixed` descendants, suddenly positioning the drawer
+    relative to that ancestor instead of the viewport. The
+    structural-fix concern that motivated #1271 (sidebar's sticky
+    CB short of the document) does NOT apply to the drawer —
+    `position: fixed` removes the element from flow, so the drawer
+    cannot grow `.app`'s height regardless of where it nests.
 
     Legacy hooks intentionally NOT carried over from
     web/themes/default/core/footer.tpl:
@@ -27,6 +58,38 @@
     Footer credits ($version + $git) are kept — pure display, no JS.
 *}
     </main>{* /.page *}
+
+{*
+    Footer (#1207 CC-5, CC-6, SET-2; #1271 layout fix — see file-level
+    comment above for why it lives here, inside `.main`/`.app`, instead
+    of as a body-level sibling of `.app`).
+
+    `data-version="{$version}"` mirrors the resolved SB_VERSION constant
+    (the user-visible string minus the `| Git: …` suffix). Telemetry,
+    bug reports, and E2E specs key off the attribute so they can
+    distinguish dev installs (`data-version="dev"` — the third-tier
+    fallback in init.php) from release tarball installs
+    (`data-version="2.1.0"` etc.) without parsing the visible text.
+
+    `data-testid="app-footer"` is the testability hook for SET-2's
+    save-button-doesn't-overlap-footer assertion at mobile width.
+
+    Footer link points at the sbpp/sourcebans-pp repo (CC-6) instead of
+    the marketing site so a self-hoster's first instinct ("show me the
+    code") lands them on the place that hosts both the issue tracker
+    and the install instructions. Link styling is muted by default
+    (matches the surrounding footer text colour) and only reveals the
+    accent colour + underline on `:hover` / `:focus-visible` so the
+    chrome's footer reads as a single line of text instead of having
+    a stranded blue underlined word in the middle of it. The
+    `.app-footer` class adds the SET-2 separator (top border + extra
+    margin/padding) so the "Save changes" row above no longer reads
+    as overlapping the credit on mobile.
+*}
+    <footer class="app-footer sbpp-footer" data-version="{$version}" data-testid="app-footer">
+        <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
+        {$version}{$git}
+    </footer>
   </div>{* /.main *}
 </div>{* /.app *}
 
@@ -80,13 +143,53 @@
          style="max-height:60vh;overflow-y:auto;padding:0.5rem"></div>
 </dialog>
 
-<footer class="text-xs text-faint" style="text-align:center;padding:1rem 0">
-    <a href="https://sbpp.github.io/" target="_blank" rel="noopener">SourceBans++</a>
-    {$version}{$git}
-</footer>
+{*
+    Issue #1304: server-render the palette's "Navigate" entries as a
+    JSON blob theme.js reads at boot. Pre-fix the entry list lived as
+    a hardcoded `NAV_ITEMS` array in `web/themes/default/js/theme.js`
+    with no permission check, leaking admin entries (`Admin panel`,
+    `Add ban`) to logged-out + partial-permission users (clicking either
+    landed them on the "you must be logged in" / 403 surface).
+
+    The blob is built by `Sbpp\View\PaletteActions::for($userbank)` in
+    `web/pages/core/footer.php` and assigned as `$palette_actions_json`.
+    The encoder uses JSON_HEX_TAG / _AMP / _APOS / _QUOT so the content
+    can never break out of the surrounding `<script>` element regardless
+    of what a future label / href adds (`</script>` would otherwise let
+    the blob escape its container — defense-in-depth on top of the
+    catalog being all-ASCII today).
+
+    `<script type="application/json">` is the standards-blessed shape
+    for embedded data: browsers don't execute the body, JSON.parse
+    consumes it as text content. theme.js falls back to an empty list
+    (palette renders only the player-search half) when the blob is
+    absent, so a chrome-only render in test contexts doesn't crash.
+
+    `data-testid="palette-actions"` is the testability hook the e2e
+    spec anchors on instead of probing the script element by tag.
+*}
+{* nofilter: server-encoded JSON from PaletteActions::for($userbank) using JSON_HEX_TAG|_AMP|_APOS|_QUOT — every potentially-dangerous char (<>&'") is escaped as a \uXXXX sequence, so the blob can't break out of its <script> wrapper or carry HTML entities that would corrupt JSON.parse. *}
+<script type="application/json" id="palette-actions" data-testid="palette-actions">{$palette_actions_json nofilter}</script>
 
 <script src="{$theme_url}/js/lucide.min.js"></script>
 <script src="{$theme_url}/js/theme.js"></script>
+{*
+    #1402: comment-actions.js — single document-level click delegate
+    for `data-action="comment-delete"` triggers (admin moderation
+    queues, banlist / commslist comment editor on themes that render
+    delcomlink). Loaded globally because the dispatcher is feature-
+    detected (no-op when no triggers exist) and the four surfaces it
+    serves render from different page handlers; per-page includes
+    would mean tracking four mount points instead of one. Pre-#1402
+    every trash-can click on a comment threw
+    `ReferenceError: RemoveComment is not defined` (the helper lived
+    in the deleted sourcebans.js at #1123 D1).
+*}
+{* `defer` would be a no-op here since the script lives at the body
+   tail and the parser is already past the body. Drop it so the
+   markup matches the runtime behaviour (#1402 adversarial review
+   LOW 8). *}
+<script src="./scripts/comment-actions.js"></script>
 
 </body>
 </html>

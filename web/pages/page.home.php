@@ -1,23 +1,9 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-global $theme;
+global $theme, $userbank;
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
@@ -69,7 +55,8 @@ foreach ($rows as $row) {
     $info['ip']         = $row['ip'];
     $info['server']     = "block_" . $row['sid'] . "_$blcount";
 
-    if ($row['type'] == 1) {
+    $blockedBanType = BanType::tryFrom((int) $row['type']) ?? BanType::Steam;
+    if ($blockedBanType === BanType::Ip) {
         if ($userbank->is_admin())
             $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['ip']) . '&advType=ip&Submit';
         else
@@ -79,11 +66,16 @@ foreach ($rows as $row) {
     }
     $info['link_url'] = "window.location = '" . $info['search_link'] . "';";
 
-    // To print a name in the popup instead an empty string
-    if (empty($cleaned_name)) {
-        $cleaned_name = "<i>No nickname present</i>";
-    }
-    $info['popup']    = "ShowBox('Blocked player: " . $cleaned_name . "', '" . $cleaned_name . " tried to enter<br />' + document.getElementById('" . $info['server'] . "').title + '<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
+    // #1404 — `$info['popup']` carried a `ShowBox(...)` `<script>`
+    // blob that v1.x stitched into each row's onclick. `ShowBox`
+    // was deleted with `sourcebans.js` at #1123 D1 and no v2.0+
+    // template ever consumed `{$player.popup}` (the dashboard
+    // reads `short_name` / `search_link` / `bid` / `sname` /
+    // `blocked_human` instead). The no-nickname placeholder
+    // (`<i>No nickname present</i>`) that fed the popup string
+    // went with it; the dashboard's `{if $p.short_name}…{else}no
+    // nickname{/if}` arm renders the empty-name fallback. Pinned
+    // by `DeadJsCallSitesTest`.
 
     $GLOBALS['server_qry'] .= "__sbppLoadServerHostProperty(" . (int) $row['sid'] . ", 'block_" . (int) $row['sid'] . "_$blcount', 'title');";
 
@@ -135,12 +127,13 @@ foreach ($rows as $row) {
     $cleaned_name = trim($cleaned_name);
     $info['name']    = htmlspecialchars(addslashes($cleaned_name), ENT_QUOTES, 'UTF-8');
     $info['created'] = Config::time($row['created']);
-    $ltemp           = explode(",", $row['length'] == 0 ? 'Permanent' : SecondsToString(intval($row['length'])));
+    $ltemp           = explode(",", $row['length'] == 0 ? 'Permanent' : SecondsToString((int) $row['length']));
     $info['length']  = $ltemp[0];
     $info['icon']    = empty($row['icon']) ? 'web.png' : $row['icon'];
     $info['authid']  = $row['authid'];
     $info['ip']      = $row['ip'];
-    if ($row['type'] == 1) {
+    $rowBanType = BanType::tryFrom((int) $row['type']) ?? BanType::Steam;
+    if ($rowBanType === BanType::Ip) {
         if ($userbank->is_admin())
             $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['ip']) . '&advType=ip&Submit';
         else
@@ -151,12 +144,13 @@ foreach ($rows as $row) {
     $info['link_url']   = "window.location = '" . $info['search_link'] . "';";
     $info['short_name'] = trunc($cleaned_name, 40);
 
-    if ($row['RemoveType'] == 'D' || $row['RemoveType'] == 'U' || $row['RemoveType'] == 'E' || ($row['length'] && $row['ends'] < time())) {
+    $rowRemoval = BanRemoval::tryFrom((string) ($row['RemoveType'] ?? ''));
+    if ($rowRemoval !== null || ($row['length'] && $row['ends'] < time())) {
         $info['unbanned']  = true;
-        $info['ub_reason'] = match (true) {
-            $row['RemoveType'] === 'D' => 'D',
-            $row['RemoveType'] === 'U' => 'U',
-            default                    => 'E',
+        $info['ub_reason'] = match ($rowRemoval) {
+            BanRemoval::Deleted  => BanRemoval::Deleted->value,
+            BanRemoval::Unbanned => BanRemoval::Unbanned->value,
+            default              => BanRemoval::Expired->value,
         };
     } else {
         $info['unbanned'] = false;
@@ -176,7 +170,7 @@ foreach ($rows as $row) {
     // 'expired' (natural end) vs 'unbanned' (explicit D/U removal) so
     // .pill / .ban-row state classes can render them differently.
     if ($info['unbanned']) {
-        $info['state'] = $info['ub_reason'] === 'E' ? 'expired' : 'unbanned';
+        $info['state'] = $info['ub_reason'] === BanRemoval::Expired->value ? 'expired' : 'unbanned';
     } elseif ($info['perm']) {
         $info['state'] = 'permanent';
     } else {
@@ -217,7 +211,7 @@ foreach ($rows as $row) {
     $cleaned_name = trim($cleaned_name);
     $info['name']        = htmlspecialchars(addslashes($cleaned_name), ENT_QUOTES, 'UTF-8');
     $info['created']     = Config::time($row['created']);
-    $ltemp               = explode(",", $row['length'] == 0 ? 'Permanent' : SecondsToString(intval($row['length'])));
+    $ltemp               = explode(",", $row['length'] == 0 ? 'Permanent' : SecondsToString((int) $row['length']));
     $info['length']      = $ltemp[0];
     $info['icon']        = empty($row['icon']) ? 'web.png' : $row['icon'];
     $info['authid']      = $row['authid'];
@@ -226,12 +220,13 @@ foreach ($rows as $row) {
     $info['short_name']  = trunc($cleaned_name, 40);
     $info['type']        = $row['type'] == 2 ? "fas fa-comment-slash fa-lg" : "fas fa-microphone-slash fa-lg";
 
-    if ($row['RemoveType'] == 'D' || $row['RemoveType'] == 'U' || $row['RemoveType'] == 'E' || ($row['length'] && $row['ends'] < time())) {
+    $rowRemoval = BanRemoval::tryFrom((string) ($row['RemoveType'] ?? ''));
+    if ($rowRemoval !== null || ($row['length'] && $row['ends'] < time())) {
         $info['unbanned']  = true;
-        $info['ub_reason'] = match (true) {
-            $row['RemoveType'] === 'D' => 'D',
-            $row['RemoveType'] === 'U' => 'U',
-            default                    => 'E',
+        $info['ub_reason'] = match ($rowRemoval) {
+            BanRemoval::Deleted  => BanRemoval::Deleted->value,
+            BanRemoval::Unbanned => BanRemoval::Unbanned->value,
+            default              => BanRemoval::Expired->value,
         };
     } else {
         $info['unbanned'] = false;
@@ -247,7 +242,7 @@ foreach ($rows as $row) {
     // Lucide icon name. ba.type=2 is text-chat block, otherwise voice.
     $info['lucide_icon']  = $row['type'] == 2 ? 'message-square-off' : 'mic-off';
     if ($info['unbanned']) {
-        $info['state'] = $info['ub_reason'] === 'E' ? 'expired' : 'unbanned';
+        $info['state'] = $info['ub_reason'] === BanRemoval::Expired->value ? 'expired' : 'unbanned';
     } elseif ($info['perm']) {
         $info['state'] = 'permanent';
     } else {
@@ -261,11 +256,43 @@ foreach ($rows as $row) {
 require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
 /** @var \Sbpp\View\ServersView $serversView */
 
+// See page.servers.php / admin.settings.php for the rationale on
+// pulling `$perms['can_*']` keys by name rather than splatting whole.
+$homePerms = \Sbpp\View\Perms::for($userbank);
+
+// Announcements feed: admins-only banner sourced from the daily
+// fetch into `SB_CACHE/announcements.json`. Anonymous + non-admin
+// callers get `null` so the feed never paints for visitors who
+// can't act on the content. Cache miss / empty feed / all-expired
+// also return null — the template gates the entire strip on a
+// truthy `$announcement`. Convert the typed DTO to a Smarty array
+// so the template reads `{$announcement.title}` etc. with global
+// auto-escape; `body_html` carries `{nofilter}` because it's
+// already IntroRenderer output (the only safe-HTML exit point on
+// the panel — see AGENTS.md "`nofilter` discipline").
+$announcement      = null;
+$announcementEntry = $userbank->is_admin() ? \Sbpp\Announce\AnnouncementFetcher::latest() : null;
+if ($announcementEntry !== null) {
+    $announcement = [
+        'id'              => $announcementEntry->id,
+        'title'           => $announcementEntry->title,
+        'body_html'       => $announcementEntry->body_html,
+        'url'             => $announcementEntry->url,
+        'published_at'    => $announcementEntry->published_at,
+        'published_human' => $announcementEntry->published_human,
+    ];
+}
+
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\HomeDashboardView(
     dashboard_title: (string) (Config::get('dash.intro.title') ?? ''),
-    dashboard_text: \Sbpp\Markup\IntroRenderer::renderIntroText(
-        (string) (Config::get('dash.intro.text') ?? '')
-    ),
+    // #1290 phase K.4 — PHP 8.5 pipe operator. Reads left-to-right
+    // ("take the raw setting → coerce to string → render Markdown") vs
+    // the inside-out `IntroRenderer::renderIntroText((string)(Config::get(...) ?? ''))`
+    // shape. The IntroRenderer chain is the canonical pipe site
+    // called out in the issue body.
+    dashboard_text: (Config::get('dash.intro.text') ?? '')
+        |> strval(...)
+        |> \Sbpp\Markup\IntroRenderer::renderIntroText(...),
     dashboard_lognopopup: Config::getBool('dash.lognopopup'),
     players_blocked: $stopped,
     total_blocked: $totalstopped,
@@ -274,9 +301,12 @@ require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
     active_bans: $ActiveBanCount,
     players_commed: $comms,
     total_comms: $CommCount,
-    access_bans: $serversView->access_bans,
+    access_bans: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan)),
     server_list: $serversView->server_list,
     total_servers: count($serversView->server_list),
-    IN_SERVERS_PAGE: $serversView->IN_SERVERS_PAGE,
+    IN_SERVERS_PAGE: false,
     opened_server: $serversView->opened_server,
+    can_add_ban:    $homePerms['can_add_ban'],
+    can_add_server: $homePerms['can_add_server'],
+    announcement:   $announcement,
 ));

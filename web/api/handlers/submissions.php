@@ -28,7 +28,7 @@ function api_submissions_remove(array $params): array
         if (!$ok) {
             throw new ApiError('archive_failed', 'There was a problem moving the submission to the archive. Check the logs for more info');
         }
-        Log::add('m', 'Submission Archived', "Submission ($sid) has been moved to the archive.");
+        Log::add(LogType::Message, 'Submission Archived', "Submission ($sid) has been moved to the archive.");
         return [
             'remove'  => ["sid_$sid", "sid_{$sid}a"],
             'counter' => ['subcount' => $cnt],
@@ -36,7 +36,11 @@ function api_submissions_remove(array $params): array
                 'title' => 'Submission Archived',
                 'body'  => 'The selected submission has been moved to the archive!',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — admin-bans is Pattern A; the operator was on
+                // the submissions queue, so land them back on the same
+                // section's current view (not the default add-ban
+                // surface bare `?p=admin&c=bans` would route to).
+                'redir' => 'index.php?p=admin&c=bans&section=submissions',
             ],
         ];
     }
@@ -55,7 +59,7 @@ function api_submissions_remove(array $params): array
         if (!$ok) {
             throw new ApiError('delete_failed', 'There was a problem deleting the submission from the database. Check the logs for more info');
         }
-        Log::add('m', 'Submission Deleted', "Submission ($sid) has been deleted.");
+        Log::add(LogType::Message, 'Submission Deleted', "Submission ($sid) has been deleted.");
         return [
             'remove'  => ["asid_$sid", "asid_{$sid}a"],
             'counter' => ['subcountarchiv' => $cnt],
@@ -63,7 +67,9 @@ function api_submissions_remove(array $params): array
                 'title' => 'Submission Deleted',
                 'body'  => 'The selected submission has been deleted from the database',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — delete only fires from the archive view, so
+                // land back on the archive (not the current queue).
+                'redir' => 'index.php?p=admin&c=bans&section=submissions&view=archive',
             ],
         ];
     }
@@ -78,7 +84,7 @@ function api_submissions_remove(array $params): array
         if (!$ok) {
             throw new ApiError('restore_failed', 'There was a problem restoring the submission from the archive. Check the logs for more info');
         }
-        Log::add('m', 'Submission Restored', "Submission ($sid) has been restored from the archive.");
+        Log::add(LogType::Message, 'Submission Restored', "Submission ($sid) has been restored from the archive.");
         return [
             'remove'  => ["asid_$sid", "asid_{$sid}a"],
             'counter' => ['subcountarchiv' => $cnt],
@@ -86,7 +92,10 @@ function api_submissions_remove(array $params): array
                 'title' => 'Submission Restored',
                 'body'  => 'The selected submission has been restored from the archive!',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — restore moves the row back into the live
+                // queue, so land the operator on the current view to
+                // confirm the row reappeared.
+                'redir' => 'index.php?p=admin&c=bans&section=submissions',
             ],
         ];
     }

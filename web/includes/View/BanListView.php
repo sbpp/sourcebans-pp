@@ -35,6 +35,8 @@ final class BanListView extends View
      * @param int|false                           $comment        Bid being commented on, or false when not in comment-edit mode.
      * @param int                                 $page           Active pagination page (or -1 when not paginated).
      * @param array<int, array<string,mixed>>|string $othercomments  Sibling comments shown beneath the editor; "None" string when the ban has no other comments.
+     * @param list<array{sid: int, name: string}> $server_list    Enabled servers for the public filter bar's `<select name="server">` (#1226).
+     * @param array{search: string, server: string, time: string, state: string} $filters Current filter state — drives the sticky filter bar's pre-fill + active selected `<option>` (#1226 + #1352).
      */
     public function __construct(
         public readonly array $ban_list,
@@ -60,6 +62,60 @@ final class BanListView extends View
         public readonly bool $can_delete,
         public readonly bool $can_export,
         public readonly string $admin_postkey,
+        // #1207: gates the first-run empty-state CTA in `page_bans.tpl`
+        // (admins with `ADMIN_ADD_BAN` see "Add a ban", everyone else
+        // sees the body copy without the link). Splatted from
+        // `Perms::for($userbank)` in `web/pages/page.banlist.php`.
+        public readonly bool $can_add_ban,
+        // #1207 + #1226: detects whether the current request applied any
+        // filter (search text / advSearch / hide-inactive / server /
+        // time). Drives the first-run-vs-filtered split in the empty-
+        // state shape.
+        public readonly bool $is_filtered,
+        // #1226: public filter parity with `CommsListView`. The
+        // server list mirrors `CommsListView::$servers`; it's named
+        // `server_list` here to match the existing
+        // `box_admin_bans_search.tpl` convention so a future
+        // consolidation between the inline filter bar and the
+        // advanced-search box doesn't have to rename the property.
+        public readonly array $server_list,
+        public readonly array $filters,
+        // #1315: drives the `<details class="filters-details">`
+        // disclosure that wraps the advanced-search box at the top
+        // of `page_bans.tpl`. True iff the request URL carries the
+        // `?advSearch=&advType=` legacy-shim pair (the v1.x power-
+        // user surface re-exposed as a default-collapsed disclosure
+        // — see "Sub-paged advanced search" notes in the issue body).
+        // Bare `?p=banlist` / simple-bar filters (`?searchText=` /
+        // `?server=` / `?time=`) intentionally leave the disclosure
+        // closed so the unfiltered list reaches above the fold —
+        // those filters are visible on the inline sticky bar and
+        // don't need the larger card open. Mirrors the post-submit
+        // auto-open contract #1303 introduced for admin-admins.
+        public readonly bool $is_advanced_search_open,
+        // #1352: server-side state filter — `?state=permanent|active|
+        // expired|unbanned`. Empty string means "All". Pre-#1352 the
+        // chip strip was a vanilla-JS row-hide layer; the v1.x install-
+        // upgrade path left some unbanned rows with `RemoveType IS NULL`
+        // (see `web/updater/data/810.php`'s backfill migration), and
+        // the JS-side filter only saw the rowset the server returned,
+        // so paginated installs with thousands of rows could never
+        // surface old unbans no matter which chip was clicked. The
+        // server-side filter narrows the rowset BEFORE pagination so
+        // page 1 of `?state=unbanned` is the first 30 unbanned rows.
+        // Drives the chip strip's `aria-pressed` / `data-active` flag
+        // server-side and the suppressed "Hide inactive" toggle when
+        // a state filter is explicit.
+        public readonly string $active_state,
+        // #1352: URL fragment — every other active filter (search,
+        // server, time, advSearch+advType) but NOT `&state=`. Each
+        // chip's anchor is built as
+        // `index.php?p=banlist{$chip_base_link}&state={$slug}`
+        // ("All" omits the trailing `&state=`). Server-rendered so
+        // chip clicks survive a no-JS browser and so the active chip
+        // gets `aria-pressed="true"` on first paint without a JS
+        // round-trip.
+        public readonly string $chip_base_link,
     ) {
     }
 }

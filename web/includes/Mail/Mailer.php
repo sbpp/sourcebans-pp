@@ -1,34 +1,21 @@
 <?php
 
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
- *************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 declare(strict_types=1);
 
 namespace Sbpp\Mail;
 
-use Config;
-use Log;
+use LogType;
+use Sbpp\Config;
+use Sbpp\Log;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
 
-class Mailer
+final class Mailer
 {
     /** Default From Name used when both `config.mail.from_name` and SB_EMAIL fallback yield no display name. */
     public const DEFAULT_FROM_NAME = 'SourceBans++';
@@ -47,10 +34,7 @@ class Mailer
 
     /**
      * @param string|string[] $destination
-     * @param string $subject
-     * @param string $body
-     * @param array|null $files
-     * @return bool
+     * @param array<int, string>|null $files
      * @throws TransportExceptionInterface
      */
     public function send(array|string $destination,
@@ -113,9 +97,6 @@ class Mailer
         return $this->from;
     }
 
-    /**
-     * @return ?Mailer
-     */
     public static function create(): ?Mailer
     {
         $config = Config::getMulti([
@@ -157,7 +138,7 @@ class Mailer
                 if (!self::$sbEmailDeprecationLogged) {
                     self::$sbEmailDeprecationLogged = true;
                     Log::add(
-                        'w',
+                        LogType::Warning,
                         'Mail config deprecated',
                         'Falling back to the legacy SB_EMAIL constant for the From header. '
                         . 'Set config.mail.from_email in Admin → Settings; SB_EMAIL will be removed in a future release.'

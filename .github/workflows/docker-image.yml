@@ -1,0 +1,186 @@
+name: Docker image
+
+# Build + publish the production image to GHCR (#1381 deliverable 3).
+#
+# Triggers (deliberately tag-only — see "Why no main / PR triggers"
+# below):
+#   - push to *.*.* tag        → :<version> + :latest + :<major> + :<major>.<minor>
+#   - workflow_dispatch        → manual rerun, dispatched against a tag
+#                                ref to rebuild a published release
+#                                (e.g. if a publish failed midway).
+#                                Dispatching from a non-tag ref is a
+#                                no-op for tagging — metadata-action
+#                                emits an empty tag set and the publish
+#                                step fails loudly.
+#
+# Multi-arch build via docker/build-push-action + buildx + qemu. Both
+# linux/amd64 and linux/arm64 are produced and pushed under a single
+# manifest list, so `docker pull ghcr.io/sbpp/sourcebans-pp:latest` on
+# either an Apple Silicon dev machine or a typical x86_64 VPS resolves
+# to the right image without operator awareness.
+#
+# Signed via Sigstore cosign (keyless / OIDC). The ID-token permission
+# below is what enables the keyless signing flow: cosign requests an
+# OIDC token from GitHub's issuer, exchanges it with Fulcio for a
+# short-lived signing cert, signs the image's manifest, and records
+# the signature into Rekor (the public transparency log). Verifiers
+# can `cosign verify ghcr.io/sbpp/sourcebans-pp:<tag>
+# --certificate-identity-regexp=https://github.com/sbpp/sourcebans-pp/...
+# --certificate-oidc-issuer=https://token.actions.githubusercontent.com`
+# without any pre-shared key.
+#
+# Why no main / PR triggers:
+# Multi-arch (amd64 + qemu-emulated arm64) image builds are the most
+# expensive job in this repo's CI matrix — roughly 8-15 minutes per
+# run. Pre-fix this workflow ran on every push to main AND every PR
+# touching a long path filter, which on a busy week burned through a
+# disproportionate share of the project's free Actions minutes for
+# images that nobody pulls (the floating `:main` and per-commit
+# `:sha-<short>` tags were nominally documented as "bleeding edge"
+# but had no real consumers; self-hosters all pin to released semver
+# tags per the docs). The image surface is small + stable: changes
+# that affect the runtime contract (Dockerfile, entrypoint, schema
+# files, init bootstrap, health.php, trust-proxy + telemetry hooks)
+# are always shipped behind a release tag, so verifying-at-tag is
+# both sufficient and well-aligned with when self-hosters actually
+# pull a new image. Contributors who edit the Dockerfile / entrypoint
+# locally are expected to run the literal `docker buildx build`
+# command from the AGENTS.md "Quality gates" table to verify before
+# opening a PR.
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+  workflow_dispatch:
+
+# `packages: write`  — push to GHCR.
+# `id-token: write`  — request an OIDC token for cosign keyless signing.
+# `contents: read`   — checkout the source tree.
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build + push (${{ github.event_name }})
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # buildx is the multi-platform driver. qemu provides the cross-arch
+      # emulation that lets the amd64 GitHub-hosted runner produce an
+      # arm64 image. The cost is roughly +2x build time on the arm64
+      # leg vs native; acceptable for the release-only publish cadence.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # GHCR push needs the actor's PAT — for actions/github-token, the
+      # token's `packages: write` permission is granted by the job-level
+      # `permissions:` block above.
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # docker/metadata-action computes the tag set from the trigger:
+      #   - X.Y.Z tag           → :X.Y.Z, :X.Y, :X, :latest
+      #   - workflow_dispatch   → mirrors whatever ref it was dispatched
+      #                            against (typically a tag ref to
+      #                            rebuild a published release; a non-tag
+      #                            dispatch produces an empty tag set
+      #                            and the publish step fails loudly).
+      #
+      # The `:latest` tag is gated on `startsWith(github.ref, 'refs/tags/')`
+      # — a workflow_dispatch from a non-tag ref can't accidentally
+      # claim it.
+      - name: Compute image metadata (tags + labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+          labels: |
+            org.opencontainers.image.title=SourceBans++
+            org.opencontainers.image.description=Self-hostable admin / ban / comms management for the Source engine — production image.
+            org.opencontainers.image.url=https://sbpp.github.io
+            org.opencontainers.image.source=https://github.com/sbpp/sourcebans-pp
+            org.opencontainers.image.documentation=https://sbpp.github.io/getting-started/quickstart-docker/
+            org.opencontainers.image.licenses=CC-BY-NC-SA-3.0 AND GPL-3.0-or-later
+            org.opencontainers.image.vendor=SourceBans++ Dev Team
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      # The build itself. `gha` cache-from / cache-to means the layers
+      # are persisted in the GitHub Actions cache between runs — buildx
+      # keys the cache by the Dockerfile + the build context's hash, so
+      # a Composer-only change won't bust the apt-install layer of the
+      # builder stage. (Cache hit rate is naturally low on the tag-only
+      # trigger — release tags are rare — but the cost of populating
+      # the cache on a release build is amortised across the next
+      # workflow_dispatch rerun for that tag.)
+      - name: Build + push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.prod
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      # Cosign keyless signing. Each tag the manifest carries gets its
+      # own signature recorded into Rekor. The `cosign sign --yes <ref>@<digest>`
+      # form is the documented best-practice (signs the immutable digest,
+      # not the mutable tag — so a future re-tag doesn't invalidate the
+      # signature).
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Sign image with cosign (keyless)
+        env:
+          # NIT-1 of the #1381 review: `COSIGN_EXPERIMENTAL=1` was the
+          # gate for keyless signing back when it was experimental
+          # (cosign 1.x). Cosign 2.0+ promoted keyless / OIDC to the
+          # default behaviour and 2.4.x silently ignores the env var;
+          # carrying it ~suggests there's still an experimental flag
+          # in play here when there isn't.
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          # Sign each computed tag against the immutable digest. Iterating
+          # over $TAGS (newline-separated by docker/metadata-action) keeps
+          # the loop trivial — no tag-list parsing, no JSON. The
+          # `<image>@<digest>` form is the canonical "sign this exact
+          # bytes" cosign shape; signing the mutable `<image>:<tag>`
+          # would be valid but bound to the tag name, not the bits.
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
+            image_no_tag="${tag%:*}"
+            ref="${image_no_tag}@${IMAGE_DIGEST}"
+            echo "Signing ${ref}"
+            cosign sign --yes "${ref}"
+          done <<< "$TAGS"

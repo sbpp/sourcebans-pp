@@ -4,7 +4,7 @@ about: Suggest an idea for SourceBans++
 
 ---
 <!--(Thanks for proposing a feature request! Please make sure you click the link above to view the issue guidelines, then fill out the blanks below.)-->
-<!--(Remember, an issue is not the place to ask questions! You can use the official SourceBans++ Discord https://discord.gg/4Bhj6NU for that.)-->
+<!--(Remember, an issue is not the place to ask questions! You can use the official SourceBans++ Discord https://discord.gg/tzqYqmAtF5 for that.)-->
 
 Is your feature request related to a problem? Please describe.
 -------------------------------------------------------------

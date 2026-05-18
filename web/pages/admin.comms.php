@@ -1,26 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-
-SourceComms 0.9.266
-Copyright (C) 2013-2014 Alexandr Duplishchev
-Licensed under GNU GPL version 3, or later.
-Page: <https://forums.alliedmods.net/showthread.php?p=1883705> - <https://github.com/d-ai/SourceComms>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 global $userbank, $theme;
 if (!defined("IN_SB")) {
@@ -28,9 +9,15 @@ if (!defined("IN_SB")) {
     die();
 }
 
-new AdminTabs([
-    ['name' => 'Add a block', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN]
-], $userbank, $theme);
+/*
+ * #1239 — single-section page; the legacy chrome rendered an
+ * `AdminTabs([...])` strip with one button ("Add a block") that
+ * called the now-removed `openTab()` JS handler. With only one
+ * destination there's nothing to route to, so we drop the strip
+ * entirely (the surface is reachable from the comms list's "Add a
+ * block" CTA + the sidebar). The `.tabcontent` wrapper is gone for
+ * the same reason.
+ */
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
     // sb.message (sb.js) replaces the v1.x ShowBox helper.
@@ -59,8 +46,48 @@ if (isset($_GET["rebanid"])) {
     echo "<script type=\"text/javascript\">sb.ready(function(){sb.message.show('Loading..','<b>Loading...</b><br><i>Please Wait!</i>','blue','',true);sb.hide('dialog-control');sb.api.call(Actions.CommsPaste,{sid:" . (int) $_GET['sid'] . ",name:" . $pNameJs . ",type:0}).then(function(r){if(r&&r.ok&&r.data){if(typeof window.__sbppApplyBlockFields==='function')window.__sbppApplyBlockFields(r.data);sb.show('dialog-control');sb.hide('dialog-placement');}else if(r&&r.ok===false&&r.error){sb.message.error('Error',r.error.message);sb.show('dialog-control');}});});</script>";
 }
 
-echo '<div id="admin-page-content">';
-echo '<div class="tabcontent" id="Add a block">';
+/*
+ * Smart-default pre-fill for SteamID via `?steam=…&type=…`
+ * (mirrors `admin.bans.php`'s sibling block for the "Ban player"
+ * menu item — see #PLAYER_CTX_MENU / #1395). The public servers
+ * list's right-click context menu's "Block comms" item lands
+ * admins on `?p=admin&c=comms&steam=STEAM_…&type=0` to pre-populate
+ * the form without firing a JSON action — the form has to be
+ * usable on the no-JS path (every other approach taken by the
+ * legacy `pages/admin.blockit.php?check=…&type=0` URL routed to a
+ * chromeless iframe page whose relative POST hit `/pages/api.php`
+ * → 404). The pre-fill happens server-side via the View DTO
+ * rather than through `__sbppApplyBlockFields` so the surface
+ * works pre-JS-boot.
+ *
+ * Allowed shapes (mirrors admin.bans.php's allowlist verbatim so
+ * the menu's URL contract is symmetric across the two
+ * affordances): STEAM_X:Y:Z / [U:1:N] / 17-digit SteamID64 /
+ * dotted IPv4. Comms doesn't actually ban by IP, but keeping the
+ * regex symmetric with bans means a future menu / deep-link
+ * change only has to touch one allowlist. An IPv4 value lands in
+ * the steam input and will fail server-side validation on submit
+ * via `Actions.CommsAdd`; that's the right behaviour (loud
+ * failure) vs. silently dropping a value the user can see.
+ *
+ * Allowed `type` values are 1 (Mute), 2 (Gag), 3 (Silence) — the
+ * `:prefix_comms.type tinyint` column's domain. Anything else
+ * (including the menu's `?type=0` bridging value, which is
+ * sourced from the bans-menu URL shape where 0=Steam ID) falls
+ * back to 0 (no pre-selection) and the form's `<select id="type">`
+ * lands on the native first-option default (Mute).
+ */
+$prefillSteamRaw = isset($_GET['steam']) ? trim((string) $_GET['steam']) : '';
+$prefillTypeRaw  = isset($_GET['type']) ? (int) $_GET['type'] : 0;
+$prefillSteam    = '';
+$prefillType     = 0;
+if ($prefillSteamRaw !== '') {
+    if (preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}|\d{1,3}(?:\.\d{1,3}){3})$/', $prefillSteamRaw) === 1) {
+        $prefillSteam = $prefillSteamRaw;
+        $prefillType  = in_array($prefillTypeRaw, [1, 2, 3], true) ? $prefillTypeRaw : 0;
+    }
+}
+
 // SourceComms reuses the bans permission set: there is no
 // ADMIN_ADD_COMM flag, so the gate uses ADMIN_OWNER|ADMIN_ADD_BAN.
 // Splatting Perms::for(...) into the View pulls `can_add_ban` (and
@@ -71,14 +98,24 @@ echo '<div class="tabcontent" id="Add a block">';
 $perms = \Sbpp\View\Perms::for($userbank);
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminCommsAddView(
     permission_addban: $perms['can_add_ban'],
+    prefill_steam: $prefillSteam,
+    prefill_type: $prefillType,
 ));
 ?>
-</div>
 <script type="text/javascript">
 function changeReason(szListValue)
 {
     $('dreason').style.display = (szListValue == "other" ? "block" : "none");
 }
+// Local wrapper around window.SBPP.setBusy with a `disabled`-only fallback
+// so a third-party theme that strips theme.js still gates against double-clicks.
+function __sbppSetBusy(btn, busy) {
+    if (!btn) return;
+    var S = window.SBPP;
+    if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+    else btn.disabled = busy === undefined ? true : !!busy;
+}
+
 function ProcessBan()
 {
     var reason = $('listReason')[$('listReason').selectedIndex].value;
@@ -86,6 +123,8 @@ function ProcessBan()
     if (reason == "other") {
         reason = $('txtReason').value;
     }
+    var submitBtn = document.getElementById('addcomm-submit');
+    __sbppSetBusy(submitBtn, true);
     sb.api.call(Actions.CommsAdd, {
         nickname: $('nickname').value,
         type:     Number($('type').value),
@@ -99,6 +138,9 @@ function ProcessBan()
         // fires `sc_fw_block` via rcon for each one. Without it the DB row exists but no live
         // server learns about the gag/mute, matching the bans/kickit shape one branch above.
         if (r && r.ok && r.data && r.data.block) {
+            // Success — the message dialog covers the form and the page reloads
+            // shortly after; leave the button busy so the operator can't queue a
+            // second submit while the iframe fires rcon at every server.
             var b = r.data.block;
             sb.message.show(
                 'Block Added',
@@ -111,6 +153,7 @@ function ProcessBan()
             if (r.data.reload) setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
             return;
         }
+        __sbppSetBusy(submitBtn, false);
         if (!r) return;
         if (r.redirect) return;
         if (r.ok === false) {
@@ -141,4 +184,3 @@ window.__sbppApplyBlockFields = function (d) {
     if (typeof window.swapTab === 'function') window.swapTab(0);
 };
 </script>
-</div>

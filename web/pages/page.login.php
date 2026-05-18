@@ -1,21 +1,7 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
@@ -94,7 +80,7 @@ HTML;
 
         case 'locked':
             if (isset($_GET['time'])) {
-                $remainingTime = intval($_GET['time']);
+                $remainingTime = (int) $_GET['time'];
                 echo <<<HTML
                     <script>
                         if (typeof ShowBox === 'function') ShowBox(
@@ -117,10 +103,23 @@ HTML;
 // (post-login destination is the dashboard). Any third-party theme
 // that forked the pre-v2.0.0 default and still calls `DoLogin(...)`
 // from removed legacy bulk JS would no-op there.
+// `template.logo` is the operator-configurable brand mark path,
+// resolved relative to the active theme directory. Default ships as
+// `images/favicon.svg` (the SourceBans++ shield from the favicon set);
+// admins can override via Admin → Settings → General → Logo path. The
+// theme-relative join mirrors what `core/navbar.tpl` does at runtime
+// for the in-panel sidebar; pre-resolving here keeps `$theme_url` /
+// `$logo` out of `LoginView`'s property surface (the chrome's globally-
+// assigned `$theme_url` doesn't bleed into page Views).
+$themeName = (string) (Config::get('config.theme') ?: 'default');
+$brandLogoPath = (string) Config::get('template.logo');
+$brandLogoUrl = 'themes/' . $themeName . '/' . ltrim($brandLogoPath, '/');
+
 $loginView = new \Sbpp\View\LoginView(
     normallogin_show: Config::getBool('config.enablenormallogin'),
     steamlogin_show: Config::getBool('config.enablesteamlogin'),
     redir: "DoLogin('');",
+    brand_logo_url: $brandLogoUrl,
 );
 
 // `page_login.tpl` renders with the custom `-{ … }-` delimiter pair so

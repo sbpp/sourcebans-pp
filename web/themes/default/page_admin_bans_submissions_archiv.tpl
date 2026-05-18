@@ -41,22 +41,32 @@
         </div>
 
         {if $submission_list_archiv|@count == 0}
+            {* #1207 empty-state unification — read-only / closed-loop
+               surface (accepted / rejected / archived rows live here),
+               so no CTA. Kept the testid hook for any spec watching for
+               the archive's empty state. *}
             <div class="card" data-testid="submissions-archive-empty">
-                <div class="card__body">
-                    <p class="text-sm text-muted m-0">The submission archive is empty.</p>
+                <div class="empty-state">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="archive" style="width:18px;height:18px"></i>
+                    </span>
+                    <h2 class="empty-state__title">Submission archive is empty</h2>
+                    <p class="empty-state__body">Once submissions are accepted, rejected, or archived, they'll move here for the record.</p>
                 </div>
             </div>
         {else}
             <div class="card" style="overflow:hidden" data-testid="submissions-archive-list">
                 {foreach from=$submission_list_archiv item="sub"}
-                    <details class="ban-row ban-row--expired"
+                    {* PUB-2 (#1207): `queue-row` is the layout class; see
+                       the `.queue-row` block in theme.css. `ban-row--expired`
+                       keeps the gray state-border. *}
+                    <details class="queue-row ban-row ban-row--expired"
                              id="asid_{$sub.subid}"
                              data-testid="submission-archive-row"
                              data-id="{$sub.subid}"
                              style="border-bottom:1px solid var(--border)">
-                        <summary class="flex items-center gap-3 p-4"
-                                 style="cursor:pointer;list-style:none">
-                            <div style="flex:1;min-width:0">
+                        <summary>
+                            <div class="queue-row__body">
                                 <div class="font-medium text-sm truncate" data-testid="submission-archive-row-name">
                                     {* nofilter: sub.name is wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true) — already entity-escaped in admin.bans.php. *}
                                     {$sub.name nofilter}
@@ -65,10 +75,10 @@
                                     {if $sub.SteamId != ""}{$sub.SteamId|escape}{else}{$sub.sip|escape}{/if}
                                 </div>
                             </div>
-                            <div class="text-xs text-muted" style="flex-shrink:0">
+                            <div class="queue-row__date">
                                 {$sub.submitted|escape}
                             </div>
-                            <div class="row-actions" style="opacity:1;flex-shrink:0">
+                            <div class="row-actions">
                                 {if $sub.archiv != "2" AND $sub.archiv != "3"}
                                     <button type="button"
                                             class="btn btn--secondary btn--sm"
@@ -228,6 +238,18 @@
             window.sb.message[kind](title, body || '');
         }
     }
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
+    }
     document.addEventListener('click', function (e) {
         var t = e.target;
         if (!t || !t.closest) return;
@@ -244,10 +266,10 @@
         if (!window.confirm(msg)) return;
         var a = api(), A = actions();
         if (!a || !A || !Number.isFinite(sid)) return;
-        btn.disabled = true;
+        setBusy(btn, true);
         a.call(A.SubmissionsRemove, { sid: sid, archiv: archiv }).then(function (r) {
             if (!r || r.ok === false) {
-                btn.disabled = false;
+                setBusy(btn, false);
                 toast('error', 'Action failed', (r && r.error && r.error.message) || 'Unknown error');
                 return;
             }

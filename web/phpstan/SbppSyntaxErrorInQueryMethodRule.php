@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace Sbpp\PhpStan;
+namespace Sbpp\PHPStan;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\CallLike;

@@ -1,305 +1,218 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
+if (!defined('IN_SB')) {
+    echo 'You should not be here. Only follow links!';
     die();
 }
+
 global $userbank, $theme;
 
-new AdminTabs([], $userbank, $theme);
+new \Sbpp\View\AdminTabs([], $userbank, $theme);
 
-if (!isset($_GET['id'])) {
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	No admin id specified. Please only follow links
-</div>';
-    PageDie();
-}
-$_GET['id'] = (int) $_GET['id'];
+require_once __DIR__ . '/_admin_edit_helpers.php';
 
-if (!$userbank->GetProperty("user", $_GET['id'])) {
-    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	Error getting current data.
-</div>';
-    PageDie();
-}
-
-// Skip all checks if root
-if (!$userbank->HasAccess(ADMIN_OWNER)) {
-    if (!$userbank->HasAccess(ADMIN_EDIT_ADMINS) || ($userbank->HasAccess(ADMIN_OWNER, $_GET['id']) && $_GET['id'] != $userbank->GetAid())) {
-        Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s details, but doesnt have access.");
-        echo '<div id="msg-red" >
-		<i class="fas fa-times fa-2x"></i>
-		<b>Error</b>
-		<br />
-		You are not allowed to edit other profiles.
-	</div>';
-        PageDie();
-    }
-}
-$errorScript = "";
-
-// Form submitted?
-if (isset($_POST['adminname'])) {
-    $a_name           = trim($_POST['adminname']);
-    $a_steam          = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
-    $a_email          = trim($_POST['email']);
-    $a_serverpass     = isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] == "on";
-    $pw_changed       = false;
-    $serverpw_changed = false;
-
-    // Form validation
-    $error = 0;
-
-    // Check name
-    if (empty($a_name)) {
-        $error++;
-        $errorScript .= "$('adminname.msg').innerHTML = 'You must type a name for the admin.';";
-        $errorScript .= "$('adminname.msg').setStyle('display', 'block');";
-    } else {
-        if (strstr($a_name, "'")) {
-            $error++;
-            $errorScript .= "$('adminname.msg').innerHTML = 'An admin name can not contain a \" \' \".';";
-            $errorScript .= "$('adminname.msg').setStyle('display', 'block');";
-        } else {
-            if ($a_name != $userbank->GetProperty('user', $_GET['id']) && $userbank->isNameTaken($a_name)) {
-                $error++;
-                $errorScript .= "$('adminname.msg').innerHTML = 'An admin with this name already exists.';";
-                $errorScript .= "$('adminname.msg').setStyle('display', 'block');";
-            }
-        }
-    }
-
-    // If they didnt type a steamid
-    if ((empty($a_steam) || strlen($a_steam) < 10)) {
-        $error++;
-        $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID for the admin.';";
-        $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    } else {
-        // Validate the steamid or fetch it from the community id
-        if (!\SteamID\SteamID::isValidID($a_steam)) {
-            $error++;
-            $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID.';";
-            $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-        } else {
-            // Is an other admin already registred with that steam id?
-            if ($a_steam != $userbank->GetProperty('authid', $_GET['id']) && $userbank->isSteamIDTaken($a_steam)) {
-                $admins = $userbank->GetAllAdmins();
-                foreach ($admins as $admin) {
-                    if ($admin['authid'] == $a_steam) {
-                        $name = $admin['user'];
-                        break;
-                    }
-                }
-                $error++;
-                $errorScript .= "$('steam.msg').innerHTML = 'Admin " . htmlspecialchars(addslashes($name)) . " already uses this Steam ID.';";
-                $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-            }
-        }
-    }
-
-    // No email
-    if (empty($a_email)) {
-        // Only required, if admin has web permissions.
-        if ($GLOBALS['userbank']->GetProperty('extraflags', $_GET['id']) != 0 || $GLOBALS['userbank']->GetProperty('gid', $_GET['id']) > 0) {
-            $error++;
-            $errorScript .= "$('email.msg').innerHTML = 'You must type an e-mail address.';";
-            $errorScript .= "$('email.msg').setStyle('display', 'block');";
-        }
-    } else {
-        // Is an other admin already registred with that email address?
-        if ($a_email != $userbank->GetProperty('email', $_GET['id']) && $userbank->isEmailTaken($a_email)) {
-            $admins = $userbank->GetAllAdmins();
-            foreach ($admins as $admin) {
-                if ($admin['email'] == $a_email) {
-                    $name = $admin['user'];
-                    break;
-                }
-            }
-            $error++;
-            $errorScript .= "$('email.msg').innerHTML = 'This email address is already being used by " . htmlspecialchars(addslashes($name)) . ".';";
-            $errorScript .= "$('email.msg').setStyle('display', 'block');";
-        }
-    }
-
-    // Only validate passwords, if admin has access to edit it at all
-    if ($userbank->HasAccess(ADMIN_OWNER) || $_GET['id'] == $userbank->GetAid()) {
-        // Don't change the password, if not set
-        if (!empty($_POST['password'])) {
-            $pw_changed = true;
-            // DID type a password, so he wants to change it.
-            // Password too short?
-            if (strlen($_POST['password']) < MIN_PASS_LENGTH) {
-                $error++;
-                $errorScript .= "$('password.msg').innerHTML = 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.';";
-                $errorScript .= "$('password.msg').setStyle('display', 'block');";
-            } else {
-                // No confirmation typed
-                if (empty($_POST['password2'])) {
-                    $error++;
-                    $errorScript .= "$('password2.msg').innerHTML = 'You must confirm the password.';";
-                    $errorScript .= "$('password2.msg').setStyle('display', 'block');";
-                } elseif ($_POST['password'] != $_POST['password2']) {
-                    // Passwords match?
-                    $error++;
-                    $errorScript .= "$('password2.msg').innerHTML = 'Your passwords don't match.';";
-                    $errorScript .= "$('password2.msg').setStyle('display', 'block');";
-                }
-            }
-        }
-
-        // Check for the serverpassword
-        if (isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] == "on") {
-            if (!empty($_POST['a_serverpass'])) {
-                $serverpw_changed = true;
-            }
-
-            // No password given and no set before?
-            $srvpw = $userbank->GetProperty('srv_password', $_GET['id']);
-            if (empty($_POST['a_serverpass']) && empty($srvpw)) {
-                $error++;
-                $errorScript .= "$('a_serverpass.msg').innerHTML = 'You must type a server password or uncheck the box.';";
-                $errorScript .= "$('a_serverpass.msg').setStyle('display', 'block');";
-            } elseif (strlen($_POST['a_serverpass']) < MIN_PASS_LENGTH) {
-                // Password too short?
-                $error++;
-                $errorScript .= "$('a_serverpass.msg').innerHTML = 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.';";
-                $errorScript .= "$('a_serverpass.msg').setStyle('display', 'block');";
-            }
-        }
-    }
-
-    // Only proceed, if there are no errors in the form
-    if ($error == 0) {
-        // set the basic fields
-        $GLOBALS['PDO']->query(
-            "UPDATE `:prefix_admins` SET
-            `user` = :user, `authid` = :authid, `email` = :email
-            WHERE `aid` = :aid"
+$adminId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+if ($adminId <= 0 || !$userbank->GetProperty('user', $adminId)) {
+    if ($adminId > 0) {
+        \Sbpp\Log::add(
+            \LogType::Error,
+            'Getting admin data failed',
+            "Can't find data for admin with id {$adminId}.",
         );
-        $GLOBALS['PDO']->bindMultiple([
-            ':user'   => $a_name,
-            ':authid' => $a_steam,
-            ':email'  => $a_email,
-            ':aid'    => $_GET['id'],
-        ]);
-        $GLOBALS['PDO']->execute();
-
-        // Password changed?
-        if ($pw_changed) {
-            $GLOBALS['PDO']->query(
-                "UPDATE `:prefix_admins` SET
-                `password` = :password
-                WHERE `aid` = :aid"
-            );
-            $GLOBALS['PDO']->bindMultiple([
-                ':password' => password_hash($_POST['password'], PASSWORD_BCRYPT),
-                ':aid'      => $_GET['id'],
-            ]);
-            $GLOBALS['PDO']->execute();
-        }
-
-        // Server Admin Password changed?
-        if ($serverpw_changed) {
-            $GLOBALS['PDO']->query(
-                "UPDATE `:prefix_admins` SET
-                `srv_password` = :srv_password
-                WHERE `aid` = :aid"
-            );
-            $GLOBALS['PDO']->bindMultiple([
-                ':srv_password' => $_POST['a_serverpass'],
-                ':aid'          => $_GET['id'],
-            ]);
-            $GLOBALS['PDO']->execute();
-        } elseif (isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] != "on") {
-            // Remove the server password
-            $GLOBALS['PDO']->query(
-                "UPDATE `:prefix_admins` SET
-                `srv_password` = NULL
-                WHERE `aid` = :aid"
-            );
-            $GLOBALS['PDO']->bind(':aid', $_GET['id']);
-            $GLOBALS['PDO']->execute();
-        }
-
-        // to prevent rehash window to error with "no access", cause pw doesn't match
-        $ownpwchanged = false;
-        if ($_GET['id'] == $userbank->GetAid() && !empty($_POST['password']) && password_verify($_POST['password'], $userbank->GetProperty("password"))) {
-            $ownpwchanged = true;
-        }
-
-        if (Config::getBool('config.enableadminrehashing')) {
-            // rehash the admins on the servers
-            $GLOBALS['PDO']->query("SELECT s.sid FROM `:prefix_servers` s
-                LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = :aid
-                LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
-                WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-                OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-                AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
-            $GLOBALS['PDO']->bind(':aid', (int) $_GET['id']);
-            $serveraccessq = $GLOBALS['PDO']->resultset();
-            $allservers    = [];
-            foreach ($serveraccessq as $access) {
-                if (!in_array($access['sid'], $allservers)) {
-                    $allservers[] = $access['sid'];
-                }
-            }
-            $rehashing = true;
-        }
-
-        $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
-        $GLOBALS['PDO']->bind(':aid', (int) $_GET['id']);
-        $admname = $GLOBALS['PDO']->single();
-        Log::add("m", "Admin Details Updated", "Admin ($admname[user]) details has been changed.");
-        if ($ownpwchanged) {
-            echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=login");TabToReload();</script>';
-        } elseif (isset($rehashing)) {
-            echo '<script>ShowRehashBox("' . implode(",", $allservers) . '", "Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
-        } else {
-            echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
-        }
     }
-} else {
-    // get current values
-    $a_name = $userbank->GetProperty("user", $_GET['id']);
-    $a_steam = trim($userbank->GetProperty("authid", $_GET['id']));
-    $a_email = $userbank->GetProperty("email", $_GET['id']);
-    $a_serverpass = $userbank->GetProperty("srv_password", $_GET['id']);
-    $a_serverpass = !empty($a_serverpass);
+    sbpp_admin_edit_die_with_toast('No admin found for that id.', 'index.php?p=admin&c=admins');
+    return;
 }
 
-$theme->assign('change_pass', ($userbank->HasAccess(ADMIN_OWNER) || $userbank->HasAccess(ADMIN_EDIT_ADMINS)|| $_GET['id'] == $userbank->GetAid()));
-$theme->assign('user', $a_name);
-$theme->assign('authid', $a_steam);
-$theme->assign('email', $a_email);
-$theme->assign('a_spass', $a_serverpass);
+$isOwnerEditor = $userbank->HasAccess(\WebPermission::Owner);
+$isSelfEdit    = $adminId === $userbank->GetAid();
+$canEditTarget = $isOwnerEditor
+    || ($userbank->HasAccess(\WebPermission::EditAdmins)
+        && (!$userbank->HasAccess(\WebPermission::Owner, $adminId) || $isSelfEdit));
 
-$theme->display('page_admin_edit_admins_details.tpl');
-?>
-<script type="text/javascript">window.addEvent('domready', function(){
-<?=$errorScript?>
-});
-</script>
+if (!$canEditTarget) {
+    \Sbpp\Log::add(
+        \LogType::Warning,
+        'Hacking Attempt',
+        $userbank->GetProperty('user') . ' tried to edit '
+        . $userbank->GetProperty('user', $adminId) . "'s details, but doesn't have access.",
+    );
+    sbpp_admin_edit_die_with_toast(
+        "You aren't allowed to edit this admin's details.",
+        'index.php?p=admin&c=admins',
+    );
+    return;
+}
+
+$canEditPasswords = $isOwnerEditor || $isSelfEdit;
+$webBitmask        = (int) $userbank->GetProperty('extraflags', $adminId);
+$webGroupId        = (int) $userbank->GetProperty('gid', $adminId);
+$hasWebPermissions = $webBitmask !== 0 || $webGroupId > 0;
+
+/** @var array<string, string> $validationErrors */
+$validationErrors = [];
+$postSuccess      = false;
+$postRehashSids   = [];
+
+if (isset($_POST['adminname'])) {
+    \CSRF::rejectIfInvalid();
+
+    $rawName       = trim((string) $_POST['adminname']);
+    $rawSteamInput = trim((string) ($_POST['steam'] ?? ''));
+    $resolvedSteam = \SteamID\SteamID::toSteam2($rawSteamInput);
+    $rawEmail      = trim((string) ($_POST['email'] ?? ''));
+    $useServerPass = isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] === 'on';
+    $newPassword   = (string) ($_POST['password']  ?? '');
+    $newPassword2  = (string) ($_POST['password2'] ?? '');
+    $newServerPass = (string) ($_POST['a_serverpass'] ?? '');
+
+    // Identity ----------------------------------------------------------
+    if ($rawName === '') {
+        $validationErrors['adminname'] = 'You must type a name for the admin.';
+    } elseif (str_contains($rawName, "'")) {
+        $validationErrors['adminname'] = "An admin name can not contain a \" ' \".";
+    } elseif ($rawName !== $userbank->GetProperty('user', $adminId)
+        && $userbank->isNameTaken($rawName)) {
+        $validationErrors['adminname'] = 'An admin with this name already exists.';
+    }
+
+    if ($resolvedSteam === '' || strlen($resolvedSteam) < 10) {
+        $validationErrors['steam'] = 'You must type a Steam ID or Community ID for the admin.';
+    } elseif (!\SteamID\SteamID::isValidID($resolvedSteam)) {
+        $validationErrors['steam'] = 'Please enter a valid Steam ID or Community ID.';
+    } elseif ($resolvedSteam !== $userbank->GetProperty('authid', $adminId)
+        && $userbank->isSteamIDTaken($resolvedSteam)) {
+        $taker = sbpp_admin_edit_lookup_admin_field($userbank, 'authid', $resolvedSteam);
+        $validationErrors['steam'] = $taker !== ''
+            ? 'Admin ' . htmlspecialchars($taker) . ' already uses this Steam ID.'
+            : 'This Steam ID is already taken.';
+    }
+
+    if ($rawEmail === '') {
+        if ($hasWebPermissions) {
+            $validationErrors['email'] = 'You must type an e-mail address.';
+        }
+    } elseif ($rawEmail !== $userbank->GetProperty('email', $adminId)
+        && $userbank->isEmailTaken($rawEmail)) {
+        $taker = sbpp_admin_edit_lookup_admin_field($userbank, 'email', $rawEmail);
+        $validationErrors['email'] = $taker !== ''
+            ? 'This email address is already being used by ' . htmlspecialchars($taker) . '.'
+            : 'This email address is already in use.';
+    }
+
+    // Passwords ---------------------------------------------------------
+    $passwordChanged   = false;
+    $serverPassChanged = false;
+
+    if ($canEditPasswords) {
+        if ($newPassword !== '') {
+            $passwordChanged = true;
+            if (strlen($newPassword) < MIN_PASS_LENGTH) {
+                $validationErrors['password'] = 'Your password must be at least '
+                    . MIN_PASS_LENGTH . ' characters long.';
+            } elseif ($newPassword2 === '') {
+                $validationErrors['password2'] = 'You must confirm the password.';
+            } elseif ($newPassword !== $newPassword2) {
+                $validationErrors['password2'] = "Your passwords don't match.";
+            }
+        }
+
+        if ($useServerPass) {
+            if ($newServerPass !== '') {
+                $serverPassChanged = true;
+            }
+            $existingServerPass = (string) $userbank->GetProperty('srv_password', $adminId);
+            if ($newServerPass === '' && $existingServerPass === '') {
+                $validationErrors['a_serverpass'] = 'You must type a server password or uncheck the box.';
+            } elseif ($newServerPass !== '' && strlen($newServerPass) < MIN_PASS_LENGTH) {
+                $validationErrors['a_serverpass'] = 'Your password must be at least '
+                    . MIN_PASS_LENGTH . ' characters long.';
+            }
+        }
+    }
+
+    if ($validationErrors === []) {
+        $pdo = $GLOBALS['PDO'];
+
+        $pdo->query(
+            'UPDATE `:prefix_admins`
+                SET `user` = :user, `authid` = :authid, `email` = :email
+                WHERE `aid` = :aid'
+        );
+        $pdo->bindMultiple([
+            ':user'   => $rawName,
+            ':authid' => $resolvedSteam,
+            ':email'  => $rawEmail,
+            ':aid'    => $adminId,
+        ]);
+        $pdo->execute();
+
+        if ($passwordChanged) {
+            $pdo->query('UPDATE `:prefix_admins` SET `password` = :pw WHERE `aid` = :aid');
+            $pdo->bindMultiple([
+                ':pw'  => password_hash($newPassword, PASSWORD_BCRYPT),
+                ':aid' => $adminId,
+            ]);
+            $pdo->execute();
+        }
+
+        if ($serverPassChanged) {
+            $pdo->query('UPDATE `:prefix_admins` SET `srv_password` = :sp WHERE `aid` = :aid');
+            $pdo->bindMultiple([
+                ':sp'  => $newServerPass,
+                ':aid' => $adminId,
+            ]);
+            $pdo->execute();
+        } elseif (!$useServerPass) {
+            $pdo->query('UPDATE `:prefix_admins` SET `srv_password` = NULL WHERE `aid` = :aid');
+            $pdo->bind(':aid', $adminId);
+            $pdo->execute();
+        }
+
+        if (\Config::getBool('config.enableadminrehashing')) {
+            $postRehashSids = sbpp_admin_edit_collect_rehash_sids($adminId);
+        }
+
+        \Sbpp\Log::add(
+            \LogType::Message,
+            'Admin Details Updated',
+            'Admin (' . $rawName . ') details has been changed.',
+        );
+        $postSuccess = true;
+    }
+
+    // Reflect submitted-but-invalid values back so the form re-paints
+    // what the user typed instead of the stored row.
+    $userDisplay  = $rawName;
+    $authidValue  = $resolvedSteam !== '' ? $resolvedSteam : $rawSteamInput;
+    $emailDisplay = $rawEmail;
+    $haveServerPw = $useServerPass;
+} else {
+    $userDisplay  = (string) $userbank->GetProperty('user', $adminId);
+    $authidValue  = trim((string) $userbank->GetProperty('authid', $adminId));
+    $emailDisplay = (string) $userbank->GetProperty('email', $adminId);
+    $rawServerPw  = (string) $userbank->GetProperty('srv_password', $adminId);
+    $haveServerPw = $rawServerPw !== '';
+}
+
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\EditAdminDetailsView(
+    user:        $userDisplay,
+    authid:      $authidValue,
+    email:       $emailDisplay,
+    a_spass:     $haveServerPw,
+    change_pass: $canEditPasswords,
+));
+
+sbpp_admin_edit_emit_tail_script(
+    successTitle:   'Admin details updated',
+    successBody:    'The admin details have been updated successfully.',
+    successRedirect:'index.php?p=admin&c=admins',
+    postSuccess:    $postSuccess,
+    rehashSids:     $postRehashSids,
+    validationErrors:$validationErrors,
+);

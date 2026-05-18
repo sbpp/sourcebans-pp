@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_admins` (
   `gid` int(6) NOT NULL,
   `email` varchar(128) NOT NULL,
   `validate` varchar(128) NULL default NULL,
-  `extraflags` int(10) NOT NULL,
+  `extraflags` int(10) UNSIGNED NOT NULL,
   `immunity` int(10) NOT NULL default '0',
   `srv_group` varchar(128) default NULL,
   `srv_flags` varchar(64) default NULL,
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_groups` (
   `gid` int(6) NOT NULL auto_increment,
   `type` smallint(6) NOT NULL default '0',
   `name` varchar(128) character set {charset} NOT NULL default 'unnamed',
-  `flags` int(10) NOT NULL,
+  `flags` int(10) UNSIGNED NOT NULL,
   PRIMARY KEY  (`gid`)
 ) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
@@ -245,4 +245,25 @@ CREATE TABLE IF NOT EXISTS `{prefix}_login_tokens` (
     `lastAccessed` int(11) NOT NULL,
     PRIMARY KEY (`jti`),
     UNIQUE KEY `secret` (`secret`)
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
+
+-- Player notes scratchpad surfaced by the player-detail drawer (#1165).
+-- Notes are scoped per Steam ID so an admin can pin context that survives
+-- ban-row churn (a re-ban or unban makes a new bid — notes follow the
+-- player). The Notes pane in the drawer is admin-only — `is_admin()`
+-- gates both the JSON actions and the tab visibility.
+-- NOTE: this comment block must contain no semicolon characters.
+-- The installer (page.4.php) splits struc.sql on every semicolon
+-- before it reaches MariaDB, so a stray one mid-comment cuts the
+-- block in half and breaks the next CREATE TABLE (#1221).
+CREATE TABLE IF NOT EXISTS `{prefix}_notes` (
+    `nid` int(10) NOT NULL AUTO_INCREMENT,
+    `steam_id` varchar(64) character set {charset} NOT NULL DEFAULT '',
+    `aid` int(6) NOT NULL,
+    `body` text character set {charset} NOT NULL,
+    `created` int(11) NOT NULL DEFAULT '0',
+    PRIMARY KEY (`nid`),
+    KEY `steam_id` (`steam_id`),
+    KEY `aid` (`aid`),
+    KEY `created` (`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET={charset};
