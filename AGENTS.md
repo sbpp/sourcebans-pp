@@ -724,34 +724,48 @@ of the diff ship together or not at all.
   the server-side `preg_match` is the load-bearing security gate
   for curl-driven / third-party-theme callers that bypass it.
 
-  Why NOT `SteamID::isValidID($raw)`: the bundled helper's regexes
-  are unanchored with loose character classes (`STEAM_[0|1]:[0:1]:\d*`
-  — the `|` inside `[...]` is a literal pipe, not alternation, and
-  the missing `^`/`$` anchors leave it as a substring matcher).
-  Consequences:
-   - `'STEAM_0:0:'` (empty Z, the `\d*` accepts zero digits) passes
-     `isValidID` AND round-trips through `toSteam2()` unchanged,
-     storing an invalid SteamID in `:prefix_admins.authid` /
-     `:prefix_bans.authid` / `:prefix_comms.authid`.
-   - `'asdfSTEAM_0:0:123'` (embedded valid-looking suffix) passes
-     `isValidID` AND `toSteam2()` returns the input verbatim
-     (the resolveInputID switch matches the SteamID branch via
-     substring, then re-extracts via the same regex which returns
+  The pre-#1420 `SteamID::isValidID($raw)` was structurally unsafe
+  — the bundled helper's regexes were unanchored with loose character
+  classes (`STEAM_[0|1]:[0:1]:\d*` — the `|` inside `[...]` is a
+  literal pipe, not alternation, the missing `^`/`$` anchors left
+  them as substring matchers, and `\d*` accepted zero digits).
+  Three concrete bypass shapes the loose gate accepted:
+   - `'STEAM_0:0:'` (empty Z) passed `isValidID` AND round-tripped
+     through `toSteam2()` unchanged, storing an invalid SteamID in
+     `:prefix_admins.authid` / `:prefix_bans.authid` /
+     `:prefix_comms.authid`.
+   - `'asdfSTEAM_0:0:123'` (substring-embedded suffix) passed
+     `isValidID` AND `toSteam2()` returned the input verbatim
+     (the resolveInputID switch matched the SteamID branch via
+     substring, then re-extracted via the same regex which returned
      the full input string), corrupting downstream SourceMod admin
      matching and the panel's per-row UI.
    - `'asdf 76561197960265728 garbage'` (embedded 17-digit Steam64)
-     passes `isValidID` AND `toSteam2()` emits a corrupt canonical
-     form (`'STEAM_0:0:-38280598980132864'` — the negative Z
-     component is the parser eating the surrounding bytes during
-     numeric conversion).
+     passed `isValidID` AND `toSteam2()` emitted a corrupt canonical
+     form (`'STEAM_0:0:-38280598980132864'` — negative Z from the
+     parser eating the surrounding bytes during numeric conversion).
 
-  The strict regex closes all three bypass classes. Tightening
-  `SteamID::isValidID()` itself is the right long-term fix
-  (anchor the regexes, replace `[0|1]` with `[01]`, require `\d+`)
-  but it's a third-party-vendored file and a broader audit is
-  needed of its other call sites; this is tracked separately. The
-  per-handler `preg_match` is the defence-in-depth that fixes
-  #1420 today without waiting on that audit.
+  The library tightening landed in #1423 follow-up #1: a shared
+  `SteamID::ID_PATTERNS` constant carries the four accepted shapes
+  with `^…$` anchors, the `D` modifier (strictly anchors `$` to
+  end-of-string, closing the `STEAM_0:0:1\n` newline-bypass
+  sibling), `[01]` character classes, and `\d+` quantifiers; both
+  `isValidID()` and `resolveInputID()` consume the same table so
+  they cannot drift. The per-handler `preg_match` documented above
+  is now true defence-in-depth (the two layers agree on the
+  accepted shape) — KEEP both. Reaching for `SteamID::isValidID()`
+  alone as the server-side gate is fine after the library fix; the
+  per-handler regex stays in `api_comms_add` / `api_bans_add` /
+  `api_admins_add` as the load-bearing structural-shape contract
+  (the JSON wire is hostile-input-shaped; the library is one
+  refactor away from someone "simplifying" the shared table back
+  to a loose form, and the defense-in-depth means that refactor
+  doesn't re-open the bypass class). Regression coverage for both
+  layers: `web/tests/integration/SteamIDValidationTest.php` pins
+  the library's shape contract (every bypass above is asserted as
+  rejected); `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`
+  + `BansTest.php` + `AdminsTest.php` pin the handler-side
+  `ApiError('validation', …, 'steam')` envelope.
 
 ### CSRF
 
@@ -3014,20 +3028,33 @@ contacting every contributor individually.
   regression coverage in `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`,
   `web/tests/api/BansTest.php::testAddRejectsInvalidSteamIdShapeForType0`,
   and `web/tests/api/AdminsTest.php::testAddRejectsInvalidSteamIdShape`.
-- Relying on `SteamID::isValidID($raw)` alone as the server-side
-  gate (without the paired strict-anchored `preg_match`) → the
-  bundled helper's regexes are unanchored with loose character
-  classes (`STEAM_[0|1]:[0:1]:\d*` — `|` inside `[...]` is a
-  literal pipe, not alternation, and the missing `^`/`$` anchors
-  leave it as a substring matcher), so `'STEAM_0:0:'` (empty Z),
-  `'asdfSTEAM_0:0:123'` (substring-bypass), and
-  `'asdf 76561197960265728 garbage'` (embedded Steam64 that
-  `toSteam2()` corrupts to `'STEAM_0:0:-38280598980132864'`) all
-  pass the library's gate AND get bound into the DB as the
-  "canonical" SteamID. Use the strict `preg_match` from the
-  "SteamID inputs" Conventions block; the per-handler regex is
-  defence-in-depth that doesn't depend on the third-party-
-  vendored library landing an anchored-regex fix first.
+- Loosening `SteamID::ID_PATTERNS` (the shared `[regex, format]`
+  table consumed by both `isValidID()` and `resolveInputID()`) —
+  e.g. dropping the `^…$` anchors, dropping the `D` modifier,
+  using `[0|1]` instead of `[01]` (`|` inside `[…]` is a literal
+  pipe, not alternation), or using `\d*` instead of `\d+`. The
+  pre-#1420 shape carried every one of those bugs and the three
+  concrete bypasses are documented under "SteamID inputs" in
+  Conventions (`'STEAM_0:0:'` empty Z, `'asdfSTEAM_0:0:123'`
+  substring-bypass, `'asdf 76561197960265728 garbage'` embedded
+  Steam64 → `'STEAM_0:0:-38280598980132864'` on `toSteam2()`). The
+  shared-table shape is the single source of truth — both
+  surfaces consume it so they cannot drift. A future refactor
+  that "simplifies" the table back into per-method `switch (true)`
+  blocks re-opens the asymmetry bug-class. Regression guard:
+  `web/tests/integration/SteamIDValidationTest.php::testIdPatternsConstantIsTheSourceOfTruth`
+  introspects the constant and asserts every regex stays
+  `^…$/…D…` shaped.
+- Removing the per-handler strict `preg_match` from
+  `api_comms_add` / `api_bans_add` / `api_admins_add` "now that
+  `SteamID::isValidID()` is strict too" → both layers ship and
+  agree by design (the "defence-in-depth" contract under "SteamID
+  inputs"). The library is one refactor away from someone
+  loosening `ID_PATTERNS` back to a substring matcher AND the
+  per-handler gate exists so that refactor doesn't silently
+  re-open the bypass class. Regression coverage for the handler
+  half: `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`
+  (+ sibling tests in `BansTest.php` / `AdminsTest.php`).
 - Editing `install/includes/sql/data.sql` (or `struc.sql`) without a paired
   `web/updater/data/<N>.php` → upgraded installs silently miss the change.
 - WYSIWYG / "rich HTML" editors (TinyMCE, CKEditor, …) for fields stored

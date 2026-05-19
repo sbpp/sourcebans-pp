@@ -84,41 +84,121 @@ class SteamID
     }
 
     /**
+     * Strict-shape patterns the library accepts as recognisable SteamID
+     * inputs. Mirrored across `resolveInputID()` and `isValidID()` so
+     * the two surfaces agree byte-for-byte on the accepted shape — pre-#1420
+     * the two regex tables had subtly different shapes (`isValidID`'s
+     * unanchored substring matcher accepted strings `resolveInputID`
+     * silently corrupted on conversion, opening the embedded-Steam64
+     * bypass the strict per-handler `preg_match` shipped by the JSON
+     * handlers had to paper over). Single source of truth now.
+     *
+     * Each entry is `[regex, format-tag]`. Order matters for the
+     * bracketed-vs-bracketless Steam3 disambiguation (`[U:1:N]` matches
+     * both regexes after the brackets are stripped, so the bracketed
+     * form must be tried FIRST — `resolveInputID()` returns the FIRST
+     * match and stops; `isValidID()` is order-insensitive because it
+     * only asks "does ANY pattern match").
+     *
+     * The shapes:
+     *   - `^STEAM_[01]:[01]:\d+$` — Steam2. Universe digit 0 or 1
+     *     (TF2/L4D and similar Source titles emit `STEAM_1` for the
+     *     same accounts other Source titles emit `STEAM_0` for — see
+     *     `toSearchPattern()` for the universe-agnostic SQL fallback
+     *     that defends #1128 / #1130); Y digit is 0 or 1; Z digit is
+     *     at least one digit (the empty-Z `STEAM_0:0:` shape was the
+     *     #1420 bug-on-disk).
+     *   - `^\[U:1:\d+\]$` — Steam3 bracketed.
+     *   - `^U:1:\d+$` — Steam3 bracketless. Preserved because the
+     *     conversion methods (`Steam3toSteam2`, `Steam3toSteam64`)
+     *     `trim($steamid, '[]')` first, so the bracketless form
+     *     converts correctly; rejecting it here would break callers
+     *     that paste a Steam3 ID without brackets (the wild typed-input
+     *     case, not a documented panel surface).
+     *   - `^\d{17}$` — Steam64. Exactly 17 digits. The valid Steam64
+     *     range for individual accounts starts at 76561197960265728
+     *     (account ID 0) and grows ~linearly with account creations;
+     *     this regex doesn't range-check (would require a paired
+     *     migration of any caller that legitimately passes a sub-base
+     *     Steam64 from a non-individual ID type), so callers needing
+     *     "is this a plausible user Steam64" should layer a starts-with
+     *     check on top. Tracked as a follow-up in PR #1423.
+     *
+     * The `D` modifier on every pattern is load-bearing: without it
+     * PHP's `$` matches end-of-string OR a final `\n`, so
+     * `STEAM_0:0:1\n` would slip through the gate AND `resolveInputID()`
+     * would then return `'Steam2'` for it AND the `$from === $format`
+     * branch in `to()` would return the trailing-newline string
+     * verbatim into the DB. The `D` modifier strictly anchors `$` to
+     * end-of-string only, closing the newline-bypass sibling of the
+     * `^…$` substring-bypass class of #1420.
+     */
+    private const ID_PATTERNS = [
+        ['/^STEAM_[01]:[01]:\d+$/D', 'Steam2'],
+        ['/^\[U:1:\d+\]$/D',         'Steam3'],
+        ['/^U:1:\d+$/D',             'Steam3'],
+        ['/^\d{17}$/D',              'Steam64'],
+    ];
+
+    /**
      * @param  $steamid
      * @return string
      * @throws Exception
      */
     private static function resolveInputID($steamid)
     {
-        switch (true) {
-            case preg_match("/STEAM_[0|1]:[0:1]:\d*/", $steamid):
-                return 'Steam2';
-            case preg_match("/\[U:1:\d*\]/", $steamid):
-                return 'Steam3';
-            case preg_match("/U:1:\d*/", $steamid):
-                return 'Steam3';
-            case preg_match("/\d{17}/", $steamid):
-                return 'Steam64';
-            default:
-                throw new Exception("Invalid SteamID input!");
+        // PHP 8.x deprecates passing non-string to preg_match's `string
+        // $subject` arg. `to($format, $steamid)` accepts both int and
+        // string Steam64 inputs (see SteamIdConversionTest's int-shape
+        // round-trips), so the int case reaches here. Cast at the entry
+        // point so the rest of the function works on a known string and
+        // we don't ship a stack of `Deprecated: preg_match(): Passing
+        // null to parameter…` warnings on int callers.
+        $s = (string) $steamid;
+        foreach (self::ID_PATTERNS as [$pattern, $format]) {
+            if (preg_match($pattern, $s) === 1) {
+                return $format;
+            }
         }
+        throw new Exception("Invalid SteamID input!");
     }
 
     /**
-     * @param  $steamid
-     * @return bool
+     * Strict-shape SteamID validator. Returns `true` for inputs the
+     * library can convert correctly through `toSteam2()` / `toSteam3()`
+     * / `toSteam64()`, `false` for everything else.
+     *
+     * The acceptance set is the same one `resolveInputID()` uses
+     * (`ID_PATTERNS`) — so an input that passes `isValidID()` is
+     * GUARANTEED not to throw on a subsequent `toSteam*()` call from
+     * the same value. Pre-#1420 the two surfaces drifted: `isValidID`'s
+     * unanchored loose-class regexes (`STEAM_[0|1]:[0:1]:\d*` — `|` in
+     * `[…]` is a literal pipe, the missing `^`/`$` made it a substring
+     * matcher, `\d*` accepted zero digits) accepted strings the
+     * conversion path then either round-tripped verbatim into the DB
+     * (`asdfSTEAM_0:0:123`) or converted to negative-Z garbage
+     * (`asdf 76561197960265728 garbage` → `STEAM_0:0:-38280598980132864`).
+     * Three concrete bypass shapes the post-fix gate correctly rejects:
+     *   - `STEAM_0:0:` — empty Z. `\d+` rejects.
+     *   - `asdfSTEAM_0:0:123` — substring bypass. `^…$` anchors reject.
+     *   - `STEAM_2:0:0` — invalid universe digit. `[01]` rejects.
+     *
+     * Callers in `web/api/handlers/{bans,comms,admins}.php` carry their
+     * own per-handler `preg_match` gate for defence-in-depth — both
+     * layers should agree on the accepted shape. See "SteamID inputs"
+     * in AGENTS.md for the contract.
+     *
+     * @param  mixed $steamid
      */
-    public static function isValidID($steamid)
+    public static function isValidID($steamid): bool
     {
-        switch (true) {
-            case preg_match("/STEAM_[0|1]:[0:1]:\d*/", $steamid):
-            case preg_match("/\[U:1:\d*\]/", $steamid):
-            case preg_match("/U:1:\d*/", $steamid):
-            case preg_match("/\d{17}/", $steamid):
+        $s = (string) $steamid;
+        foreach (self::ID_PATTERNS as [$pattern, $_format]) {
+            if (preg_match($pattern, $s) === 1) {
                 return true;
-            default:
-                return false;
+            }
         }
+        return false;
     }
 
     /**
