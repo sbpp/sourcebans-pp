@@ -141,8 +141,16 @@ if (isset($_POST['name'])) {
     $error = 0;
     // Steam ID branch — validate raw shape FIRST; convert only on a
     // pass. Empty input is its own error message; non-empty-but-bad
-    // is "please enter a valid…". The conversion is only meaningful
-    // on a Steam-type ban so the IP branch skips it.
+    // is "please enter a valid…". The validation only fires on a
+    // Steam-type ban; the IP branch skips it but still canonicalises
+    // a fully-valid Steam ID if one was typed (pre-fix behavior
+    // preserved — the UPDATE binds `:authid = $_POST['steam']`
+    // regardless of `$postBanType`, so what the user typed in the
+    // Steam ID field still lands in the `authid` column for an
+    // IP-type ban, just unvalidated. Keep the canonicalisation here
+    // so the column is consistent with whatever the user typed
+    // pre-tightening; revisit if `:authid = ''` for type=1 ever
+    // becomes a separate schema cleanup follow-up).
     if ($postBanType === BanType::Steam) {
         if ($rawSteam === '') {
             $error++;
@@ -162,13 +170,20 @@ if (isset($_POST['name'])) {
             // through the shared `ID_PATTERNS` table.
             $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
         }
+    } elseif ($rawSteam !== '' && \SteamID\SteamID::isValidID($rawSteam)) {
+        // IP-type ban with a valid Steam ID typed in the secondary
+        // input — canonicalise to preserve pre-tighter-library
+        // behavior (the UPDATE writes `:authid` regardless of
+        // `$postBanType`; pre-fix this branch ran `toSteam2()`
+        // unconditionally so the column always landed in canonical
+        // form when the input was valid).
+        $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
     } else {
-        // IP-type ban — the steam column stays untouched on the
-        // write side (`type` = `BanType::Ip->value` and the
-        // ban_ip-only path below handles the DB binds), but the
-        // form re-emit still needs a string value so the input
-        // doesn't lose what the user typed if they later switch
-        // back to a Steam-type ban.
+        // IP-type ban with empty / invalid Steam ID input — preserve
+        // raw value so the form re-emit doesn't silently clear what
+        // the operator typed. The IP branch is the load-bearing
+        // validation on this code path; whatever happens to be in
+        // `$_POST['steam']` rides along into the write.
         $_POST['steam'] = $rawSteam;
     }
 
