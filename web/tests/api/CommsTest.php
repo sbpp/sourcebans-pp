@@ -144,12 +144,22 @@ final class CommsTest extends ApiTestCase
      * `dialog-placement` element silently no-op'd against the v2.0
      * chrome (the reporter's "no notification" symptom).
      *
-     * Post-fix `api_comms_add` validates the SteamID shape BEFORE
-     * handing it to `SteamID::toSteam2()` so a malformed value
-     * surfaces a structured `validation`-coded error with
-     * `field=steam`, which the chrome can render as a per-field
-     * toast / inline message. Mirrors the bans-add fix in the
-     * same PR.
+     * Post-fix `api_comms_add` validates the SteamID shape against
+     * a strict anchored regex BEFORE handing it to
+     * `SteamID::toSteam2()`. `SteamID::isValidID()` on its own is
+     * NOT a sufficient gate — its regexes are unanchored with loose
+     * character classes (`STEAM_[0|1]:[0:1]:\d*` — note `|` inside
+     * `[...]` is a literal pipe, not alternation), so a substring
+     * match against an embedded valid-looking SteamID passes the
+     * library's gate AND `toSteam2()` then either binds corrupt
+     * bytes into the DB (`'asdfSTEAM_0:0:123'` round-trips
+     * unchanged) or emits a negative-Z-component canonical form
+     * (`'asdf 76561197960265728 garbage'` → `'STEAM_0:0:-38280598980132864'`).
+     * The strict regex (mirroring the form template's client-side
+     * `pattern` attribute byte-for-byte, HTML's `pattern` is
+     * implicitly anchored `^…$`) closes the bypass for
+     * curl-driven / third-party-theme callers. Mirrors the
+     * bans-add and admins-add fixes in the same PR.
      *
      * Cases:
      *   - `'asdf'` — the reporter's example; doesn't match any
@@ -158,11 +168,31 @@ final class CommsTest extends ApiTestCase
      *     fall through `resolveInputID`'s shape table.
      *   - `'   '` — whitespace-only; trims down to '' and surfaces
      *     the "must type" branch, but still as a structured error.
+     *   - `'STEAM_0:0:'` — the library's loose `\d*` regex accepts
+     *     zero digits; the strict `\d+` regex rejects.
+     *   - `'asdfSTEAM_0:0:123'` — substring-bypass case; the
+     *     library's unanchored regex would silently accept and
+     *     toSteam2 returns the input verbatim.
+     *   - `'asdf 76561197960265728 garbage'` — Steam64 surrounded
+     *     by junk; toSteam2 would emit a negative-Z corrupt form.
+     *   - `'U:1:1'` — bracketless Steam3; the library accepts but
+     *     the form's `pattern` requires brackets, so the strict
+     *     gate rejects for symmetry.
      */
     public function testAddRejectsInvalidSteamIdShape(): void
     {
         $this->loginAsAdmin();
-        foreach (['asdf', '12345', '   '] as $badSteam) {
+        foreach (
+            [
+                'asdf',
+                '12345',
+                '   ',
+                'STEAM_0:0:',
+                'asdfSTEAM_0:0:123',
+                'asdf 76561197960265728 garbage',
+                'U:1:1',
+            ] as $badSteam
+        ) {
             $env = $this->api('comms.add', [
                 'nickname' => 'BadShape',
                 'type'     => 1,

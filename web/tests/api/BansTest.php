@@ -87,27 +87,36 @@ final class BansTest extends ApiTestCase
      * in the catch-all `Throwable` arm and surfaced a 500 with
      * body "An unexpected error occurred", which the chrome read
      * as a server error rather than a per-field validation
-     * failure. The fix validates the SteamID shape BEFORE handing
-     * it to `SteamID::toSteam2()`. Comms-add carries the same
-     * fix; both halves intentionally mirror so a SteamID a
-     * hostile / curl-driven caller smuggles past the client-side
-     * regex still surfaces a friendly structured error envelope
-     * instead of a 500.
+     * failure. The fix validates the SteamID shape against a
+     * strict anchored regex BEFORE handing it to
+     * `SteamID::toSteam2()`. `SteamID::isValidID()` on its own is
+     * not a sufficient gate — its regexes are unanchored with
+     * loose character classes, so a substring containing a
+     * valid-looking SteamID passes (and `toSteam2()` then either
+     * round-trips the corrupt input verbatim or emits a
+     * negative-Z-component canonical form into the DB). Comms-add
+     * and admins-add carry the same regex; all three handlers
+     * stay in lockstep so a future caller only has to learn one
+     * accepted shape.
      */
     public function testAddRejectsInvalidSteamIdShapeForType0(): void
     {
+        // Mirrors CommsTest::testAddRejectsInvalidSteamIdShape — every
+        // case the strict regex rejects must be rejected here too so
+        // the three handlers (api_bans_add / api_comms_add /
+        // api_admins_add) stay in lockstep.
         $this->loginAsAdmin();
-        // Three shape classes the pre-fix `SteamID::resolveInputID`
-        // throws on (each fails every isValidID regex):
-        //   - `asdf` — the reporter's example; pure non-SteamID text.
-        //   - `12345` — short numeric (not 17 digits).
-        //   - `7656119xxxxxxxxxx` — 17 chars but not 17 digits.
-        // `'STEAM_0:0:'` is intentionally NOT tested: it passes
-        // `isValidID` (the regex's `\d*` accepts zero digits) and
-        // round-trips through `toSteam2` unchanged. Catching it
-        // would require tightening `SteamID::isValidID`, which is
-        // out of scope for #1420.
-        foreach (['asdf', '12345', '7656119xxxxxxxxxx'] as $badSteam) {
+        foreach (
+            [
+                'asdf',                            // reporter's example
+                '12345',                           // short numeric
+                '7656119xxxxxxxxxx',               // 17 chars, not 17 digits
+                'STEAM_0:0:',                      // empty Z; pre-fix `\d*` accepted
+                'asdfSTEAM_0:0:123',               // substring-bypass (unanchored)
+                'asdf 76561197960265728 garbage',  // embedded Steam64 — pre-fix corrupted
+                'U:1:1',                           // bracketless Steam3 — form pattern requires brackets
+            ] as $badSteam
+        ) {
             $env = $this->api('bans.add', [
                 'nickname' => 'X',
                 'type'     => 0,

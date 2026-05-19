@@ -39,11 +39,26 @@ function api_comms_add(array $params): array
     // a global that no longer exists post-#1123 D1), so the API
     // round-trip never happened — fixing the front-end alone would
     // have exposed the same 500 the bans-add path also carries.
-    // Mirror `api_bans_add`'s validation order in both handlers.
+    //
+    // The bundled `SteamID::isValidID()` is NOT a sufficient gate on
+    // its own — its regexes are unanchored with loose character
+    // classes (`STEAM_[0|1]:[0:1]:\d*` — note the `|` inside `[...]`
+    // is a literal pipe, not alternation, and the missing `^`/`$`
+    // anchors mean an embedded-SteamID-with-garbage like
+    // `'asdf 76561197960265728 garbage'` matches the substring AND
+    // `toSteam2()` then emits `'STEAM_0:0:-38280598980132864'` (the
+    // negative Z component is the parser eating the surrounding
+    // bytes, the result gets bound into the DB). The strict regex
+    // below mirrors the form template's client-side `pattern`
+    // attribute byte-for-byte (HTML's `pattern` is implicitly
+    // anchored `^…$`), so a curl-driven caller can't smuggle garbage
+    // past the gate that the browser's pattern-mismatch popover
+    // already rejects for form users. Mirror `api_bans_add` /
+    // `api_admins_add` — all three handlers use the same regex.
     if ($rawSteam === '') {
         throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
     }
-    if (!SteamID::isValidID($rawSteam)) {
+    if (!preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $rawSteam)) {
         throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
     }
     $steam = SteamID::toSteam2($rawSteam);

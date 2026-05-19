@@ -120,7 +120,15 @@ function api_admins_add(array $params): array
     $mask        = (int)($params['mask'] ?? 0);
     $srvMask     = (string)($params['srv_mask'] ?? '');
     $name        = (string)($params['name'] ?? '');
-    $steam       = SteamID::toSteam2((string)($params['steam'] ?? ''));
+    // #1420 — defer `SteamID::toSteam2()` until AFTER the strict-shape
+    // gate below. Pre-fix this line called `toSteam2()` directly on
+    // the raw input; `resolveInputID()` throws a generic `\Exception`
+    // for unrecognised shapes (`'asdf'`, `'12345'`, … the same
+    // garbage the comms / bans handlers ate) which escaped the
+    // handler and surfaced as a 500. See "JSON API" / "SteamID inputs"
+    // in AGENTS.md for the contract; this file is the third reference
+    // shape after `api_comms_add` and `api_bans_add`.
+    $rawSteam    = trim((string)($params['steam'] ?? ''));
     $email       = (string)($params['email'] ?? '');
     $password    = (string)($params['password']  ?? '');
     $password2   = (string)($params['password2'] ?? '');
@@ -167,12 +175,20 @@ function api_admins_add(array $params): array
     if ($userbank->isNameTaken($name)) {
         throw new ApiError('validation', 'An admin with this name already exists', 'name');
     }
-    if (empty($steam)) {
+    if ($rawSteam === '') {
         throw new ApiError('validation', 'You must type a Steam ID or Community ID for the admin.', 'steam');
     }
-    if (!SteamID::isValidID($steam)) {
+    // #1420 — strict anchored regex mirrors the form template's
+    // client-side `pattern` (HTML's `pattern` is implicitly `^…$`),
+    // so a curl-driven caller can't smuggle embedded-substring
+    // garbage past the gate (`'asdf 76561197960265728 garbage'`
+    // matches `SteamID::isValidID`'s unanchored substring regex and
+    // `toSteam2()` then emits a negative-Z-component canonical form
+    // into `:prefix_admins.authid`).
+    if (!preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $rawSteam)) {
         throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID.', 'steam');
     }
+    $steam = SteamID::toSteam2($rawSteam);
     if ($userbank->isSteamIDTaken($steam)) {
         $taken = '';
         foreach ($userbank->GetAllAdmins() as $a) {

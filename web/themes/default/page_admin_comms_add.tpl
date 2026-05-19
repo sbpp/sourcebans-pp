@@ -33,15 +33,15 @@
     DOM ids the v2.0 chrome doesn't render anywhere. Net result:
     every error (including the "invalid SteamID" branch the
     reporter hit) silently no-op'd on the chrome side, leaving the
-    operator with no notification. The legacy default theme keeps
-    a copy of this template that still uses ProcessBan(); this
-    file (the v2.0 sbpp2026 chrome twin) ships an inline IIFE that
-    mirrors `page_admin_bans_add.tpl`'s shape: native HTML
+    operator with no notification. The replacement inline IIFE
+    below mirrors `page_admin_bans_add.tpl`'s shape: native HTML
     validation first (browser-native popover for empty / wrong-
     shape inputs), then `sb.api.call(Actions.CommsAdd)`, then
     `window.SBPP.showToast` on error envelopes. The PHP-side
-    handler (api_comms_add) is the load-bearing security gate;
-    this client-side shape is UX.
+    handler (api_comms_add) is the load-bearing security gate
+    (`preg_match` on the anchored regex BEFORE `SteamID::toSteam2`,
+    see web/api/handlers/comms.php for the canonical shape); this
+    client-side shape is UX.
 
     Testability hooks per the issue's "Testability hooks" rule:
       - data-testid="addcomm-<field>" on every input/select.
@@ -266,8 +266,6 @@
         (theme.js, the v2.0 chrome's toast surface), with `sb.message`
         as the graceful-degradation fallback for third-party themes
         that strip theme.js.
-   The legacy default theme keeps its own copy of this template that
-   still wires `onclick="ProcessBan();"`; this file is sbpp2026-only.
 *}
 {literal}
 <script>

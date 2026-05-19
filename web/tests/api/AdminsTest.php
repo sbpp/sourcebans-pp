@@ -75,6 +75,45 @@ final class AdminsTest extends ApiTestCase
         $this->assertSame('steam', $env['error']['field']);
     }
 
+    /**
+     * #1420 — third reference shape after `api_comms_add` and
+     * `api_bans_add`. Pre-fix `api_admins_add` called
+     * `SteamID::toSteam2()` directly on the raw inbound param;
+     * `resolveInputID()` throws a bare `\Exception` for unrecognised
+     * shapes, which the dispatcher caught and surfaced as a 500.
+     * Worse, the unanchored / loose-character-class regexes in
+     * `SteamID::isValidID()` would silently accept embedded-substring
+     * shapes (`'asdfSTEAM_0:0:123'`), letting corrupt bytes land in
+     * `:prefix_admins.authid` where they're load-bearing for SourceMod
+     * admin matching. The strict anchored regex mirrors the form
+     * template's client-side `pattern` so a curl-driven caller can't
+     * smuggle garbage past the gate; mirrors BansTest /
+     * CommsTest coverage so the three handlers stay in lockstep.
+     */
+    public function testAddRejectsInvalidSteamIdShape(): void
+    {
+        $this->loginAsAdmin();
+        foreach (
+            [
+                'asdf',                            // pure non-SteamID text
+                '12345',                           // short numeric
+                '7656119xxxxxxxxxx',               // 17 chars, not 17 digits
+                'STEAM_0:0:',                      // empty Z; pre-fix `\d*` accepted
+                'asdfSTEAM_0:0:123',               // substring-bypass (unanchored)
+                'asdf 76561197960265728 garbage',  // embedded Steam64 — pre-fix corrupted
+                'U:1:1',                           // bracketless Steam3 — form pattern requires brackets
+            ] as $badSteam
+        ) {
+            $env = $this->api('admins.add', $this->adminParams(['steam' => $badSteam]));
+            $this->assertEnvelopeError($env, 'validation');
+            $this->assertSame(
+                'steam',
+                $env['error']['field'],
+                sprintf('expected error.field=steam for steam=%s', var_export($badSteam, true)),
+            );
+        }
+    }
+
     public function testAddRejectsTakenSteamId(): void
     {
         $this->loginAsAdmin();

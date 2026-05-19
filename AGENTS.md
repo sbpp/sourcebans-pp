@@ -692,7 +692,7 @@ of the diff ship together or not at all.
   for xajax (removed).
 - **SteamID inputs**: ALWAYS gate `SteamID::toSteam2($raw)` (or any
   other `SteamID::*` conversion that calls `resolveInputID` internally)
-  with an explicit `SteamID::isValidID($raw)` check first, and throw
+  with an explicit strict-shape `preg_match` check first, and throw
   `ApiError('validation', '…', '<field>')` on the fail branch.
   `SteamID::resolveInputID()` throws a generic `\Exception` for
   unrecognised input shapes; without the gate that exception escapes
@@ -706,19 +706,52 @@ of the diff ship together or not at all.
   if ($rawSteam === '') {
       throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
   }
-  if (!SteamID::isValidID($rawSteam)) {
+  if (!preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $rawSteam)) {
       throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
   }
   $steam = SteamID::toSteam2($rawSteam);
   ```
 
-  See `api_comms_add` / `api_bans_add` for the canonical reference
-  shape. The client-side native validation in the corresponding form
-  template (`pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"`) is
-  the UX-first gate that surfaces a browser-native popover BEFORE the
-  IIFE fires `sb.api.call`; the server-side `isValidID` gate is the
-  load-bearing security gate for curl-driven / third-party-theme
-  callers that bypass it.
+  See `api_comms_add` / `api_bans_add` / `api_admins_add` for the
+  canonical reference shape — all three handlers share the same
+  regex byte-for-byte so a future caller (deep-link, JSON client,
+  context-menu handoff) only has to learn one accepted shape. The
+  client-side native validation in the corresponding form template
+  uses the SAME regex via `pattern="(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})"`
+  (HTML's `pattern` attribute is implicitly anchored `^…$`, so the
+  PHP regex carries explicit `^…$`); the browser-native popover is
+  the UX-first gate that fires BEFORE the IIFE calls `sb.api.call`;
+  the server-side `preg_match` is the load-bearing security gate
+  for curl-driven / third-party-theme callers that bypass it.
+
+  Why NOT `SteamID::isValidID($raw)`: the bundled helper's regexes
+  are unanchored with loose character classes (`STEAM_[0|1]:[0:1]:\d*`
+  — the `|` inside `[...]` is a literal pipe, not alternation, and
+  the missing `^`/`$` anchors leave it as a substring matcher).
+  Consequences:
+   - `'STEAM_0:0:'` (empty Z, the `\d*` accepts zero digits) passes
+     `isValidID` AND round-trips through `toSteam2()` unchanged,
+     storing an invalid SteamID in `:prefix_admins.authid` /
+     `:prefix_bans.authid` / `:prefix_comms.authid`.
+   - `'asdfSTEAM_0:0:123'` (embedded valid-looking suffix) passes
+     `isValidID` AND `toSteam2()` returns the input verbatim
+     (the resolveInputID switch matches the SteamID branch via
+     substring, then re-extracts via the same regex which returns
+     the full input string), corrupting downstream SourceMod admin
+     matching and the panel's per-row UI.
+   - `'asdf 76561197960265728 garbage'` (embedded 17-digit Steam64)
+     passes `isValidID` AND `toSteam2()` emits a corrupt canonical
+     form (`'STEAM_0:0:-38280598980132864'` — the negative Z
+     component is the parser eating the surrounding bytes during
+     numeric conversion).
+
+  The strict regex closes all three bypass classes. Tightening
+  `SteamID::isValidID()` itself is the right long-term fix
+  (anchor the regexes, replace `[0|1]` with `[01]`, require `\d+`)
+  but it's a third-party-vendored file and a broader audit is
+  needed of its other call sites; this is tracked separately. The
+  per-handler `preg_match` is the defence-in-depth that fixes
+  #1420 today without waiting on that audit.
 
 ### CSRF
 
@@ -2959,7 +2992,7 @@ contacting every contributor individually.
   rejected by MariaDB strict mode). See "Database" under Conventions.
 - Calling `SteamID::toSteam2($raw)` (or any other `SteamID::*`
   conversion that calls `resolveInputID` internally) on operator-
-  controlled input WITHOUT an `SteamID::isValidID($raw)` gate first
+  controlled input WITHOUT a strict-shape `preg_match` gate first
   → `resolveInputID` throws a generic `\Exception` for unrecognised
   shapes, and the dispatcher's `Throwable` fallback in `Api::handle`
   wraps it as a generic `server_error` envelope (HTTP 500). The
@@ -2971,15 +3004,30 @@ contacting every contributor individually.
   `sb.message.show` against the v1.x `#dialog-placement` chrome
   shell that the v2.0 theme doesn't render — so the 500 was
   silent (reporter's symptom on #1420: "no notification on
-  invalid steamID"). The fix is the explicit `isValidID` gate
-  documented under "JSON API" in Conventions; landing it at the
-  same time as the form template's native `pattern` attribute is
-  what closes the loop end-to-end (the `pattern` is the UX-first
-  gate; the `isValidID` gate is the security-first gate; both
-  ship together). See `api_comms_add` / `api_bans_add` for the
-  canonical reference shape and `Php82DeprecationsTest`-style
-  regression coverage in `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`
-  and `web/tests/api/BansTest.php::testAddRejectsInvalidSteamIdShapeForType0`.
+  invalid steamID"). The fix is the explicit `preg_match` gate
+  documented under "SteamID inputs" in Conventions; landing it at
+  the same time as the form template's native `pattern` attribute
+  is what closes the loop end-to-end (the `pattern` is the UX-first
+  gate; the `preg_match` gate is the security-first gate; both
+  ship together). See `api_comms_add` / `api_bans_add` /
+  `api_admins_add` for the canonical reference shape and
+  regression coverage in `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`,
+  `web/tests/api/BansTest.php::testAddRejectsInvalidSteamIdShapeForType0`,
+  and `web/tests/api/AdminsTest.php::testAddRejectsInvalidSteamIdShape`.
+- Relying on `SteamID::isValidID($raw)` alone as the server-side
+  gate (without the paired strict-anchored `preg_match`) → the
+  bundled helper's regexes are unanchored with loose character
+  classes (`STEAM_[0|1]:[0:1]:\d*` — `|` inside `[...]` is a
+  literal pipe, not alternation, and the missing `^`/`$` anchors
+  leave it as a substring matcher), so `'STEAM_0:0:'` (empty Z),
+  `'asdfSTEAM_0:0:123'` (substring-bypass), and
+  `'asdf 76561197960265728 garbage'` (embedded Steam64 that
+  `toSteam2()` corrupts to `'STEAM_0:0:-38280598980132864'`) all
+  pass the library's gate AND get bound into the DB as the
+  "canonical" SteamID. Use the strict `preg_match` from the
+  "SteamID inputs" Conventions block; the per-handler regex is
+  defence-in-depth that doesn't depend on the third-party-
+  vendored library landing an anchored-regex fix first.
 - Editing `install/includes/sql/data.sql` (or `struc.sql`) without a paired
   `web/updater/data/<N>.php` → upgraded installs silently miss the change.
 - WYSIWYG / "rich HTML" editors (TinyMCE, CKEditor, …) for fields stored

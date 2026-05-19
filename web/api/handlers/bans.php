@@ -56,15 +56,27 @@ function api_bans_add(array $params): array
     // that escaped to the dispatcher's catch-all and produced a 500
     // with body "An unexpected error occurred" instead of the
     // structured `validation`-coded error the chrome's toast can
-    // render. Comms-add carries the same fix; both halves
-    // intentionally mirror so a SteamID a hostile / curl-driven
-    // caller smuggles past the client-side regex still surfaces a
-    // friendly toast instead of a 500.
+    // render.
+    //
+    // The bundled `SteamID::isValidID()` is NOT a sufficient gate on
+    // its own — its regexes are unanchored with loose character
+    // classes, so an embedded-SteamID-with-garbage like
+    // `'asdf 76561197960265728 garbage'` matches the substring AND
+    // `toSteam2()` emits a corrupt canonical form (negative Z
+    // component from the parser eating surrounding bytes) which then
+    // gets bound into `:prefix_bans.authid`. The strict regex below
+    // mirrors the form template's client-side `pattern` attribute
+    // byte-for-byte (HTML's `pattern` is implicitly anchored `^…$`),
+    // so a curl-driven caller can't smuggle garbage past the gate
+    // that the browser's pattern-mismatch popover already rejects
+    // for form users. Comms-add and admin-add carry the same regex;
+    // all three handlers stay in lockstep so a future menu / deep-
+    // link / API client only has to learn one accepted shape.
     if ($banType === BanType::Steam) {
         if ($rawSteam === '') {
             throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
         }
-        if (!SteamID::isValidID($rawSteam)) {
+        if (!preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $rawSteam)) {
             throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
         }
     }
