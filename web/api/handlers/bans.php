@@ -42,7 +42,7 @@ function api_bans_add(array $params): array
     $rawType  = (int)($params['type'] ?? 0);
     $banType  = BanType::tryFrom($rawType) ?? BanType::Steam;
     $type     = $banType->value;
-    $steam    = SteamID::toSteam2(trim((string)($params['steam'] ?? '')));
+    $rawSteam = trim((string)($params['steam'] ?? ''));
     $ip       = preg_replace('#[^\d\.]#', '', (string)($params['ip'] ?? ''));
     $length   = (int)($params['length'] ?? 0);
     $dfile    = (string)($params['dfile'] ?? '');
@@ -50,12 +50,29 @@ function api_bans_add(array $params): array
     $reason   = (string)($params['reason'] ?? '');
     $fromsub  = (int)($params['fromsub'] ?? 0);
 
-    if (empty($steam) && $banType === BanType::Steam) {
-        throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
+    // #1420 — validate the SteamID shape BEFORE handing it to
+    // `SteamID::toSteam2()`. `resolveInputID()` throws a bare
+    // `\Exception` (not an `ApiError`) on any unrecognised shape;
+    // that escaped to the dispatcher's catch-all and produced a 500
+    // with body "An unexpected error occurred" instead of the
+    // structured `validation`-coded error the chrome's toast can
+    // render. Comms-add carries the same fix; both halves
+    // intentionally mirror so a SteamID a hostile / curl-driven
+    // caller smuggles past the client-side regex still surfaces a
+    // friendly toast instead of a 500.
+    if ($banType === BanType::Steam) {
+        if ($rawSteam === '') {
+            throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
+        }
+        if (!SteamID::isValidID($rawSteam)) {
+            throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
+        }
     }
-    if ($banType === BanType::Steam && !SteamID::isValidID($steam)) {
-        throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
-    }
+    // Skip the conversion entirely for IP-typed bans (rawSteam is
+    // empty for those rows by definition; calling toSteam2 on an
+    // empty string would hit the same `resolveInputID` throw the
+    // guard above defends against).
+    $steam = $rawSteam === '' ? '' : SteamID::toSteam2($rawSteam);
     if (empty($ip) && $banType === BanType::Ip) {
         throw new ApiError('validation', 'You must type an IP', 'ip');
     }

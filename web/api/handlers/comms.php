@@ -22,16 +22,31 @@ function api_comms_add(array $params): array
     // that Smarty auto-escapes (#1087). Store raw, escape on display.
     $nickname = (string)($params['nickname'] ?? '');
     $type     = (int)($params['type']   ?? 0);
-    $steam    = SteamID::toSteam2(trim((string)($params['steam']  ?? '')));
+    $rawSteam = trim((string)($params['steam'] ?? ''));
     $length   = (int)($params['length'] ?? 0);
     $reason   = (string)($params['reason'] ?? '');
 
-    if (empty($steam)) {
+    // #1420 — validate the SteamID shape BEFORE handing it to
+    // `SteamID::toSteam2()`. The conversion helper calls
+    // `resolveInputID()` internally, which throws a bare `\Exception`
+    // (not an `ApiError`) on any unrecognised shape — that escaped to
+    // the dispatcher's catch-all and surfaced as a generic 500 with
+    // body "An unexpected error occurred. See server logs for
+    // details." instead of the structured `validation`-coded error
+    // shape the chrome's toast can render. The reporter observed it
+    // as "no notification" because the comms add page's tail script
+    // was *also* broken (legacy MooTools `$('id')` selectors against
+    // a global that no longer exists post-#1123 D1), so the API
+    // round-trip never happened — fixing the front-end alone would
+    // have exposed the same 500 the bans-add path also carries.
+    // Mirror `api_bans_add`'s validation order in both handlers.
+    if ($rawSteam === '') {
         throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
     }
-    if (!SteamID::isValidID($steam)) {
+    if (!SteamID::isValidID($rawSteam)) {
         throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
     }
+    $steam = SteamID::toSteam2($rawSteam);
     if (!in_array($type, [1, 2, 3], true)) {
         throw new ApiError('validation', 'Invalid block type. Must be one of: gag (1), mute (2), or both (3).', 'type');
     }

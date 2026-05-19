@@ -690,6 +690,35 @@ of the diff ship together or not at all.
 
 - **Do not** add new functions to `sb-callback.php` (removed) or reach
   for xajax (removed).
+- **SteamID inputs**: ALWAYS gate `SteamID::toSteam2($raw)` (or any
+  other `SteamID::*` conversion that calls `resolveInputID` internally)
+  with an explicit `SteamID::isValidID($raw)` check first, and throw
+  `ApiError('validation', '…', '<field>')` on the fail branch.
+  `SteamID::resolveInputID()` throws a generic `\Exception` for
+  unrecognised input shapes; without the gate that exception escapes
+  the handler and the dispatcher's `Throwable` fallback wraps it as a
+  generic `server_error` envelope (HTTP 500), which is unhelpful both
+  to the client-side `r.error.field` branching AND to operators
+  triaging a "the form silently broke" report (#1420). The pattern:
+
+  ```php
+  $rawSteam = trim((string)($params['steam'] ?? ''));
+  if ($rawSteam === '') {
+      throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
+  }
+  if (!SteamID::isValidID($rawSteam)) {
+      throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
+  }
+  $steam = SteamID::toSteam2($rawSteam);
+  ```
+
+  See `api_comms_add` / `api_bans_add` for the canonical reference
+  shape. The client-side native validation in the corresponding form
+  template (`pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"`) is
+  the UX-first gate that surfaces a browser-native popover BEFORE the
+  IIFE fires `sb.api.call`; the server-side `isValidID` gate is the
+  load-bearing security gate for curl-driven / third-party-theme
+  callers that bypass it.
 
 ### CSRF
 
@@ -2928,6 +2957,29 @@ contacting every contributor individually.
   bug is a sibling anti-pattern — it would silently reintroduce the
   `LIMIT '0','30'` trap (`page.banlist.php` / `page.commslist.php`
   rejected by MariaDB strict mode). See "Database" under Conventions.
+- Calling `SteamID::toSteam2($raw)` (or any other `SteamID::*`
+  conversion that calls `resolveInputID` internally) on operator-
+  controlled input WITHOUT an `SteamID::isValidID($raw)` gate first
+  → `resolveInputID` throws a generic `\Exception` for unrecognised
+  shapes, and the dispatcher's `Throwable` fallback in `Api::handle`
+  wraps it as a generic `server_error` envelope (HTTP 500). The
+  client-side IIFE in the form template surfaces "Block NOT Added —
+  Internal server error" via `r.error.message` instead of the
+  pointed "Please enter a valid Steam ID or Community ID" that a
+  structured `ApiError('validation', …, 'steam')` would emit. Worse,
+  the legacy comms-add path pre-#1420 emitted feedback through
+  `sb.message.show` against the v1.x `#dialog-placement` chrome
+  shell that the v2.0 theme doesn't render — so the 500 was
+  silent (reporter's symptom on #1420: "no notification on
+  invalid steamID"). The fix is the explicit `isValidID` gate
+  documented under "JSON API" in Conventions; landing it at the
+  same time as the form template's native `pattern` attribute is
+  what closes the loop end-to-end (the `pattern` is the UX-first
+  gate; the `isValidID` gate is the security-first gate; both
+  ship together). See `api_comms_add` / `api_bans_add` for the
+  canonical reference shape and `Php82DeprecationsTest`-style
+  regression coverage in `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`
+  and `web/tests/api/BansTest.php::testAddRejectsInvalidSteamIdShapeForType0`.
 - Editing `install/includes/sql/data.sql` (or `struc.sql`) without a paired
   `web/updater/data/<N>.php` → upgraded installs silently miss the change.
 - WYSIWYG / "rich HTML" editors (TinyMCE, CKEditor, …) for fields stored

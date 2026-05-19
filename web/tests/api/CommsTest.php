@@ -131,6 +131,54 @@ final class CommsTest extends ApiTestCase
         $this->assertSnapshot('comms/add_validation_steam', $env);
     }
 
+    /**
+     * #1420 — regression: a SteamID input the `SteamID` library
+     * can't pattern-match (anything not matching STEAM_X:Y:Z /
+     * [U:1:N] / 17-digit SteamID64) used to escape from the
+     * handler as a generic `\Exception("Invalid SteamID input!")`
+     * thrown deep inside `SteamID::resolveInputID()`. The dispatcher
+     * caught it in the catch-all `Throwable` arm and surfaced a
+     * 500 with body "An unexpected error occurred" — the panel's
+     * chrome read that as a server error, not a per-field
+     * validation failure, and the toast helper bound to the legacy
+     * `dialog-placement` element silently no-op'd against the v2.0
+     * chrome (the reporter's "no notification" symptom).
+     *
+     * Post-fix `api_comms_add` validates the SteamID shape BEFORE
+     * handing it to `SteamID::toSteam2()` so a malformed value
+     * surfaces a structured `validation`-coded error with
+     * `field=steam`, which the chrome can render as a per-field
+     * toast / inline message. Mirrors the bans-add fix in the
+     * same PR.
+     *
+     * Cases:
+     *   - `'asdf'` — the reporter's example; doesn't match any
+     *     known SteamID shape.
+     *   - `'12345'` — a numeric string that's NOT 17 digits; would
+     *     fall through `resolveInputID`'s shape table.
+     *   - `'   '` — whitespace-only; trims down to '' and surfaces
+     *     the "must type" branch, but still as a structured error.
+     */
+    public function testAddRejectsInvalidSteamIdShape(): void
+    {
+        $this->loginAsAdmin();
+        foreach (['asdf', '12345', '   '] as $badSteam) {
+            $env = $this->api('comms.add', [
+                'nickname' => 'BadShape',
+                'type'     => 1,
+                'steam'    => $badSteam,
+                'length'   => 5,
+                'reason'   => 'unit test',
+            ]);
+            $this->assertEnvelopeError($env, 'validation');
+            $this->assertSame(
+                'steam',
+                $env['error']['field'],
+                sprintf('expected error.field=steam for steam=%s', var_export($badSteam, true)),
+            );
+        }
+    }
+
     public function testAddValidatesType(): void
     {
         $this->loginAsAdmin();

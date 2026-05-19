@@ -51,12 +51,18 @@
 
             <div>
                 <label class="label" for="nickname">Nickname</label>
+                {* #1420: `required` is the native gate paired with the
+                   IIFE's `nick.msg` fallback (the IIFE's regex layer
+                   still runs for the cases native HTML can't catch).
+                   Together they make the empty-input case surface a
+                   browser popover BEFORE the API call fires. *}
                 <input type="text"
                        class="input"
                        id="nickname"
                        name="nickname"
                        data-testid="addban-nickname"
-                       placeholder="Display name as it appeared in-game">
+                       placeholder="Display name as it appeared in-game"
+                       required>
                 <div class="text-xs mt-2" id="nick.msg" style="color:var(--danger);display:none"></div>
             </div>
 
@@ -129,13 +135,27 @@
                    value reaches the template, so the auto-escape is the
                    belt-and-braces). Used by the public servers list's
                    right-click context menu's "Ban player" item. *}
+                {* #1420: `pattern` (no `required`) mirrors the inline
+                   IIFE's regex for type=0; this lets the browser show
+                   a native popover for a non-empty bad-shape value
+                   like "asdf" BEFORE the IIFE's setMsg path runs.
+                   `required` is intentionally absent because for
+                   type=1 (IP Address) the steam field is legitimately
+                   empty and the ip field carries the value — the
+                   IIFE's per-type check is the right gate for that
+                   branch. The defensive server-side validation in
+                   api_bans_add (also #1420) is what closes the loop
+                   if a hostile / curl-driven caller smuggles a bad
+                   shape past every client-side check. *}
                 <input type="text"
                        class="input font-mono"
                        id="steam"
                        name="steam"
                        data-testid="addban-steam"
                        value="{if $prefill_type == 0}{$prefill_steam}{/if}"
-                       placeholder="STEAM_0:1:23498765">
+                       placeholder="STEAM_0:1:23498765"
+                       pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"
+                       title="Enter a Steam ID (STEAM_0:1:23498765), Steam3 ID ([U:1:23498765]), or 17-digit SteamID64.">
                 <div class="text-xs mt-2" id="steam.msg" style="color:var(--danger);display:none"></div>
             </div>
 

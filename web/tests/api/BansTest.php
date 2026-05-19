@@ -79,6 +79,53 @@ final class BansTest extends ApiTestCase
         $this->assertSnapshot('bans/add_validation_steam', $env);
     }
 
+    /**
+     * #1420 — regression: a SteamID input the `SteamID` library
+     * can't pattern-match used to escape from `api_bans_add` as a
+     * generic `\Exception("Invalid SteamID input!")` thrown deep
+     * inside `SteamID::resolveInputID()`. The dispatcher caught it
+     * in the catch-all `Throwable` arm and surfaced a 500 with
+     * body "An unexpected error occurred", which the chrome read
+     * as a server error rather than a per-field validation
+     * failure. The fix validates the SteamID shape BEFORE handing
+     * it to `SteamID::toSteam2()`. Comms-add carries the same
+     * fix; both halves intentionally mirror so a SteamID a
+     * hostile / curl-driven caller smuggles past the client-side
+     * regex still surfaces a friendly structured error envelope
+     * instead of a 500.
+     */
+    public function testAddRejectsInvalidSteamIdShapeForType0(): void
+    {
+        $this->loginAsAdmin();
+        // Three shape classes the pre-fix `SteamID::resolveInputID`
+        // throws on (each fails every isValidID regex):
+        //   - `asdf` — the reporter's example; pure non-SteamID text.
+        //   - `12345` — short numeric (not 17 digits).
+        //   - `7656119xxxxxxxxxx` — 17 chars but not 17 digits.
+        // `'STEAM_0:0:'` is intentionally NOT tested: it passes
+        // `isValidID` (the regex's `\d*` accepts zero digits) and
+        // round-trips through `toSteam2` unchanged. Catching it
+        // would require tightening `SteamID::isValidID`, which is
+        // out of scope for #1420.
+        foreach (['asdf', '12345', '7656119xxxxxxxxxx'] as $badSteam) {
+            $env = $this->api('bans.add', [
+                'nickname' => 'X',
+                'type'     => 0,
+                'steam'    => $badSteam,
+                'ip'       => '',
+                'length'   => 0,
+                'reason'   => '',
+                'fromsub'  => 0,
+            ]);
+            $this->assertEnvelopeError($env, 'validation');
+            $this->assertSame(
+                'steam',
+                $env['error']['field'],
+                sprintf('expected error.field=steam for steam=%s', var_export($badSteam, true)),
+            );
+        }
+    }
+
     public function testAddValidationInvalidIpForType1(): void
     {
         $this->loginAsAdmin();

@@ -103,72 +103,35 @@ $perms = \Sbpp\View\Perms::for($userbank);
 ));
 ?>
 <script type="text/javascript">
+// `changeReason` toggles the freeform `#dreason` textarea container
+// when the operator picks "other" from the reason `<select>`. The
+// `<select onchange="...">` attribute in page_admin_comms_add.tpl
+// keeps invoking this helper; the rewrite to vanilla DOM landed
+// alongside #1420 (the legacy `$('id').setStyle(...)` shape relied
+// on the MooTools-compat wrapping in sb.js — vanilla DOM is the
+// modern convention per AGENTS.md's "vanilla DOM helpers" rule and
+// removes one layer of indirection between the click and the
+// visible state change).
 function changeReason(szListValue)
 {
-    $('dreason').style.display = (szListValue == "other" ? "block" : "none");
-}
-// Local wrapper around window.SBPP.setBusy with a `disabled`-only fallback
-// so a third-party theme that strips theme.js still gates against double-clicks.
-function __sbppSetBusy(btn, busy) {
-    if (!btn) return;
-    var S = window.SBPP;
-    if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
-    else btn.disabled = busy === undefined ? true : !!busy;
+    var el = document.getElementById('dreason');
+    if (el) el.style.display = (szListValue == "other" ? "block" : "none");
 }
 
-function ProcessBan()
-{
-    var reason = $('listReason')[$('listReason').selectedIndex].value;
-
-    if (reason == "other") {
-        reason = $('txtReason').value;
-    }
-    var submitBtn = document.getElementById('addcomm-submit');
-    __sbppSetBusy(submitBtn, true);
-    sb.api.call(Actions.CommsAdd, {
-        nickname: $('nickname').value,
-        type:     Number($('type').value),
-        steam:    $('steam').value,
-        length:   Number($('banlength').value),
-        reason:   reason,
-    }).then(function (r) {
-        // sb.message (sb.js) replaces the v1.x ShowBlockBox /
-        // TabToReload / applyApiResponse helpers.
-        // The iframe is load-bearing — pages/admin.blockit.php loops the enabled servers and
-        // fires `sc_fw_block` via rcon for each one. Without it the DB row exists but no live
-        // server learns about the gag/mute, matching the bans/kickit shape one branch above.
-        if (r && r.ok && r.data && r.data.block) {
-            // Success — the message dialog covers the form and the page reloads
-            // shortly after; leave the button busy so the operator can't queue a
-            // second submit while the iframe fires rcon at every server.
-            var b = r.data.block;
-            sb.message.show(
-                'Block Added',
-                'The block has been successfully added<br><iframe id="srvkicker" frameborder="0" width="100%" src="pages/admin.blockit.php?check='
-                    + encodeURIComponent(b.steam) + '&type=' + encodeURIComponent(b.type) + '&length=' + encodeURIComponent(b.length) + '"></iframe>',
-                'green',
-                'index.php?p=admin&c=comms',
-                true
-            );
-            if (r.data.reload) setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
-            return;
-        }
-        __sbppSetBusy(submitBtn, false);
-        if (!r) return;
-        if (r.redirect) return;
-        if (r.ok === false) {
-            if (r.error) sb.message.error('Error', r.error.message || 'Unknown error');
-            return;
-        }
-        var data = r.data || {};
-        if (data.message) {
-            sb.message.show(data.message.title, data.message.body, data.message.kind, data.message.redir, data.message.noclose);
-        }
-        if (data.reload) {
-            setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
-        }
-    });
-}
+// #1420: pre-fix this file shipped a global `ProcessBan()` that
+// the submit button invoked via `onclick="ProcessBan();"`. That
+// helper walked the form via the legacy MooTools `$('id')` shim
+// (still working via sb.js's `global.$`) and emitted feedback
+// through `sb.message.show` / `sb.message.error`, which paint into
+// `#dialog-placement` / `#dialog-title` (v1.x chrome ids the v2.0
+// theme doesn't render). The submit path was effectively silent
+// on every error branch — the bug the reporter filed.
+// The replacement lives in page_admin_comms_add.tpl's inline IIFE
+// (mirrors page_admin_bans_add.tpl's shape): native HTML
+// validation first, then sb.api.call(Actions.CommsAdd), then
+// window.SBPP.showToast on the error envelope. The global is
+// gone; nothing in the codebase references it under the v2.0
+// theme.
 
 // Self-contained DOM-prefill helper (replaces the v1.x applyBlockFields)
 // so reblock / blockfromban / pasteBlock all keep prefilling the form.
