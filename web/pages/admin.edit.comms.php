@@ -98,18 +98,43 @@ if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermissio
 $errorFields = [];
 
 if (isset($_POST['name'])) {
-    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim((string) ($_POST['steam'] ?? '')));
+    // #1420 follow-up #2 — validate the raw Steam ID shape BEFORE the
+    // `SteamID::toSteam2()` conversion. Pre-fix this surface called
+    // `toSteam2()` on the raw POST value as its first statement; on a
+    // garbage input (the `STEAM_0:0:` empty-Z bypass, the
+    // `asdfSTEAM_0:0:123` substring-bypass, the
+    // `asdf 76561197960265728 garbage` embedded-Steam64 bypass — see
+    // `web/tests/integration/SteamIDValidationTest.php`) the converter
+    // threw `Invalid SteamID input!` from `resolveInputID()`, the
+    // exception escaped the page handler unhandled, and the user got
+    // a generic 500 page render instead of the inline "Please enter a
+    // valid Steam ID or Community ID" message on the form. The library
+    // tightening (follow-up #1) made the throw stricter which made the
+    // 500 page render strictly MORE frequent on edit-comms; the
+    // validate-before-convert order surfaces the failure on the form
+    // as the same per-field message comms-add uses.
+    $rawSteam       = trim((string) ($_POST['steam'] ?? ''));
     $_POST['type']  = (int) ($_POST['type'] ?? 0);
 
     // Form Validation
     $error = 0;
-    // If they didn't type a steamid
-    if (empty($_POST['steam'])) {
+    // Steam ID — validate raw shape FIRST; convert only on a pass.
+    if ($rawSteam === '') {
         $error++;
         $errorFields[] = ['steam.msg', 'You must type a Steam ID or Community ID'];
-    } elseif (!\SteamID\SteamID::isValidID($_POST['steam'])) {
+        $_POST['steam'] = '';
+    } elseif (!\SteamID\SteamID::isValidID($rawSteam)) {
         $error++;
         $errorFields[] = ['steam.msg', 'Please enter a valid Steam ID or Community ID'];
+        // Re-emit the operator's raw input verbatim on the bounce so
+        // they see exactly what they typed and can correct the typo.
+        $_POST['steam'] = $rawSteam;
+    } else {
+        // Convert ONLY after the shape gate passes. With the library
+        // tightening from follow-up #1 this call cannot throw — every
+        // input passing `isValidID()` resolves through the shared
+        // `ID_PATTERNS` table.
+        $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
     }
 
     // Didn't type a custom reason

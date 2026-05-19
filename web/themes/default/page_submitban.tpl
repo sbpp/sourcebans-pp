@@ -36,12 +36,20 @@
         </p>
     </header>
 
+    {*
+        #1420 follow-up #2: `novalidate` was dropped so the native
+        `required` / `pattern` validation gates fire on submit. The
+        cross-field "one of Steam ID OR IP" check that native HTML
+        can't express stays in the inline JS at the bottom — it runs
+        AFTER native validation passes. The server-side rules in
+        `page.submit.php` remain the source of truth for JS-off
+        visitors and any client bypass.
+    *}
     <form class="card"
           method="post"
           enctype="multipart/form-data"
           action="index.php?p=submit"
-          aria-labelledby="submitban-heading"
-          novalidate>
+          aria-labelledby="submitban-heading">
         {csrf_field}
         <input type="hidden" name="subban" value="1">
 
@@ -89,6 +97,21 @@
                         Player&rsquo;s Steam ID
                         <span class="text-muted text-xs" style="font-weight:400">(or use the IP below)</span>
                     </label>
+                    {*
+                        #1420 follow-up #2: strict `pattern` mirrors the
+                        server-side `SteamID::isValidID()` allowlist
+                        (Steam2 / bracketed Steam3 / 17-digit Steam64
+                        — same as `page_admin_comms_add.tpl` /
+                        `page_admin_bans_add.tpl`). The input is
+                        intentionally NOT `required` — this surface
+                        accepts EITHER a Steam ID OR an IP, and the
+                        either/or guard is enforced by the page-tail
+                        script + the server-side rule in
+                        `page.submit.php`. When the input is empty
+                        HTML5 `pattern` validation passes (it only
+                        fires on non-empty values), so the cross-field
+                        guard stays in JS as before.
+                    *}
                     <input type="text"
                            class="input font-mono"
                            id="submitban-steam"
@@ -96,6 +119,8 @@
                            maxlength="64"
                            value="{$STEAMID}"
                            placeholder="STEAM_0:1:23498765"
+                           pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"
+                           title="Enter a Steam ID (STEAM_0:1:23498765), Steam3 ID ([U:1:23498765]), or 17-digit SteamID64."
                            autocomplete="off"
                            aria-describedby="submitban-id-or-ip-help"
                            data-testid="submitban-steam">
@@ -315,12 +340,15 @@
     }
 
     function isEmpty(/** @type {HTMLInputElement} */ el) {
-        var v = (el.value || '').trim();
-        // STEAM_0: is the placeholder-ish value the page handler
-        // re-emits after a failed validation; treat it as empty so
-        // the client-side check matches the server-side rule
-        // (page.submit.php does `$SteamID == "STEAM_0:" -> ""`).
-        return v === '' || v === 'STEAM_0:';
+        // #1420 follow-up #2: the legacy `STEAM_0:` empty-sentinel
+        // collapse was dropped here when the page handler stopped
+        // re-emitting it (see the `SubmitBanView` constructor in
+        // `page.submit.php` for the matching change). The strict
+        // `pattern="…"` on the input now rejects partial sentinels
+        // pre-submit, and the server-side `SteamID::isValidID()`
+        // gate (tightened in follow-up #1) closes the path for any
+        // bypass that gets through.
+        return (el.value || '').trim() === '';
     }
 
     /** @type {(ev: Event) => void} */

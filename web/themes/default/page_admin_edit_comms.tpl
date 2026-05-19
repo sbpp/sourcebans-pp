@@ -56,7 +56,21 @@
                    id="steam"
                    name="steam"
                    value="{$ban_authid|escape}"
-                   data-testid="editcomm-steam">
+                   data-testid="editcomm-steam"
+                   {* #1420 follow-up #2 — strict `pattern` mirrors the
+                       server-side `SteamID::isValidID()` allowlist
+                       (Steam2 / bracketed Steam3 / 17-digit Steam64
+                       — same as `page_admin_comms_add.tpl`). The
+                       handler validates raw input via `isValidID()`
+                       BEFORE calling `toSteam2()`, but the pattern
+                       gate stops the round-trip on a typo. `title`
+                       is what the browser surfaces on the popover
+                       when the pattern fails — keep it short and
+                       actionable. *}
+                   pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"
+                   title="Enter a Steam ID (STEAM_0:1:23498765), Steam3 ID ([U:1:23498765]), or 17-digit SteamID64."
+                   required
+                   aria-required="true">
             <div class="text-xs mt-2" id="steam.msg" style="color:var(--danger);display:none"></div>
         </div>
 

@@ -91,9 +91,28 @@ if (isset($GLOBALS['IN_ADMIN'])) {
 if (isset($_POST['action']) && $_POST['action'] == "importBans") {
     $bannedcfg = file($_FILES["importFile"]["tmp_name"]);
     $bancnt    = 0;
+    // #1420 follow-up #2: track lines we couldn't import so the
+    // operator gets actionable feedback in the success toast instead
+    // of silently dropping a malformed row. Pre-fix a single bogus
+    // `banid 0 STEAM_INVALID` line in the operator's `banned_user.cfg`
+    // would have raised `Exception('Invalid SteamID input!')` from
+    // `SteamID::toSteam2()` — the import aborted mid-file with a 500
+    // page render and the operator had no idea which line broke or
+    // how many of the preceding lines committed (the foreach inserts
+    // were not wrapped in a transaction).
+    $skipped   = 0;
 
     foreach ($bannedcfg as $ban) {
         $line = explode(" ", trim($ban));
+
+        // Skip ill-formed lines (comments, blanks, truncated rows).
+        // The legacy format is `addip <duration> <ip>` / `banid
+        // <duration> <STEAMID>`, three space-separated tokens minimum.
+        // Pre-fix this could land on undefined-index warnings or a
+        // PHP type error inside `filter_var` / `toSteam2`.
+        if (count($line) < 3) {
+            continue;
+        }
 
         if ($line[0] === 'addip') {
             if (filter_var($line[2], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
@@ -116,8 +135,32 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
                     ]);
                     $GLOBALS['PDO']->execute();
                 }
+            } else {
+                $skipped++;
             }
         } elseif ($line[0] === 'banid') {
+            // #1420 follow-up #2 — validate the raw Steam ID shape
+            // BEFORE the `SteamID::toSteam2()` conversion. Pre-fix the
+            // converter ran on `$line[2]` (the third whitespace token
+            // of a `banid …` line in the uploaded `banned_user.cfg`)
+            // unconditionally; a malformed Steam ID raised
+            // `Exception('Invalid SteamID input!')` from
+            // `resolveInputID()`, the exception escaped the page
+            // handler unhandled, the import aborted mid-file (no
+            // transaction), and the operator got a 500 page render
+            // with no signal as to which line broke or how many of
+            // the preceding lines committed.
+            //
+            // The library tightening in follow-up #1 made the throw
+            // stricter, which made the abort strictly MORE frequent
+            // for any cfg carrying legacy/typo'd rows. Validate-
+            // before-convert lets the import skip the bad line and
+            // surface a count in the success toast instead.
+            if (!\SteamID\SteamID::isValidID($line[2])) {
+                $skipped++;
+                continue;
+            }
+
             $steam = \SteamID\SteamID::toSteam2($line[2]);
 
             $GLOBALS['PDO']->query("SELECT authid FROM `:prefix_bans` WHERE authid = :authid AND RemoveType IS NULL");
@@ -147,7 +190,19 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
     if ($bancnt > 0) {
         Log::add(LogType::Message, "Bans imported", "$bancnt Ban(s) imported");
     }
-    echo "<script>sb.message.show('Bans Import', '$bancnt ban" . ($bancnt != 1 ? "s have" : " has") . " been imported and posted.', 'green', '');</script>";
+    // #1420 follow-up #2 — surface skipped-line count alongside the
+    // imported count so the operator knows the file had malformed
+    // entries. Without this signal a half-bad cfg silently produces a
+    // partial import and the operator assumes everything landed.
+    // Mirrors the legacy `sb.message.show` shape the rest of this
+    // handler uses (the wider toast/sb.message migration is sister
+    // scope; this edit stays focused on the validate-before-convert
+    // fix).
+    $importMsg = "$bancnt ban" . ($bancnt != 1 ? "s have" : " has") . " been imported and posted.";
+    if ($skipped > 0) {
+        $importMsg .= ' ' . $skipped . ' line' . ($skipped != 1 ? 's were' : ' was') . ' skipped (malformed Steam ID or IP).';
+    }
+    echo "<script>sb.message.show('Bans Import', '" . addslashes($importMsg) . "', 'green', '');</script>";
 }
 
 /*

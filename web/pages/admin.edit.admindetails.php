@@ -64,7 +64,25 @@ if (isset($_POST['adminname'])) {
 
     $rawName       = trim((string) $_POST['adminname']);
     $rawSteamInput = trim((string) ($_POST['steam'] ?? ''));
-    $resolvedSteam = \SteamID\SteamID::toSteam2($rawSteamInput);
+    // #1420 follow-up #2 — validate the raw Steam ID shape BEFORE the
+    // `SteamID::toSteam2()` conversion. Pre-fix `toSteam2()` ran on
+    // the raw POST value unconditionally; on a garbage input the
+    // converter threw `Invalid SteamID input!` from `resolveInputID()`,
+    // the exception escaped the page handler unhandled, and the user
+    // got a 500 page render instead of the inline per-field "Please
+    // enter a valid Steam ID or Community ID" message on the form.
+    //
+    // The library tightening (follow-up #1) made the throw stricter,
+    // making the 500 page render strictly MORE frequent. The
+    // validate-before-convert order surfaces the failure on the form
+    // as the per-field message; `$steamIsValidShape` carries the
+    // distinction (empty vs invalid-but-non-empty) into the validation
+    // ladder below so the operator sees the right error wording.
+    $steamIsValidShape = $rawSteamInput !== ''
+        && \SteamID\SteamID::isValidID($rawSteamInput);
+    $resolvedSteam = $steamIsValidShape
+        ? (string) \SteamID\SteamID::toSteam2($rawSteamInput)
+        : $rawSteamInput;
     $rawEmail      = trim((string) ($_POST['email'] ?? ''));
     $useServerPass = isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] === 'on';
     $newPassword   = (string) ($_POST['password']  ?? '');
@@ -81,9 +99,14 @@ if (isset($_POST['adminname'])) {
         $validationErrors['adminname'] = 'An admin with this name already exists.';
     }
 
-    if ($resolvedSteam === '' || strlen($resolvedSteam) < 10) {
+    if ($rawSteamInput === '') {
         $validationErrors['steam'] = 'You must type a Steam ID or Community ID for the admin.';
-    } elseif (!\SteamID\SteamID::isValidID($resolvedSteam)) {
+    } elseif (!$steamIsValidShape) {
+        // Non-empty but failed `SteamID::isValidID()` — typo, bypass
+        // shape (`STEAM_0:0:` / `asdfSTEAM_0:0:123` / embedded
+        // Steam64), or some other invalid format. Surface the
+        // distinct error so the operator knows the field needs
+        // fixing, not just filling.
         $validationErrors['steam'] = 'Please enter a valid Steam ID or Community ID.';
     } elseif ($resolvedSteam !== $userbank->GetProperty('authid', $adminId)
         && $userbank->isSteamIDTaken($resolvedSteam)) {

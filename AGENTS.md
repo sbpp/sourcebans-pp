@@ -767,6 +767,59 @@ of the diff ship together or not at all.
   + `BansTest.php` + `AdminsTest.php` pin the handler-side
   `ApiError('validation', …, 'steam')` envelope.
 
+  **Page-handler form-POST surfaces** (`page.submit.php`,
+  `admin.edit.{ban,comms,admindetails}.php`,
+  `admin.bans.php`'s `importBans` branch) carry the same
+  convert-before-validate bug class as the JSON handlers, but the
+  failure mode is different: the converter's
+  `Exception('Invalid SteamID input!')` escapes the page handler
+  unhandled, the chrome's `PageDie()` never fires, and the user
+  gets a generic 500 page render instead of the inline per-field
+  error message on the form. The fix shape is symmetric to the
+  JSON-handler one but the error-surfacing differs by surface:
+   - `admin.edit.{ban,comms,admindetails}.php` push the validation
+     error into the existing `$validationErrors[]` / `$errorFields[]`
+     array and re-render the form via the page-tail script (Option
+     B per "Add a confirm + reason modal" — matches the established
+     pattern for empty / duplicate / invalid SteamID, and preserves
+     the operator's raw input on the bounce so they see exactly
+     what they typed and can correct the typo without re-typing
+     everything else).
+   - `page.submit.php` doesn't call `SteamID::toSteam2()` at all —
+     it stores the raw user-input verbatim in `:prefix_submissions`
+     and the moderation queue resolves the canonical form on
+     accept. The library tightening (follow-up #1) closes the bypass
+     here without any handler edit; the template-side strict
+     `pattern="…"` is the front-line defense.
+   - `admin.bans.php`'s `importBans` branch validates each
+     `banid <duration> <STEAMID>` line via `SteamID::isValidID()`
+     BEFORE `toSteam2()`, skipping (and counting) malformed lines
+     instead of throwing. The pre-fix abort-on-first-bad-line shape
+     left the operator with no signal as to which line broke or
+     how many of the preceding inserts committed (no transaction
+     wrapper). The success toast now carries the skipped-line
+     count alongside the imported count.
+
+  The validate-before-convert order is THE structural contract:
+  call `SteamID::isValidID($raw)` first, surface the error on the
+  fail branch, ONLY THEN call `SteamID::toSteam2($raw)`. With the
+  library tightening from follow-up #1 every input that passes
+  `isValidID()` is guaranteed to round-trip through `toSteam2()`
+  without throwing, so the per-handler `try/catch` defensiveness
+  that some pre-fix code accidentally relied on (`empty()` short-
+  circuits in `to()`, etc.) is no longer needed. Don't ship a
+  `try/catch (Exception)` around `toSteam2()` as a substitute for
+  the upstream gate — it papers over the bug class without fixing
+  the underlying ordering and weakens the contract on the next
+  refactor. Regression coverage:
+  `web/tests/integration/SteamIDValidationOrderTest.php` static-
+  shape-pins the validate-then-convert order across every page
+  handler. The form templates also carry the same
+  `pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"` +
+  actionable `title="…"` as the JSON-flow add-form templates so
+  the browser-native popover surfaces the same error message
+  pre-flight.
+
 ### CSRF
 
 - Required on every state-changing form/JSON call.
@@ -3055,6 +3108,45 @@ contacting every contributor individually.
   re-open the bypass class. Regression coverage for the handler
   half: `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`
   (+ sibling tests in `BansTest.php` / `AdminsTest.php`).
+- Calling `SteamID::toSteam2($raw)` (or any other `SteamID::*`
+  conversion that funnels through `resolveInputID`) on a page
+  handler's raw POST input BEFORE running `SteamID::isValidID($raw)`
+  → the converter raises `Exception('Invalid SteamID input!')` on
+  any input that fails the shape check post-#1420 (the library
+  tightening from follow-up #1 made the throw stricter). The
+  exception escapes the page handler unhandled, the chrome's
+  `PageDie()` never fires, and the user gets a 500 page render
+  instead of the inline per-field "Please enter a valid Steam ID
+  or Community ID" message on the form. The fix is the
+  validate-then-convert ladder documented under "SteamID inputs"
+  in Conventions: trim → empty-check (separate message) →
+  `isValidID()` shape check (separate message) → ONLY THEN
+  `toSteam2()`. The pre-#1420 shape silently "worked" because the
+  loose library accepted everything; with the tighter library the
+  same call shape is a 500-page-render-on-typo waiting to happen.
+  Affected surfaces swept at #1423 follow-up #2:
+  `web/pages/admin.edit.{ban,comms,admindetails}.php` (the form
+  re-render path), `web/pages/admin.bans.php`'s `importBans`
+  branch (skip-and-count malformed lines instead of aborting
+  mid-file). `web/pages/page.submit.php` doesn't call `toSteam2()`
+  at all — the public form stores raw input verbatim, and the
+  library tightening + template-side `pattern="…"` close the
+  bypass without a handler edit. Regression guard:
+  `web/tests/integration/SteamIDValidationOrderTest.php` pins the
+  validate-then-convert call order across every page handler.
+- Wrapping `SteamID::toSteam2($raw)` in `try/catch (\Exception)`
+  as a substitute for the upstream `SteamID::isValidID($raw)`
+  gate → the catch papers over the bug class without fixing the
+  underlying call-order bug. A future refactor of the library
+  that swaps the exception shape (e.g. to a typed
+  `\InvalidArgumentException`) silently breaks the catch and the
+  exception escapes again — back to a 500 page render. The
+  contract is "validate first, convert only on a pass" (see
+  "SteamID inputs" → page-handler form-POST surfaces); the
+  validate-then-convert order is what gives `toSteam2()` its
+  cannot-throw guarantee in handler code, so wrapping it in
+  `try/catch` is a code smell signalling the upstream gate is
+  missing.
 - Editing `install/includes/sql/data.sql` (or `struc.sql`) without a paired
   `web/updater/data/<N>.php` → upgraded installs silently miss the change.
 - WYSIWYG / "rich HTML" editors (TinyMCE, CKEditor, …) for fields stored

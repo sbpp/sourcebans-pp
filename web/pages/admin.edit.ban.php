@@ -110,24 +110,73 @@ $validationErrors = [];
 $postSuccess = false;
 
 if (isset($_POST['name'])) {
-    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim((string) ($_POST['steam'] ?? '')));
+    // #1420 follow-up #2 — validate the raw Steam ID shape BEFORE the
+    // `SteamID::toSteam2()` conversion. Pre-fix this surface called
+    // `toSteam2()` on the raw POST value as its first statement; on a
+    // garbage input the converter threw `Invalid SteamID input!` from
+    // `resolveInputID()`, the exception escaped the page handler
+    // unhandled, and the user got a generic 500 page render instead of
+    // the inline "Please enter a valid Steam ID or Community ID"
+    // message on the form. The library tightening (follow-up #1) made
+    // the throw stricter (rejecting the `STEAM_0:0:` / substring-bypass
+    // / embedded-Steam64 shapes the old loose regex used to round-trip
+    // verbatim into the DB) which made the 500 page render strictly
+    // MORE frequent on edit-ban. Validate-before-convert puts the
+    // failure on the form as the same per-field message admin-add /
+    // comms-add use.
+    //
+    // The validate-then-convert order also defends the `ip` branch:
+    // pre-fix the form's `Convert ban from IP to Steam ID` path
+    // legitimately passes an empty `steam` while the user fills `ip`
+    // — `toSteam2('')` returns `false` (the `empty()` short-circuit
+    // in `to()`), so this happened to work, but only as an accident
+    // of how the early-return interacts with `empty($_POST['steam'])`
+    // below. Keep the explicit-then-convert shape so a future
+    // refactor of `to()`'s early-return doesn't silently regress.
+    $rawSteam       = trim((string) ($_POST['steam'] ?? ''));
     $_POST['type']  = (int) ($_POST['type'] ?? 0);
     $postBanType    = BanType::tryFrom((int) $_POST['type']) ?? BanType::Steam;
 
     // Form Validation
     $error = 0;
-    // If they didn't type a steamid
-    if (empty($_POST['steam']) && $postBanType === BanType::Steam) {
-        $error++;
-        $validationErrors['steam'] = 'You must type a Steam ID or Community ID';
-    } elseif ($postBanType === BanType::Steam && !\SteamID\SteamID::isValidID($_POST['steam'])) {
-        $error++;
-        $validationErrors['steam'] = 'Please enter a valid Steam ID or Community ID';
-    } elseif (empty($_POST['ip']) && $postBanType === BanType::Ip) {
+    // Steam ID branch — validate raw shape FIRST; convert only on a
+    // pass. Empty input is its own error message; non-empty-but-bad
+    // is "please enter a valid…". The conversion is only meaningful
+    // on a Steam-type ban so the IP branch skips it.
+    if ($postBanType === BanType::Steam) {
+        if ($rawSteam === '') {
+            $error++;
+            $validationErrors['steam'] = 'You must type a Steam ID or Community ID';
+            $_POST['steam'] = '';
+        } elseif (!\SteamID\SteamID::isValidID($rawSteam)) {
+            $error++;
+            $validationErrors['steam'] = 'Please enter a valid Steam ID or Community ID';
+            // Re-emit the operator's raw input verbatim on the bounce
+            // so they see exactly what they typed and can correct the
+            // typo, instead of having the form silently clear.
+            $_POST['steam'] = $rawSteam;
+        } else {
+            // Convert ONLY after the shape gate passes. With the
+            // library tightening from follow-up #1 this call cannot
+            // throw — every input passing `isValidID()` resolves
+            // through the shared `ID_PATTERNS` table.
+            $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
+        }
+    } else {
+        // IP-type ban — the steam column stays untouched on the
+        // write side (`type` = `BanType::Ip->value` and the
+        // ban_ip-only path below handles the DB binds), but the
+        // form re-emit still needs a string value so the input
+        // doesn't lose what the user typed if they later switch
+        // back to a Steam-type ban.
+        $_POST['steam'] = $rawSteam;
+    }
+
+    if ($error === 0 && empty($_POST['ip']) && $postBanType === BanType::Ip) {
         // Didn't type an IP
         $error++;
         $validationErrors['ip'] = 'You must type an IP';
-    } elseif ($postBanType === BanType::Ip && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
+    } elseif ($error === 0 && $postBanType === BanType::Ip && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
         $error++;
         $validationErrors['ip'] = 'You must type a valid IP';
     }

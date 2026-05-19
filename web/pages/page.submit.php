@@ -48,7 +48,16 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     $SID           = (int) ($_POST['server']         ?? -1);
     $validsubmit   = true;
     $errors        = "";
-    if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !\SteamID\SteamID::isValidID($SteamID)) {
+    // #1420 follow-up #2: the legacy `STEAM_0:` sentinel that the
+    // page handler used to re-emit when the SteamID was blank was
+    // dropped in the same commit that added the strict
+    // `pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"` attribute to
+    // the form input — the sentinel would have failed the pattern
+    // check AND blocked submission for the legitimate IP-only path.
+    // With the sentinel gone, `$SteamID === ''` is the canonical
+    // "no Steam ID typed" state and both server-side rules below
+    // (validate-shape + at-least-one-of) key off it.
+    if (strlen($SteamID) != 0 && !\SteamID\SteamID::isValidID($SteamID)) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     }
@@ -58,14 +67,8 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     }
     // #1207 PUB-4: at least one of Steam ID / IP must be provided.
     // Mirrors the inline guard in `page_submitban.tpl` so JS-off
-    // visitors can't sneak an empty pair past the form. The "STEAM_0:"
-    // sentinel is what the page handler re-emits when the user blanked
-    // the Steam ID after a previous bounce (see `STEAMID:` assignment
-    // around L293 below) — treat it as empty for this rule too.
-    if (
-        (strlen($SteamID) == 0 || $SteamID == "STEAM_0:")
-        && strlen($BanIP) == 0
-    ) {
+    // visitors can't sneak an empty pair past the form.
+    if (strlen($SteamID) == 0 && strlen($BanIP) == 0) {
         $errors .= '* Please enter a Steam ID or an IP address before submitting.<br>';
         $validsubmit = false;
     }
@@ -145,9 +148,13 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 $mailserver = "Server: Other server\n";
                 $modid['mid']   = 0;
             }
-            if ($SteamID == "STEAM_0:") {
-                $SteamID = "";
-            }
+            // #1420 follow-up #2: the legacy `STEAM_0:` empty sentinel
+            // was dropped at the top of this handler — the operator-side
+            // shape is now strictly "empty string" for the no-Steam-ID
+            // path, and the strict `pattern="…"` on the form input plus
+            // the server-side `SteamID::isValidID()` gate above mean
+            // anything reaching here is either '' or a fully-formed
+            // SteamID. No defensive sentinel collapse needed.
             $GLOBALS['PDO']->query("INSERT INTO `:prefix_submissions`(submitted,SteamId,name,email,ModID,reason,ip,subname,sip,archiv,server) VALUES (UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,0,?)")->execute([
                 $SteamID,
                 $PlayerName,
@@ -245,7 +252,15 @@ foreach ($servers as $key => $server) {
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\SubmitBanView(
-    STEAMID: $SteamID == "" ? "STEAM_0:" : $SteamID,
+    // #1420 follow-up #2: re-emit the raw input verbatim (or '' on the
+    // first-paint / IP-only path). The legacy `STEAM_0:` sentinel was
+    // pre-fill UX that broke the moment the template grew a strict
+    // `pattern="…"` attribute — the sentinel didn't match the regex
+    // and the browser blocked submission for legit IP-only flows.
+    // The form's `placeholder="STEAM_0:0:12345"` is the modern shape
+    // for "show the operator what we expect" without populating the
+    // input.
+    STEAMID: $SteamID,
     ban_ip: $BanIP,
     player_name: $PlayerName,
     ban_reason: $BanReason,

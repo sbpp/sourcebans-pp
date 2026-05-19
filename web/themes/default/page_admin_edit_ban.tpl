@@ -150,7 +150,23 @@
                        name="steam"
                        value="{$ban_authid|escape}"
                        data-testid="editban-steam"
-                       placeholder="STEAM_0:1:23498765">
+                       placeholder="STEAM_0:1:23498765"
+                       {* #1420 follow-up #2 — strict `pattern` mirrors
+                           the server-side `SteamID::isValidID()`
+                           allowlist (Steam2 / bracketed Steam3 /
+                           17-digit Steam64 — same as
+                           `page_admin_bans_add.tpl`). The handler
+                           validates raw input via `isValidID()`
+                           BEFORE calling `toSteam2()`. Edit-ban can
+                           target either a Steam ID (Type=0) or an IP
+                           (Type=1) so this input is NOT `required` —
+                           the page handler enforces "one of the two
+                           is non-empty" per `$postBanType`. When
+                           empty (the IP-target case) the browser's
+                           pattern check is satisfied (it only fires
+                           on non-empty values). *}
+                       pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"
+                       title="Enter a Steam ID (STEAM_0:1:23498765), Steam3 ID ([U:1:23498765]), or 17-digit SteamID64.">
                 <div class="text-xs mt-2"
                      id="steam.msg"
                      style="color:var(--danger);display:none"></div>
