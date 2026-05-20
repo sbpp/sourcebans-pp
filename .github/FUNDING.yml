@@ -1,15 +1,13 @@
-# These are supported funding model platforms
+# These are supported funding model platforms.
+#
+# We point GitHub's "Sponsor this project" UI at the canonical
+# /sponsor/ docs page rather than a single platform-specific account.
+# That landing page lists every funding channel (GitHub Sponsors
+# today, Open Collective + others once they're approved) and the
+# current sponsor roll. Adding a new funding platform later is a
+# one-line edit on docs/src/data/sponsors.json — this file does not
+# need to change again.
+#
+# See issue #1416 + docs/src/content/docs/sponsor.mdx.
 
-github: rumblefrog # Replace with up to 4 GitHub Sponsors-enabled usernames e.g., [user1, user2]
-patreon: # Replace with a single Patreon username
-open_collective: # Replace with a single Open Collective username
-ko_fi: # Replace with a single Ko-fi username
-tidelift: # Replace with a single Tidelift platform-name/package-name e.g., npm/babel
-community_bridge: # Replace with a single Community Bridge project-name e.g., cloud-foundry
-liberapay: # Replace with a single Liberapay username
-issuehunt: # Replace with a single IssueHunt username
-lfx_crowdfunding: # Replace with a single LFX Crowdfunding project-name e.g., cloud-foundry
-polar: # Replace with a single Polar username
-buy_me_a_coffee: # Replace with a single Buy Me a Coffee username
-thanks_dev: # Replace with a single thanks.dev username
-custom: # Replace with up to 4 custom sponsorship URLs e.g., ['link1', 'link2']
+custom: ['https://sbpp.github.io/sponsor/']

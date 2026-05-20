@@ -79,5 +79,4 @@ separate commercial license; see **License** below.
   production / commercial use (e.g. game-server hosting companies
   bundling SourceBans++ as a paid feature), a separate commercial
   license is available &mdash; reach out via the contact link on
-  [GitHub Sponsors](https://github.com/sponsors/rumblefrog) or
-  Discord.
+  the [sponsor page](https://sbpp.github.io/sponsor/) or Discord.

@@ -1,11 +1,14 @@
 ---
 // Override of Starlight's default Footer component.
 //
-// The override exists to surface a small "Support SourceBans++ on
-// GitHub Sponsors" affordance at the bottom of every page. The
-// topbar already carries a heart-icon social link (see the `social`
-// array in astro.config.mjs), and the landing page carries a one-
-// liner under the navigation CardGrid — the footer is the third
+// The override exists to surface a small "Support SourceBans++"
+// affordance at the bottom of every page. The link targets the
+// canonical `/sponsor/` landing page (issue #1416) — a thin docs
+// page that lists every funding platform and the sponsor roll —
+// rather than a single platform URL, so adding Open Collective /
+// Patreon / etc. later is a data-only change on
+// docs/src/data/sponsors.json. The topbar already carries a
+// matching heart-icon social link; the footer is the second
 // surface so anyone who reads to the end of a docs page can find
 // the link without scrolling back to the top.
 //
@@ -33,11 +36,10 @@ import { Icon } from '@astrojs/starlight/components';
 	<div class="sbpp-footer-extra sl-flex">
 		<a
 			class="sbpp-sponsor-link sl-flex"
-			href="https://github.com/sponsors/rumblefrog"
-			rel="noopener"
+			href="/sponsor/"
 		>
 			<Icon name="heart" size="1em" />
-			<span>Support SourceBans++ on GitHub Sponsors</span>
+			<span>Support SourceBans++</span>
 		</a>
 	</div>
 

@@ -44,13 +44,16 @@ export default defineConfig({
       // Component overrides:
       //   - ThemeProvider: matches the panel's "default to system, paint
       //     light when JS isn't available" first-paint contract.
-      //   - Footer: appends a "Support SourceBans++ on GitHub Sponsors"
-      //     affordance below Starlight's stock per-page footer (edit
-      //     link + last updated + pagination). The stock sub-components
-      //     are pulled from Starlight's `virtual:` namespace so a future
-      //     Starlight upgrade that adds new footer chrome picks it up
-      //     automatically. See ./src/components/Footer.astro for the
-      //     full rationale.
+      //   - Footer: appends a "Support SourceBans++" affordance below
+      //     Starlight's stock per-page footer (edit link + last updated
+      //     + pagination). The stock sub-components are pulled from
+      //     Starlight's `virtual:` namespace so a future Starlight
+      //     upgrade that adds new footer chrome picks it up
+      //     automatically. The link targets the canonical `/sponsor/`
+      //     landing page (issue #1416) rather than a single platform
+      //     URL so a future Open Collective / Patreon addition is a
+      //     data-only change. See ./src/components/Footer.astro for
+      //     the full rationale.
       components: {
         ThemeProvider: './src/components/ThemeProvider.astro',
         Footer: './src/components/Footer.astro',
@@ -93,9 +96,15 @@ export default defineConfig({
           href: 'https://discord.gg/tzqYqmAtF5',
         },
         {
+          // Heart icon in the topbar social row. Routes to the
+          // canonical `/sponsor/` landing page (issue #1416) which
+          // lists every funding platform and the sponsor roll —
+          // NOT directly to GitHub Sponsors. Adding Open Collective
+          // / Patreon / etc. later is a one-line edit on
+          // docs/src/data/sponsors.json; this entry stays put.
           icon: 'heart',
-          label: 'Sponsor rumblefrog on GitHub',
-          href: 'https://github.com/sponsors/rumblefrog',
+          label: 'Support SourceBans++',
+          href: '/sponsor/',
         },
       ],
       editLink: {

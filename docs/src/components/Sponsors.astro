@@ -1,0 +1,386 @@
+---
+// Sponsor surfaces — the canonical place to render the project's
+// funding platforms (GitHub Sponsors today; Open Collective and
+// friends once they land) and the current sponsor roll, grouped
+// by tier. Reads from `src/data/sponsors.json`, which is the
+// single source of truth: future surfaces (the docs landing-page
+// embed, the main README injector script, the panel footer in
+// companion issue #1417) all pivot off the same file.
+//
+// Issue #1416 — canonical sponsor URL.
+//
+// Props:
+//   - `showPlatforms` (default true) — render the "Ways to give"
+//     section listing funding channels. Set to `false` when the
+//     component is embedded in a page that already lists platforms
+//     elsewhere (e.g. a future index.mdx hero would skip it because
+//     the topbar heart icon + footer link are already the sole
+//     entry points and the docs index doesn't want to repeat them).
+//   - `showEmptyHint` (default true) — when the sponsor roll is
+//     empty, render a discreet "be the first" line linking back to
+//     the platforms section. Set to `false` on contexts where an
+//     empty state would read awkwardly (e.g. an index.mdx embed
+//     where the surrounding page already explains the project).
+
+import { Icon } from '@astrojs/starlight/components';
+import sponsorsData from '../data/sponsors.json';
+
+interface Platform {
+	id: string;
+	name: string;
+	url: string;
+	description?: string;
+	icon?: string;
+}
+
+interface Tier {
+	id: string;
+	name: string;
+	monthlyMinUsd?: number;
+	description?: string;
+}
+
+interface Sponsor {
+	name: string;
+	url?: string;
+	logo?: string;
+	tier?: string;
+	since?: string;
+}
+
+interface Props {
+	showPlatforms?: boolean;
+	showEmptyHint?: boolean;
+}
+
+const { showPlatforms = true, showEmptyHint = true } = Astro.props;
+
+const platforms: Platform[] = sponsorsData.platforms ?? [];
+const tiers: Tier[] = sponsorsData.tiers ?? [];
+const allSponsors: Sponsor[] = sponsorsData.sponsors ?? [];
+
+// Group sponsors by tier (preserving tier-array order). A sponsor
+// whose `tier` field is missing/empty OR points at a tier id that
+// no longer exists in the catalog falls through to the "individual
+// supporters" bucket. That fall-through is deliberate — renaming a
+// tier id should never silently hide its sponsors; they just move
+// to "individual" until the data is fixed.
+const sponsorsByTier = new Map<string, Sponsor[]>();
+for (const tier of tiers) {
+	sponsorsByTier.set(tier.id, []);
+}
+const individualSponsors: Sponsor[] = [];
+for (const sponsor of allSponsors) {
+	if (sponsor.tier && sponsorsByTier.has(sponsor.tier)) {
+		sponsorsByTier.get(sponsor.tier)!.push(sponsor);
+	} else {
+		individualSponsors.push(sponsor);
+	}
+}
+
+const hasAnySponsors = allSponsors.length > 0;
+const platformsSectionId = 'sbpp-sponsors-platforms';
+---
+
+{
+	showPlatforms && platforms.length > 0 && (
+		<section class="sbpp-sponsors-section" aria-labelledby={`${platformsSectionId}-heading`}>
+			<h2 id={`${platformsSectionId}-heading`}>Ways to give</h2>
+			<p class="sbpp-sponsors-lede">
+				Pick the platform that fits how you give. Every contribution funds
+				the same work.
+			</p>
+			<ul class="sbpp-platforms" role="list">
+				{platforms.map((platform) => (
+					<li class="sbpp-platform-card">
+						<a
+							class="sbpp-platform-link"
+							href={platform.url}
+							rel="noopener"
+						>
+							<span class="sbpp-platform-icon" aria-hidden="true">
+								{/* `Icon`'s `name` prop is a strict union of ~70
+								    Starlight icon names. JSON-source data can't be
+								    narrowed without duplicating the union here, so
+								    we cast and fall back to `heart` for unset /
+								    unknown values. A typo in sponsors.json will
+								    render the fallback rather than fail the build;
+								    if the set of expected icons grows beyond a
+								    handful, swap this for a small `KNOWN_ICONS`
+								    allowlist with a runtime guard. */}
+								<Icon name={(platform.icon as any) || 'heart'} size="1.25em" />
+							</span>
+							<span class="sbpp-platform-body">
+								<span class="sbpp-platform-name">{platform.name}</span>
+								{platform.description && (
+									<span class="sbpp-platform-desc">{platform.description}</span>
+								)}
+							</span>
+							<span class="sbpp-platform-arrow" aria-hidden="true">→</span>
+						</a>
+					</li>
+				))}
+			</ul>
+		</section>
+	)
+}
+
+<section class="sbpp-sponsors-section" aria-labelledby="sbpp-sponsors-roll-heading">
+	<h2 id="sbpp-sponsors-roll-heading">Our sponsors</h2>
+
+	{
+		hasAnySponsors ? (
+			<>
+				{tiers.map((tier) => {
+					const sponsorsInTier = sponsorsByTier.get(tier.id) ?? [];
+					if (sponsorsInTier.length === 0) return null;
+					return (
+						<div class="sbpp-sponsor-tier">
+							<h3 class="sbpp-sponsor-tier-name">{tier.name}</h3>
+							{tier.description && (
+								<p class="sbpp-sponsor-tier-desc">{tier.description}</p>
+							)}
+							<ul class="sbpp-sponsor-list" role="list">
+								{sponsorsInTier.map((sponsor) => (
+									<li class="sbpp-sponsor-card">
+										{sponsor.url ? (
+											<a
+												class="sbpp-sponsor-link"
+												href={sponsor.url}
+												rel="noopener"
+											>
+												{sponsor.logo && (
+													<img
+														class="sbpp-sponsor-logo"
+														src={sponsor.logo}
+														alt=""
+														loading="lazy"
+													/>
+												)}
+												<span class="sbpp-sponsor-name">{sponsor.name}</span>
+											</a>
+										) : (
+											<span class="sbpp-sponsor-static">
+												{sponsor.logo && (
+													<img
+														class="sbpp-sponsor-logo"
+														src={sponsor.logo}
+														alt=""
+														loading="lazy"
+													/>
+												)}
+												<span class="sbpp-sponsor-name">{sponsor.name}</span>
+											</span>
+										)}
+									</li>
+								))}
+							</ul>
+						</div>
+					);
+				})}
+
+				{individualSponsors.length > 0 && (
+					<div class="sbpp-sponsor-tier">
+						<h3 class="sbpp-sponsor-tier-name">Individual supporters</h3>
+						<ul class="sbpp-sponsor-list sbpp-sponsor-list--inline" role="list">
+							{individualSponsors.map((sponsor) => (
+								<li class="sbpp-sponsor-card sbpp-sponsor-card--inline">
+									{sponsor.url ? (
+										<a
+											class="sbpp-sponsor-link"
+											href={sponsor.url}
+											rel="noopener"
+										>
+											<span class="sbpp-sponsor-name">{sponsor.name}</span>
+										</a>
+									) : (
+										<span class="sbpp-sponsor-name">{sponsor.name}</span>
+									)}
+								</li>
+							))}
+						</ul>
+					</div>
+				)}
+			</>
+		) : (
+			<p class="sbpp-sponsors-empty">
+				No sponsors yet.
+				{showEmptyHint && showPlatforms && (
+					<>
+						{' '}
+						<a href={`#${platformsSectionId}-heading`}>
+							Be the first — pick a platform above
+						</a>
+						.
+					</>
+				)}
+				{showEmptyHint && !showPlatforms && (
+					<>
+						{' '}
+						<a href="/sponsor/">Be the first to support SourceBans++</a>.
+					</>
+				)}
+			</p>
+		)
+	}
+</section>
+
+<style>
+	.sbpp-sponsors-section {
+		margin-block: 2.5rem;
+	}
+	.sbpp-sponsors-section > h2 {
+		margin-block-end: 0.5rem;
+	}
+	.sbpp-sponsors-lede {
+		color: var(--sl-color-gray-3);
+		margin-block-end: 1.25rem;
+	}
+
+	/* ---- Platforms list ----
+	   One card per funding channel. The list grows to two columns at
+	   wider widths so the card stack reads as a horizontal menu of
+	   options rather than a long vertical scroll. */
+	.sbpp-platforms {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+		gap: 0.75rem;
+	}
+	.sbpp-platform-card {
+		margin: 0;
+	}
+	.sbpp-platform-link {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		padding: 1rem 1.1rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: var(--sbpp-radius-md);
+		background-color: var(--sl-color-bg);
+		color: var(--sl-color-white);
+		text-decoration: none;
+		transition: border-color 150ms ease, background-color 150ms ease;
+	}
+	.sbpp-platform-link:hover,
+	.sbpp-platform-link:focus-visible {
+		border-color: var(--sl-color-accent);
+		background-color: var(--sl-color-accent-low);
+		color: var(--sl-color-white);
+	}
+	.sbpp-platform-icon {
+		color: var(--sl-color-orange);
+		display: inline-flex;
+		flex-shrink: 0;
+	}
+	.sbpp-platform-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		flex-grow: 1;
+		min-width: 0;
+	}
+	.sbpp-platform-name {
+		font-weight: 600;
+		color: var(--sl-color-white);
+	}
+	.sbpp-platform-desc {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.sbpp-platform-arrow {
+		color: var(--sl-color-gray-3);
+		font-size: 1.1em;
+		flex-shrink: 0;
+		transition: transform 150ms ease, color 150ms ease;
+	}
+	.sbpp-platform-link:hover .sbpp-platform-arrow,
+	.sbpp-platform-link:focus-visible .sbpp-platform-arrow {
+		color: var(--sl-color-text-accent);
+		transform: translateX(2px);
+	}
+
+	/* ---- Sponsor roll ---- */
+	.sbpp-sponsor-tier {
+		margin-block: 1.5rem;
+	}
+	.sbpp-sponsor-tier-name {
+		margin-block-end: 0.25rem;
+	}
+	.sbpp-sponsor-tier-desc {
+		color: var(--sl-color-gray-3);
+		margin-block-end: 0.75rem;
+		font-size: var(--sl-text-sm);
+	}
+	.sbpp-sponsor-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+		gap: 0.75rem;
+	}
+	.sbpp-sponsor-list--inline {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 0.75rem;
+	}
+	.sbpp-sponsor-card {
+		margin: 0;
+	}
+	.sbpp-sponsor-card--inline {
+		display: inline-flex;
+	}
+	.sbpp-sponsor-link,
+	.sbpp-sponsor-static {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		padding: 0.6rem 0.85rem;
+		border: 1px solid var(--sl-color-hairline);
+		border-radius: var(--sbpp-radius-md);
+		background-color: var(--sl-color-bg);
+		color: var(--sl-color-white);
+		text-decoration: none;
+	}
+	.sbpp-sponsor-link {
+		transition: border-color 150ms ease, background-color 150ms ease;
+	}
+	.sbpp-sponsor-link:hover,
+	.sbpp-sponsor-link:focus-visible {
+		border-color: var(--sl-color-accent);
+		background-color: var(--sl-color-accent-low);
+	}
+	.sbpp-sponsor-card--inline .sbpp-sponsor-link,
+	.sbpp-sponsor-card--inline .sbpp-sponsor-name {
+		padding: 0.35rem 0.7rem;
+	}
+	.sbpp-sponsor-card--inline .sbpp-sponsor-name {
+		display: inline-block;
+		border: 1px dashed var(--sl-color-hairline);
+		border-radius: var(--sbpp-radius-md);
+		color: var(--sl-color-gray-2);
+	}
+	.sbpp-sponsor-logo {
+		width: 2rem;
+		height: 2rem;
+		object-fit: contain;
+		flex-shrink: 0;
+	}
+	.sbpp-sponsor-name {
+		font-weight: 500;
+	}
+
+	/* ---- Empty state ----
+	   Subdued single-line copy. Avoids a long string of empty section
+	   headings when the sponsors array is still empty. */
+	.sbpp-sponsors-empty {
+		color: var(--sl-color-gray-3);
+		padding: 1rem 1.1rem;
+		border: 1px dashed var(--sl-color-hairline);
+		border-radius: var(--sbpp-radius-md);
+		background-color: var(--sl-color-bg);
+	}
+</style>
