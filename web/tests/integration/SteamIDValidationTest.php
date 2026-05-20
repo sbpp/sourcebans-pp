@@ -342,4 +342,190 @@ final class SteamIDValidationTest extends TestCase
             restore_error_handler();
         }
     }
+
+    /**
+     * #1423 follow-up #4 — `SteamID::HANDLER_STRICT_REGEX` is the
+     * single source the per-handler `preg_match` gates consume in
+     * `web/api/handlers/{admins,bans,comms}.php`. Pin three contracts:
+     *
+     *   1. The regex exists as a public class constant (so handlers
+     *      can reach for it without a runtime lookup).
+     *   2. The regex carries the `D` modifier (so `STEAM_0:0:1\n`
+     *      is rejected at the gate before reaching `toSteam2()`).
+     *      Pre-fix the handler regex was a hand-rolled copy that
+     *      drifted from `ID_PATTERNS` on the `D` modifier — the
+     *      newline-suffixed input slipped past the handler, then
+     *      failed `toSteam2()`, then the exception escaped via
+     *      `Api::handle`'s `Throwable` fallback as a generic 500.
+     *   3. The regex is TIGHTER than `ID_PATTERNS` on one axis:
+     *      bracketless Steam3 (`U:1:N`) is INTENTIONALLY excluded
+     *      so the handler gate matches the form template's
+     *      `pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"`
+     *      byte-for-byte. Curl-driven callers get the same shape
+     *      contract a form user sees on the pattern-mismatch popover.
+     */
+    public function testHandlerStrictRegexIsExposedAndCarriesDModifier(): void
+    {
+        $reflection = new ReflectionClass(SteamID::class);
+        $this->assertTrue(
+            $reflection->hasConstant('HANDLER_STRICT_REGEX'),
+            'SteamID::HANDLER_STRICT_REGEX must exist — the per-handler `preg_match` gates source it instead of carrying hand-rolled copies that drift on the modifier set.',
+        );
+        $regex = $reflection->getReflectionConstant('HANDLER_STRICT_REGEX')->getValue();
+        $this->assertIsString($regex);
+        $this->assertStringStartsWith('/^', $regex, 'HANDLER_STRICT_REGEX must be ^…$ anchored.');
+        $this->assertMatchesRegularExpression(
+            '~\$/[a-zA-Z]*D[a-zA-Z]*$~',
+            $regex,
+            'HANDLER_STRICT_REGEX must carry the D modifier — without it, `STEAM_0:0:1\n` matches and then fails `toSteam2()` via the library\'s stricter gate (the newline-bypass class).',
+        );
+    }
+
+    /**
+     * #1423 follow-up #4 — every shape `HANDLER_STRICT_REGEX` accepts
+     * must ALSO be accepted by `ID_PATTERNS` (so the library's
+     * `toSteam2()` doesn't throw on inputs the handler blessed). The
+     * reverse is NOT required — `ID_PATTERNS` accepts bracketless
+     * Steam3 (`U:1:N`) while `HANDLER_STRICT_REGEX` deliberately does
+     * not (form-pattern symmetry).
+     *
+     * @return iterable<string, array{0: string}>
+     */
+    public static function handlerStrictAccepts(): iterable
+    {
+        yield 'STEAM_0:0:11101'        => ['STEAM_0:0:11101'];
+        yield 'STEAM_1:1:11101'        => ['STEAM_1:1:11101'];
+        yield 'STEAM_0:0:0'            => ['STEAM_0:0:0'];
+        yield '[U:1:22202]'            => ['[U:1:22202]'];
+        yield '[U:1:0]'                => ['[U:1:0]'];
+        yield '76561197960265728'      => ['76561197960265728'];
+        yield '76561197960287930'      => ['76561197960287930'];
+    }
+
+    /**
+     * Every shape `HANDLER_STRICT_REGEX` accepts must also be accepted
+     * by `SteamID::isValidID()` — otherwise the handler converts but
+     * the library's downstream gate rejects, and we're back to 500-
+     * envelope territory.
+     */
+    #[DataProvider('handlerStrictAccepts')]
+    public function testHandlerStrictRegexAgreesWithIdPatternsOnAcceptableShapes(string $input): void
+    {
+        $this->assertSame(
+            1,
+            preg_match(SteamID::HANDLER_STRICT_REGEX, $input),
+            sprintf('HANDLER_STRICT_REGEX must accept %s', var_export($input, true)),
+        );
+        $this->assertTrue(
+            SteamID::isValidID($input),
+            sprintf('SteamID::isValidID() must accept %s (handler gate <= library gate)', var_export($input, true)),
+        );
+        $this->assertNotFalse(
+            SteamID::toSteam2($input),
+            sprintf('SteamID::toSteam2() must convert %s without throwing', var_export($input, true)),
+        );
+    }
+
+    /**
+     * Documented asymmetry: bracketless Steam3 (`U:1:N`) is accepted
+     * by `ID_PATTERNS` for library-side convenience (the panel's
+     * conversion call sites can still hand it to `toSteam2()`) but
+     * REJECTED by `HANDLER_STRICT_REGEX` for symmetry with the form
+     * template's `pattern` attribute. Pin the asymmetry so a future
+     * refactor that unifies the two regexes silently degrades the
+     * gate.
+     */
+    public function testHandlerStrictRegexRejectsBracketlessSteam3(): void
+    {
+        $this->assertTrue(
+            SteamID::isValidID('U:1:22202'),
+            'Library MUST accept bracketless Steam3 (conversion-path convenience).',
+        );
+        $this->assertSame(
+            0,
+            preg_match(SteamID::HANDLER_STRICT_REGEX, 'U:1:22202'),
+            'HANDLER_STRICT_REGEX MUST reject bracketless Steam3 (form-pattern symmetry).',
+        );
+    }
+
+    /**
+     * Newline-bypass cases the handler regex MUST reject (the bug
+     * `HANDLER_STRICT_REGEX`'s `D` modifier was lifted to close).
+     * Without the modifier the `$` anchor matches end-of-string OR
+     * just-before-final-`\n`; the newline-suffixed value slips past
+     * the handler gate and then 500s on `SteamID::toSteam2()`.
+     *
+     * @return iterable<string, array{0: string}>
+     */
+    public static function newlineBypasses(): iterable
+    {
+        yield "STEAM_0:0:1\\n"     => ["STEAM_0:0:1\n"];
+        yield "STEAM_1:0:1\\n"     => ["STEAM_1:0:1\n"];
+        yield "[U:1:1]\\n"         => ["[U:1:1]\n"];
+        yield "76561197960265728\\n" => ["76561197960265728\n"];
+    }
+
+    #[DataProvider('newlineBypasses')]
+    public function testHandlerStrictRegexRejectsNewlineBypass(string $input): void
+    {
+        $this->assertSame(
+            0,
+            preg_match(SteamID::HANDLER_STRICT_REGEX, $input),
+            sprintf('HANDLER_STRICT_REGEX must reject newline-suffixed input %s', var_export($input, true)),
+        );
+        $this->assertFalse(
+            SteamID::isValidID($input),
+            sprintf('SteamID::isValidID() must also reject %s (both halves of the contract)', var_export($input, true)),
+        );
+    }
+
+    /**
+     * #1423 follow-up #4 — `SteamAuthHandler::validate()` regex
+     * tightened from `7[0-9]{15,25}+` to `7\d{16}+` to match the
+     * library's strict 17-digit gate. Pin the new shape with positive
+     * + negative cases so a future tweak that loosens the OpenID regex
+     * (e.g. accommodating a hypothetical future Steam-side change)
+     * also tightens the library's `\d{17}` arm in the same PR.
+     */
+    public function testSteamAuthHandlerOpenIdRegexAcceptsOnly17DigitsStartingWith7(): void
+    {
+        $pattern = '/^https:\\/\\/steamcommunity\\.com\\/openid\\/id\\/(7\\d{16}+)$/D';
+        // 17-digit Steam64 starting with 7 — accepted
+        $this->assertSame(1, preg_match($pattern, 'https://steamcommunity.com/openid/id/76561197960265728'));
+        $this->assertSame(1, preg_match($pattern, 'https://steamcommunity.com/openid/id/76561197960287930'));
+        // 16 digits (one short) — rejected (pre-fix the `15,25` bound accepted)
+        $this->assertSame(0, preg_match($pattern, 'https://steamcommunity.com/openid/id/7656119796026572'));
+        // 18 digits (one over) — rejected (pre-fix the `15,25` bound accepted)
+        $this->assertSame(0, preg_match($pattern, 'https://steamcommunity.com/openid/id/765611979602657281'));
+        // Doesn't start with 7 — rejected
+        $this->assertSame(0, preg_match($pattern, 'https://steamcommunity.com/openid/id/86561197960265728'));
+        // Trailing newline — rejected via D modifier
+        $this->assertSame(0, preg_match($pattern, "https://steamcommunity.com/openid/id/76561197960265728\n"));
+        // Trailing garbage — rejected via $ anchor
+        $this->assertSame(0, preg_match($pattern, 'https://steamcommunity.com/openid/id/76561197960265728?nope'));
+    }
+
+    /**
+     * #1423 follow-up #4 — install wizard's regex in
+     * `web/install/pages/page.5.php` was tightened with the `D`
+     * modifier in the same PR. The wizard's gate is stricter than
+     * `HANDLER_STRICT_REGEX` (Steam2 form only — the initial admin
+     * is created with a STEAM_ ID; no Steam3 / Steam64 forms accepted
+     * at install time per the legacy contract). Pin the shape +
+     * modifier so a future wizard rewrite cannot silently regress
+     * the newline-bypass surface.
+     */
+    public function testInstallWizardSteamIdRegexCarriesDModifier(): void
+    {
+        $pattern = '/^STEAM_[01]:[01]:[0-9]+$/D';
+        // Accepted shapes
+        $this->assertSame(1, preg_match($pattern, 'STEAM_0:0:11101'));
+        $this->assertSame(1, preg_match($pattern, 'STEAM_1:1:11101'));
+        // Rejected shapes (modifier-sensitive)
+        $this->assertSame(0, preg_match($pattern, "STEAM_0:0:11101\n"), 'D modifier rejects trailing newline');
+        $this->assertSame(0, preg_match($pattern, 'STEAM_2:0:11101'), '[01] rejects universe 2');
+        $this->assertSame(0, preg_match($pattern, 'STEAM_0:2:11101'), '[01] rejects Y=2');
+        $this->assertSame(0, preg_match($pattern, '[U:1:11101]'), 'wizard is Steam2-only');
+        $this->assertSame(0, preg_match($pattern, '76561197960265728'), 'wizard rejects Steam64');
+    }
 }

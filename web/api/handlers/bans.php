@@ -76,15 +76,22 @@ function api_bans_add(array $params): array
         if ($rawSteam === '') {
             throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
         }
-        if (!preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $rawSteam)) {
+        if (!preg_match(SteamID::HANDLER_STRICT_REGEX, $rawSteam)) {
             throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
         }
     }
-    // Skip the conversion entirely for IP-typed bans (rawSteam is
-    // empty for those rows by definition; calling toSteam2 on an
-    // empty string would hit the same `resolveInputID` throw the
-    // guard above defends against).
-    $steam = $rawSteam === '' ? '' : SteamID::toSteam2($rawSteam);
+    // For IP-typed bans the `:authid` column is the *steam id*, of which
+    // there is none — write empty string regardless of whatever the
+    // caller passed in `$rawSteam`. Pre-#1423 follow-up #4 the handler
+    // converted any non-empty `$rawSteam` here without re-running the
+    // shape gate (which was Steam-branch-only), so a hostile / typo'd
+    // caller passing `type=1&steam=garbage&ip=1.2.3.4` triggered
+    // `toSteam2('garbage')` → `Exception('Invalid SteamID input!')` →
+    // `Api::handle` `Throwable` fallback → 500 envelope (the bug class
+    // #1420 was supposed to close, surfacing on the IP-type branch the
+    // original review didn't cover). The page-handler sibling
+    // (`admin.edit.ban.php`) carries the matching write-side fix.
+    $steam = $banType === BanType::Ip ? '' : ($rawSteam === '' ? '' : SteamID::toSteam2($rawSteam));
     if (empty($ip) && $banType === BanType::Ip) {
         throw new ApiError('validation', 'You must type an IP', 'ip');
     }

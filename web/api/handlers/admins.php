@@ -185,7 +185,7 @@ function api_admins_add(array $params): array
     // matches `SteamID::isValidID`'s unanchored substring regex and
     // `toSteam2()` then emits a negative-Z-component canonical form
     // into `:prefix_admins.authid`).
-    if (!preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $rawSteam)) {
+    if (!preg_match(SteamID::HANDLER_STRICT_REGEX, $rawSteam)) {
         throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID.', 'steam');
     }
     $steam = SteamID::toSteam2($rawSteam);

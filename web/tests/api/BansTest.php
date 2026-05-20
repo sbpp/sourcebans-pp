@@ -115,6 +115,25 @@ final class BansTest extends ApiTestCase
                 'asdfSTEAM_0:0:123',               // substring-bypass (unanchored)
                 'asdf 76561197960265728 garbage',  // embedded Steam64 — pre-fix corrupted
                 'U:1:1',                           // bracketless Steam3 — form pattern requires brackets
+                // #1423 follow-up #4 — bypass shapes that `trim()`
+                // upstream of the gate does NOT defend against. The
+                // common trailing-newline case `"STEAM_0:0:1\n"` is
+                // stripped by `trim()` before the regex sees it —
+                // that path is fine, and the library-level
+                // `HANDLER_STRICT_REGEX` test pins the regex's
+                // newline-bypass rejection directly
+                // (`SteamIDValidationTest::testHandlerStrictRegexRejectsNewlineBypass`).
+                // The cases below are what the handler-side gate
+                // actually has to catch — mid-string `\n` (not
+                // strippable) and unicode whitespace like NBSP
+                // (`trim()` only handles the ASCII whitespace set
+                // `\t\n\v\f\r ` + null + the spec-listed printable
+                // whitespace). The strict gate's `^…$` anchors +
+                // non-`m` mode require the whole string match the
+                // pattern; embedded `\n` is rejected.
+                "STEAM_0:0:1\nGARBAGE",
+                "GARBAGE\nSTEAM_0:0:1",
+                "STEAM_0:0:1\xC2\xA0",             // trailing NBSP (U+00A0); `trim` does NOT strip
             ] as $badSteam
         ) {
             $env = $this->api('bans.add', [
@@ -144,6 +163,72 @@ final class BansTest extends ApiTestCase
         ]);
         $this->assertEnvelopeError($env, 'validation');
         $this->assertSame('ip', $env['error']['field']);
+    }
+
+    /**
+     * #1423 follow-up #4 — pre-fix the IP-type ban path had two bugs:
+     *
+     *   1. Stored whatever the caller passed in `$rawSteam` into
+     *      `:prefix_bans.authid` if it happened to be a valid shape
+     *      (the `$rawSteam === '' ? '' : SteamID::toSteam2($rawSteam)`
+     *      ternary ignored `$banType`). On an IP-type ban the
+     *      `:authid` column is the *steam id*, of which there is
+     *      none — the schema's `NOT NULL default ''` is the
+     *      canonical "no steam id" value.
+     *   2. Raised a generic 500 (`SteamID::toSteam2('garbage')` →
+     *      `Exception('Invalid SteamID input!')` → `Api::handle`
+     *      `Throwable` fallback) when the caller's `$rawSteam` was
+     *      non-empty AND failed the library shape gate. The
+     *      Steam-branch `preg_match` doesn't run on IP-type bans
+     *      (its `if ($banType === BanType::Steam)` short-circuits),
+     *      so a hostile caller posting `type=1&steam=garbage`
+     *      reliably 500'd the panel.
+     *
+     * The fix hard-codes `$steam = ''` for `$banType === BanType::Ip`
+     * — whatever the caller passed in `$rawSteam` is irrelevant on
+     * an IP-type ban; the column is empty by definition.
+     */
+    public function testAddIpTypeAlwaysWritesEmptyAuthid(): void
+    {
+        $this->loginAsAdmin();
+        // 1) Valid Steam-shape `steam` with `type=1` (IP-type ban).
+        //    Pre-fix this would have canonicalised + stored
+        //    `STEAM_0:1:9999` in `:authid`; the fix writes empty.
+        $env = $this->api('bans.add', [
+            'nickname' => 'IpType_validSteam', 'type' => 1,
+            'steam' => 'STEAM_0:1:9999', 'ip' => '203.0.113.42',
+            'length' => 0, 'reason' => 'ip ban with steam input',
+            'fromsub' => 0,
+        ]);
+        $this->assertTrue($env['ok'], 'IP-type ban should succeed regardless of steam input');
+        $row = $this->row('bans', ['ip' => '203.0.113.42']);
+        $this->assertSame('', (string) $row['authid'], 'IP-type ban must write empty authid');
+        $this->assertSame('1', (string) $row['type']);
+
+        // 2) Garbage `steam` with `type=1`. Pre-fix this raised
+        //    `Exception('Invalid SteamID input!')` → 500 envelope.
+        //    Post-fix the IP-type branch never reaches the converter.
+        $env = $this->api('bans.add', [
+            'nickname' => 'IpType_garbageSteam', 'type' => 1,
+            'steam' => 'garbage', 'ip' => '203.0.113.43',
+            'length' => 0, 'reason' => 'ip ban with garbage steam input',
+            'fromsub' => 0,
+        ]);
+        $this->assertTrue($env['ok'], 'IP-type ban must NOT 500 on garbage steam input');
+        $row = $this->row('bans', ['ip' => '203.0.113.43']);
+        $this->assertSame('', (string) $row['authid']);
+
+        // 3) Newline-bypass `steam` with `type=1`. Same shape, different
+        //    expected outcome: the IP-type branch ignores it entirely.
+        $env = $this->api('bans.add', [
+            'nickname' => 'IpType_newlineSteam', 'type' => 1,
+            'steam' => "STEAM_0:0:1\n", 'ip' => '203.0.113.44',
+            'length' => 0, 'reason' => 'ip ban with newline steam input',
+            'fromsub' => 0,
+        ]);
+        $this->assertTrue($env['ok']);
+        $row = $this->row('bans', ['ip' => '203.0.113.44']);
+        $this->assertSame('', (string) $row['authid']);
     }
 
     public function testAddValidationNegativeLength(): void

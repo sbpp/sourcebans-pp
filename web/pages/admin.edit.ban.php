@@ -141,16 +141,24 @@ if (isset($_POST['name'])) {
     $error = 0;
     // Steam ID branch — validate raw shape FIRST; convert only on a
     // pass. Empty input is its own error message; non-empty-but-bad
-    // is "please enter a valid…". The validation only fires on a
-    // Steam-type ban; the IP branch skips it but still canonicalises
-    // a fully-valid Steam ID if one was typed (pre-fix behavior
-    // preserved — the UPDATE binds `:authid = $_POST['steam']`
-    // regardless of `$postBanType`, so what the user typed in the
-    // Steam ID field still lands in the `authid` column for an
-    // IP-type ban, just unvalidated. Keep the canonicalisation here
-    // so the column is consistent with whatever the user typed
-    // pre-tightening; revisit if `:authid = ''` for type=1 ever
-    // becomes a separate schema cleanup follow-up).
+    // is "please enter a valid…".
+    //
+    // The IP-type branch writes `:authid = ''` regardless of whatever
+    // happened to be in the Steam ID input. The column is the *steam
+    // id* of the banned player; on an IP-type ban there is no steam
+    // id, so the canonical value is the schema's `NOT NULL default ''`
+    // empty string — matching the API handler (`api_bans_add`'s
+    // INTENT pre-#1423 follow-up #4, fully enforced after that PR)
+    // and matching the v1.x library's "throw on garbage" outcome
+    // (pre-tightening the unconditional `toSteam2($rawSteam)` would
+    // have raised on `garbage` and the page died with a 500; storing
+    // user-typed garbage into `:authid` is a regression introduced
+    // by the 82e8c3d2 "canonicalise valid IDs on IP-type bans" nit
+    // that preserved the canonical-on-valid case but failed to
+    // suppress the raw-on-invalid case). The form-side input remains
+    // visible on the IP-type bounce path (re-emit through the
+    // `placeholder` on the template, NOT a stale value), but the DB
+    // write is divorced from it.
     if ($postBanType === BanType::Steam) {
         if ($rawSteam === '') {
             $error++;
@@ -170,21 +178,14 @@ if (isset($_POST['name'])) {
             // through the shared `ID_PATTERNS` table.
             $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
         }
-    } elseif ($rawSteam !== '' && \SteamID\SteamID::isValidID($rawSteam)) {
-        // IP-type ban with a valid Steam ID typed in the secondary
-        // input — canonicalise to preserve pre-tighter-library
-        // behavior (the UPDATE writes `:authid` regardless of
-        // `$postBanType`; pre-fix this branch ran `toSteam2()`
-        // unconditionally so the column always landed in canonical
-        // form when the input was valid).
-        $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
     } else {
-        // IP-type ban with empty / invalid Steam ID input — preserve
-        // raw value so the form re-emit doesn't silently clear what
-        // the operator typed. The IP branch is the load-bearing
-        // validation on this code path; whatever happens to be in
-        // `$_POST['steam']` rides along into the write.
-        $_POST['steam'] = $rawSteam;
+        // IP-type ban: clear the steam slot for the DB write below
+        // (`:authid = $_POST['steam']` rides this). Whatever the
+        // operator happened to type in the Steam ID field stays
+        // visible in `$rawSteam` for any client-side echo, but it
+        // does NOT land in the DB. See the block comment above for
+        // the schema rationale.
+        $_POST['steam'] = '';
     }
 
     if ($error === 0 && empty($_POST['ip']) && $postBanType === BanType::Ip) {

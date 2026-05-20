@@ -453,8 +453,19 @@ final class SteamIDValidationOrderTest extends TestCase
      * caller that bypasses the library entirely). Both layers must
      * agree on the allowlist; this test pins the "both still exist"
      * half of the contract.
+     *
+     * Post-#1423 follow-up #4 the regex is sourced from
+     * `SteamID::HANDLER_STRICT_REGEX` (a class constant on the
+     * library) instead of three hand-rolled copies — so the two
+     * layers cannot drift on the modifier set. Pre-#1423 follow-up
+     * #4 the hand-rolled handler regexes silently missed the `D`
+     * modifier; the `STEAM_0:0:1\n` newline-bypass slipped past
+     * the handler gate AND THEN failed `SteamID::toSteam2()`
+     * (which DOES carry the modifier post-#1423 follow-up #1) →
+     * generic 500 envelope. The single-source-of-truth shape pinned
+     * here closes that bug class permanently.
      */
-    public function testJsonHandlersKeepDefenseInDepthRegex(): void
+    public function testJsonHandlersUseSingleSourceOfTruthRegex(): void
     {
         $handlers = [
             'api/handlers/admins.php',
@@ -464,21 +475,24 @@ final class SteamIDValidationOrderTest extends TestCase
 
         foreach ($handlers as $relative) {
             $contents = $this->fileContents($relative);
-            // The defense-in-depth `preg_match` calls live next to
-            // the `SteamID::isValidID()` calls and key off the
-            // exact same allowlist as the templates do. Anchoring
-            // on the strict character-class `[01]` is the cleanest
-            // proxy for "this is the tightened regex, not the
-            // legacy `[0-9]` one".
-            $this->assertMatchesRegularExpression(
-                '/preg_match\([^)]*STEAM_\[01\]:\[01\]/',
+            $this->assertStringContainsString(
+                'SteamID::HANDLER_STRICT_REGEX',
                 $contents,
-                "#1420 follow-up #1 + #2: {$relative} must keep its per-handler "
-                    . "`preg_match('/^STEAM_[01]:[01]:…/')` defense-in-depth gate. "
-                    . "The library tightening from follow-up #1 is the primary "
-                    . "validation layer, but the per-handler regex catches any future "
-                    . "library regression (or any caller that bypasses the library). "
-                    . "Dropping it weakens the JSON-handler safety net by one layer.",
+                "#1423 follow-up #4: {$relative} MUST source its strict-regex gate "
+                    . "from `SteamID::HANDLER_STRICT_REGEX` (the library's class constant), "
+                    . "NOT a hand-rolled copy of the regex literal. Single-source-of-truth "
+                    . "is the contract that prevents the two layers from drifting on "
+                    . "modifier-set tweaks (the pre-#1423 hand-rolled regexes missed the "
+                    . "`D` modifier, causing the `STEAM_0:0:1\\n` newline-bypass to slip "
+                    . "past the handler gate AND THEN 500-envelope on `toSteam2()`).",
+            );
+            $this->assertStringContainsString(
+                'preg_match(SteamID::HANDLER_STRICT_REGEX',
+                $contents,
+                "#1423 follow-up #4: {$relative} must invoke the library constant via "
+                    . "`preg_match(SteamID::HANDLER_STRICT_REGEX, ...)`. The class constant "
+                    . "is the contract; a sibling shape (`SteamID::HANDLER_STRICT_REGEX . '…'` "
+                    . "concatenation, or a copy into a local variable) defeats the purpose.",
             );
         }
     }

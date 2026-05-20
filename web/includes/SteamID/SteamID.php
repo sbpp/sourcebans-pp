@@ -141,6 +141,44 @@ class SteamID
     ];
 
     /**
+     * Strict allowlist regex consumed by the per-handler defense-in-depth
+     * gate in `web/api/handlers/{admins,bans,comms}.php` (and any future
+     * caller that wants the "what the form's `pattern` attribute accepts"
+     * shape without depending on the form template). Single source of
+     * truth so the library and the handlers cannot drift on the accepted
+     * shape — pre-#1423 follow-up #4 the handlers carried hand-rolled
+     * copies that subtly differed (no `D` modifier → `STEAM_0:0:1\n`
+     * newline-bypass slipped past the handler regex but failed the
+     * library's `isValidID()` and threw `Exception('Invalid SteamID
+     * input!')` from `toSteam2()`, which the dispatcher's `Throwable`
+     * fallback wrapped as a generic `server_error` 500 envelope —
+     * exactly the bug class #1420 was supposed to close).
+     *
+     * The shape is TIGHTER than `ID_PATTERNS` on one axis: the bracketless
+     * Steam3 form (`U:1:N`) is INTENTIONALLY excluded so the gate matches
+     * the form template's `pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"`
+     * byte-for-byte. Curl-driven callers get the same shape contract a
+     * form user sees on the pattern-mismatch popover; bracketless Steam3
+     * shape stays a library-side convenience for the conversion path
+     * (`SteamID::toSteam2('U:1:1')` still works) but isn't an accepted
+     * panel-input shape.
+     *
+     * The `D` modifier is load-bearing: without it `STEAM_0:0:1\n`
+     * matches and the input then fails the library's `isValidID()` (which
+     * carries the modifier), causing `toSteam2()` to throw on the
+     * conversion the handler runs immediately after. The dispatcher
+     * wraps the exception as a generic 500 — the operator gets neither
+     * the inline validation message NOR the structured `validation` API
+     * envelope, just a "something went wrong" page render.
+     *
+     * @see ID_PATTERNS for the wider library-accepted shape table.
+     * @see `web/tests/integration/SteamIDValidationTest.php::testHandlerStrictRegexAgreesWithIdPatternsOnAcceptableShapes`
+     *      for the cross-validation contract that pins the
+     *      ID_PATTERNS / HANDLER_STRICT_REGEX relationship.
+     */
+    public const HANDLER_STRICT_REGEX = '/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/D';
+
+    /**
      * @param  $steamid
      * @return string
      * @throws Exception

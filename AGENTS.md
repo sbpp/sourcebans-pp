@@ -706,23 +706,34 @@ of the diff ship together or not at all.
   if ($rawSteam === '') {
       throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
   }
-  if (!preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $rawSteam)) {
+  if (!preg_match(SteamID::HANDLER_STRICT_REGEX, $rawSteam)) {
       throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
   }
   $steam = SteamID::toSteam2($rawSteam);
   ```
 
-  See `api_comms_add` / `api_bans_add` / `api_admins_add` for the
-  canonical reference shape — all three handlers share the same
-  regex byte-for-byte so a future caller (deep-link, JSON client,
-  context-menu handoff) only has to learn one accepted shape. The
-  client-side native validation in the corresponding form template
-  uses the SAME regex via `pattern="(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})"`
-  (HTML's `pattern` attribute is implicitly anchored `^…$`, so the
-  PHP regex carries explicit `^…$`); the browser-native popover is
-  the UX-first gate that fires BEFORE the IIFE calls `sb.api.call`;
-  the server-side `preg_match` is the load-bearing security gate
-  for curl-driven / third-party-theme callers that bypass it.
+  `SteamID::HANDLER_STRICT_REGEX` (#1423 follow-up #4) is the single
+  source of truth the per-handler `preg_match` calls consume — see
+  `api_comms_add` / `api_bans_add` / `api_admins_add` for the
+  canonical reference shape. The constant's docblock spells out the
+  contract: byte-for-byte symmetry with the form template's
+  `pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"`, the load-bearing
+  `D` modifier (without it `STEAM_0:0:1\n` slips past the gate and
+  500s on `toSteam2()`), and the deliberate asymmetry with
+  `ID_PATTERNS` (bracketless Steam3 `U:1:N` is excluded from the
+  handler gate — it stays a library-side convenience for the
+  conversion path but isn't an accepted panel-input shape because
+  the form template's `pattern` doesn't accept it either). Don't
+  hand-roll a copy of the regex literal at the handler call site —
+  the pre-#1423-follow-up-#4 hand-rolled copies silently missed the
+  `D` modifier, producing the newline-bypass class. The client-side
+  native validation in the corresponding form template uses the
+  matching `pattern="STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}"` (HTML's
+  `pattern` attribute is implicitly anchored `^…$`, so the PHP
+  regex carries explicit `^…$`); the browser-native popover is the
+  UX-first gate that fires BEFORE the IIFE calls `sb.api.call`; the
+  server-side `preg_match` is the load-bearing security gate for
+  curl-driven / third-party-theme callers that bypass it.
 
   The pre-#1420 `SteamID::isValidID($raw)` was structurally unsafe
   — the bundled helper's regexes were unanchored with loose character
@@ -763,9 +774,28 @@ of the diff ship together or not at all.
   doesn't re-open the bypass class). Regression coverage for both
   layers: `web/tests/integration/SteamIDValidationTest.php` pins
   the library's shape contract (every bypass above is asserted as
-  rejected); `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`
+  rejected, the new `HANDLER_STRICT_REGEX` constant's `D`-modifier
+  + bracketless-Steam3-rejection contract is pinned by
+  `testHandlerStrictRegexIsExposedAndCarriesDModifier` /
+  `testHandlerStrictRegexAgreesWithIdPatternsOnAcceptableShapes` /
+  `testHandlerStrictRegexRejectsBracketlessSteam3` /
+  `testHandlerStrictRegexRejectsNewlineBypass`, the OpenID
+  regex tightening in `SteamAuthHandler` is pinned by
+  `testSteamAuthHandlerOpenIdRegexAcceptsOnly17DigitsStartingWith7`,
+  and the install wizard's regex is pinned by
+  `testInstallWizardSteamIdRegexCarriesDModifier`);
+  `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`
   + `BansTest.php` + `AdminsTest.php` pin the handler-side
-  `ApiError('validation', …, 'steam')` envelope.
+  `ApiError('validation', …, 'steam')` envelope (each test now
+  includes the `STEAM_0:0:1\n` / `[U:1:1]\n` / `76561197960265728\n`
+  newline-bypass cases as #1423 follow-up #4 regression guards);
+  `web/tests/api/BansTest.php::testAddIpTypeAlwaysWritesEmptyAuthid`
+  pins the IP-type empty-`authid` contract (valid Steam input +
+  garbage + newline-bypass all write empty); the kickit / blockit
+  `SteamID::compare()` pre-`isValidID()` gate is pinned by
+  `KickitTest::testKickPlayerReturnsNotFoundForMalformedSteamId` /
+  `testKickPlayerReturnsNotFoundForMalformedIp` and
+  `BlockitTest::testBlockPlayerReturnsNotFoundForMalformedSteamId`.
 
   **Page-handler form-POST surfaces** (`page.submit.php`,
   `admin.edit.{ban,comms,admindetails}.php`,
@@ -785,6 +815,20 @@ of the diff ship together or not at all.
      the operator's raw input on the bounce so they see exactly
      what they typed and can correct the typo without re-typing
      everything else).
+   - `admin.edit.ban.php` ON IP-TYPE bans hard-codes
+     `$_POST['steam'] = ''` regardless of whatever the operator
+     typed in the Steam ID field — the column is the *steam id*
+     of the banned player; on an IP-type ban there is no steam id,
+     so the canonical value is the schema's `NOT NULL default ''`
+     empty string (matching `api_bans_add`'s same-PR fix). The
+     pre-#1423-follow-up-#4 shape (the `82e8c3d2` "canonicalise on
+     IP-type" nit) preserved the canonical-on-valid case but
+     failed to suppress the raw-on-invalid case AND continued
+     writing the canonicalised SteamID into `:authid` for IP-only
+     bans — both shapes are wrong. The form-side input remains
+     visible on the IP-type bounce path (re-emit through the
+     template `placeholder`, NOT a stale value), but the DB write
+     is divorced from it.
    - `page.submit.php` doesn't call `SteamID::toSteam2()` at all —
      it stores the raw user-input verbatim in `:prefix_submissions`
      and the moderation queue resolves the canonical form on
@@ -798,7 +842,23 @@ of the diff ship together or not at all.
      left the operator with no signal as to which line broke or
      how many of the preceding inserts committed (no transaction
      wrapper). The success toast now carries the skipped-line
-     count alongside the imported count.
+     count alongside the imported count. Note: no transaction
+     wrapper is in place — partial commits are still possible.
+     The skipped-count surfaces in the success toast string so the
+     operator gets actionable feedback; full atomic-import work
+     (transaction + per-line audit trail) is a sister follow-up.
+   - `SteamID::compare($a, $b)` (used by `api_kickit_kick_player`
+     / `api_blockit_block_player` to per-player-match A2S
+     responses) routes through `toSteam64()` and throws on
+     invalid input. Pre-#1423-follow-up-#4 the iframe handlers
+     reached `compare()` with the operator-controlled `$check`
+     value unvalidated — a hostile caller (or a typo'd deep-link
+     URL) reliably 500'd the iframe; the loop renderer had no way
+     to tell "no match" apart from "your input was garbage".
+     Gate `$check` with `SteamID::isValidID()` (Steam-type) or
+     `filter_var(FILTER_VALIDATE_IP)` (IP-type) BEFORE the
+     `compare()` call and surface the structured `not_found`
+     envelope the iframe expects on the fail branch.
 
   The validate-before-convert order is THE structural contract:
   call `SteamID::isValidID($raw)` first, surface the error on the
@@ -3147,6 +3207,112 @@ contacting every contributor individually.
   cannot-throw guarantee in handler code, so wrapping it in
   `try/catch` is a code smell signalling the upstream gate is
   missing.
+- Hand-rolling the strict SteamID-shape regex literal at the
+  per-handler `preg_match` call site (the pre-#1423-follow-up-#4
+  shape: `preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $raw)`
+  — note the missing `D` modifier) → use the single source of
+  truth `SteamID::HANDLER_STRICT_REGEX`. The pre-#1423-follow-up-#4
+  copies silently missed the `D` modifier; the input
+  `STEAM_0:0:1\n` (or any newline-suffixed shape) matched the
+  per-handler regex (`$` matches end-of-string OR a final `\n`
+  without the modifier) but then FAILED the library's
+  `SteamID::isValidID()` / `toSteam2()` (which DO carry the
+  modifier post-#1423 follow-up #1), throwing
+  `Exception('Invalid SteamID input!')` → `Api::handle`
+  `Throwable` fallback → generic 500 envelope. The bug class
+  #1420 was supposed to close re-opened by accident on the
+  newline shape because the two gate layers drifted on the
+  modifier set. The `HANDLER_STRICT_REGEX` constant guarantees
+  byte-for-byte sync; a hand-rolled local copy at a future
+  handler call site silently invites the same bug. Regression
+  guard:
+  `web/tests/integration/SteamIDValidationOrderTest.php::testJsonHandlersUseSingleSourceOfTruthRegex`
+  (asserts every JSON handler invokes `preg_match(SteamID::HANDLER_STRICT_REGEX, …)`
+  literally — not a copy, not a concatenation),
+  `web/tests/integration/SteamIDValidationTest.php::testHandlerStrictRegexRejectsNewlineBypass`
+  (asserts the newline shape is REJECTED at the gate),
+  `web/tests/api/CommsTest.php::testAddRejectsInvalidSteamIdShape`
+  + `BansTest.php` + `AdminsTest.php` (the
+  `"STEAM_0:0:1\n"` / `"[U:1:1]\n"` / `"76561197960265728\n"`
+  cases pin the wire-side behavior).
+- Storing the operator-typed Steam ID in `:prefix_bans.authid`
+  on an IP-type ban (the `82e8c3d2` "canonicalise valid IDs on
+  IP-type bans to match pre-tighter behaviour" nit shape) → the
+  `:authid` column is the *steam id* of the banned player. On
+  an IP-type ban (`BanType::Ip = 1`) there is no steam id, by
+  definition; the canonical "no steam id" value is the schema's
+  `NOT NULL default ''` empty string. The `82e8c3d2` nit aimed
+  to preserve "pre-tightening behavior" for the case where the
+  operator typed a valid-looking SteamID into the form's
+  Steam ID box and then flipped the type radio to "IP-type" —
+  pre-tightening the unconditional `toSteam2($rawSteam)` would
+  have stored the canonicalised value in `:authid` AND the
+  unconditional run would have raised on `garbage` and 500'd
+  the page. The nit canonicalised the valid case (good
+  intention) but didn't suppress the storage path (the bug it
+  carried), AND failed to defend the invalid-input branch on
+  the IP-type arm (the 500 was still reachable via
+  `?type=1&steam=garbage`). The right shape is: hard-code
+  `$_POST['steam'] = ''` for `$banType === BanType::Ip` and
+  let the operator's form input remain visible only as
+  client-side echo (template `placeholder`, NOT a stale value).
+  Matches the `api_bans_add` write-side fix in the same PR
+  (`$steam = $banType === BanType::Ip ? '' : ...`). The
+  asymmetry pre-#1423-follow-up-#4 (page handler stored
+  canonicalised, JSON handler stored empty) was its own bug
+  class — third-party callers POSTing to the iframe-routed
+  page handler vs. the JSON dispatcher produced inconsistent
+  DB state for the same logical input. Regression guard:
+  `web/tests/api/BansTest.php::testAddIpTypeAlwaysWritesEmptyAuthid`
+  (valid Steam input + garbage + newline-bypass all write
+  empty `authid` on `type=1`).
+- Calling `SteamID::compare($a, $b)` (or any other
+  `SteamID::*` method that funnels through `toSteam64()` /
+  `resolveInputID()`) with operator-controlled input that
+  hasn't been gated through `SteamID::isValidID()` first → same
+  bug class as the JSON handler convert-before-validate trap,
+  different blast radius. `compare()` is used by
+  `api_kickit_kick_player` and `api_blockit_block_player` to
+  per-player-match the A2S `status` response against the
+  operator's target; on any input that fails the library shape
+  gate the `toSteam64()` call throws and the iframe's loop
+  renderer gets a generic 500 envelope instead of the
+  structured `not_found` envelope that says "no match found
+  for that target". The iframe can't tell the two apart, and a
+  hostile caller posting `?check=garbage&type=0` reliably 500s
+  the panel. The fix is a `SteamID::isValidID($check)` gate
+  (Steam-type) or `filter_var($check, FILTER_VALIDATE_IP)`
+  gate (IP-type) BEFORE the `compare()` call site, returning
+  the structured `not_found` envelope on the fail branch.
+  Pinned by
+  `web/tests/api/KickitTest.php::testKickPlayerReturnsNotFoundForMalformedSteamId`
+  + `testKickPlayerReturnsNotFoundForMalformedIp` and
+  `web/tests/api/BlockitTest.php::testBlockPlayerReturnsNotFoundForMalformedSteamId`.
+- Tightening `SteamAuthHandler::validate()`'s OpenID-claimed-ID
+  regex to anything OTHER than `7\d{16}+` with the `D`
+  modifier (e.g. the pre-#1423-follow-up-#4 shape
+  `7[0-9]{15,25}+` without `D`) → Steam in practice always
+  returns a 17-digit Steam64 in the `openid_claimed_id` URL,
+  and the panel's downstream `SteamID::toSteam2()` carries
+  the library-side `^\d{17}$D` gate post-#1423 follow-up #1
+  (the symmetry contract). If the regex here loosens (accepts
+  16 digits or 18-25 digits, or drops the `D` modifier and
+  accepts a trailing `\n`), the input slips past `validate()`
+  but then fails the library's gate in `check()`'s
+  `toSteam2()` call — the exception escapes the constructor
+  unhandled and the operator lands on a 500 mid-Steam-login
+  round-trip (silent failure mode — there's no `try/catch`
+  here and the chrome's `PageDie()` doesn't run on a callback
+  redirect). The 17-digit shape is the contract Steam is on
+  record committing to (their OpenID 2.0 endpoint hasn't
+  emitted any other shape since 2010); a future Steam-side
+  change that emits a different shape surfaces here as a
+  clean false return (operator sees the
+  `m=steam_failed` redirect) instead of as a 500. The defense-
+  in-depth `SteamID::isValidID()` gate in `check()` is the
+  second line — both halves of the contract ship together.
+  Pinned by
+  `web/tests/integration/SteamIDValidationTest.php::testSteamAuthHandlerOpenIdRegexAcceptsOnly17DigitsStartingWith7`.
 - Editing `install/includes/sql/data.sql` (or `struc.sql`) without a paired
   `web/updater/data/<N>.php` → upgraded installs silently miss the change.
 - WYSIWYG / "rich HTML" editors (TinyMCE, CKEditor, …) for fields stored

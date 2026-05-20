@@ -58,7 +58,7 @@ function api_comms_add(array $params): array
     if ($rawSteam === '') {
         throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
     }
-    if (!preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17})$/', $rawSteam)) {
+    if (!preg_match(SteamID::HANDLER_STRICT_REGEX, $rawSteam)) {
         throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
     }
     $steam = SteamID::toSteam2($rawSteam);
