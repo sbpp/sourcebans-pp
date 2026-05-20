@@ -196,7 +196,7 @@ test.describe('#1207 routing + truthiness fixes', () => {
         });
     });
 
-    test.describe('CC-5 + CC-6: footer credibility', () => {
+    test.describe('CC-5 + CC-6 + #1417: footer credibility + sponsor link', () => {
         test('footer carries data-version="dev" in the dev stack', async ({ page }) => {
             await page.goto('/');
 
@@ -240,11 +240,81 @@ test.describe('#1207 routing + truthiness fixes', () => {
             await expect(link).toHaveAttribute('target', '_blank');
             await expect(link).toHaveAttribute('rel', /noopener/);
 
-            // Anti-regression: the legacy marketing-site URL must
-            // not appear anywhere in the footer. If a future PR
-            // adds a second attribution row, this catches the wrong
-            // one slipping back in.
-            await expect(page.locator('footer.sbpp-footer a[href*="sbpp.github.io"]')).toHaveCount(0);
+            // Anti-regression: the legacy marketing-site URL must not
+            // appear anywhere in the footer EXCEPT as the canonical
+            // sponsor link (#1417), which intentionally points at the
+            // `/sponsor/` landing page on sbpp.github.io. The `:not()`
+            // exempts the sponsor anchor by `data-testid` so a future
+            // PR that accidentally reintroduces the legacy marketing
+            // URL (e.g. as a second attribution row) still trips this
+            // guard. If a future PR adds a THIRD sbpp.github.io link
+            // beyond the sponsor, this catches the wrong one slipping in.
+            await expect(
+                page.locator('footer.sbpp-footer a[href*="sbpp.github.io"]:not([data-testid="app-footer-sponsor"])'),
+            ).toHaveCount(0);
+        });
+
+        /**
+         * #1417: every panel page paints the chrome footer with a
+         * "Support SourceBans++" link mirroring the docs-side
+         * `docs/src/components/Footer.astro` affordance. The link is
+         * chrome-level (no `{if}` gate on permission state), points at
+         * the canonical `/sponsor/` docs landing page (#1416), and
+         * carries the same external-link contract as the sibling
+         * SourceBans++ repo link.
+         *
+         * This test is the runtime parity for
+         * `web/tests/integration/FooterSponsorLinkTest.php` — the
+         * integration test pins the rendered HTML shape (data-testid,
+         * href, target, rel, the aria-hidden separator); this E2E test
+         * pins that the link is visible AND reachable in a real
+         * browser at both the desktop and mobile project viewports.
+         * Cheap insurance against a regression where the link renders
+         * in the HTML but a CSS rule (`display: none` / `visibility:
+         * hidden` / `position: absolute; left: -9999px`) makes it
+         * functionally invisible to users.
+         */
+        test('sponsor link is visible with the canonical external-link contract', async ({ page }) => {
+            await page.goto('/');
+
+            const sponsor = page.locator('[data-testid="app-footer-sponsor"]');
+
+            // Visibility: anchored on the testid (not on visible text
+            // or class chains, per #1123). `toBeVisible()` enforces
+            // both `display !== none` and that the element is in the
+            // layout — a CSS regression that visually hides the link
+            // would fail here. The project matrix covers both desktop
+            // (`chromium`, 1280×720) and mobile (`mobile-chromium`,
+            // iPhone-13 viewport ~390×844), so the assertion exercises
+            // the link's reachability on both form factors without a
+            // separate per-project arm.
+            await expect(sponsor).toBeVisible();
+
+            // Canonical /sponsor/ docs landing page (#1416). Pointing
+            // at the docs anchor means future funding-platform
+            // additions ship as data-only edits to
+            // `docs/src/data/sponsors.json` — no panel release needed
+            // to rotate a Patreon / Ko-fi URL. A regression to a
+            // single-platform URL would silently re-bind the panel
+            // to one platform.
+            await expect(sponsor).toHaveAttribute('href', 'https://sbpp.github.io/sponsor/');
+
+            // External-link contract: matches the sibling repo link
+            // above. `target="_blank"` opens the docs in a new tab so
+            // the operator doesn't lose their place; `rel="noopener"`
+            // is the minimum to prevent the opened tab from accessing
+            // `window.opener` (defence-in-depth that also nukes
+            // `Referer` leakage on most modern browsers).
+            await expect(sponsor).toHaveAttribute('target', '_blank');
+            await expect(sponsor).toHaveAttribute('rel', /noopener/);
+
+            // The visible label is the accessible name (the icon
+            // carries `aria-hidden="true"` so it doesn't double the
+            // announcement). Anchoring on the testid above is the
+            // primary selector; this text check is a sanity assertion
+            // that the link copy stayed intact through a future
+            // refactor.
+            await expect(sponsor).toContainText('Support SourceBans++');
         });
     });
 });
