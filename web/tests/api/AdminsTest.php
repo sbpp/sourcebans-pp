@@ -102,6 +102,15 @@ final class AdminsTest extends ApiTestCase
                 'asdfSTEAM_0:0:123',               // substring-bypass (unanchored)
                 'asdf 76561197960265728 garbage',  // embedded Steam64 — pre-fix corrupted
                 'U:1:1',                           // bracketless Steam3 — form pattern requires brackets
+                // #1423 follow-up #4 — bypass shapes that `trim()`
+                // upstream of the gate does NOT defend against (the
+                // common trailing-newline case is trim-eaten — see
+                // SteamIDValidationTest's
+                // `testHandlerStrictRegexRejectsNewlineBypass` for
+                // the regex-level newline contract).
+                "STEAM_0:0:1\nGARBAGE",            // mid-string newline (trim doesn't help)
+                "GARBAGE\nSTEAM_0:0:1",            // leading garbage + mid-string newline
+                "STEAM_0:0:1\xC2\xA0",             // trailing NBSP (U+00A0); trim doesn't handle unicode whitespace
             ] as $badSteam
         ) {
             $env = $this->api('admins.add', $this->adminParams(['steam' => $badSteam]));

@@ -178,6 +178,21 @@ final class CommsTest extends ApiTestCase
      *   - `'U:1:1'` — bracketless Steam3; the library accepts but
      *     the form's `pattern` requires brackets, so the strict
      *     gate rejects for symmetry.
+     *   - `"STEAM_0:0:1\nGARBAGE"` / `"GARBAGE\nSTEAM_0:0:1"` —
+     *     mid-string newline bypass (#1423 follow-up #4). `trim()`
+     *     upstream of the gate handles trailing whitespace, so
+     *     the common `"STEAM_0:0:1\n"` typo path strips through to
+     *     a clean `"STEAM_0:0:1"` and rightly succeeds. But a
+     *     hostile caller (or a malformed file paste) embeds the
+     *     newline mid-string, where `trim()` doesn't touch it.
+     *     The strict gate's `^…$` anchors + non-`m` mode require
+     *     the whole string match the pattern; embedded `\n` fails.
+     *     `HANDLER_STRICT_REGEX`'s regex-level newline rejection is
+     *     pinned directly in `SteamIDValidationTest::testHandlerStrictRegexRejectsNewlineBypass`.
+     *   - `"STEAM_0:0:1\xC2\xA0"` — trailing NBSP (U+00A0). `trim`
+     *     only handles the ASCII whitespace set; unicode whitespace
+     *     like NBSP / zero-width-space / ideographic-space pass
+     *     through trim and must be caught at the regex layer.
      */
     public function testAddRejectsInvalidSteamIdShape(): void
     {
@@ -191,6 +206,9 @@ final class CommsTest extends ApiTestCase
                 'asdfSTEAM_0:0:123',
                 'asdf 76561197960265728 garbage',
                 'U:1:1',
+                "STEAM_0:0:1\nGARBAGE",
+                "GARBAGE\nSTEAM_0:0:1",
+                "STEAM_0:0:1\xC2\xA0",
             ] as $badSteam
         ) {
             $env = $this->api('comms.add', [
