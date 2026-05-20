@@ -42,6 +42,24 @@ function api_blockit_block_player(array $params): array
     $type   = (int)($params['type']   ?? 0);
     $length = (int)($params['length'] ?? 0);
 
+    // #1423 follow-up #4 — gate `$check` shape BEFORE the
+    // `SteamID::compare()` call below; the comms-block flow is always
+    // Steam-ID-keyed (there is no "block by IP" path) so the gate is
+    // unconditional. `compare()` routes through `toSteam64()` which
+    // throws on any non-isValidID input; without this gate a hostile
+    // caller posting `?check=garbage` 500s the handler instead of
+    // getting the `not_found` envelope the iframe loop expects.
+    if (!SteamID::isValidID($check)) {
+        return [
+            'status'   => 'not_found',
+            'sid'      => $sid,
+            'num'      => $num,
+            'hostname' => '',
+            'ip'       => '',
+            'port'     => '',
+        ];
+    }
+
     $serverInfo = $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
     $GLOBALS['PDO']->bind(':sid', $sid);
     $sdata = $GLOBALS['PDO']->single() ?: ['ip' => '', 'port' => ''];

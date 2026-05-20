@@ -61,6 +61,40 @@ function api_kickit_kick_player(array $params): array
     $num   = (int)($params['num']   ?? 0);
     $type  = (int)($params['type']  ?? 0);
 
+    // #1423 follow-up #4 — gate the `check` shape BEFORE we reach the
+    // `SteamID::compare()` call below. For `type === 0` (Steam-ID
+    // kick), `compare()` routes through `toSteam64()` → the library
+    // throws `Exception('Invalid SteamID input!')` on any input that
+    // fails the strict shape gate. The exception escapes the handler
+    // via `Api::handle`'s `Throwable` fallback as a generic 500
+    // envelope; the iframe loop then can't tell "no match" apart from
+    // "your input was garbage", and a hostile caller posting
+    // `?check=garbage&type=0` reliably 500s the panel. For
+    // `type === 1` (IP-address kick) we run `filter_var` instead so a
+    // malformed IP returns the standard `not_found` envelope rather
+    // than triggering the SteamID compare on whatever the operator
+    // typed in the wrong box.
+    if ($type === 0 && !SteamID::isValidID($check)) {
+        return [
+            'status' => 'not_found',
+            'sid'    => $sid,
+            'num'    => $num,
+            'hostname' => '',
+            'ip'     => '',
+            'port'   => '',
+        ];
+    }
+    if ($type === 1 && !filter_var($check, FILTER_VALIDATE_IP)) {
+        return [
+            'status' => 'not_found',
+            'sid'    => $sid,
+            'num'    => $num,
+            'hostname' => '',
+            'ip'     => '',
+            'port'   => '',
+        ];
+    }
+
     $serverInfo = $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
     $GLOBALS['PDO']->bind(':sid', $sid);
     $sdata = $GLOBALS['PDO']->single() ?: ['ip' => '', 'port' => ''];

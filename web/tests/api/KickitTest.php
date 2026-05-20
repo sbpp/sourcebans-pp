@@ -65,4 +65,75 @@ final class KickitTest extends ApiTestCase
         $env = $this->api('kickit.kick_player', ['check' => 'STEAM_0:0:1', 'sid' => 0]);
         $this->assertEnvelopeError($env, 'forbidden');
     }
+
+    /**
+     * #1423 follow-up #4 — pre-fix `api_kickit_kick_player` called
+     * `SteamID::compare($player_steamid, $check)` without gating
+     * `$check` first. `compare()` routes through `toSteam64()` which
+     * throws `Exception('Invalid SteamID input!')` on any input
+     * that fails the library's strict shape gate. The exception
+     * escaped the handler via `Api::handle`'s `Throwable` fallback as
+     * a generic 500 envelope; the iframe loop then can't tell "no
+     * match" apart from "your input was garbage", and a hostile
+     * caller posting `?check=garbage&type=0` reliably 500'd the
+     * panel. The fix is a pre-`SteamID::compare()` `isValidID()` /
+     * `filter_var(IP)` gate that surfaces the structured `not_found`
+     * envelope the iframe expects on any malformed input.
+     */
+    public function testKickPlayerReturnsNotFoundForMalformedSteamId(): void
+    {
+        $this->loginAsAdmin();
+        foreach (
+            [
+                'garbage',                  // unrecognised shape
+                'STEAM_0:0:',               // empty Z (library accepts loose `\d*` but `\d+` rejects)
+                "STEAM_0:0:1\n",            // trailing newline (library `D` modifier rejects)
+                'STEAM_2:0:1',              // X=2 (library `[01]` rejects)
+                '',                          // empty
+            ] as $badCheck
+        ) {
+            $env = $this->api('kickit.kick_player', [
+                'check' => $badCheck,
+                'sid'   => 1,
+                'num'   => 0,
+                'type'  => 0,
+            ]);
+            $this->assertTrue(
+                $env['ok'],
+                sprintf('expected ok envelope for check=%s, got: %s', var_export($badCheck, true), json_encode($env)),
+            );
+            $this->assertSame(
+                'not_found',
+                $env['data']['status'],
+                sprintf('expected status=not_found for check=%s', var_export($badCheck, true)),
+            );
+        }
+    }
+
+    /**
+     * #1423 follow-up #4 — paired with the SteamID guard, the IP
+     * branch of `api_kickit_kick_player` (`type === 1`) needs the
+     * same defense: a garbage `check` value reaches the iframe loop
+     * with a `no_connect` envelope and an opaque iframe failure.
+     * The fix uses `filter_var(FILTER_VALIDATE_IP)` so the structured
+     * `not_found` envelope surfaces.
+     */
+    public function testKickPlayerReturnsNotFoundForMalformedIp(): void
+    {
+        $this->loginAsAdmin();
+        foreach (['garbage', 'not.an.ip', "192.168.0.1\n", ''] as $badCheck) {
+            $env = $this->api('kickit.kick_player', [
+                'check' => $badCheck,
+                'sid'   => 1,
+                'num'   => 0,
+                'type'  => 1,
+            ]);
+            $this->assertTrue($env['ok']);
+            $this->assertSame(
+                'not_found',
+                $env['data']['status'],
+                sprintf('expected status=not_found for IP check=%s', var_export($badCheck, true)),
+            );
+        }
+    }
 }
