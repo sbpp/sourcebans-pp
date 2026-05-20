@@ -273,8 +273,8 @@
         </div>
 
         <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
-            <div>
-                <label class="label" for="search-bans-btype">Type</label>
+            <label class="label" for="search-bans-btype">Type</label>
+            <div class="flex items-center gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-bans-btype"
                         data-testid="search-bans-btype">
@@ -282,7 +282,6 @@
                     <option value="1">IP address</option>
                 </select>
             </div>
-            <div class="text-xs text-muted">Filter to either SteamID-only or IP-only ban records.</div>
             <button type="submit"
                     class="btn btn--secondary btn--sm"
                     data-testid="search-bans-submit-btype"
@@ -294,8 +293,8 @@
 
         {if NOT $hideadminname}
             <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
-                <div>
-                    <label class="label" for="search-bans-admin">Admin</label>
+                <label class="label" for="search-bans-admin">Admin</label>
+                <div class="flex items-center gap-2" style="flex-wrap:wrap">
                     <select class="select"
                             id="search-bans-admin"
                             data-testid="search-bans-admin">
@@ -305,7 +304,6 @@
                         {/foreach}
                     </select>
                 </div>
-                <div class="text-xs text-muted">Show only bans issued by the selected admin.</div>
                 <button type="submit"
                         class="btn btn--secondary btn--sm"
                         data-testid="search-bans-submit-admin"
@@ -317,8 +315,8 @@
         {/if}
 
         <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
-            <div>
-                <label class="label" for="search-bans-server">Server</label>
+            <label class="label" for="search-bans-server">Server</label>
+            <div class="flex items-center gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-bans-server"
                         data-testid="search-bans-server">
@@ -332,7 +330,6 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Hostnames load asynchronously; pre-resolution shows ip:port.</div>
             <button type="submit"
                     class="btn btn--secondary btn--sm"
                     data-testid="search-bans-submit-server"
