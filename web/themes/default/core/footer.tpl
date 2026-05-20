@@ -89,6 +89,58 @@
     <footer class="app-footer sbpp-footer" data-version="{$version}" data-testid="app-footer">
         <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
         {$version}{$git}
+        {*
+            Sponsor affordance (#1417). Mirrors the docs-side
+            `docs/src/components/Footer.astro` "Support SourceBans++" link
+            so self-hosters who land on the panel via the wizard's
+            "Open the panel" CTA — and never see the docs site — still
+            get a one-line funding ask on every page.
+
+            href is the canonical `/sponsor/` landing page on sbpp.github.io
+            (#1416), NOT a single funding-platform URL: that page lists
+            every channel (GitHub Sponsors today, Open Collective /
+            Patreon / etc. as they're added) and the sponsor roll, all
+            driven by `docs/src/data/sponsors.json`. Pointing at the docs
+            anchor means future funding-platform additions ship as a
+            data-only edit on the docs side — we never have to cut a
+            panel release just to rotate a Patreon / Ko-fi URL.
+
+            No opt-out by design (mirrors the docs-side affordance):
+              1. Symmetry — the docs site carries the same line on every
+                 page; the panel is the second surface for operators who
+                 never read docs.
+              2. One line of muted footer text isn't an advertising
+                 surface that warrants a per-install toggle.
+              3. A toggle costs a settings-UI row + `sb_settings` row +
+                 paired `web/updater/data/<N>.php` migration + permission
+                 gate + `{if}` branch — disproportionate plumbing for
+                 one line. Same reasoning as the AGENTS.md anti-pattern
+                 on the project-announcements feed toggle.
+
+            Visual contract: muted by default (inherits `.app-footer`'s
+            `--text-faint`), accent-on-hover/focus-visible (same pattern
+            as the sibling SourceBans++ repo link). The Lucide `heart`
+            glyph stays in the brand accent colour even at rest so the
+            line reads as a CTA hint without shouting — mirrors the docs
+            `.sbpp-sponsor-link :global(svg)` rule. The decorative `·`
+            between version and link carries `aria-hidden="true"` so
+            screen readers don't read a literal "middle dot".
+
+            Lucide is already loaded site-wide further down in this
+            template, so the `<i data-lucide="heart">` placeholder is
+            hydrated for free with no new asset request. `data-testid`
+            is the E2E / integration-test anchor; `target="_blank"` +
+            `rel="noopener"` match the sibling external-link contract.
+        *}
+        <span class="app-footer__sep" aria-hidden="true">·</span>
+        <a class="app-footer__sponsor"
+           href="https://sbpp.github.io/sponsor/"
+           target="_blank"
+           rel="noopener"
+           data-testid="app-footer-sponsor">
+            <i data-lucide="heart" aria-hidden="true" style="width:12px;height:12px"></i>
+            Support SourceBans++
+        </a>
     </footer>
   </div>{* /.main *}
 </div>{* /.app *}

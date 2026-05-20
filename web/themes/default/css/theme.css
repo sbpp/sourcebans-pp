@@ -2031,6 +2031,53 @@ details.queue-row > summary > .row-actions {
   color: var(--accent);
   text-decoration: underline;
 }
+/* ---- Footer sponsor affordance (#1417) ----
+   The "Support SourceBans++" link sitting between the version
+   string and the (current) end of the footer line. Visual
+   contract mirrors the docs-side `.sbpp-sponsor-link` in
+   `docs/src/components/Footer.astro`: muted body text with the
+   heart icon staying in the brand accent at rest so the line
+   reads as a CTA hint without shouting. Hover / focus-visible
+   inherit the existing `.app-footer a` accent + underline rules
+   above — no override needed on this rule.
+
+   `inline-flex` + `gap` keeps the icon and label baselined
+   tightly without leaning on a literal space character between
+   them (the template's newline would otherwise insert one and
+   the gap would be uneven across themes that strip
+   whitespace-collapsing). `0.35em` matches the docs side's
+   `gap: 0.45em` scaled down for the footer's `--fs-xs` body
+   instead of the docs' `--sl-text-xs` — tuned by eye for
+   approximate visual parity at 12px / ~13.5px respectively.
+
+   `.app-footer__sponsor i` (the Lucide-hydrated `<svg>` after
+   the helper runs) explicitly opts out of the muted inherit
+   chain so the heart stays accent-coloured even when the
+   surrounding text is muted. Hover/focus reveal accent on the
+   text too, at which point the icon-vs-text colour matches and
+   the whole link reads as one CTA. */
+.app-footer__sponsor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.app-footer__sponsor i,
+.app-footer__sponsor svg {
+  color: var(--accent);
+}
+/* Decorative separator between `{$version}{$git}` and the sponsor
+   link. Pure spacing helper; the surrounding template whitespace
+   already inserts a space character on each side, but the inline
+   margin keeps the dot from crowding the version string or the
+   heart icon when the browser collapses adjacent whitespace.
+   `aria-hidden="true"` on the markup is the load-bearing half —
+   screen readers skip it so they don't announce "middle dot".
+   The visual hierarchy makes the dot read as a delimiter, not
+   content, which matches the chrome elsewhere in the panel that
+   uses `·` as a soft separator (e.g. the drawer meta rows). */
+.app-footer__sep {
+  margin-inline: 0.35em;
+}
 
 /* ---- Dashboard intro Markdown editor + preview (#1207 SET-1) ----
    Two-column grid that drops to one column on mobile. The textarea
