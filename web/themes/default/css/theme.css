@@ -2060,6 +2060,15 @@ details.queue-row > summary > .row-actions {
   display: inline-flex;
   align-items: center;
   gap: 0.35em;
+  /* `inline-flex` sets the container's baseline to the bottom edge of
+     its last line box (per CSS Flex Layout §F.1), so without an explicit
+     `vertical-align` the link sits 2-3px below the surrounding inline
+     text whose baseline is the actual font baseline. `middle` aligns
+     the flex box's vertical center with the parent's x-height + half
+     baseline, which lands the icon + label flush with the version
+     string and the `·` separator. Caught post-screenshot-regen in
+     panel-05-admin-dashboard.png. */
+  vertical-align: middle;
 }
 .app-footer__sponsor i,
 .app-footer__sponsor svg {
