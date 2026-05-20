@@ -1,13 +1,21 @@
 # These are supported funding model platforms.
 #
-# We point GitHub's "Sponsor this project" UI at the canonical
-# /sponsor/ docs page rather than a single platform-specific account.
-# That landing page lists every funding channel (GitHub Sponsors
-# today, Open Collective + others once they're approved) and the
-# current sponsor roll. Adding a new funding platform later is a
-# one-line edit on docs/src/data/sponsors.json — this file does not
-# need to change again.
+# Two surfaces, on purpose:
+#
+#   - `github: sbpp` keeps the native "Sponsor this project" button
+#     visible in the repo's GitHub chrome (the org-level GitHub
+#     Sponsors account, not a maintainer's personal one). High-
+#     discovery affordance — visitors don't have to open a dropdown
+#     to find it.
+#   - `custom:` adds the canonical /sponsor/ docs landing page to
+#     the funding selector. That page lists every funding channel
+#     (GitHub Sponsors today, Open Collective + others once they're
+#     approved) and the current sponsor roll, so adding a new
+#     platform later is a one-line edit on
+#     docs/src/data/sponsors.json — this file does not need to
+#     change again.
 #
 # See issue #1416 + docs/src/content/docs/sponsor.mdx.
 
+github: sbpp
 custom: ['https://sbpp.github.io/sponsor/']

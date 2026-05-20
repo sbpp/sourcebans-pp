@@ -61,7 +61,7 @@ community, server network, or hosting business depends on it,
 sponsoring development helps keep the panel healthy &mdash; and
 funds the modernization work that's been landing across v2.x.
 
-[![Sponsor on GitHub](https://img.shields.io/github/sponsors/rumblefrog?style=flat-square&logo=github&label=Sponsor%20on%20GitHub)](https://github.com/sponsors/rumblefrog)
+[![Sponsor on GitHub](https://img.shields.io/github/sponsors/sbpp?style=flat-square&logo=github&label=Sponsor%20on%20GitHub)](https://github.com/sponsors/sbpp)
 
 **Game-server hosts and SourceBans++-as-a-feature providers** &mdash;
 production / commercial use of the web panel is covered by a
