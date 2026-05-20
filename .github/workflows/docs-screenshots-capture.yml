@@ -195,13 +195,66 @@ jobs:
       # Run the TRUSTED capture script. Outputs land in the PR head's
       # docs/src/assets/auto/ via CAPTURE_OUT_OVERRIDE so the auto-
       # commit step picks them up below.
-      - name: Capture screenshots
+      #
+      # Two passes — one per route group — because the install wizard
+      # and the post-install panel need opposite states of
+      # `web/config.php`:
+      #
+      #   - The panel needs `config.php` to bootstrap (without it
+      #     `web/init.php` redirects every panel URL to `/install/`).
+      #   - The install wizard's #1335 C2 guard refuses to start over
+      #     a panel where `config.php` exists (it renders a static
+      #     409 "already installed" page instead).
+      #
+      # The dev stack's entrypoint (`docker/php/web-entrypoint.sh`)
+      # creates `config.php` on first boot, so we land in the
+      # "panel works, wizard refuses" state by default. The dance
+      # below moves the file aside on the host (the bind-mounted
+      # `./web` means the container sees the rename immediately) for
+      # the duration of the install captures, then restores it.
+      - name: Capture panel screenshots
         working-directory: trusted/docs
         env:
           STEAM_API_KEY: '00000000000000000000000000000000'
           PANEL_URL: 'http://localhost:8080'
           CAPTURE_OUT_OVERRIDE: ${{ github.workspace }}/pr-head/docs/src/assets/auto
+          CAPTURE_ROUTES: panel
         run: npm run capture
+
+      - name: Stash config.php to expose the install wizard
+        working-directory: pr-head
+        run: |
+          if [[ -f web/config.php ]]; then
+            mv web/config.php /tmp/sbpp-config-stash.php
+            echo "stashed web/config.php → /tmp/sbpp-config-stash.php"
+          else
+            echo "web/config.php was already absent; nothing to stash"
+          fi
+
+      - name: Capture install screenshots
+        working-directory: trusted/docs
+        env:
+          STEAM_API_KEY: '00000000000000000000000000000000'
+          PANEL_URL: 'http://localhost:8080'
+          CAPTURE_OUT_OVERRIDE: ${{ github.workspace }}/pr-head/docs/src/assets/auto
+          CAPTURE_ROUTES: install
+        run: npm run capture
+
+      # Restore is `if: always()` so a failed install capture (timeout,
+      # unexpected wizard render, etc.) still leaves the panel in a
+      # bootable state for the tear-down step. The matching stash
+      # above only renames when the source file exists, so the pair
+      # is idempotent.
+      - name: Restore config.php
+        if: always()
+        working-directory: pr-head
+        run: |
+          if [[ -f /tmp/sbpp-config-stash.php ]]; then
+            mv /tmp/sbpp-config-stash.php web/config.php
+            echo "restored /tmp/sbpp-config-stash.php → web/config.php"
+          else
+            echo "no stash to restore; nothing to do"
+          fi
 
       - name: Tear down stack
         if: always()

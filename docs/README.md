@@ -83,6 +83,39 @@ different port — see AGENTS.md "Parallel stacks"):
 PANEL_URL=http://localhost:8189 npm run capture
 ```
 
+### `CAPTURE_ROUTES` (install vs panel)
+
+`CAPTURE_ROUTES` picks which route group to capture; defaults to
+`all` (both groups). Useful when iterating on a specific surface:
+
+```sh
+CAPTURE_ROUTES=panel   npm run capture    # post-install panel only
+CAPTURE_ROUTES=install npm run capture    # wizard surfaces only
+```
+
+The install captures have a sharp edge worth knowing about. The
+dev stack's entrypoint (`docker/php/web-entrypoint.sh`) creates
+`web/config.php` on first boot, and the install wizard's #1335 C2
+guard refuses to start whenever `config.php` exists — it renders a
+static 409 "already installed" page instead of step 1. Running
+`CAPTURE_ROUTES=install` against a default-boot dev stack therefore
+silently screenshots that 409 page for every install route, which
+is almost never what you want.
+
+To capture real wizard surfaces locally, move `config.php` aside
+for the duration of the install pass and restore it afterwards:
+
+```sh
+# from the repo root, with the dev stack already running
+mv web/config.php /tmp/sbpp-config-stash.php
+( cd docs && CAPTURE_ROUTES=install npm run capture )
+mv /tmp/sbpp-config-stash.php web/config.php
+```
+
+CI does the same stash/restore dance automatically in
+`docs-screenshots-capture.yml`; this is only relevant when iterating
+locally.
+
 ## CI
 
 Four workflows under `.github/workflows/` cover the docs site:
