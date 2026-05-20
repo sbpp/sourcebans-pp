@@ -67,7 +67,15 @@ $canAddBan       = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner
 $canProtests     = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanProtests));
 $canSubmissions  = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanSubmissions));
 $canImport       = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanImport));
+// #1421 — same feature-toggle gating shape group-ban has carried since
+// #1239: the public-facing `?p=protest` / `?p=submit` pages already
+// refuse to render when these toggles are off (see page.protest.php
+// line 12 / page.submit.php line 29), but the admin moderation
+// queues stayed reachable. Mirror the group-ban contract so the
+// toggles drop both the sidebar entry and the section body.
 $groupBanEnabled = Config::getBool('config.enablegroupbanning');
+$protestEnabled  = Config::getBool('config.enableprotest');
+$submitEnabled   = Config::getBool('config.enablesubmit');
 $canGroupBan     = $canAddBan && $groupBanEnabled;
 
 /*
@@ -167,27 +175,38 @@ $sections = [
         'url'        => 'index.php?p=admin&c=bans&section=add-ban',
         'icon'       => 'plus',
     ],
-    [
+];
+// #1421 — Ban protests / submissions ride the same feature-flag gate
+// shape group-ban does below: omitted from the sidebar entirely when
+// the public-pages toggle (`config.enableprotest` / `config.enablesubmit`)
+// is off, instead of leaving a dead link that lands on a page rendering
+// records the public form can't even produce. The matching section
+// handlers also short-circuit on direct URL access (see the
+// `if (!$protestEnabled)` / `if (!$submitEnabled)` stubs below).
+if ($protestEnabled) {
+    $sections[] = [
         'slug'       => 'protests',
         'name'       => 'Ban protests',
         'permission' => ADMIN_OWNER | ADMIN_BAN_PROTESTS,
         'url'        => 'index.php?p=admin&c=bans&section=protests',
         'icon'       => 'flag',
-    ],
-    [
+    ];
+}
+if ($submitEnabled) {
+    $sections[] = [
         'slug'       => 'submissions',
         'name'       => 'Ban submissions',
         'permission' => ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS,
         'url'        => 'index.php?p=admin&c=bans&section=submissions',
         'icon'       => 'clipboard-list',
-    ],
-    [
-        'slug'       => 'import',
-        'name'       => 'Import bans',
-        'permission' => ADMIN_OWNER | ADMIN_BAN_IMPORT,
-        'url'        => 'index.php?p=admin&c=bans&section=import',
-        'icon'       => 'upload',
-    ],
+    ];
+}
+$sections[] = [
+    'slug'       => 'import',
+    'name'       => 'Import bans',
+    'permission' => ADMIN_OWNER | ADMIN_BAN_IMPORT,
+    'url'        => 'index.php?p=admin&c=bans&section=import',
+    'icon'       => 'upload',
 ];
 // Group ban is feature-flag-gated (Config::getBool('config.enablegroupbanning'))
 // in addition to the permission gate. The other sections render an
@@ -219,14 +238,30 @@ if (!in_array($section, $validSlugs, true)) {
         $section = 'group-ban';
     } elseif ($canAddBan) {
         $section = 'add-ban';
-    } elseif ($canProtests) {
+    } elseif ($canProtests && $protestEnabled) {
+        // #1421 — the toggle-paired arms below prefer a WORKING
+        // landing surface: if `$canProtests` holds but the feature is
+        // off, fall through to `submissions` / `import` / `group-ban`
+        // first when any of those are actually reachable so the
+        // operator lands on a usable queue. We come back to bare
+        // `$canProtests` / `$canSubmissions` (no toggle check) at
+        // the tail of the cascade — landing on the disabled-feature
+        // stub for a user whose ONLY reachable surface is currently
+        // toggled off is more honest and operator-actionable than
+        // bouncing them to `add-ban`'s "Access denied" (the stub
+        // names the load-bearing setting key; Access denied hides
+        // the fact that the feature exists at all).
         $section = 'protests';
-    } elseif ($canSubmissions) {
+    } elseif ($canSubmissions && $submitEnabled) {
         $section = 'submissions';
     } elseif ($canImport) {
         $section = 'import';
     } elseif ($canGroupBan) {
         $section = 'group-ban';
+    } elseif ($canProtests) {
+        $section = 'protests';
+    } elseif ($canSubmissions) {
+        $section = 'submissions';
     } else {
         $section = 'add-ban';
     }
@@ -449,6 +484,16 @@ JS;
 
 // ---------------------------------------------------------------- protests
 if ($section === 'protests') {
+    // #1421 — feature-toggle gate runs BEFORE the permission check so
+    // no SQL fires for a disabled section and the message is the
+    // operator-actionable one (this is configurable in Settings > Main
+    // > Public pages — pointing them at the lever, not just "Access
+    // denied"). Mirrors the `group-ban` stub a few branches below.
+    if (!$protestEnabled) {
+        echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Ban protests are disabled in <strong>config.enableprotest</strong>.</p></div></div>';
+        echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
+        return;
+    }
     if (!$canProtests) {
         echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>';
         echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
@@ -668,6 +713,14 @@ if ($section === 'protests') {
 
 // ---------------------------------------------------------------- submissions
 if ($section === 'submissions') {
+    // #1421 — same shape as the protests gate above. The feature-flag
+    // check runs first so we never hit the `:prefix_submissions` SELECT
+    // on a disabled install and the message points at the toggle key.
+    if (!$submitEnabled) {
+        echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Ban submissions are disabled in <strong>config.enablesubmit</strong>.</p></div></div>';
+        echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
+        return;
+    }
     if (!$canSubmissions) {
         echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>';
         echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';

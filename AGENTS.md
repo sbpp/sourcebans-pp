@@ -1910,6 +1910,30 @@ Conventions:
   not a JS toggle. The chips are server-rendered with
   `data-active="true|false"` + `aria-selected` and the page
   handler runs only the active sub-view's data path.
+- **Feature-disabled stub vs Access-denied ordering (#1421).** When
+  a sub-route is gated by BOTH a `config.enable*` toggle and a
+  permission flag, the **feature-disabled stub takes precedence**
+  over the Access-denied stub: check the toggle FIRST, render the
+  "feature disabled in `<setting.key>`" stub if it's off, and only
+  fall through to the permission check if the toggle is on. The
+  toggle key is operator-actionable (it names the lever they flip
+  in Settings > Main); Access-denied hides the fact that the
+  feature even exists. Canonical shape: the `protests` /
+  `submissions` section handlers in `web/pages/admin.bans.php`
+  (the `if (!$protestEnabled)` / `if (!$submitEnabled)` branches
+  that run upstream of `if (!$canProtests)` / `if (!$canSubmissions)`).
+  The smart-default cascade in the same file mirrors the same
+  precedence: toggle-paired arms (`$canProtests && $protestEnabled`)
+  run first to prefer a working landing surface, but bare
+  `$canProtests` / `$canSubmissions` arms sit AFTER `$canImport` /
+  `$canGroupBan` as a last-resort fallback — so a user whose only
+  reachable surface is currently toggled off lands on the
+  disabled-feature stub, not on `add-ban`'s Access denied. The
+  older `group-ban` stub at the tail of `admin.bans.php` checks
+  permission before mentioning the toggle (legacy shape, predates
+  this contract). Don't "fix" the inconsistency by inverting the
+  new stubs to match `group-ban` — invert `group-ban` to match
+  the new stubs (out of scope for #1421; tracked as a follow-up).
 
 ### Empty states (`first-run` vs `filtered`)
 
