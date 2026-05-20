@@ -65,7 +65,16 @@ if ($posted) {
         $error = 'Password must be at least 8 characters.';
     } elseif ($pass1 !== $pass2) {
         $error = 'Passwords do not match.';
-    } elseif (preg_match('/^STEAM_[01]:[01]:[0-9]+$/', $steam) !== 1) {
+    } elseif (preg_match('/^STEAM_[01]:[01]:[0-9]+$/D', $steam) !== 1) {
+        // #1423 follow-up #4 — `D` modifier added so `STEAM_0:0:1\n`
+        // (trailing newline) is rejected here AND in the matching panel
+        // runtime gate `SteamID::ID_PATTERNS`. Without the modifier the
+        // wizard would silently accept the newline-suffixed shape AND
+        // write the malformed authid into `:prefix_admins.authid`, which
+        // the panel's runtime would then never match (the SQL `=` compare
+        // is byte-exact and the SourceMod plugin's
+        // `authid REGEXP '^STEAM_[0-9]:Y:Z$'` filter would also miss
+        // the row because the trailing `\n` defeats the REGEXP anchor).
         $error = 'Steam ID must be in STEAM_0:X:NNNNNNN format.';
     } elseif (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
         $error = 'Email address is invalid.';
