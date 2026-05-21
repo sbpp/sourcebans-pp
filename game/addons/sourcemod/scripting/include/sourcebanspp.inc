@@ -31,7 +31,7 @@
 
 #define SB_VERSION_MAJOR "1"
 #define SB_VERSION_MINOR "8"
-#define SB_VERSION_PATCH "7"
+#define SB_VERSION_PATCH "8"
 
 #define SB_VERSION   SB_VERSION_MAJOR..."."...SB_VERSION_MINOR..."."...SB_VERSION_PATCH
 
@@ -116,5 +116,14 @@ forward void SBPP_OnReportPlayer(int iReporter, int iTarget, const char[] sReaso
  * @return	bBlock	If enabled, blocks the trigger for OnClientPreAdminCheck
  *********************************************************/
 forward bool SBPP_OnClientPreAdminCheck(AdminCachePart part);
+
+/*********************************************************
+ * Called after a client's admin rights have been fully applied
+ * from the database (flags and groups assigned, cache checked).
+ *
+ * @param	client	The client index who received admin rights
+ * @noreturn
+ *********************************************************/
+forward void SBPP_OnClientPostAdminCheck(int client);
 
 //Yarr!
