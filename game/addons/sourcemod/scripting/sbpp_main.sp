@@ -115,7 +115,8 @@ SMCParser ConfigParser;
 
 GlobalForward g_hFwd_OnBanAdded
 			, g_hFwd_OnReportAdded
-			, g_hFwd_OnClientPreAdminCheck;
+			, g_hFwd_OnClientPreAdminCheck
+			, g_hFwd_OnClientPostAdminCheck;
 
 Handle PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... }; /* Timer handle */
 
@@ -148,6 +149,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	g_hFwd_OnBanAdded = CreateGlobalForward("SBPP_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
 	g_hFwd_OnReportAdded = CreateGlobalForward("SBPP_OnReportPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_String);
 	g_hFwd_OnClientPreAdminCheck = CreateGlobalForward("SBPP_OnClientPreAdminCheck", ET_Ignore, Param_Cell);
+	g_hFwd_OnClientPostAdminCheck = CreateGlobalForward("SBPP_OnClientPostAdminCheck", ET_Ignore, Param_Cell);
 
 	LateLoaded = late;
 
@@ -2631,6 +2633,10 @@ stock void CheckLoadAdmins(AdminCachePart part)
 		{
 			RunAdminCacheChecks(i);
 			NotifyPostAdminCheck(i);
+
+			Call_StartForward(g_hFwd_OnClientPostAdminCheck);
+			Call_PushCell(i);
+			Call_Finish();
 		}
 	}
 }
