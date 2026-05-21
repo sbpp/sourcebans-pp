@@ -251,8 +251,8 @@
         </div>
 
         <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
-            <div>
-                <label class="label" for="search-comms-btype">Type</label>
+            <label class="label" for="search-comms-btype">Type</label>
+            <div class="flex items-center gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-comms-btype"
                         data-testid="search-comms-btype">
@@ -260,7 +260,6 @@
                     <option value="2">Gag</option>
                 </select>
             </div>
-            <div class="text-xs text-muted">Filter by mute (voice) or gag (text) class.</div>
             <button type="submit"
                     class="btn btn--secondary btn--sm"
                     data-testid="search-comms-submit-btype"
@@ -272,8 +271,8 @@
 
         {if NOT $hideadminname}
             <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
-                <div>
-                    <label class="label" for="search-comms-admin">Admin</label>
+                <label class="label" for="search-comms-admin">Admin</label>
+                <div class="flex items-center gap-2" style="flex-wrap:wrap">
                     <select class="select"
                             id="search-comms-admin"
                             data-testid="search-comms-admin">
@@ -283,7 +282,6 @@
                         {/foreach}
                     </select>
                 </div>
-                <div class="text-xs text-muted">Show only blocks issued by the selected admin.</div>
                 <button type="submit"
                         class="btn btn--secondary btn--sm"
                         data-testid="search-comms-submit-admin"
@@ -295,8 +293,8 @@
         {/if}
 
         <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
-            <div>
-                <label class="label" for="search-comms-server">Server</label>
+            <label class="label" for="search-comms-server">Server</label>
+            <div class="flex items-center gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-comms-server"
                         data-testid="search-comms-server">
@@ -310,7 +308,6 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Hostnames load asynchronously; pre-resolution shows ip:port.</div>
             <button type="submit"
                     class="btn btn--secondary btn--sm"
                     data-testid="search-comms-submit-server"

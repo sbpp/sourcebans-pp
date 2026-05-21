@@ -218,8 +218,8 @@
         {/if}
 
         <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-            <div>
-                <label class="label" for="search-admins-webgroup">Web group</label>
+            <label class="label" for="search-admins-webgroup">Web group</label>
+            <div class="flex gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-admins-webgroup"
                         name="webgroup"
@@ -230,12 +230,11 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Filter by panel group membership.</div>
         </div>
 
         <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-            <div>
-                <label class="label" for="search-admins-srvadmgroup">SourceMod admin group</label>
+            <label class="label" for="search-admins-srvadmgroup">SourceMod admin group</label>
+            <div class="flex gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-admins-srvadmgroup"
                         name="srvadmgroup"
@@ -246,12 +245,11 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Filter by SourceMod admin-group attachment.</div>
         </div>
 
         <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-            <div>
-                <label class="label" for="search-admins-srvgroup">Server group</label>
+            <label class="label" for="search-admins-srvgroup">Server group</label>
+            <div class="flex gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-admins-srvgroup"
                         name="srvgroup"
@@ -262,12 +260,11 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Filter by server-group membership.</div>
         </div>
 
         <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-            <div>
-                <label class="label" for="search-admins-admwebflag">Web permissions</label>
+            <label class="label" for="search-admins-admwebflag">Web permissions</label>
+            <div class="flex gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-admins-admwebflag"
                         name="admwebflag[]"
@@ -280,12 +277,11 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Hold <kbd data-modkey>Ctrl</kbd> to multi-select. Submits the current selection as repeated <code>admwebflag[]=ADMIN_*</code> parameters.</div>
         </div>
 
         <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-            <div>
-                <label class="label" for="search-admins-admsrvflag">Server permissions</label>
+            <label class="label" for="search-admins-admsrvflag">Server permissions</label>
+            <div class="flex gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-admins-admsrvflag"
                         name="admsrvflag[]"
@@ -298,12 +294,11 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Hold <kbd data-modkey>Ctrl</kbd> to multi-select. Submits the current selection as repeated <code>admsrvflag[]=SM_*</code> parameters.</div>
         </div>
 
         <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-            <div>
-                <label class="label" for="search-admins-server">Server</label>
+            <label class="label" for="search-admins-server">Server</label>
+            <div class="flex gap-2" style="flex-wrap:wrap">
                 <select class="select"
                         id="search-admins-server"
                         name="server"
@@ -318,7 +313,6 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Show admins with explicit access to the selected server. Hostnames load asynchronously.</div>
         </div>
 
         <div class="flex gap-2 justify-end" style="border-top:1px solid var(--border);padding-top:0.75rem">
