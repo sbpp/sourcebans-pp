@@ -53,6 +53,12 @@ Temporary Items
 /web/cache/sessions/sess_*
 *.smx
 
+# Local stash file used by the install-screenshot capture flow
+# (`docs/README.md` → "Capturing screenshots"). Gitignored so an
+# interrupted run never leaks the panel's DB credentials into a
+# commit.
+/.sbpp-config-stash.php
+
 # Local Docker dev stack
 /.env
 /dump-*.sql

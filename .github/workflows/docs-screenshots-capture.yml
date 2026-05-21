@@ -244,12 +244,35 @@ jobs:
           CAPTURE_ROUTES: panel
         run: npm run capture
 
+      # Stash to a sibling path inside `pr-head/` (alongside `web/`),
+      # NOT to `/tmp`. The dev container's entrypoint runs as root, so
+      # `web/config.php` lands on the bind-mounted host filesystem
+      # owned `root:root`. On GHA ubuntu-24.04 runners `/tmp` is on
+      # the same filesystem as the workspace, so `mv web/config.php
+      # /tmp/...` is a same-fs atomic `rename(2)` that PRESERVES
+      # ownership — and `/tmp` carries the sticky bit, so the runner
+      # (UID 1001) cannot move the still-root-owned file back later
+      # (per `rename(2)`: "EPERM: the directory containing oldpath
+      # has the sticky bit set and the process's effective UID is
+      # neither the UID of the file to be deleted nor that of the
+      # directory containing it"). PR 1430 was the first run after
+      # #1427 to actually exercise the stash/restore pair and hit
+      # this trap (`mv: cannot move '/tmp/sbpp-config-stash.php' to
+      # 'web/config.php': Operation not permitted`).
+      #
+      # `pr-head/.sbpp-config-stash.php` is a runner-owned, sticky-
+      # bit-free directory on the same filesystem as `pr-head/web/`,
+      # so the rename is atomic both ways regardless of which UID
+      # the docker container created the file as. The auto-commit
+      # step further down constrains the commit to `docs/src/assets/auto/**`,
+      # so a stale stash file (if the restore somehow no-ops) never
+      # leaks into the PR diff.
       - name: Stash config.php to expose the install wizard
         working-directory: pr-head
         run: |
           if [[ -f web/config.php ]]; then
-            mv web/config.php /tmp/sbpp-config-stash.php
-            echo "stashed web/config.php → /tmp/sbpp-config-stash.php"
+            mv web/config.php .sbpp-config-stash.php
+            echo "stashed web/config.php → pr-head/.sbpp-config-stash.php"
           else
             echo "web/config.php was already absent; nothing to stash"
           fi
@@ -276,9 +299,9 @@ jobs:
         if: always()
         working-directory: pr-head
         run: |
-          if [[ -f /tmp/sbpp-config-stash.php ]]; then
-            mv /tmp/sbpp-config-stash.php web/config.php
-            echo "restored /tmp/sbpp-config-stash.php → web/config.php"
+          if [[ -f .sbpp-config-stash.php ]]; then
+            mv .sbpp-config-stash.php web/config.php
+            echo "restored pr-head/.sbpp-config-stash.php → web/config.php"
           else
             echo "no stash to restore; nothing to do"
           fi

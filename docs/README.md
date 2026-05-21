@@ -133,10 +133,19 @@ for the duration of the install pass and restore it afterwards:
 
 ```sh
 # from the repo root, with the dev stack already running
-mv web/config.php /tmp/sbpp-config-stash.php
+mv web/config.php .sbpp-config-stash.php
 ( cd docs && CAPTURE_ROUTES=install npm run capture )
-mv /tmp/sbpp-config-stash.php web/config.php
+mv .sbpp-config-stash.php web/config.php
 ```
+
+The stash path is a sibling of `web/` on purpose. The dev container's
+entrypoint runs as root, so `web/config.php` lands on the bind mount
+owned by `root:root`; stashing through `/tmp` is a sticky-bit trap —
+the same-filesystem rename preserves ownership, and the unprivileged
+restore can't unlink a root-owned file out of a sticky directory
+(per `rename(2)`'s `EPERM` semantics — see the workflow's stash step
+for the full rationale). `.sbpp-config-stash.php` is gitignored so an
+interrupted run never leaks the credentials into a commit.
 
 CI does the same stash/restore dance automatically in
 `docs-screenshots-capture.yml`; this is only relevant when iterating
