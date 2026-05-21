@@ -72,6 +72,32 @@ The script writes PNGs into `src/assets/auto/install/` and
 what changed; commit the deltas alongside the UI change that produced
 them.
 
+Capture geometry:
+
+- **Viewport: 1920×1080 (Full HD), full-page screenshots.** The
+  rendered PNG carries the full scrollable surface so high-DPI /
+  zoomed-in inspection works without re-running the capture. The
+  docs site renders the PNGs at responsive widths.
+- **Panel routes are captured TWICE — once light, once dark.**
+  Each route emits a `<route>-light.png` and a `<route>-dark.png`
+  (e.g. `panel-02-dashboard-light.png` /
+  `panel-02-dashboard-dark.png`). The dark pass seeds
+  `localStorage['sbpp-theme']` before navigation so the inline FOUC
+  bootloader in `core/header.tpl` lands the `dark` class on
+  `<html>` on the first paint (no white flash). See AGENTS.md
+  "Anti-FOUC theme bootloader" for the contract.
+- **Install routes are captured ONCE in light.** The wizard's
+  `_chrome.tpl` doesn't load `theme.js` or the FOUC bootloader (the
+  wizard has no theme toggle by design — see AGENTS.md "Install
+  wizard"); a "dark install" capture would just be the same light
+  render with a different filename.
+- **The output subdirectory is wiped at the start of each run.**
+  `CAPTURE_ROUTES=panel` clears `src/assets/auto/panel/` before
+  capturing, `=install` clears `src/assets/auto/install/`, and the
+  default `=all` clears both. Stale PNGs from earlier runs (route
+  list changes, pre-dual-theme legacy filenames) don't linger in
+  the committed diff.
+
 The hardcoded `STEAM_API_KEY` is `00000000000000000000000000000000`
 (an all-zero dummy) — the dev seed never round-trips back to Steam,
 so the zero key is safe and avoids leaking real keys into screenshots.

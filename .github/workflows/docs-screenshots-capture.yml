@@ -1,6 +1,23 @@
 # docs-screenshots-capture — boot the dev stack, capture installer +
 # panel screenshots, and commit the diff back to the PR branch.
 #
+# Capture geometry (driven by docs/scripts/capture.mjs):
+#
+#   - Viewport: 1920×1080 (Full HD), with `fullPage: true` so the
+#     entire scrollable surface lands in the PNG.
+#   - Panel routes are captured TWICE — once in light mode and once
+#     in dark — and emit per-theme PNGs (e.g.
+#     `panel-02-dashboard-light.png`, `panel-02-dashboard-dark.png`).
+#     The dark pass seeds `localStorage['sbpp-theme']` via Playwright's
+#     `addInitScript` so the inline FOUC bootloader in
+#     `core/header.tpl` lands `<html class="dark">` on the first
+#     paint (no white flash). See AGENTS.md "Anti-FOUC theme
+#     bootloader" for the contract.
+#   - Install routes are captured ONCE in the :root light default.
+#     The wizard's `_chrome.tpl` doesn't load `theme.js` or the FOUC
+#     bootloader (the wizard has no theme toggle by design; see
+#     AGENTS.md "Install wizard").
+#
 # SECURITY MODEL — read this before changing the workflow.
 #
 # `pull_request_target` runs with the upstream repo's GITHUB_TOKEN
@@ -212,7 +229,13 @@ jobs:
       # below moves the file aside on the host (the bind-mounted
       # `./web` means the container sees the rename immediately) for
       # the duration of the install captures, then restores it.
-      - name: Capture panel screenshots
+      #
+      # The panel pass loops both `light` and `dark` themes inside
+      # `capture.mjs` (one browser context per theme; localStorage
+      # seeded before navigation so the FOUC bootloader picks dark
+      # up on the first paint). See the workflow header comment
+      # for the per-theme output naming.
+      - name: Capture panel screenshots (light + dark, 1920×1080 full-page)
         working-directory: trusted/docs
         env:
           STEAM_API_KEY: '00000000000000000000000000000000'
@@ -231,7 +254,11 @@ jobs:
             echo "web/config.php was already absent; nothing to stash"
           fi
 
-      - name: Capture install screenshots
+      # Install pass is light-only — the wizard's `_chrome.tpl`
+      # doesn't load `theme.js` or the FOUC bootloader, so a "dark
+      # install" capture would just be the same light render with a
+      # different filename (see the workflow header comment).
+      - name: Capture install screenshots (light only, 1920×1080 full-page)
         working-directory: trusted/docs
         env:
           STEAM_API_KEY: '00000000000000000000000000000000'
