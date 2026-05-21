@@ -2041,37 +2041,32 @@ details.queue-row > summary > .row-actions {
    inherit the existing `.app-footer a` accent + underline rules
    above — no override needed on this rule.
 
-   `inline-flex` + `gap` keeps the icon and label baselined
-   tightly without leaning on a literal space character between
-   them (the template's newline would otherwise insert one and
-   the gap would be uneven across themes that strip
-   whitespace-collapsing). `0.35em` matches the docs side's
-   `gap: 0.45em` scaled down for the footer's `--fs-xs` body
-   instead of the docs' `--sl-text-xs` — tuned by eye for
-   approximate visual parity at 12px / ~13.5px respectively.
-
-   `.app-footer__sponsor i` (the Lucide-hydrated `<svg>` after
-   the helper runs) explicitly opts out of the muted inherit
-   chain so the heart stays accent-coloured even when the
-   surrounding text is muted. Hover/focus reveal accent on the
-   text too, at which point the icon-vs-text colour matches and
-   the whole link reads as one CTA. */
-.app-footer__sponsor {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-  /* `inline-flex` sets the container's baseline to the bottom edge of
-     its last line box (per CSS Flex Layout §F.1), so without an explicit
-     `vertical-align` the link sits 2-3px below the surrounding inline
-     text whose baseline is the actual font baseline. `middle` aligns
-     the flex box's vertical center with the parent's x-height + half
-     baseline, which lands the icon + label flush with the version
-     string and the `·` separator. Caught post-screenshot-regen in
-     panel-05-admin-dashboard.png. */
-  vertical-align: middle;
-}
+   The link stays a plain inline element (no `display` override)
+   so its bounding box shares the parent's inline line box and
+   the link's text baseline matches the surrounding
+   `SourceBans++ {version} ·` text exactly. Earlier `inline-flex`
+   shapes grew the link's box to `--line-height` × `--fs-xs`
+   (~18px against ~15px for inline neighbours) and the link's
+   text sat 2-3px below the surrounding baseline regardless of
+   `vertical-align`. The icon's vertical placement is owned by
+   the rule below — keeping the icon as an `inline-block` with
+   a small negative `vertical-align` lets it sit on the text's
+   x-height midline without growing the line's box at all. */
 .app-footer__sponsor i,
 .app-footer__sponsor svg {
+  /* `inline-block` so the 12×12 `style` attribute the Lucide
+     placeholder ships with (and the post-hydration `<svg>`
+     inherits) actually applies — width/height are ignored on
+     pure-`inline` elements. */
+  display: inline-block;
+  /* Drop the icon's bottom edge 1px below the parent baseline
+     so the heart's visual centre lands roughly on the
+     surrounding text's x-height midline. Tuned against
+     `--fs-xs` (~12.5px); -2px to 0px all read as acceptable. */
+  vertical-align: -1px;
+  /* Icon-to-label spacing; mirrors the docs side's `gap: 0.45em`
+     scaled down for the footer's smaller body font. */
+  margin-right: 0.35em;
   color: var(--accent);
 }
 /* Decorative separator between `{$version}{$git}` and the sponsor
