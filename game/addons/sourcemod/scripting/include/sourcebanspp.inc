@@ -30,8 +30,8 @@
 #define _sourcebanspp_included
 
 #define SB_VERSION_MAJOR "1"
-#define SB_VERSION_MINOR "8"
-#define SB_VERSION_PATCH "8"
+#define SB_VERSION_MINOR "9"
+#define SB_VERSION_PATCH "0"
 
 #define SB_VERSION   SB_VERSION_MAJOR..."."...SB_VERSION_MINOR..."."...SB_VERSION_PATCH
 
