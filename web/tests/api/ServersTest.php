@@ -104,8 +104,72 @@ final class ServersTest extends ApiTestCase
 
     public function testAddValidatesIpFormat(): void
     {
+        // Post-#1433 the address validator accepts EITHER a valid IP
+        // OR a valid hostname (per `FILTER_VALIDATE_DOMAIN +
+        // FILTER_FLAG_HOSTNAME`) so the help text's "IPv4 / IPv6 /
+        // hostname" claim actually holds. `'not.an.ip'` is a valid
+        // hostname shape now, so use genuinely garbage input here
+        // (embedded whitespace) — both filters reject it.
         $this->loginAsAdmin();
-        $env = $this->api('servers.add', ['ip' => 'not.an.ip', 'port' => '27015', 'mod' => 1, 'group' => '0']);
+        $env = $this->api('servers.add', ['ip' => 'has spaces in it', 'port' => '27015', 'mod' => 1, 'group' => '0']);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('address', $env['error']['field']);
+    }
+
+    public function testAddAcceptsHostname(): void
+    {
+        // #1433 — the form template advertises "IPv4 / IPv6 /
+        // hostname" support and the sibling `admin.edit.server.php`
+        // already accepts hostnames; this pins the JSON dispatcher
+        // side onto the same contract.
+        $this->loginAsAdmin();
+        $env = $this->api('servers.add', [
+            'ip'    => 'cs.example.com',
+            'port'  => '27015',
+            'rcon'  => '',
+            'rcon2' => '',
+            'mod'   => 1,
+            'group' => '0',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $row = $this->row('servers', ['sid' => $env['data']['sid']]);
+        $this->assertNotNull($row);
+        $this->assertSame('cs.example.com', $row['ip']);
+        $this->assertSame(27015, (int) $row['port']);
+    }
+
+    public function testAddAcceptsFqdn(): void
+    {
+        // Multi-label FQDN — the reporter's marquee shape on #1433.
+        $this->loginAsAdmin();
+        $env = $this->api('servers.add', [
+            'ip'    => 'gameserver.eu.example.com',
+            'port'  => '27015',
+            'rcon'  => '',
+            'rcon2' => '',
+            'mod'   => 1,
+            'group' => '0',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $row = $this->row('servers', ['sid' => $env['data']['sid']]);
+        $this->assertNotNull($row);
+        $this->assertSame('gameserver.eu.example.com', $row['ip']);
+    }
+
+    public function testAddRejectsGarbageAddress(): void
+    {
+        // Belt-and-suspenders on `testAddValidatesIpFormat` — make
+        // sure obvious garbage (special chars / whitespace) is still
+        // rejected after the hostname pathway opens up.
+        $this->loginAsAdmin();
+        $env = $this->api('servers.add', [
+            'ip'    => 'not a valid hostname or ip',
+            'port'  => '27015',
+            'rcon'  => '',
+            'rcon2' => '',
+            'mod'   => 1,
+            'group' => '0',
+        ]);
         $this->assertEnvelopeError($env, 'validation');
         $this->assertSame('address', $env['error']['field']);
     }

@@ -53,7 +53,7 @@
                                placeholder="203.0.113.10"
                                required
                                data-testid="addserver-address">
-                        <span class="text-xs text-muted">IPv4 / IPv6 / hostname. The dispatcher validates with PHP's <code class="font-mono">FILTER_VALIDATE_IP</code>.</span>
+                        <span class="text-xs text-muted">IPv4 / IPv6 / hostname. Hostnames are resolved by the game server at connect time.</span>
                     </label>
                     <label class="block">
                         <span class="label">Server port</span>

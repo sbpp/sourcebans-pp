@@ -60,8 +60,18 @@ function api_servers_add(array $params): array
     if ($ip === '') {
         throw new ApiError('validation', 'You must type the server address.', 'address');
     }
-    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-        throw new ApiError('validation', 'You must type a valid IP.', 'address');
+    // Accept EITHER a valid IPv4/IPv6 address OR a valid hostname so the
+    // form's "IPv4 / IPv6 / hostname" help text actually matches behaviour
+    // (#1433). Pre-fix the handler ran FILTER_VALIDATE_IP alone, so any
+    // hostname-shaped address (e.g. `cs.example.com`) was rejected with
+    // "You must type a valid IP." despite the form claiming hostname
+    // support. The sibling page handler `admin.edit.server.php` already
+    // accepts hostnames via a hand-rolled `^[a-zA-Z0-9.\-]+$` regex;
+    // FILTER_VALIDATE_DOMAIN + FILTER_FLAG_HOSTNAME is stricter than that
+    // (rejects leading hyphens, leading dots, etc.) and covers the same
+    // accepted shapes.
+    if (!filter_var($ip, FILTER_VALIDATE_IP) && !filter_var($ip, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+        throw new ApiError('validation', 'You must type a valid IP or hostname.', 'address');
     }
     if ($port === '') {
         throw new ApiError('validation', 'You must type the server port.', 'port');

@@ -3115,6 +3115,30 @@ contacting every contributor individually.
   preserves the script's effect doesn't trip this — see "Updater
   migrations" above for the per-script contract.
 - String literals for action names → `Actions.PascalName`.
+- Hardcoding `sb.api.endpoint = './api.php'` (or any other bare
+  document-relative path that depends on the URL of the page loading
+  api.js) → the iframe-routed surfaces
+  (`pages/admin.kickit.php` / `pages/admin.blockit.php`) sit one
+  directory deep, so a document-relative `./api.php` resolves
+  against the iframe's URL to `/pages/api.php` (404 — Apache doesn't
+  rewrite that path) and every kick / block iframe round-trip dies
+  silently with a `bad_response` envelope. The iframe templates'
+  load handlers `return` silently on `!r.ok`, leaving rows at the
+  initial "Waiting…" text forever (#1433 bugs 1 + 2 — kick via panel
+  AND kick-on-ban). `web/scripts/api.js` resolves the endpoint
+  against `document.currentScript.src` instead — `new URL('../api.php',
+  SCRIPT_SRC).href` lands on the panel-root `/api.php` for top-level
+  page renders AND iframe contexts AND subdir installs (`https://host/sourcebans/`).
+  `document.currentScript` is null inside async handlers / promises,
+  so capture the value at IIFE-top before any deferred work.
+  Regression guards: `web/tests/integration/ApiJsEndpointResolutionTest.php`
+  (static — asserts api.js references `document.currentScript` AND
+  `new URL('../api.php'` AND does NOT bind the bare literal to
+  `sb.api.endpoint` at construction time) +
+  `web/tests/e2e/specs/flows/kickit-iframe.spec.ts` (runtime — loads
+  `/pages/admin.kickit.php?check=…&type=0`, asserts the
+  `KickitLoadServers` POST targets `/api.php` NOT `/pages/api.php`,
+  and the iframe rows transition past "Waiting…").
 - Inlining the table prefix → use `:prefix_` and let `Database` rewrite.
 - `htmlspecialchars_decode` / `html_entity_decode` on JSON-API params
   (nickname, reason, chat message, …) → the JSON body is raw UTF-8. The
@@ -3737,6 +3761,7 @@ contacting every contributor individually.
 | Edit a docs page or add a new one (the Astro + Starlight site published at sbpp.github.io) | `docs/src/content/docs/<group>/<slug>.md` (or `.mdx` when the page uses tabs / cards / asides — e.g. `getting-started/quickstart.mdx`, `setup/mariadb.mdx`). New pages also need a sidebar entry in `docs/astro.config.mjs` (the `sidebar:` array). Site config + theme tokens live in `docs/astro.config.mjs` + `docs/src/styles/sbpp.css`. The Starlight chrome ships from `@astrojs/starlight`; layout overrides land under `docs/src/components/` (see `ThemeProvider.astro` for the canonical override shape). Local dev: `cd docs && npm install && npm run dev`. CI gates: `.github/workflows/docs-build.yml` (per-PR build), `docs-deploy-trigger.yml` (main → repository_dispatch into sbpp.github.io), `docs-screenshots.yml` (gated on the `affects-ui` label, runs `docs/scripts/capture.mjs`). Source of truth is here; sbpp.github.io is the deploy shell only (#1333). |
 | Refresh installer / panel screenshots used in docs pages | `docs/scripts/capture.mjs` (Playwright; `npm run capture` in `docs/`). Output lands under `docs/src/assets/auto/{install,panel}/<stable-slug>.png` so docs pages keep referencing the same path across runs. CI does this automatically on PRs labelled `affects-ui`; locally run after `./sbpp.sh up`. STEAM_API_KEY is the all-zero dummy `00000000000000000000000000000000`. |
 | Add a JSON action                      | `web/api/handlers/_register.php` + `web/api/handlers/<topic>.php` |
+| Resolve / override the JSON-API endpoint URL the client-side `sb.api.call(...)` POSTs to | `web/scripts/api.js` (`resolveEndpoint()` — runs once at script-load, computes `new URL('../api.php', document.currentScript.src).href`). The script lives at `/scripts/api.js` regardless of which page loads it, so resolving `../api.php` against the script's own URL lands on the panel-root `/api.php` for top-level page renders, iframe-routed surfaces (`pages/admin.kickit.php` / `pages/admin.blockit.php`), AND subdir installs (`https://host/sourcebans/` → script at `…/scripts/api.js` → endpoint at `…/api.php`). The endpoint stays writable on `sb.api` so callers can swap it; do not edit the resolver to a bare `'./api.php'` literal — that's the pre-#1433 regression shape that 404s every iframe round-trip (`./api.php` resolves against the iframe's document URL `/pages/admin.kickit.php` → `/pages/api.php`, no such route). Pinned by `web/tests/integration/ApiJsEndpointResolutionTest.php` (static) + `web/tests/e2e/specs/flows/kickit-iframe.spec.ts` (runtime). |
 | Add or rename a permission             | `web/configs/permissions/web.json`, then regen contract  |
 | Render a page                          | `web/pages/<page>.php` + `web/includes/View/*View.php`   |
 | Add a new edit page in the admin.edit.* cluster (e.g. `admin.edit.<x>.php`) | `web/pages/admin.edit.<x>.php` (the page handler — thin "validate input, build View, render" shape) + `web/includes/View/AdminEdit<X>View.php` (typed View DTO) + `web/themes/default/page_admin_edit_<x>.tpl` (template). Shared helpers live in `web/pages/_admin_edit_helpers.php` (`sbpp_admin_edit_die_with_toast()` for permission / not-found guards, `sbpp_admin_edit_emit_tail_script()` for form-success / validation-error feedback that fires `window.SBPP.showToast()` and writes errors into `<id>.msg` divs, `sbpp_admin_edit_collect_rehash_sids()` for the post-save Rehash Admins step). Anti-patterns to avoid: inline `echo '<form>...'` blocks, `echo '<div id="msg-red">…'` banners, MooTools `$('id').value` reads, legacy JS handler names (`ButtonOver`, `ProcessEditAdminPermissions`, etc.) — all swept as part of `goals#5`. CSRF gate every POST via `\CSRF::rejectIfInvalid();` after the `isset($_POST['<sentinel>'])` arm. |
