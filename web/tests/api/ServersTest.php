@@ -102,14 +102,26 @@ final class ServersTest extends ApiTestCase
         $this->assertSnapshot('servers/add_validation_address', $env);
     }
 
-    public function testAddValidatesIpFormat(): void
+    public function testAddRejectsWhitespaceInAddress(): void
     {
         // Post-#1433 the address validator accepts EITHER a valid IP
         // OR a valid hostname (per `FILTER_VALIDATE_DOMAIN +
         // FILTER_FLAG_HOSTNAME`) so the help text's "IPv4 / IPv6 /
-        // hostname" claim actually holds. `'not.an.ip'` is a valid
-        // hostname shape now, so use genuinely garbage input here
-        // (embedded whitespace) — both filters reject it.
+        // hostname" claim actually holds. Embedded whitespace is one
+        // shape BOTH filters reject — pin it as a representative
+        // garbage-input case. The contract: validation MUST reject
+        // values neither filter accepts.
+        //
+        // Note: PHP's `FILTER_FLAG_HOSTNAME` accepts numeric-only
+        // labels (`999.999.999.999` is a "valid hostname" per the
+        // RFC 1035 label grammar — `4.3.2.1.in-addr.arpa` is the
+        // canonical PTR shape), so the IP-rejection contract can't
+        // be tested by feeding "obviously wrong" IPs and expecting
+        // the validator to surface them as IP errors specifically.
+        // The IP path is instead pinned by `testAddAcceptsBareIPv6`
+        // — the `:` characters in `2606:4700:4700::1111` are
+        // rejected by `FILTER_FLAG_HOSTNAME`, so that input can
+        // ONLY round-trip via the `FILTER_VALIDATE_IP` arm.
         $this->loginAsAdmin();
         $env = $this->api('servers.add', ['ip' => 'has spaces in it', 'port' => '27015', 'mod' => 1, 'group' => '0']);
         $this->assertEnvelopeError($env, 'validation');
@@ -154,12 +166,96 @@ final class ServersTest extends ApiTestCase
         $row = $this->row('servers', ['sid' => $env['data']['sid']]);
         $this->assertNotNull($row);
         $this->assertSame('gameserver.eu.example.com', $row['ip']);
+        // Pin the port column too — the snapshot suite already
+        // covers IPv4-route happy paths but #1433 is the first
+        // hostname-shaped row through the writer; a future refactor
+        // that incorrectly typed-coerces `port` against the
+        // hostname-bearing arm would slip past the IP-bearing tests.
+        $this->assertSame(27015, (int) $row['port']);
+    }
+
+    public function testAddAcceptsBareIPv6(): void
+    {
+        // FILTER_VALIDATE_IP accepts both v4 and v6; FILTER_FLAG_NO_PRIV_RANGE
+        // / NO_RES_RANGE are NOT set, so private+reserved blocks are
+        // fine for self-hosters running game servers inside their LAN.
+        // Pin a public IPv6 (Cloudflare DNS) to keep the shape simple.
+        // The `:port` column is separate so no `[v6]:port` parsing is
+        // needed at this layer.
+        $this->loginAsAdmin();
+        $env = $this->api('servers.add', [
+            'ip'    => '2606:4700:4700::1111',
+            'port'  => '27015',
+            'rcon'  => '',
+            'rcon2' => '',
+            'mod'   => 1,
+            'group' => '0',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $row = $this->row('servers', ['sid' => $env['data']['sid']]);
+        $this->assertNotNull($row);
+        $this->assertSame('2606:4700:4700::1111', $row['ip']);
+    }
+
+    public function testAddRejectsAddressExceedingSchemaWidth(): void
+    {
+        // `:prefix_servers.ip` is `VARCHAR(64) NOT NULL`. Pre-#1433
+        // the implicit cap was "IPv4 fits, hostnames don't exist
+        // here" — `FILTER_VALIDATE_IP` rejected everything over 39
+        // chars (the IPv6 max). Post-#1433 hostnames up to RFC 1035's
+        // 253-char max pass `FILTER_VALIDATE_DOMAIN |
+        // FILTER_FLAG_HOSTNAME`, but the column would truncate
+        // anything >64 and MariaDB's `STRICT_TRANS_TABLES` mode
+        // (the default) would raise `SQLSTATE[22001]` — surfacing
+        // as a generic `server_error` 500 with no audit-log entry.
+        // The handler-side gate translates that into an actionable
+        // `validation` envelope with the same shape the empty-input
+        // / bad-format branches use.
+        $this->loginAsAdmin();
+        // 64 chars at a glance: 13 chars × 5 = 65; subtract one for
+        // the trailing `.com` (4 chars) and add a single leading
+        // `a` to land on 65 chars — one over the cap.
+        $long = str_repeat('a', 61) . '.com'; // 65 chars total
+        $this->assertGreaterThan(64, strlen($long));
+        $env = $this->api('servers.add', [
+            'ip'    => $long,
+            'port'  => '27015',
+            'rcon'  => '',
+            'rcon2' => '',
+            'mod'   => 1,
+            'group' => '0',
+        ]);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('address', $env['error']['field']);
+        $this->assertStringContainsString('64', $env['error']['message'],
+            'validation copy must surface the 64-char cap so the operator knows what to trim',
+        );
+    }
+
+    public function testAddRefusesDuplicateHostnamePort(): void
+    {
+        // #1433 follow-up — the duplicate-detection branch
+        // (the existing `INSERT IGNORE`-style guard further down
+        // in `api_servers_add`) keyed off `(ip, port)` pre-#1433
+        // when only IPs landed in that column. Hostnames travel
+        // through the same code path and must collide on identical
+        // `(hostname, port)` too. Mirror of
+        // `testAddRefusesDuplicateIpPort`.
+        $this->loginAsAdmin();
+        $params = [
+            'ip' => 'cs2.example.com', 'port' => '27015',
+            'rcon' => '', 'rcon2' => '', 'mod' => 1, 'group' => '0',
+        ];
+        $first = $this->api('servers.add', $params);
+        $this->assertTrue($first['ok'], json_encode($first));
+        $env = $this->api('servers.add', $params);
+        $this->assertEnvelopeError($env, 'duplicate');
     }
 
     public function testAddRejectsGarbageAddress(): void
     {
-        // Belt-and-suspenders on `testAddValidatesIpFormat` — make
-        // sure obvious garbage (special chars / whitespace) is still
+        // Belt-and-suspenders — make sure obvious garbage
+        // (special chars / whitespace / shell-meta) is still
         // rejected after the hostname pathway opens up.
         $this->loginAsAdmin();
         $env = $this->api('servers.add', [

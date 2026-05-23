@@ -3139,6 +3139,59 @@ contacting every contributor individually.
   `/pages/admin.kickit.php?check=…&type=0`, asserts the
   `KickitLoadServers` POST targets `/api.php` NOT `/pages/api.php`,
   and the iframe rows transition past "Waiting…").
+- Loading `web/scripts/api.js` via dynamic injection
+  (`document.createElement('script')`, `<script>document.write(...)</script>`,
+  async loaders, ES-module `import()`, third-party bundlers) → the IIFE
+  reads `document.currentScript.src` at script-load time to compute the
+  endpoint URL, but `document.currentScript` is `null` when a script
+  is appended programmatically (it's only non-null while the parent
+  static `<script>` tag is executing synchronously). With a `null`
+  currentScript the `SCRIPT_SRC` constant collapses to the empty
+  string and `resolveEndpoint()` falls through to the bare-relative
+  `./api.php` fallback — i.e. the exact pre-#1433 regression shape.
+  api.js MUST be loaded via one of the three static `<script src="…">`
+  tags in the default theme (`core/header.tpl` top-level chrome →
+  `./scripts/api.js`, `page_kickit.tpl` / `page_blockit.tpl` iframe
+  surfaces → `../scripts/api.js`). A theme fork that wants to lazy-
+  load api.js (e.g. defer until first `sb.api.call`) needs to ship
+  its own paired endpoint resolver — not reuse the in-tree IIFE.
+- `filter_var($address, FILTER_VALIDATE_IP)` ALONE for a server-
+  address input (`api_servers_add`, `admin.edit.server.php`'s
+  `address` field) → the form templates advertise "IPv4 / IPv6 /
+  hostname" but the IP-only validator rejects every hostname-shaped
+  input with "You must type a valid IP." (#1433 bug 3 — reporter
+  could not add `cs.example.com`). The contract is to accept EITHER
+  a valid IP OR a valid hostname:
+  `filter_var($x, FILTER_VALIDATE_IP) || filter_var($x, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)`
+  on both the JSON dispatcher (`web/api/handlers/servers.php`) and
+  the page handler (`web/pages/admin.edit.server.php`). The hand-rolled
+  `^[a-zA-Z0-9.\-]+$` regex that lived in `admin.edit.server.php`
+  pre-#1433 is the sibling anti-pattern: it accepted shapes the IP
+  filter rejects (leading hyphens, double dots, IDN-mangled UTF-8)
+  AND was looser than `FILTER_FLAG_HOSTNAME`'s real RFC 1035 check —
+  the two surfaces silently disagreed on what's accepted. Both now
+  share the IP || HOSTNAME filter pair so a value either round-trips
+  through Add AND Edit or fails on both. Schema width gate: the
+  `:prefix_servers.ip` column is `VARCHAR(64) NOT NULL` (see
+  `web/install/includes/sql/struc.sql`), well below RFC 1035's 253-char
+  hostname max, so both surfaces ALSO carry an explicit `strlen($ip) > 64`
+  validation step that emits a structured `validation` envelope (or
+  the page-handler-equivalent `$validationErrors['address']`)
+  instead of letting MariaDB strict mode raise `SQLSTATE[22001] 1406
+  Data too long for column 'ip'` mid-INSERT — the bare PDOException
+  would surface as a generic 500 with no actionable copy AND skip the
+  audit-log entry. Bumping the column to `VARCHAR(255)` is a paired
+  schema-migration follow-up (out of #1433's scope). Regression
+  guards: `web/tests/api/ServersTest.php::testAddAcceptsHostname` /
+  `testAddAcceptsFqdn` / `testAddAcceptsBareIPv6` (the `:` characters
+  pin the FILTER_VALIDATE_IP arm — `FILTER_FLAG_HOSTNAME` rejects them
+  outright, so a bare-IPv6 round-trip can only succeed when the IP
+  branch of the OR is wired and exercised) /
+  `testAddRejectsAddressExceedingSchemaWidth` /
+  `testAddRefusesDuplicateHostnamePort` /
+  `testAddRejectsWhitespaceInAddress` (representative of the "fail
+  both filters" garbage class — also pinned by
+  `testAddRejectsGarbageAddress`).
 - Inlining the table prefix → use `:prefix_` and let `Database` rewrite.
 - `htmlspecialchars_decode` / `html_entity_decode` on JSON-API params
   (nickname, reason, chat message, …) → the JSON body is raw UTF-8. The
@@ -3761,7 +3814,8 @@ contacting every contributor individually.
 | Edit a docs page or add a new one (the Astro + Starlight site published at sbpp.github.io) | `docs/src/content/docs/<group>/<slug>.md` (or `.mdx` when the page uses tabs / cards / asides — e.g. `getting-started/quickstart.mdx`, `setup/mariadb.mdx`). New pages also need a sidebar entry in `docs/astro.config.mjs` (the `sidebar:` array). Site config + theme tokens live in `docs/astro.config.mjs` + `docs/src/styles/sbpp.css`. The Starlight chrome ships from `@astrojs/starlight`; layout overrides land under `docs/src/components/` (see `ThemeProvider.astro` for the canonical override shape). Local dev: `cd docs && npm install && npm run dev`. CI gates: `.github/workflows/docs-build.yml` (per-PR build), `docs-deploy-trigger.yml` (main → repository_dispatch into sbpp.github.io), `docs-screenshots.yml` (gated on the `affects-ui` label, runs `docs/scripts/capture.mjs`). Source of truth is here; sbpp.github.io is the deploy shell only (#1333). |
 | Refresh installer / panel screenshots used in docs pages | `docs/scripts/capture.mjs` (Playwright; `npm run capture` in `docs/`). Output lands under `docs/src/assets/auto/{install,panel}/<stable-slug>.png` so docs pages keep referencing the same path across runs. CI does this automatically on PRs labelled `affects-ui`; locally run after `./sbpp.sh up`. STEAM_API_KEY is the all-zero dummy `00000000000000000000000000000000`. |
 | Add a JSON action                      | `web/api/handlers/_register.php` + `web/api/handlers/<topic>.php` |
-| Resolve / override the JSON-API endpoint URL the client-side `sb.api.call(...)` POSTs to | `web/scripts/api.js` (`resolveEndpoint()` — runs once at script-load, computes `new URL('../api.php', document.currentScript.src).href`). The script lives at `/scripts/api.js` regardless of which page loads it, so resolving `../api.php` against the script's own URL lands on the panel-root `/api.php` for top-level page renders, iframe-routed surfaces (`pages/admin.kickit.php` / `pages/admin.blockit.php`), AND subdir installs (`https://host/sourcebans/` → script at `…/scripts/api.js` → endpoint at `…/api.php`). The endpoint stays writable on `sb.api` so callers can swap it; do not edit the resolver to a bare `'./api.php'` literal — that's the pre-#1433 regression shape that 404s every iframe round-trip (`./api.php` resolves against the iframe's document URL `/pages/admin.kickit.php` → `/pages/api.php`, no such route). Pinned by `web/tests/integration/ApiJsEndpointResolutionTest.php` (static) + `web/tests/e2e/specs/flows/kickit-iframe.spec.ts` (runtime). |
+| Resolve / override the JSON-API endpoint URL the client-side `sb.api.call(...)` POSTs to | `web/scripts/api.js` (`resolveEndpoint()` — runs once at script-load, computes `new URL('../api.php', document.currentScript.src).href`). The script lives at `/scripts/api.js` regardless of which page loads it, so resolving `../api.php` against the script's own URL lands on the panel-root `/api.php` for top-level page renders, iframe-routed surfaces (`pages/admin.kickit.php` / `pages/admin.blockit.php`), AND subdir installs (`https://host/sourcebans/` → script at `…/scripts/api.js` → endpoint at `…/api.php`). The endpoint stays writable on `sb.api` so callers can swap it; do not edit the resolver to a bare `'./api.php'` literal — that's the pre-#1433 regression shape that 404s every iframe round-trip (`./api.php` resolves against the iframe's document URL `/pages/admin.kickit.php` → `/pages/api.php`, no such route). **Load via static `<script src="…">` only** — `document.currentScript` is `null` when the script is appended programmatically (`document.createElement('script')`, `<script>document.write(...)</script>`, async loaders, ES-module `import()`), and a null `currentScript` collapses `SCRIPT_SRC` to the empty string and silently falls back to the bare-relative `./api.php` — i.e. the exact pre-#1433 bug. The three static load sites in the default theme are `core/header.tpl` (top-level panel chrome → `./scripts/api.js`), `page_kickit.tpl`, and `page_blockit.tpl` (iframe surfaces → `../scripts/api.js`); a theme fork that wants to lazy-load needs its own paired endpoint resolver. Pinned by `web/tests/integration/ApiJsEndpointResolutionTest.php` (static) + `web/tests/e2e/specs/flows/kickit-iframe.spec.ts` (runtime). |
+| Validate a server-address input (IPv4 / IPv6 / hostname) on either Add-Server (`api_servers_add`) or Edit-Server (`admin.edit.server.php`) | Shared validator pattern: `filter_var($x, FILTER_VALIDATE_IP) \|\| filter_var($x, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)`. Both surfaces MUST share the same predicate so a value either round-trips through Add AND Edit or fails on both (#1433); pre-fix the JSON dispatcher ran IP-only while the page handler ran a too-loose hand-rolled `^[a-zA-Z0-9.\-]+$` regex. The matching schema-width gate (`strlen($x) > 64`, surfacing as `validation` envelope or `$validationErrors['address']`) is paired with the IP/hostname check because `:prefix_servers.ip` is `VARCHAR(64) NOT NULL` (see `web/install/includes/sql/struc.sql`) — well below RFC 1035's 253-char hostname max, and MariaDB strict mode would otherwise raise `SQLSTATE[22001] 1406 Data too long for column 'ip'` mid-INSERT (generic 500 + no audit-log entry). Bumping the column to `VARCHAR(255)` is a paired schema-migration follow-up. Pinned by `web/tests/api/ServersTest.php::testAddAcceptsHostname` / `testAddAcceptsFqdn` / `testAddAcceptsBareIPv6` / `testAddRejectsAddressExceedingSchemaWidth` / `testAddRefusesDuplicateHostnamePort` / `testAddRejectsWhitespaceInAddress`. |
 | Add or rename a permission             | `web/configs/permissions/web.json`, then regen contract  |
 | Render a page                          | `web/pages/<page>.php` + `web/includes/View/*View.php`   |
 | Add a new edit page in the admin.edit.* cluster (e.g. `admin.edit.<x>.php`) | `web/pages/admin.edit.<x>.php` (the page handler — thin "validate input, build View, render" shape) + `web/includes/View/AdminEdit<X>View.php` (typed View DTO) + `web/themes/default/page_admin_edit_<x>.tpl` (template). Shared helpers live in `web/pages/_admin_edit_helpers.php` (`sbpp_admin_edit_die_with_toast()` for permission / not-found guards, `sbpp_admin_edit_emit_tail_script()` for form-success / validation-error feedback that fires `window.SBPP.showToast()` and writes errors into `<id>.msg` divs, `sbpp_admin_edit_collect_rehash_sids()` for the post-save Rehash Admins step). Anti-patterns to avoid: inline `echo '<form>...'` blocks, `echo '<div id="msg-red">…'` banners, MooTools `$('id').value` reads, legacy JS handler names (`ButtonOver`, `ProcessEditAdminPermissions`, etc.) — all swept as part of `goals#5`. CSRF gate every POST via `\CSRF::rejectIfInvalid();` after the `isset($_POST['<sentinel>'])` arm. |

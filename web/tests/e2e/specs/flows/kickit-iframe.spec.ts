@@ -142,7 +142,15 @@ test.describe('flow: kickit iframe API call lands on /api.php, not /pages/api.ph
         // surface here too (so we can assert the contract is "URL ends
         // with /api.php, NOT /pages/api.php"). If we only listened on
         // `page.route(**\/api.php**)` we'd miss the regression.
+        // We also capture the action name from the JSON body so the
+        // post-load assertions can pin BOTH expected calls
+        // (`kickit.load_servers` and `kickit.kick_player`) rather
+        // than just "at least one POST to /api.php landed", which
+        // would silently pass on a regression where load_servers
+        // succeeded but kick_player went to /pages/api.php (or
+        // vice versa).
         const apiPostUrls: string[] = [];
+        const apiActions = new Set<string>();
         page.on('requestfinished', (req) => {
             if (req.method() !== 'POST') return;
             const path = new URL(req.url()).pathname;
@@ -150,6 +158,16 @@ test.describe('flow: kickit iframe API call lands on /api.php, not /pages/api.ph
             // — both are interesting for the contract assertion.
             if (path.endsWith('/api.php')) {
                 apiPostUrls.push(req.url());
+                try {
+                    const body = JSON.parse(req.postData() ?? '{}');
+                    if (typeof body?.action === 'string') {
+                        apiActions.add(body.action);
+                    }
+                } catch {
+                    // Malformed JSON body — not interesting for the
+                    // action-tracking branch; the URL is still captured
+                    // above for the pathname assertion.
+                }
             }
         });
 
@@ -236,12 +254,19 @@ test.describe('flow: kickit iframe API call lands on /api.php, not /pages/api.ph
         const row0Status = page.locator('[data-testid="kickit-status-0"]');
         await expect(row0Status).toContainText('Player not found.');
 
-        // Both API actions must have round-tripped, and both URLs
-        // must target the panel-root `/api.php`.
+        // Both API actions must have round-tripped (the kickit flow
+        // is `kickit.load_servers` followed by `kickit.kick_player`
+        // per row), and every URL must target the panel-root
+        // `/api.php`. The action-set assertion is the tighter
+        // contract — without it, a regression where load_servers
+        // succeeded but kick_player went to `/pages/api.php` (or
+        // vice versa) would silently pass the "at least one POST
+        // landed on /api.php" check below.
         expect(
-            apiPostUrls.length,
-            `Expected at least 1 POST to */api.php (kickit.load_servers); saw ${apiPostUrls.length}`,
-        ).toBeGreaterThanOrEqual(1);
+            Array.from(apiActions),
+            `Expected both kickit.load_servers AND kickit.kick_player to POST to /api.php (saw: ${Array.from(apiActions).join(', ') || 'none'}). ` +
+            `If only one of the two landed, the contract regressed on the action that's missing.`,
+        ).toEqual(expect.arrayContaining(['kickit.load_servers', 'kickit.kick_player']));
 
         for (const url of apiPostUrls) {
             const path = new URL(url).pathname;

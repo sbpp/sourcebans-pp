@@ -78,8 +78,23 @@ if (isset($_POST['address'])) {
     if ($rawAddress === '') {
         $validationErrors['address'] = 'You must type the server address.';
     } elseif (!filter_var($rawAddress, FILTER_VALIDATE_IP)
-        && !preg_match('/^[a-zA-Z0-9.\\-]+$/', $rawAddress)) {
+        && !filter_var($rawAddress, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+        // #1433 follow-up — keep this validator byte-for-byte symmetric
+        // with `api_servers_add` (the JSON dispatcher). Pre-fix this
+        // surface ran a hand-rolled `^[a-zA-Z0-9.\-]+$` regex which
+        // accepted shapes the JSON handler rejects (leading hyphens,
+        // double dots, etc.), so the same value would be accepted via
+        // Edit but rejected via Add (and vice versa for valid hostnames
+        // before the JSON handler grew its `FILTER_VALIDATE_DOMAIN`
+        // arm). Both surfaces now share the IP || HOSTNAME filter pair.
         $validationErrors['address'] = 'You must type a valid IP or hostname.';
+    } elseif (strlen($rawAddress) > 64) {
+        // Schema width gate — see the matching comment in
+        // `web/api/handlers/servers.php::api_servers_add`. The column
+        // is `VARCHAR(64)` and MariaDB strict mode would otherwise
+        // surface a generic 500 with no actionable copy AND skip the
+        // audit-log entry below.
+        $validationErrors['address'] = 'Server address must be at most 64 characters.';
     }
 
     if ($rawPort === '' || !ctype_digit($rawPort)

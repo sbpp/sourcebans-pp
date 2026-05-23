@@ -39,6 +39,21 @@ to special-case fetch rejections.
     // iframe contexts (and subdir installs — see `resolveEndpoint`
     // below).
     //
+    // **api.js MUST be loaded via a static `<script src="…">` tag,
+    // never via dynamic injection** (`document.createElement('script')`,
+    // `<script>document.write(...)</script>`, async loaders). Dynamic
+    // injection runs the script with `document.currentScript === null`,
+    // which collapses `SCRIPT_SRC` to the empty string and silently
+    // falls back to the bare-relative `./api.php` endpoint — i.e.
+    // the exact pre-#1433 bug shape. The runtime contract is "the
+    // script that's loading is one of the three static `<script>` tags
+    // in `core/header.tpl` (top-level panel chrome,
+    // `./scripts/api.js`), `page_kickit.tpl` / `page_blockit.tpl`
+    // (iframe surfaces, `../scripts/api.js`)". An SVG `<script>`
+    // would never load api.js in the first place, so the
+    // `HTMLOrSVGScriptElement` union's SVG arm (which lacks `.src`)
+    // is unreachable; we cast to `HTMLScriptElement` to read `.src`.
+    //
     // Pre-#1433 the endpoint was a bare `./api.php` literal — the
     // browser resolved it against the *document* URL of whichever
     // page was hosting the script. For the iframe-routed surfaces
@@ -49,12 +64,6 @@ to special-case fetch rejections.
     // early-return left every row at the initial "Waiting..." text
     // forever. Player was never kicked. Same code path on every
     // iframe-routed surface that loads api.js.
-    // `document.currentScript` is typed `HTMLOrSVGScriptElement | null` —
-    // the SVG arm of the union has no `.src`, so cast to HTMLScriptElement
-    // before reading. The runtime guarantee is "the script that's loading
-    // is the `<script src="../scripts/api.js">` tag in `core/footer.tpl`
-    // / `page_kickit.tpl` / `page_blockit.tpl`"; an SVG `<script>` would
-    // never load api.js in the first place.
     var _cs = /** @type {HTMLScriptElement | null} */ (document.currentScript);
     var SCRIPT_SRC = (_cs && _cs.src) || '';
 

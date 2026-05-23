@@ -65,13 +65,30 @@ function api_servers_add(array $params): array
     // (#1433). Pre-fix the handler ran FILTER_VALIDATE_IP alone, so any
     // hostname-shaped address (e.g. `cs.example.com`) was rejected with
     // "You must type a valid IP." despite the form claiming hostname
-    // support. The sibling page handler `admin.edit.server.php` already
-    // accepts hostnames via a hand-rolled `^[a-zA-Z0-9.\-]+$` regex;
-    // FILTER_VALIDATE_DOMAIN + FILTER_FLAG_HOSTNAME is stricter than that
-    // (rejects leading hyphens, leading dots, etc.) and covers the same
-    // accepted shapes.
+    // support. FILTER_VALIDATE_DOMAIN + FILTER_FLAG_HOSTNAME is stricter
+    // than `admin.edit.server.php`'s pre-fix hand-rolled `^[a-zA-Z0-9.\-]+$`
+    // regex (rejects leading hyphens, leading dots, double-dots, etc.)
+    // and covers the same accepted shapes. The page-handler sibling now
+    // uses the same filter pair so the two surfaces accept identical input.
     if (!filter_var($ip, FILTER_VALIDATE_IP) && !filter_var($ip, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
         throw new ApiError('validation', 'You must type a valid IP or hostname.', 'address');
+    }
+    // Schema width gate. `:prefix_servers.ip` is `VARCHAR(64) NOT NULL`
+    // (see `web/install/includes/sql/struc.sql`), and MariaDB 10.x's
+    // default `sql_mode` includes `STRICT_TRANS_TABLES` — an INSERT
+    // with a >64-char hostname raises `SQLSTATE[22001] 1406 Data too
+    // long for column 'ip'`. The PDOException escapes the handler and
+    // the dispatcher's `Throwable` fallback wraps it as a generic
+    // `server_error` 500, so the operator sees "An unexpected error
+    // occurred" instead of an actionable `validation` envelope AND the
+    // audit-log entry below never runs. RFC 1035 caps a full FQDN at
+    // 253 chars; some cloud DNS shapes (`*.cloudapp.azure.com`, k8s
+    // service DNS, long SaaS gameserver hostnames) sit well past 64.
+    // The 64-char gate here matches the column exactly so the rejection
+    // surfaces as a clean validation error with a clear cap; bumping
+    // the column to `VARCHAR(255)` is a paired schema-migration follow-up.
+    if (strlen($ip) > 64) {
+        throw new ApiError('validation', 'Server address must be at most 64 characters.', 'address');
     }
     if ($port === '') {
         throw new ApiError('validation', 'You must type the server port.', 'port');
