@@ -193,17 +193,29 @@
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
+        /* Text colours are Tailwind 900-tier (green-900, amber-900, red-900,
+           blue-900). Pre-#1435 the wizard used 700/800-tier colours that
+           failed WCAG AA Normal Text (4.5:1) on the corresponding light-tint
+           backgrounds — the worst offender was install-alert--ok at ~4.46:1
+           (dark green text on the very pale 10%-alpha green background looked
+           like "dark green on light green" per #1435's screenshots). Pinning
+           to the 900-tier brings every variant comfortably into WCAG AAA
+           (~8:1) so the body copy in success / info / warning / error alerts
+           and the inline status pills on the requirements page all stay
+           legible without losing the colour-coded identity. The matching
+           contrast contract is pinned by
+           web/tests/integration/InstallChromeContrastTest.php. */
         .install-pill--ok {
             background: rgba(34, 197, 94, 0.15);
-            color: rgb(21, 128, 61);
+            color: #14532d;
         }
         .install-pill--warn {
             background: rgba(234, 179, 8, 0.15);
-            color: rgb(133, 77, 14);
+            color: #78350f;
         }
         .install-pill--err {
             background: rgba(239, 68, 68, 0.15);
-            color: rgb(153, 27, 27);
+            color: #7f1d1d;
         }
         .install-alert {
             border: 1px solid;
@@ -215,22 +227,28 @@
         .install-alert--error {
             border-color: rgba(239, 68, 68, 0.4);
             background: var(--danger-bg);
-            color: rgb(153, 27, 27);
+            color: #7f1d1d;
         }
         .install-alert--warn {
             border-color: rgba(234, 179, 8, 0.4);
             background: var(--warning-bg);
-            color: rgb(133, 77, 14);
+            color: #78350f;
         }
+        /* --ok and --info bumped from rgba(_, 0.1) to rgba(_, 0.15) so the
+           card edge is visibly distinct from the page background (the 0.1
+           alpha read as "barely tinted off-white" on most monitors). The
+           higher alpha is the same opacity install-pill--ok / --warn / --err
+           already use; the body copy darkening above carries the readability
+           win. */
         .install-alert--ok {
             border-color: rgba(34, 197, 94, 0.4);
-            background: rgba(34, 197, 94, 0.1);
-            color: rgb(21, 128, 61);
+            background: rgba(34, 197, 94, 0.15);
+            color: #14532d;
         }
         .install-alert--info {
             border-color: rgba(59, 130, 246, 0.4);
-            background: rgba(59, 130, 246, 0.1);
-            color: rgb(30, 64, 175);
+            background: rgba(59, 130, 246, 0.15);
+            color: #1e3a8a;
         }
         .install-code {
             display: block;
@@ -251,6 +269,18 @@
             gap: 1rem;
         }
         @media (prefers-color-scheme: dark) {
+            /* The wizard doesn't ride the panel's theme.js dark-mode
+               bootloader (no logged-in user → no toggle, no scripted theme
+               flip), so theme.css keeps `--bg-page` / `--danger-bg`
+               / `--warning-bg` etc. at their light-tier values regardless
+               of OS preference — the surrounding chrome (.install-shell,
+               .install-header, .install-table) stays light. To avoid a
+               "dark alert dropped onto a light page" visual mismatch, we
+               only swap the TEXT colour here; the alert background tracks
+               the light-mode rgba/--*-bg above so the box still reads as
+               an in-chrome surface. Full OS-dark support for the wizard
+               would require @media-swapping every token theme.css owns,
+               which is out of scope for the colour-contrast fix in #1435. */
             .install-pill--ok   { color: rgb(134, 239, 172); }
             .install-pill--warn { color: rgb(253, 224, 71); }
             .install-pill--err  { color: rgb(252, 165, 165); }
