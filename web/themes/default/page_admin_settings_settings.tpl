@@ -487,6 +487,64 @@
                                     <input class="input" type="text" id="mail_from_name" name="mail_from_name" value="{$config_mail_from_name}">
                                 </div>
                             </div>
+                            {*
+                                #1455: SMTP test-email row.
+
+                                Operator-controlled affordance that triggers a
+                                live SMTP send so the operator can verify their
+                                credentials end-to-end without waiting for a
+                                real outbound event (password reset, ban
+                                protest reply, etc.) to fire.
+
+                                Server-rendered first-paint state:
+                                  - Recipient input is pre-populated with the
+                                    logged-in admin's own email (or empty when
+                                    they have no email on file).
+                                  - Button is `disabled` when host/user/from-
+                                    email is empty AT FIRST PAINT so a
+                                    freshly-installed panel doesn't tempt the
+                                    operator into clicking before they've
+                                    configured SMTP. The page-tail JS keeps
+                                    the disabled state in sync as the operator
+                                    edits the SMTP inputs (the password field
+                                    isn't part of the disabled-derivation
+                                    because the operator can leave it blank to
+                                    "keep current" — that's NOT an "SMTP not
+                                    configured" state for the test surface).
+
+                                  Server-side gate is the load-bearing one:
+                                  `api_system_test_email` re-checks
+                                  `Mailer::create() === null` and surfaces a
+                                  pointed `smtp_not_configured` error envelope
+                                  if the operator bypasses the client-side
+                                  disabled flag (third-party theme strip, hand-
+                                  crafted POST, etc.).
+                            *}
+                            <div data-testid="setting-row" data-key="smtp.test">
+                                <label class="label" for="mail_test_to">Send a test email</label>
+                                <div class="grid gap-2" style="grid-template-columns:1fr auto">
+                                    <input class="input"
+                                           type="email"
+                                           id="mail_test_to"
+                                           name="mail_test_to"
+                                           value="{$admin_email}"
+                                           placeholder="recipient@example.com"
+                                           data-testid="smtp-test-recipient"
+                                           autocomplete="off">
+                                    <button type="button"
+                                            class="btn btn--secondary"
+                                            data-testid="smtp-test-email"
+                                            id="smtp_test_email_btn"
+                                            {if $config_smtp[0] === '' || $config_smtp[1] === '' || $config_mail_from_email === ''}disabled{/if}>
+                                        <i data-lucide="send"></i> Send test email
+                                    </button>
+                                </div>
+                                <p class="text-xs text-muted mt-1">
+                                    Sends a verification email through the saved SMTP credentials. Save the form
+                                    first if you just changed anything above — the test uses the persisted values,
+                                    not the unsaved contents of the inputs.
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -678,6 +736,144 @@
             echo.textContent = humanizeMinutes(Number.isNaN(n) ? 0 : n);
         });
     });
+
+    /**
+     * #1455: SMTP "Send test email" button.
+     *
+     * The PHP-side handler reads SMTP credentials from sb_settings (so
+     * the test always reflects the persisted configuration); this JS
+     * is purely UX glue:
+     *
+     *   1. Keep the button disabled until host / user / from-email
+     *      are all non-empty, mirroring the server-side
+     *      smtp_not_configured branch so the operator never clicks a
+     *      button that's guaranteed to fail. Password is NOT in the
+     *      derivation because the form intentionally leaves it blank
+     *      on render ("leave blank to keep current") — an empty
+     *      password input on a panel with a saved password is NOT an
+     *      "SMTP not configured" state.
+     *   2. On click: pre-flight the email-input's native validity,
+     *      flip the busy-state on the button (window.SBPP.setBusy),
+     *      POST to system.test_email, then surface a toast keyed on
+     *      the response shape. The server is the load-bearing gate:
+     *      the throttle / smtp_not_configured / mail_failed branches
+     *      all run server-side regardless of what the client sends.
+     */
+    var testBtn = /** @type {HTMLButtonElement|null} */ (
+        document.getElementById('smtp_test_email_btn')
+    );
+    var testTo = /** @type {HTMLInputElement|null} */ (
+        document.getElementById('mail_test_to')
+    );
+    var smtpHost = /** @type {HTMLInputElement|null} */ (document.getElementById('mail_host'));
+    var smtpUser = /** @type {HTMLInputElement|null} */ (document.getElementById('mail_user'));
+    var smtpFromEmail = /** @type {HTMLInputElement|null} */ (document.getElementById('mail_from_email'));
+
+    /**
+     * Theme-aware busy-state setter that delegates to the canonical
+     * window.SBPP.setBusy when present (full data-loading + aria-busy
+     * + disabled triple per AGENTS.md "Loading state on action
+     * buttons") and falls back to the bare disabled flag so a
+     * third-party theme that strips theme.js still gates against
+     * double-clicks.
+     *
+     * @param {HTMLButtonElement|null} btn
+     * @param {boolean} busy
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        if (window.SBPP && typeof window.SBPP.setBusy === 'function') {
+            window.SBPP.setBusy(btn, busy);
+        } else {
+            btn.disabled = busy;
+        }
+    }
+
+    /**
+     * Surface a toast via window.SBPP.showToast when the chrome JS
+     * is loaded; fall back to window.alert so the operator still
+     * gets visible feedback on third-party themes that strip the
+     * helper.
+     *
+     * @param {string} kind 'info' | 'success' | 'warn' | 'error'
+     * @param {string} title
+     * @param {string} [body]
+     */
+    function toast(kind, title, body) {
+        if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+            window.SBPP.showToast({ kind: kind, title: title, body: body });
+        } else {
+            window.alert(title + (body ? '\n\n' + body : ''));
+        }
+    }
+
+    /**
+     * Live re-evaluation of the button's disabled state as the
+     * operator edits SMTP fields. Mirrors the server-rendered first-
+     * paint state in the template's `{if … disabled}` arm so the JS
+     * never starts from a stale snapshot.
+     */
+    function refreshButtonState() {
+        if (!testBtn || !smtpHost || !smtpUser || !smtpFromEmail) return;
+        var ready =
+            smtpHost.value.trim() !== '' &&
+            smtpUser.value.trim() !== '' &&
+            smtpFromEmail.value.trim() !== '';
+        testBtn.disabled = !ready;
+    }
+
+    if (smtpHost) smtpHost.addEventListener('input', refreshButtonState);
+    if (smtpUser) smtpUser.addEventListener('input', refreshButtonState);
+    if (smtpFromEmail) smtpFromEmail.addEventListener('input', refreshButtonState);
+
+    if (testBtn && window.sb && window.sb.api && window.Actions) {
+        testBtn.addEventListener('click', function () {
+            if (!testBtn || !testTo) return;
+            // Native validity check first — handles "missing @",
+            // "trailing space", "no TLD" before we burn a round-trip
+            // and a rate-limit slot. The server re-runs
+            // FILTER_VALIDATE_EMAIL regardless; this is UX polish.
+            var rawTo = testTo.value.trim();
+            if (rawTo === '' || !testTo.checkValidity()) {
+                testTo.reportValidity();
+                toast('warn', 'Enter a recipient', 'Type a valid email address before sending the test.');
+                return;
+            }
+
+            setBusy(testBtn, true);
+            window.sb.api.call(window.Actions.SystemTestEmail, { to: rawTo }).then(
+                function (r) {
+                    setBusy(testBtn, false);
+                    if (r && r.ok && r.data && typeof r.data.to === 'string') {
+                        toast('success', 'Test email sent',
+                            'A SMTP test message was dispatched to ' + r.data.to + '. Check the inbox to confirm delivery.');
+                        return;
+                    }
+                    // Structured error envelope. Branch on r.error.code
+                    // so the operator gets actionable copy instead of
+                    // a generic "request failed" string.
+                    var err = (r && r.error) || {};
+                    var code = err.code || 'unknown';
+                    var msg = err.message || 'The server returned an unexpected response.';
+                    if (code === 'smtp_not_configured') {
+                        toast('warn', 'SMTP not configured', msg);
+                    } else if (code === 'rate_limited') {
+                        toast('warn', 'Test email throttled', msg);
+                    } else if (code === 'validation') {
+                        toast('warn', 'Check the recipient', msg);
+                    } else if (code === 'mail_failed') {
+                        toast('error', 'Test email failed', msg);
+                    } else {
+                        toast('error', 'Test email failed', msg);
+                    }
+                },
+                function () {
+                    setBusy(testBtn, false);
+                    toast('error', 'Test email failed', 'Could not reach the panel API. Check your network and try again.');
+                }
+            );
+        });
+    }
 })();
 {/literal}
 </script>

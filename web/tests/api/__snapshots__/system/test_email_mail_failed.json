@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "mail_failed",
+        "message": "SMTP send failed. Check the audit log under Admin \u2192 System Log for the cause."
+    }
+}

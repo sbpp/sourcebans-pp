@@ -548,6 +548,58 @@
  * @typedef {Object} ApiSystemSendMailRequest
  * @typedef {Object} ApiSystemSendMailResponse
  */
+/**
+ * Issue #1455: send a SMTP test message so an operator can verify the
+ * credentials they just typed into Admin → Settings actually work end-to-end
+ * (Symfony Mailer → SMTP relay → recipient inbox) without having to wait
+ * for a real password-reset / ban-protest event to fire the next outbound
+ * mail.  Permission gate: ADMIN_OWNER | ADMIN_WEB_SETTINGS. Matches the other
+ * settings-page-only handlers (sel_theme / apply_theme / clear_cache /
+ * preview_intro_text); only an operator who can edit SMTP settings has a
+ * legitimate reason to trigger a test send.  Error-envelope contract: -
+ * validation         missing or malformed recipient - smtp_not_configured 
+ * smtp.host / smtp.user / smtp.pass empty (we short-circuit BEFORE Mail::send
+ * so the user gets a pointed message instead of the generic mail_failed branch
+ * — `Mail::send`'s internal `Mailer::create() === null` arm also returns
+ * false but only logs to `:prefix_log`) - rate_limited       too many sends in
+ * the throttle window; the message interpolates "try again in Ns" so the
+ * client can echo it directly via a toast — there's no separate
+ * machine-readable `retry_after_seconds` field on the wire (ApiError only
+ * carries code + message + field + httpStatus; if a future client needs a
+ * numeric value, parse it from the message or extend ApiError with a `details`
+ * payload). - mail_failed        SMTP error reported by Symfony Mailer (full
+ * cause already lives in `:prefix_log` by way of `Mail::send`'s own catch
+ * block — we don't echo it to the client to avoid leaking provider error
+ * strings that may carry credentials / hostnames)  Throttle: at most one send
+ * attempt per 10 seconds per panel install. The scope is per-install (not
+ * per-user) because the abuse surface is the outbound SMTP relay, not a
+ * per-user resource — two admins racing each other shouldn't double the
+ * relay's load. We stamp the throttle file BEFORE the SMTP I/O so a slow /
+ * hung connection can't be hammered while a first call is mid-handshake (so a
+ * series of mail_failed outcomes ALSO consume rate-limit slots —
+ * intentional). The counter is a single-int cache file under SB_CACHE,
+ * mirroring the shape `_api_system_release_save_cache` uses (atomic tempfile +
+ * `rename()`). Stale-while-error: if the cache directory is unwritable we let
+ * the send through rather than fail closed — losing the rate limit is
+ * preferable to losing the diagnostic affordance the operator opened this
+ * surface to use.  Throttle interaction with api_system_clear_cache: that
+ * handler removes every file in SB_CACHE, including this throttle file. An
+ * operator who hits rate_limited and then clicks "Clear cache" resets the
+ * throttle. Acceptable because (a) both surfaces are gated by the same
+ * ADMIN_OWNER | ADMIN_WEB_SETTINGS mask, so the "throttle bypass" doesn't
+ * escalate privileges; (b) the threat model the throttle defends is a *script*
+ * hammering this endpoint, not a settings-admin abusing their own cache
+ * button.  Audit: every send (success OR mail_failed) lands an entry in
+ * `:prefix_log` so test sends can't be used to silently probe SMTP credentials
+ * or enumerate valid relay endpoints. The success entry names the recipient
+ * (which is operator-controlled — by default the operator's own email); the
+ * failure entry adds the SMTP error class for diagnostics. The validation /
+ * smtp_not_configured / rate_limited branches don't log (they never reach the
+ * SMTP wire — same shape `api_system_send_mail` uses).
+ *
+ * @typedef {Object} ApiSystemTestEmailRequest
+ * @typedef {{to: string, sent_at: number}} ApiSystemTestEmailResponse
+ */
 
 /**
  * Action names accepted by sb.api.call(). Keys are PascalCase derived from
@@ -621,6 +673,7 @@ var Actions = Object.freeze({
     SystemRehashAdmins: 'system.rehash_admins',
     SystemSelTheme: 'system.sel_theme',
     SystemSendMail: 'system.send_mail',
+    SystemTestEmail: 'system.test_email',
 });
 
 /**

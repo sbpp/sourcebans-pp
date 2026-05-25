@@ -43,6 +43,8 @@ const SEED_SERVER_GROUP_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-server-group-e2e.php';
 const DELETE_SERVER_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/delete-server-e2e.php';
+const CLEAR_TEST_EMAIL_THROTTLE_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/clear-test-email-throttle-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -617,5 +619,28 @@ async function runAnnouncementsHelper(
                 + `stdout:\n${stdout}\nstderr:\n${stderr}`,
             ));
         });
+    });
+}
+
+/**
+ * Clear the `system.test_email` rate-limit cache file (#1455).
+ *
+ * The handler limits 1 send per 10s per install via a single file at
+ * `SB_CACHE/test-email-throttle`. The throttle is install-global
+ * (not per-recipient or per-test), so parallel Playwright project
+ * profiles colliding on the happy-path test trip each other's
+ * 10s window. Reset before each happy-path arm to stay
+ * deterministic. Idempotent (no-op when the file is absent).
+ */
+export async function clearTestEmailThrottleE2e(): Promise<void> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [CLEAR_TEST_EMAIL_THROTTLE_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', CLEAR_TEST_EMAIL_THROTTLE_INSIDE_CONTAINER];
+
+    await execFileP(cmd, cmdArgs, {
+        maxBuffer: 1 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
     });
 }

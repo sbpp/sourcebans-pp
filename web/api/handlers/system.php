@@ -11,8 +11,10 @@ You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 *************************************************************************/
 
+use Sbpp\Auth\Host;
 use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
+use Sbpp\Mail\Mailer;
 use Sbpp\Markup\IntroRenderer;
 
 /**
@@ -373,6 +375,229 @@ function api_system_send_mail(array $params): array
             'kind'  => 'green',
             'redir' => $redir,
         ],
+    ];
+}
+
+/**
+ * Issue #1455: send a SMTP test message so an operator can verify
+ * the credentials they just typed into Admin → Settings actually work
+ * end-to-end (Symfony Mailer → SMTP relay → recipient inbox) without
+ * having to wait for a real password-reset / ban-protest event to fire
+ * the next outbound mail.
+ *
+ * Permission gate: ADMIN_OWNER | ADMIN_WEB_SETTINGS. Matches the other
+ * settings-page-only handlers (sel_theme / apply_theme / clear_cache /
+ * preview_intro_text); only an operator who can edit SMTP settings has
+ * a legitimate reason to trigger a test send.
+ *
+ * Error-envelope contract:
+ *   - validation         missing or malformed recipient
+ *   - smtp_not_configured  smtp.host / smtp.user / smtp.pass empty (we
+ *                          short-circuit BEFORE Mail::send so the user
+ *                          gets a pointed message instead of the
+ *                          generic mail_failed branch — `Mail::send`'s
+ *                          internal `Mailer::create() === null` arm
+ *                          also returns false but only logs to
+ *                          `:prefix_log`)
+ *   - rate_limited       too many sends in the throttle window;
+ *                        the message interpolates "try again in Ns"
+ *                        so the client can echo it directly via a
+ *                        toast — there's no separate machine-readable
+ *                        `retry_after_seconds` field on the wire
+ *                        (ApiError only carries code + message + field
+ *                        + httpStatus; if a future client needs a
+ *                        numeric value, parse it from the message
+ *                        or extend ApiError with a `details` payload).
+ *   - mail_failed        SMTP error reported by Symfony Mailer (full
+ *                        cause already lives in `:prefix_log` by way
+ *                        of `Mail::send`'s own catch block — we don't
+ *                        echo it to the client to avoid leaking
+ *                        provider error strings that may carry
+ *                        credentials / hostnames)
+ *
+ * Throttle: at most one send attempt per 10 seconds per panel
+ * install. The scope is per-install (not per-user) because the abuse
+ * surface is the outbound SMTP relay, not a per-user resource — two
+ * admins racing each other shouldn't double the relay's load. We
+ * stamp the throttle file BEFORE the SMTP I/O so a slow / hung
+ * connection can't be hammered while a first call is mid-handshake
+ * (so a series of mail_failed outcomes ALSO consume rate-limit
+ * slots — intentional). The counter is a single-int cache file
+ * under SB_CACHE, mirroring the shape
+ * `_api_system_release_save_cache` uses (atomic tempfile +
+ * `rename()`). Stale-while-error: if the cache directory is
+ * unwritable we let the send through rather than fail closed —
+ * losing the rate limit is preferable to losing the diagnostic
+ * affordance the operator opened this surface to use.
+ *
+ * Throttle interaction with api_system_clear_cache: that handler
+ * removes every file in SB_CACHE, including this throttle file. An
+ * operator who hits rate_limited and then clicks "Clear cache"
+ * resets the throttle. Acceptable because (a) both surfaces are
+ * gated by the same ADMIN_OWNER | ADMIN_WEB_SETTINGS mask, so the
+ * "throttle bypass" doesn't escalate privileges; (b) the threat
+ * model the throttle defends is a *script* hammering this endpoint,
+ * not a settings-admin abusing their own cache button.
+ *
+ * Audit: every send (success OR mail_failed) lands an entry in
+ * `:prefix_log` so test sends can't be used to silently probe SMTP
+ * credentials or enumerate valid relay endpoints. The success entry
+ * names the recipient (which is operator-controlled — by default the
+ * operator's own email); the failure entry adds the SMTP error class
+ * for diagnostics. The validation / smtp_not_configured / rate_limited
+ * branches don't log (they never reach the SMTP wire — same shape
+ * `api_system_send_mail` uses).
+ *
+ * @param array{to?: string} $params
+ * @return array{to: string, sent_at: int}
+ */
+function api_system_test_email(array $params): array
+{
+    global $userbank;
+
+    // Resolve the calling admin's display name via $userbank rather
+    // than the legacy `global $username` shape — `$username` is only
+    // set by the install-wizard pages (web/install/pages/page.[2-6].php)
+    // and the PHPUnit ApiTestCase shim; the JSON-API lifecycle in
+    // production never assigns it, so `global $username` would
+    // resolve to an unset variable, emitting empty strings into the
+    // audit log and the email body's {admin} placeholder. The same
+    // bug-shape lives in api_system_send_mail / api_account_* and
+    // is a separate cleanup — don't propagate it forward here. See
+    // the broader sweep tracked alongside this PR.
+    $adminName = (string) ($userbank->GetProperty('user') ?? '');
+
+    $to = trim((string) ($params['to'] ?? ''));
+    if ($to === '') {
+        // Default to the logged-in admin's email so an operator who
+        // just wants to "send the test to me" doesn't have to retype
+        // their own address (which they can read off Admin → My
+        // account if it slipped their mind).
+        $to = (string) ($userbank->GetProperty('email') ?? '');
+    }
+    if ($to === '') {
+        throw new ApiError(
+            'validation',
+            'Enter a recipient email address (no email is configured on your admin account).',
+            'to',
+        );
+    }
+    // FILTER_VALIDATE_EMAIL enforces RFC 822 grammar. PHP's
+    // implementation also rejects strings well over RFC 5321's
+    // 254-octet forward-path cap in every build the panel
+    // supports (the regex is internally bounded), but exact
+    // byte-edge behavior varies subtly across PHP versions, so
+    // don't rely on this as a hard size gate. If a future
+    // bug-report surfaces a 255-byte address slipping through,
+    // add an explicit `strlen($to) > 254` guard ahead of the
+    // filter — for now the filter is sufficient in practice.
+    if (filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
+        throw new ApiError('validation', 'Recipient email is not a valid address.', 'to');
+    }
+
+    // Short-circuit on the smtp.host / smtp.user / smtp.pass-empty
+    // arm so the user sees actionable copy ("configure SMTP first")
+    // instead of the generic mail_failed branch. Mail::send itself
+    // also returns false in this state but only logs to
+    // `:prefix_log` — easy to miss. We deliberately don't validate
+    // smtp.port: Mailer defaults to 25, which is the right shape
+    // for a local relay (the most common test target).
+    if (Mailer::create() === null) {
+        throw new ApiError(
+            'smtp_not_configured',
+            'SMTP host, username, or password is empty. Configure SMTP first and save the form, then try again.',
+        );
+    }
+
+    // Rate limit: at most 1 send per 10s, scoped to the entire panel
+    // install (not the calling admin). The throttle window is short
+    // enough that a legitimate operator iterating on SMTP settings
+    // isn't blocked, but long enough that a script can't flood the
+    // outbound relay (a 10s window plus the audit-log row per send
+    // makes burst abuse both bandwidth-bounded AND traceable).
+    $throttleSeconds = 10;
+    $now = time();
+    $cachePath = SB_CACHE . 'test-email-throttle';
+    $previous = @file_get_contents($cachePath);
+    if ($previous !== false) {
+        $previousTs = (int) trim((string) $previous);
+        $elapsed = $now - $previousTs;
+        if ($previousTs > 0 && $elapsed >= 0 && $elapsed < $throttleSeconds) {
+            $retryAfter = $throttleSeconds - $elapsed;
+            throw new ApiError(
+                'rate_limited',
+                sprintf('Test email throttled — try again in %d seconds.', $retryAfter),
+            );
+        }
+    }
+
+    // Stamp the throttle file BEFORE the SMTP I/O so a slow / hung
+    // SMTP connection (e.g. operator pointed `smtp.host` at an
+    // unroutable address) can't be hammered while the first call is
+    // still mid-handshake. We write atomically via tempfile+rename
+    // (same shape `_api_system_release_save_cache` uses) so a
+    // crashing PHP process leaves either the old timestamp or the
+    // new one — never a half-written file.
+    //
+    // `tempnam()` falls back to `sys_get_temp_dir()` (typically
+    // `/tmp`) when SB_CACHE is unwritable. If `/tmp` and SB_CACHE
+    // are on different filesystems (common in containerized
+    // deployments where `/tmp` is host tmpfs and the panel cache
+    // is a bind mount), `rename()` fails with EXDEV and the tmp
+    // file would leak if we didn't unlink it on the failure
+    // branch. So: unlink whenever either the write OR the rename
+    // misses, not just the write.
+    if (!is_dir(SB_CACHE)) {
+        @mkdir(SB_CACHE, 0o775, true);
+    }
+    $tmpPath = @tempnam(SB_CACHE, 'tem');
+    if ($tmpPath !== false) {
+        if (@file_put_contents($tmpPath, (string) $now) === false
+            || !@rename($tmpPath, $cachePath)
+        ) {
+            @unlink($tmpPath);
+        }
+    }
+
+    // Both subject slots emit the same string: the email header
+    // subject AND the body's `<strong>{subject}</strong>` slot in
+    // `contact_custom.html`. They're rendered in different
+    // surfaces (mail-client subject line vs HTML body), so a
+    // recipient seeing one identifier in their inbox and a
+    // different one in the body would be confusing. The
+    // `[SourceBans++]` prefix is what their mail client surfaces
+    // alongside other notifications from the panel.
+    $subject = '[SourceBans++] SMTP test email';
+    $message = "This is a test email from SourceBans++ confirming your SMTP credentials are working."
+        . " It was triggered manually by admin '" . $adminName . "' from Admin → Settings → SMTP."
+        . " You can safely ignore it — no action is required.";
+    $sent = Mail::send($to, EmailType::Custom, [
+        '{message}' => $message,
+        '{subject}' => $subject,
+        '{admin}'   => $adminName,
+        '{link}'    => Host::complete(true),
+        '{home}'    => Host::complete(true),
+    ], $subject);
+
+    if (!$sent) {
+        // The full cause already lives in `:prefix_log` (Mail::send
+        // catches the Throwable from Symfony Mailer and emits a
+        // `LogType::Error, 'Mail error', $e->getMessage()` row).
+        // Mirror that with a paired audit entry so the success /
+        // failure ratio is visible in the audit log without having
+        // to cross-reference timestamps.
+        Log::add(LogType::Warning, 'Test email failed', "Admin '$adminName' tried to send a test email to '$to'; see prior 'Mail error' entry for the SMTP-side cause.");
+        throw new ApiError(
+            'mail_failed',
+            'SMTP send failed. Check the audit log under Admin → System Log for the cause.',
+        );
+    }
+
+    Log::add(LogType::Message, 'Test email sent', "Admin '$adminName' sent a SMTP test email to '$to'.");
+
+    return [
+        'to' => $to,
+        'sent_at' => $now,
     ];
 }
 

@@ -171,3 +171,7 @@ Api::register('system.clear_cache',           'api_system_clear_cache',         
 // settings page so we don't accidentally expose the renderer to
 // non-settings surfaces.
 Api::register('system.preview_intro_text',    'api_system_preview_intro_text',    ADMIN_OWNER | ADMIN_WEB_SETTINGS);
+// #1455: SMTP test-email button on the settings page. Same permission
+// gate as the other settings-only actions — only operators who can
+// edit SMTP credentials have a reason to trigger a verification send.
+Api::register('system.test_email',            'api_system_test_email',            ADMIN_OWNER | ADMIN_WEB_SETTINGS);

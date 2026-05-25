@@ -110,6 +110,29 @@ yourself to an admin group with the relevant notification flags
 (typically the group that gets emails for new ban submissions,
 protests, etc.).
 
+### How do I verify SMTP without waiting for a real event?
+
+Go to **Admin Panel → Settings → Main** and scroll to the SMTP card.
+Below the regular SMTP fields you'll see **Send a test email** —
+it's pre-populated with your admin account's email but you can
+swap in any recipient. Click **Send test email** and the panel
+dispatches a one-shot verification message through the saved SMTP
+credentials.
+
+A few things to keep in mind:
+
+- The button is greyed out until **Host**, **Username**, and the
+  **From address** are saved. Save the form first if you just
+  changed any of them — the test reads the persisted values, not
+  the unsaved contents of the inputs.
+- The action is rate-limited to one send every 10 seconds per
+  install (prevents accidental misconfiguration from spamming
+  your SMTP relay).
+- Both success and failure show up in **Admin Panel → System
+  log**, so you can correlate a "Test email failed" toast with
+  the underlying SMTP error (`Mail error`) entry from the same
+  request.
+
 ### I locked myself out by enabling Steam-only login
 
 If you flipped the Steam-only login switch and you no longer have

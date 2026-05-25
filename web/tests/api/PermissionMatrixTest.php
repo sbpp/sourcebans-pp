@@ -177,6 +177,9 @@ final class PermissionMatrixTest extends TestCase
             'system.apply_theme'              => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
             'system.clear_cache'              => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
             'system.preview_intro_text'       => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
+            // #1455: SMTP test-email button — only operators who can edit
+            // SMTP credentials have a reason to trigger the verification send.
+            'system.test_email'               => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
         ];
     }
 

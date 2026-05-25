@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "rate_limited",
+        "message": "<*>"
+    }
+}

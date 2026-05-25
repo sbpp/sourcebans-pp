@@ -78,6 +78,14 @@ final class AdminSettingsView extends View
         public readonly bool $banlist_nocountryfetch,
         public readonly bool $banlist_hideplayerips,
         public readonly bool $config_smtp_verify_peer,
+        // #1455: pre-populated recipient for the SMTP test-email
+        // button. Defaults to the logged-in admin's email so the
+        // operator doesn't have to retype their own address to
+        // verify SMTP works; can be edited inline before triggering
+        // the send. May be empty when the admin row has no email
+        // on file (the handler then requires the operator to type
+        // a destination before firing).
+        public readonly string $admin_email,
     ) {
     }
 }

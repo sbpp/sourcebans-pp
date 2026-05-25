@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "smtp_not_configured",
+        "message": "SMTP host, username, or password is empty. Configure SMTP first and save the form, then try again."
+    }
+}

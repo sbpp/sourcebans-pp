@@ -503,6 +503,11 @@ if ($section === 'themes') {
         config_smtp_verify_peer:     Config::getBool('smtp.verify_peer'),
         config_mail_from_email:      (string) Config::get('config.mail.from_email'),
         config_mail_from_name:       (string) Config::get('config.mail.from_name'),
+        // #1455: SMTP test-email button default recipient — current
+        // admin's email if any. The page-tail JS keeps the input
+        // editable so an operator can send the test to a different
+        // mailbox (e.g. a shared on-call address).
+        admin_email:                 (string) ($userbank->GetProperty('email') ?? ''),
     ));
 }
 

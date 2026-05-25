@@ -425,4 +425,236 @@ final class SystemTest extends ApiTestCase
         $env = $this->api('system.preview_intro_text', ['markdown' => 'hi']);
         $this->assertEnvelopeError($env, 'forbidden');
     }
+
+    // ---- system.test_email (#1455) -----------------------------------------
+
+    /**
+     * Convenience wrapper around `REPLACE INTO :prefix_settings` so each
+     * test_email test can set up the SMTP config it needs without
+     * round-tripping through the settings page. Mirrors the helper in
+     * `MailerSmtpFromTest::setSetting`. Re-initializes the `Config`
+     * cache so the handler sees the new value on its next read.
+     */
+    private function setSmtpSetting(string $key, string $value): void
+    {
+        $pdo = Fixture::rawPdo();
+        $stmt = $pdo->prepare(sprintf(
+            'REPLACE INTO `%s_settings` (`setting`, `value`) VALUES (?, ?)',
+            DB_PREFIX
+        ));
+        $stmt->execute([$key, $value]);
+        \Config::init($GLOBALS['PDO']);
+    }
+
+    /**
+     * Pre-seed SMTP credentials that point at an unroutable address.
+     * `Mailer::create()` only checks the three string fields are
+     * non-empty, so any non-empty values satisfy the
+     * smtp_not_configured short-circuit; the real `Mail::send` call
+     * then deterministically lands on the `mail_failed` branch
+     * because the SMTP TCP connection never establishes.
+     *
+     * Used by every test that wants the handler to reach
+     * `Mail::send` (the rate-limit + audit-log paths) without
+     * actually accepting mail in CI.
+     */
+    private function seedDeadSmtp(): void
+    {
+        // 127.0.0.1:1 is a port nothing listens on, so Symfony Mailer's
+        // EsmtpTransport raises a TransportException almost
+        // immediately (ECONNREFUSED) — no 30s timeout.
+        $this->setSmtpSetting('smtp.host', '127.0.0.1');
+        $this->setSmtpSetting('smtp.user', 'tester');
+        $this->setSmtpSetting('smtp.pass', 'shh');
+        $this->setSmtpSetting('smtp.port', '1');
+        $this->setSmtpSetting('config.mail.from_email', 'noreply@example.test');
+        $this->setSmtpSetting('config.mail.from_name', 'SourceBans++');
+    }
+
+    public function testTestEmailRejectsAnonymous(): void
+    {
+        $env = $this->api('system.test_email', ['to' => 'someone@example.test']);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    public function testTestEmailRejectsMalformedRecipient(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('system.test_email', ['to' => 'not-an-email']);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('to', $env['error']['field'] ?? null);
+        // Pin the validation envelope shape so a future copy / paste
+        // can't accidentally drop the `field` discriminator the
+        // client-side toast wiring uses to know which input to flag.
+        $this->assertSnapshot('system/test_email_validation', $env);
+    }
+
+    public function testTestEmailRejectsOversizedRecipientViaFilterValidateEmail(): void
+    {
+        $this->loginAsAdmin();
+        // Defence-in-depth coverage: FILTER_VALIDATE_EMAIL is documented
+        // to enforce the RFC 5321 254-octet forward-path cap (its
+        // internal regex rejects oversized strings outright). This
+        // test pins that we reject such inputs cleanly with the
+        // `validation` envelope, so a future contributor swapping the
+        // recipient validator can't silently widen the surface area
+        // for Symfony Mailer to throw a generic
+        // RfcComplianceException out of band.
+        $local  = str_repeat('a', 60); // 60 chars + '@' = 61
+        $domain = implode('.', array_fill(0, 32, 'aaaaaa')); // 223 chars
+        $to     = $local . '@' . $domain; // 284 bytes total
+        $this->assertGreaterThan(254, strlen($to));
+        $env = $this->api('system.test_email', ['to' => $to]);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('to', $env['error']['field'] ?? null);
+    }
+
+    public function testTestEmailRejectsWhenSmtpNotConfigured(): void
+    {
+        $this->loginAsAdmin();
+        // Freshly-seeded panel: smtp.host / user / pass are all empty
+        // (sb_settings ships them as blank), so Mailer::create()
+        // returns null and the handler short-circuits with the
+        // pointed `smtp_not_configured` error envelope BEFORE
+        // touching Mail::send (and therefore BEFORE the rate-limit
+        // file gets stamped).
+        $this->setSmtpSetting('smtp.host', '');
+        $this->setSmtpSetting('smtp.user', '');
+        $this->setSmtpSetting('smtp.pass', '');
+        $env = $this->api('system.test_email', ['to' => 'someone@example.test']);
+        $this->assertEnvelopeError($env, 'smtp_not_configured');
+        // Snapshot pins the operator-facing copy so a UX tweak goes
+        // through the snapshot-regen workflow rather than silently
+        // landing — the message is the only signal the operator gets
+        // about *why* the test couldn't run.
+        $this->assertSnapshot('system/test_email_smtp_not_configured', $env);
+    }
+
+    public function testTestEmailDefaultsRecipientToAdminEmail(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedDeadSmtp();
+        // Throttle cleared per setUp().
+        @unlink(SB_CACHE . 'test-email-throttle');
+        $env = $this->api('system.test_email', []); // no `to` param
+        // Drop into mail_failed because the SMTP TCP connect fails.
+        // The important assertion is that the handler resolved the
+        // recipient (admin@example.test from Fixture::seedAdmin) and
+        // tried to send — i.e. it didn't bail on validation.
+        $this->assertEnvelopeError($env, 'mail_failed');
+    }
+
+    public function testTestEmailReportsMailFailureWhenSmtpDead(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedDeadSmtp();
+        @unlink(SB_CACHE . 'test-email-throttle');
+
+        $env = $this->api('system.test_email', ['to' => 'someone@example.test']);
+        $this->assertEnvelopeError($env, 'mail_failed');
+        $this->assertSnapshot('system/test_email_mail_failed', $env);
+
+        // Audit-log row landed: failure surfaces under the
+        // 'Test email failed' title so an operator can correlate
+        // attempts with the underlying 'Mail error' row Mail::send
+        // emits. Pin both the count AND the body shape so a future
+        // refactor that drops the admin/recipient interpolation
+        // (which is the entire diagnostic value of the row) fails
+        // loudly.
+        $row = Fixture::rawPdo()->query(sprintf(
+            "SELECT title, message FROM `%s_log` WHERE title = 'Test email failed'",
+            DB_PREFIX
+        ))->fetch(\PDO::FETCH_ASSOC);
+        $this->assertIsArray($row, 'Expected exactly one Test email failed audit-log row.');
+        $this->assertSame('Test email failed', $row['title']);
+        // The audit row interpolates BOTH the admin's name AND the
+        // attempted recipient — both pieces are operator-actionable
+        // when triaging "did this send go anywhere?". The username
+        // comes from `$userbank->GetProperty('user')` which the
+        // PHPUnit fixture seeds as the lowercase `'admin'`.
+        $this->assertStringContainsString("Admin 'admin'", (string) $row['message']);
+        $this->assertStringContainsString("'someone@example.test'", (string) $row['message']);
+        $this->assertStringContainsString('Mail error', (string) $row['message']);
+    }
+
+    public function testTestEmailRateLimitsRepeatCallsWithinWindow(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedDeadSmtp();
+        @unlink(SB_CACHE . 'test-email-throttle');
+
+        // First call reaches Mail::send and lands on mail_failed
+        // (the SMTP connection fails). The throttle file is stamped
+        // at the start of the handler regardless.
+        $first = $this->api('system.test_email', ['to' => 'a@example.test']);
+        $this->assertEnvelopeError($first, 'mail_failed');
+
+        // Second call within the throttle window is short-circuited
+        // before reaching Mail::send — proves the throttle is
+        // active and the second SMTP attempt never fires (which is
+        // the operator-visible value: an unroutable host shouldn't
+        // be hammered).
+        $second = $this->api('system.test_email', ['to' => 'b@example.test']);
+        $this->assertEnvelopeError($second, 'rate_limited');
+        // The retry-after seconds value is interpolated into the
+        // message at runtime (10 minus elapsed; clamped to a
+        // positive int). It can be 9 or 10 depending on whether
+        // the two calls crossed a wall-clock second boundary;
+        // either is acceptable, so we assert the SHAPE rather
+        // than the exact literal — the snapshot below redacts
+        // the message and pins everything else.
+        $this->assertMatchesRegularExpression(
+            '/Test email throttled — try again in (?:9|10) seconds\./',
+            (string) ($second['error']['message'] ?? ''),
+        );
+        // Snapshot pins the code + (redacted) message structure so
+        // a future change to the rate_limited shape goes through
+        // the snapshot-regen workflow rather than silently breaking
+        // any client-side branch logic.
+        $this->assertSnapshot(
+            'system/test_email_rate_limited',
+            $second,
+            ['error.message'],
+        );
+    }
+
+    public function testTestEmailValidationDoesNotConsumeRateLimitSlot(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedDeadSmtp();
+        @unlink(SB_CACHE . 'test-email-throttle');
+
+        // Validation failure happens BEFORE the throttle file is
+        // stamped. A typo on the recipient shouldn't cost the
+        // operator a 10s wait on the next legitimate attempt.
+        $bad = $this->api('system.test_email', ['to' => 'not-an-email']);
+        $this->assertEnvelopeError($bad, 'validation');
+
+        // Next call with a valid address reaches Mail::send (and
+        // lands on mail_failed because the SMTP connection is
+        // dead). If the validation branch had stamped the throttle
+        // file, this would be `rate_limited` instead.
+        $next = $this->api('system.test_email', ['to' => 'a@example.test']);
+        $this->assertEnvelopeError($next, 'mail_failed');
+    }
+
+    public function testTestEmailSmtpNotConfiguredDoesNotConsumeRateLimitSlot(): void
+    {
+        $this->loginAsAdmin();
+        $this->setSmtpSetting('smtp.host', '');
+        $this->setSmtpSetting('smtp.user', '');
+        $this->setSmtpSetting('smtp.pass', '');
+        @unlink(SB_CACHE . 'test-email-throttle');
+
+        $env = $this->api('system.test_email', ['to' => 'a@example.test']);
+        $this->assertEnvelopeError($env, 'smtp_not_configured');
+
+        // The smtp_not_configured short-circuit runs BEFORE the
+        // throttle file is stamped. The operator should be able to
+        // immediately retry after fixing the settings, not have to
+        // wait out the throttle.
+        $this->seedDeadSmtp();
+        $next = $this->api('system.test_email', ['to' => 'a@example.test']);
+        $this->assertEnvelopeError($next, 'mail_failed');
+    }
 }

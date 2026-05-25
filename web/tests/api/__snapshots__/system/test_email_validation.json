@@ -1,0 +1,8 @@
+{
+    "ok": false,
+    "error": {
+        "code": "validation",
+        "message": "Recipient email is not a valid address.",
+        "field": "to"
+    }
+}
