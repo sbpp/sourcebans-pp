@@ -28,6 +28,18 @@ foreach ($servers as $server) {
     $num++;
 }
 
+// #1439 — allowlist the `mode` URL param so the iframe can tell the
+// post-ban-kick flow (admin.bans.php "Ban Added" success dialog,
+// default) apart from the kick-only flow (right-click context menu on
+// the public servers page, `&mode=kick`). The handler branches on
+// this string to (a) skip the `:prefix_bans` UPDATE that's only
+// meaningful when a ban row exists, and (b) emit the matching rcon
+// kick message ("kicked" vs "banned"). Anything other than 'kick'
+// falls through to 'ban' (backward-compat — pre-#1439 callers don't
+// supply the param).
+$rawMode = (string) ($_GET['mode'] ?? 'ban');
+$mode    = $rawMode === 'kick' ? 'kick' : 'ban';
+
 $theme->setLeftDelimiter('-{');
 $theme->setRightDelimiter('}-');
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\KickitView(
@@ -35,6 +47,7 @@ $theme->setRightDelimiter('}-');
     total: count($serverlinks),
     check: (string) ($_GET['check'] ?? ''),
     type: (int) ($_GET['type'] ?? 0),
+    mode: $mode,
     servers: $serverlinks,
 ));
 $theme->setLeftDelimiter('{');

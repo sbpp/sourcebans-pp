@@ -9,12 +9,20 @@
     `-{ … }-` delimiter pair lets the inline JS keep its raw `{` /
     `}` tokens — see KickitView::DELIMITERS.
 
-    The window title, return URL, and theme path are NOT template
-    variables — they're fixed for this theme/page.
+    The theme path is NOT a template variable — it's fixed for this
+    theme/page. The window title and post-completion redirect URL
+    branch on `$mode` (`'ban'` for the post-ban iframe embed inside
+    `admin.bans.php`'s "Ban Added" dialog; `'kick'` for the standalone
+    right-click "Kick player" flow from `?p=servers`) so the chrome
+    matches the operator's mental model — see #1439 + the
+    `KickitView` docblock.
 
     Per-row JS calls Actions.KickitLoadServers + Actions.KickitKickPlayer
     via sb.api.call (CSRF token forwarded as the X-CSRF-Token header
-    read from the <meta> tag below). No <form> on this page, so no
+    read from the <meta> tag below). The `mode` field is forwarded
+    verbatim into `KickitKickPlayer` so the handler can skip the
+    `:prefix_bans` UPDATE on the kick-only flow and emit the matching
+    rcon `kickid` message. No <form> on this page, so no
     {csrf_field} needed. Per-row containers (`srv_<n>`, `srvip_<n>`)
     preserve the IDs the legacy template used so existing
     parent-window dialog hooks (set_counter, height adjustment) keep
@@ -52,7 +60,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="-{$csrf_token}-">
-    <title>Kick player</title>
+    <title>-{if $mode === 'kick'}-Kick player-{else}-Ban player-{/if}-</title>
     <script>
     (function () {
         try {
@@ -69,7 +77,7 @@
     <script src="../scripts/api.js"></script>
 </head>
 <body style="background:transparent;padding:0.5rem">
-<div id="container" class="card" data-testid="kickit-container">
+<div id="container" class="card" data-testid="kickit-container" data-mode="-{$mode}-">
     <div class="card__header">
         <div>
             <h3>Searching for the player on all servers&hellip;</h3>
@@ -107,6 +115,7 @@
         var TOTAL = -{$total}-;
         var CHECK = '-{$check}-';
         var TYPE = -{$type}-;
+        var MODE = '-{$mode}-';
         var srvcount = 0;
 
         function setCounter(count) {
@@ -121,12 +130,25 @@
                     var place = parent.document.getElementById('dialog-placement');
                     if (place) place.style.display = 'none';
                 }, 5000);
-                setTimeout(function () { window.location = '../index.php?p=admin&c=bans'; }, 5000);
+                // #1439 — kick-only mode (right-click "Kick player" from
+                // ?p=servers) is a top-level navigation, NOT an iframe
+                // embed; redirecting the user to the admin bans page
+                // after a one-shot kick is jarring UX (different
+                // screen, different mental model). Send them back to
+                // the public servers page they came from. The post-ban
+                // mode keeps its existing redirect (the dialog's
+                // parent-side close handler in `sb.message.show` from
+                // `admin.bans.php` also points there as the redirect
+                // target — the two paths converge).
+                var redirectUrl = MODE === 'kick'
+                    ? '../index.php?p=servers'
+                    : '../index.php?p=admin&c=bans';
+                setTimeout(function () { window.location = redirectUrl; }, 5000);
             }
         }
 
         function processRow(sid, num) {
-            sb.api.call(Actions.KickitKickPlayer, { check: CHECK, sid: sid, num: num, type: TYPE })
+            sb.api.call(Actions.KickitKickPlayer, { check: CHECK, sid: sid, num: num, type: TYPE, mode: MODE })
                 .then(function (r) {
                     if (!r || !r.ok || !r.data) {
                         sb.setHTML('srv_' + num, "<span class='text-xs' style='color:var(--danger)'><i>Error.</i></span>");

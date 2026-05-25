@@ -354,6 +354,21 @@
             // around what's effectively a "fan a single command out
             // to every enabled server and close" interaction.
             //
+            // The `&mode=kick` query param (#1439) tells the
+            // chromeless kickit page (and the JSON action it fans out
+            // through) that this is a kick-only flow — no ban row
+            // exists. The handler then (a) skips the
+            // `:prefix_bans` UPDATE that would otherwise re-attribute
+            // any of the player's existing active bans to whatever
+            // server happened to answer first, and (b) emits the
+            // "You have been kicked from this server" rcon message
+            // instead of the post-ban "You have been banned by this
+            // server, check $domain for more info" (which would lie
+            // to a player who's actually free to rejoin — the
+            // user-reported #1439 symptom). The post-ban flow on
+            // `admin.bans.php` deliberately doesn't pass `mode`, so
+            // it falls through to the default 'ban' branch.
+            //
             // Ban / Block both route through the panel-chromed
             // smart-default URLs (`?p=admin&c=bans&section=add-ban&steam=…&type=0&name=…`
             // / `?p=admin&c=comms&steam=…&type=0&name=…`) because they
@@ -402,7 +417,7 @@
             menu.appendChild(buildRow({
                 label: 'Kick player',
                 icon: 'log-out',
-                href: 'pages/admin.kickit.php?check=' + encodeURIComponent(steamid) + '&type=0',
+                href: 'pages/admin.kickit.php?check=' + encodeURIComponent(steamid) + '&type=0&mode=kick',
                 testid: 'context-menu-kick',
             }));
 

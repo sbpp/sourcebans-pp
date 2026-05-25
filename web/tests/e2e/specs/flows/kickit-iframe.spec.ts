@@ -86,6 +86,19 @@ import { truncateE2eDb } from '../../fixtures/db.ts';
 const KICKIT_URL = '/pages/admin.kickit.php?check=STEAM_0%3A0%3A1&type=0';
 
 test.describe('flow: kickit iframe API call lands on /api.php, not /pages/api.php (#1433)', () => {
+    // Serial mode — every test in the describe truncates + seeds
+    // `sourcebans_e2e`. Without `serial` Playwright runs the tests
+    // in parallel workers locally (`workers: undefined` in
+    // `playwright.config.ts` defaults to CPU count), and worker B's
+    // `truncateE2eDb()` wipes the row worker A's `seedServerViaApi`
+    // just inserted, leaving the second test's `kickit_load_servers`
+    // arm with an empty list and the row-anchored assertion timeout.
+    // Mirrors the `server-player-context-menu.spec.ts` serial guard
+    // for the same reason. CI pins `workers: 1` so this only matters
+    // locally. Added in #1439 when a second test joined the
+    // describe.
+    test.describe.configure({ mode: 'serial' });
+
     // Skip on mobile-chromium: the contract is browser-shape-agnostic
     // (the resolution lives in `web/scripts/api.js` and runs identically
     // on both form factors) and the second project would double the
@@ -276,5 +289,196 @@ test.describe('flow: kickit iframe API call lands on /api.php, not /pages/api.ph
                 `If this fires on /pages/api.php, api.js's endpoint resolution has been "simplified" back to the broken literal — see ApiJsEndpointResolutionTest.`,
             ).toBe('/api.php');
         }
+    });
+
+    /**
+     * #1439 — when the kickit iframe is loaded with `?mode=kick` (the
+     * standalone right-click "Kick player" flow from the public
+     * servers page's context menu), three contracts must hold:
+     *
+     *   1. The `<title>` reads "Kick player" — the legacy post-ban
+     *      iframe (`?mode=ban`, the default) used "Ban player" which
+     *      is the wrong mental model for a kick-only flow.
+     *   2. Every `kickit.kick_player` POST carries `mode: 'kick'`
+     *      in the JSON body so the API handler skips the
+     *      `:prefix_bans` UPDATE and emits the "You have been kicked
+     *      from this server" rcon message instead of the
+     *      "You have been banned by this server, check…" message.
+     *      The pre-fix iframe shipped no `mode` field at all, so
+     *      the API defaulted to `ban` and the kick-only flow ran
+     *      the ban-completion code path despite no ban existing.
+     *   3. After the iframe finishes processing, the redirect lands
+     *      on `?p=servers` (the page the operator came from), not
+     *      `?p=admin&c=bans` (the post-ban surface). Asserted via
+     *      the `<script>` block's literal text (the actual redirect
+     *      fires `setTimeout(..., 5000)` so we anchor on the source
+     *      to keep the spec fast — the 5s timer is fine for
+     *      production but pointless to wait through here, and the
+     *      MODE-aware redirect branch is the load-bearing bit).
+     */
+    test('mode=kick: title says Kick, payload carries mode, redirect targets /servers', async ({ page }) => {
+        await truncateE2eDb();
+
+        await page.goto('/index.php?p=admin&c=servers&section=add');
+        const addEnvelope = await page.evaluate(async () => {
+            const w = window as unknown as {
+                sb: {
+                    api: {
+                        call: (
+                            action: string,
+                            params: Record<string, unknown>,
+                        ) => Promise<{ ok: boolean; data?: { sid?: number } }>;
+                    };
+                };
+                Actions: Record<string, string>;
+            };
+            return await w.sb.api.call(w.Actions.ServersAdd, {
+                ip:      '203.0.113.2',
+                port:    '27015',
+                rcon:    'stub-rcon-password',
+                rcon2:   'stub-rcon-password',
+                mod:     1,
+                enabled: true,
+                group:   '0',
+            });
+        });
+        expect(addEnvelope, 'servers.add envelope should round-trip ok').toMatchObject({ ok: true });
+        const sid = (addEnvelope as { data: { sid: number } }).data.sid;
+
+        // Track the mode field on every kick_player call. We also
+        // assert the load_servers call doesn't carry a mode (the
+        // dispatcher accepts both shapes but the contract is that
+        // only the kick_player half forwards it).
+        const kickPayloads: Array<{ mode: unknown; check: unknown }> = [];
+        await page.route(
+            (url) => url.pathname === '/api.php',
+            async (route) => {
+                const req = route.request();
+                if (req.method() !== 'POST') {
+                    await route.continue();
+                    return;
+                }
+                let payload: { action?: string; params?: Record<string, unknown> } = {};
+                try {
+                    payload = JSON.parse(req.postData() ?? '{}');
+                } catch {
+                    await route.continue();
+                    return;
+                }
+
+                if (payload.action === 'kickit.load_servers') {
+                    await route.fulfill({
+                        status: 200,
+                        contentType: 'application/json',
+                        body: JSON.stringify({
+                            ok: true,
+                            data: {
+                                servers: [
+                                    { num: 0, sid, has_rcon: true },
+                                ],
+                            },
+                        }),
+                    });
+                    return;
+                }
+                if (payload.action === 'kickit.kick_player') {
+                    kickPayloads.push({
+                        mode:  payload.params?.mode,
+                        check: payload.params?.check,
+                    });
+                    // Same `not_found` terminal envelope as the
+                    // mode-agnostic test above — exercises the
+                    // post-call redirect branch without depending
+                    // on a real RCON hit.
+                    await route.fulfill({
+                        status: 200,
+                        contentType: 'application/json',
+                        body: JSON.stringify({
+                            ok: true,
+                            data: {
+                                status:   'not_found',
+                                sid,
+                                num:      0,
+                                hostname: 'stub.example.com',
+                                ip:       '203.0.113.2',
+                                port:     '27015',
+                            },
+                        }),
+                    });
+                    return;
+                }
+                await route.continue();
+            },
+        );
+
+        await page.goto('/pages/admin.kickit.php?check=STEAM_0%3A0%3A1&type=0&mode=kick');
+
+        // Contract 1: title says "Kick player" (not "Ban player").
+        // Anchored on `toHaveTitle` so Playwright auto-waits if the
+        // template renderer is slow to apply the conditional.
+        await expect(page).toHaveTitle('Kick player');
+
+        // Contract 1b: the container surface mode dataset attribute
+        // matches the URL param, so any third-party theme that
+        // styles on `[data-mode]` can branch on the same signal
+        // the JS reads.
+        const container = page.locator('[data-testid="kickit-container"]');
+        await expect(container).toHaveAttribute('data-mode', 'kick');
+
+        // Wait for the kick_player round-trip to land.
+        const row0Status = page.locator('[data-testid="kickit-status-0"]');
+        await expect(row0Status).toContainText('Player not found.');
+
+        // Contract 2: every kick_player payload carries the
+        // operator's mode signal — without this the handler runs
+        // the ban-completion code path and #1439 reproduces.
+        expect(
+            kickPayloads.length,
+            `Expected at least one kickit.kick_player call (saw ${kickPayloads.length}). The iframe state machine must have stalled.`,
+        ).toBeGreaterThan(0);
+        for (const p of kickPayloads) {
+            expect(
+                p.mode,
+                `kickit.kick_player payload should carry mode='kick' for the standalone kick flow; saw ${JSON.stringify(p)}. ` +
+                `If this fires with mode=undefined or mode='ban', the iframe template lost track of the URL-param mode and the API will run the post-ban code path on a kick-only flow.`,
+            ).toBe('kick');
+        }
+
+        // Contract 3: the iframe's post-completion redirect goes
+        // back to the public servers page, NOT the admin bans
+        // surface. The actual `window.location` flip fires after
+        // a 5s timer inside the iframe's IIFE (line 110 of
+        // `page_kickit.tpl`).
+        //
+        // The earlier shape of this assertion grepped the rendered
+        // script source for `?p=servers` (the kick-mode branch's
+        // literal). That assertion is structurally weak — the
+        // template emits a ternary with BOTH literals visible in
+        // source regardless of `$mode`, so the assertion passes
+        // even if someone deleted the kick-mode arm entirely (as
+        // long as the comment block above the ternary still
+        // mentions `?p=servers`). The reviewer caught this — the
+        // fix is to anchor on the real browser navigation via
+        // `page.waitForURL`.
+        //
+        // The 8s timeout accommodates the iframe's 5s
+        // `setTimeout(..., 5000)` redirect + a buffer for runtime
+        // scheduling. We deliberately do NOT install a
+        // `window.setTimeout` override via `addInitScript` to make
+        // the timer fire faster: the override fires the redirect
+        // on a microtask boundary, which means the redirect lands
+        // BEFORE Playwright's earlier `toHaveTitle('Kick player')`
+        // assertion can poll the page (the title check sees the
+        // already-navigated-to "Server List | SourceBans++" instead
+        // of "Kick player"). The real 5s wait is fine — the
+        // alternative (asserting on script-source literals) silently
+        // accepts a regression that deletes the kick-mode arm.
+        // Per AGENTS.md "Playwright E2E specifics" the
+        // anti-pattern this rule guards against is
+        // `setTimeout` / `waitForTimeout` in spec code; `waitForURL`
+        // on a real navigation that happens to take 5s is the
+        // intended shape ("wait on terminal attributes / events,
+        // not on a timeout").
+        await page.waitForURL('**/index.php?p=servers', { timeout: 8000 });
     });
 });

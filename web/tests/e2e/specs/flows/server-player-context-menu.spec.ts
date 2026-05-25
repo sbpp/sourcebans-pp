@@ -262,9 +262,20 @@ test.describe('flow: server-player right-click context menu (#PLAYER_CTX_MENU)',
         //
         // Kick stays on the iframe path (`pages/admin.kickit.php`)
         // because it's a one-shot RCON command with no persistent
-        // panel surface to anchor on after firing.
+        // panel surface to anchor on after firing. #1439 added the
+        // `&mode=kick` qualifier so the iframe can tell this
+        // standalone kick-only flow apart from the post-ban kick
+        // (which embeds the same iframe in `admin.bans.php`'s "Ban
+        // Added" success dialog with `&mode=ban` / no `mode` param).
+        // The handler branches on `mode` to (a) skip the
+        // `:prefix_bans` UPDATE that's only meaningful for post-ban
+        // kicks and (b) emit the matching rcon message ("You have
+        // been kicked from this server" vs "You have been banned by
+        // this server, …"). #1439's reporter had the wrong message
+        // surfacing on the kick-only flow because the URL the
+        // context menu emitted carried no mode signal.
         await expect(menu.locator('[data-testid="context-menu-kick"]'))
-            .toHaveAttribute('href', /^pages\/admin\.kickit\.php\?check=STEAM_0%3A0%3A1234&type=0$/);
+            .toHaveAttribute('href', /^pages\/admin\.kickit\.php\?check=STEAM_0%3A0%3A1234&type=0&mode=kick$/);
         await expect(menu.locator('[data-testid="context-menu-ban"]'))
             .toHaveAttribute('href', /^index\.php\?p=admin&c=bans&section=add-ban&steam=STEAM_0%3A0%3A1234&type=0&name=Alice$/);
         await expect(menu.locator('[data-testid="context-menu-block"]'))
@@ -437,9 +448,13 @@ test.describe('flow: server-player right-click context menu (#PLAYER_CTX_MENU)',
         await expect(menu).toBeVisible();
         await expect(menu.locator('.context-menu__header')).toHaveText('Fletcher');
         // The menu should target THIS player — kick / ban URLs
-        // carry Fletcher's SteamID, not the second player's.
+        // carry Fletcher's SteamID, not the second player's. The
+        // `&mode=kick` qualifier (#1439) rides along; without it
+        // the iframe would surface the "You have been banned" rcon
+        // message + UPDATE the ban row on a flow that never
+        // intended to ban anyone.
         await expect(menu.locator('[data-testid="context-menu-kick"]'))
-            .toHaveAttribute('href', /check=STEAM_0%3A0%3A1234/);
+            .toHaveAttribute('href', /check=STEAM_0%3A0%3A1234.*mode=kick/);
 
         await page.keyboard.press('Escape');
         await expect(menu).toHaveCount(0);

@@ -351,7 +351,25 @@
  */
 /**
  * Try to kick a single player on a single server. Used per-row by the iframe's
- * per-server JS loop.
+ * per-server JS loop.  The iframe is invoked from two different surfaces with
+ * subtly different semantics (#1439):  - **`mode === 'ban'`** (default,
+ * backward-compat) — the iframe is embedded inside the "Ban Added" success
+ * dialog on `admin.bans.php`. A ban row was JUST inserted; the per-server
+ * loop's job is to (a) record which server actually executed the kick on the
+ * just-created ban row (`UPDATE :prefix_bans SET sid`), and (b) tell the
+ * player they've been banned via the rcon kick message so they know to visit
+ * the panel for appeals. - **`mode === 'kick'`** — the iframe loaded
+ * standalone from the right-click context menu on the public servers page
+ * (`?p=servers` via `web/scripts/server-context-menu.js`). There is NO ban
+ * row; the operator just wants to kick the player without banning. We MUST
+ * skip the `:prefix_bans` UPDATE here — without `mode`, the UPDATE would
+ * silently re-attribute ANY of the player's existing active bans (`RemovedBy
+ * IS NULL`) to whatever server happened to be the kick target, corrupting the
+ * audit trail (#1439 secondary impact). The rcon kick message is also wrong
+ * for this flow — the player isn't banned and CAN rejoin, so "You have been
+ * banned…" lies to them (#1439 user-reported symptom).  Unrecognised `mode`
+ * values are coerced to `'ban'` (backward-compat — old callers that don't
+ * supply the param keep working).
  *
  * @typedef {Object} ApiKickitKickPlayerRequest
  * @typedef {{ status: 'kicked'|'not_found'|'no_connect', hostname: string, ip?: string, port?: string, sid: number, num: number }} ApiKickitKickPlayerResponse

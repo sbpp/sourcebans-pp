@@ -19,6 +19,13 @@ namespace Sbpp\View;
  *   - `$check` / `$type`: pass-through query params forwarded into
  *     {@link api_kickit_kick_player()} (steam id / ip + integer
  *     discriminator).
+ *   - `$mode`: `'ban'` (post-ban-kick flow embedded in the
+ *     "Ban Added" iframe on `admin.bans.php`, default) or `'kick'`
+ *     (standalone kick-only flow from the right-click context menu on
+ *     `?p=servers`). Drives both the rendered page heading copy AND
+ *     the `mode` param forwarded to
+ *     {@link api_kickit_kick_player()}. See `web/pages/admin.kickit.php`
+ *     for the URL-param allowlist (#1439).
  *   - `$servers`: per-row markers for the polling JS; the
  *     {@link api_kickit_load_servers()} JSON action refreshes the
  *     rcon-availability flag at runtime.
@@ -37,6 +44,13 @@ final class KickitView extends View
 
     /**
      * @param list<array{num:int, ip:string, port:string|int}> $servers
+     * @param 'ban'|'kick' $mode
+     *
+     * `$mode` carries an inline default of `'ban'` so call sites that
+     * predate #1439 keep working without an audit (the post-ban iframe
+     * embed in `admin.bans.php` is the canonical "no mode supplied"
+     * caller). New callers should pass `'kick'` explicitly when they
+     * mean the standalone kick flow.
      */
     public function __construct(
         public readonly string $csrf_token,
@@ -44,6 +58,7 @@ final class KickitView extends View
         public readonly string $check,
         public readonly int $type,
         public readonly array $servers,
+        public readonly string $mode = 'ban',
     ) {
     }
 }
