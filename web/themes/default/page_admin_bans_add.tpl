@@ -55,12 +55,19 @@
                    IIFE's `nick.msg` fallback (the IIFE's regex layer
                    still runs for the cases native HTML can't catch).
                    Together they make the empty-input case surface a
-                   browser popover BEFORE the API call fires. *}
+                   browser popover BEFORE the API call fires.
+                   #1440: smart-default pre-fill via `?name=…` (paired
+                   with `?steam=…`) — used by the public servers list's
+                   right-click context menu's "Ban player" item.
+                   admin.bans.php strips control chars + caps at 128
+                   codepoints; Smarty auto-escape is the HTML-attribute
+                   safety layer. *}
                 <input type="text"
                        class="input"
                        id="nickname"
                        name="nickname"
                        data-testid="addban-nickname"
+                       value="{$prefill_name}"
                        placeholder="Display name as it appeared in-game"
                        required>
                 <div class="text-xs mt-2" id="nick.msg" style="color:var(--danger);display:none"></div>

@@ -15,11 +15,12 @@ namespace Sbpp\View;
  * (#1123): SmartyTemplateRule scans whichever theme is active and the
  * property name has to line up on both legs of the matrix.
  *
- * `prefill_steam` / `prefill_type` carry the smart-default shape used
- * by the `?p=admin&c=comms&steam=<STEAMID>` deep link (used by the
- * public servers list's right-click context menu — see
+ * `prefill_steam` / `prefill_type` / `prefill_name` carry the smart-default
+ * shape used by the
+ * `?p=admin&c=comms&steam=<STEAMID>&name=<player>` deep link (used by
+ * the public servers list's right-click context menu — see
  * `web/scripts/server-context-menu.js`). Mirrors the
- * `Sbpp\View\AdminBansAddView` pair for the sibling "Ban player"
+ * `Sbpp\View\AdminBansAddView` triple for the sibling "Ban player"
  * affordance. The property NAMES match; the `prefill_type` SEMANTICS
  * diverge by surface — for comms the valid values are 1=Mute,
  * 2=Gag, 3=Silence (the `:prefix_comms.type` column), with 0
@@ -27,6 +28,14 @@ namespace Sbpp\View;
  * sibling field. The form's `<select id="type">` lands on the
  * native first-option default (Mute) when `prefill_type === 0` —
  * no `selected` attribute fires anywhere on the option list. (#1395)
+ *
+ * `prefill_name` (issue #1440) is the player's display name as
+ * surfaced by the context menu's `data-name` attribute. Sanitation
+ * mirrors `AdminBansAddView::prefill_name`: page handler strips
+ * control characters and caps the value at 128 codepoints (matching
+ * `:prefix_comms.name`'s `varchar(128)` width); Smarty's global
+ * auto-escape handles the `value="…"` HTML attribute escape at
+ * render time.
  */
 final class AdminCommsAddView extends View
 {
@@ -36,6 +45,7 @@ final class AdminCommsAddView extends View
         public readonly bool $permission_addban,
         public readonly string $prefill_steam = '',
         public readonly int $prefill_type = 0,
+        public readonly string $prefill_name = '',
     ) {
     }
 }

@@ -380,6 +380,7 @@ if ($section === 'add-ban') {
      */
     $prefillSteamRaw = isset($_GET['steam']) ? trim((string) $_GET['steam']) : '';
     $prefillTypeRaw  = isset($_GET['type']) ? (int) $_GET['type'] : 0;
+    $prefillNameRaw  = isset($_GET['name']) ? (string) $_GET['name'] : '';
     $prefillSteam    = '';
     $prefillType     = 0;
     if ($prefillSteamRaw !== '') {
@@ -394,12 +395,38 @@ if ($section === 'add-ban') {
             $prefillType  = ($prefillTypeRaw === 1) ? 1 : 0;
         }
     }
+    /*
+     * Issue #1440 — `?name=<player>` smart-default companion to
+     * `?steam=…`. The public servers list's right-click context
+     * menu carries the player's display name on `data-name`, so
+     * surface it as a URL parameter and pre-fill the Nickname
+     * input alongside the SteamID one.
+     *
+     * Pre-fill sanitisation lives in `Sbpp\Util\PlayerName::sanitisePrefill`
+     * — single-source across `admin.bans.php` and the sibling
+     * `admin.comms.php` so a future tightening (e.g., adding a
+     * new spoofing-vector codepoint to the strip set) lands in
+     * one place. See the helper's class docblock for the full
+     * contract (strip set, codepoint cap, UTF-8 gate).
+     *
+     * `prefill_name` is INTENTIONALLY decoupled from `prefill_steam`
+     * — they're orthogonal pre-fills, not a gated pair. The context
+     * menu always emits both together, but a hand-typed deep-link
+     * carrying only `?name=` (without `?steam=`) still pre-fills the
+     * Nickname input. Compare `?type=` which DOES gate on a valid
+     * steam value (type and steam describe the same row dimension
+     * — Steam-ID vs IP — and a type without an identifier is a
+     * meaningless pair). The decoupling here is the "name is its
+     * own thing" half of the asymmetry.
+     */
+    $prefillName = \Sbpp\Util\PlayerName::sanitisePrefill($prefillNameRaw);
 
     \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansAddView(
         permission_addban: $canAddBan,
         customreason: $customReason,
         prefill_steam: $prefillSteam,
         prefill_type: $prefillType,
+        prefill_name: $prefillName,
     ));
 
     // Tail script: defines `__sbppApplyBanFields` (used by the prefill

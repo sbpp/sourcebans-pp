@@ -79,6 +79,7 @@ if (isset($_GET["rebanid"])) {
  */
 $prefillSteamRaw = isset($_GET['steam']) ? trim((string) $_GET['steam']) : '';
 $prefillTypeRaw  = isset($_GET['type']) ? (int) $_GET['type'] : 0;
+$prefillNameRaw  = isset($_GET['name']) ? (string) $_GET['name'] : '';
 $prefillSteam    = '';
 $prefillType     = 0;
 if ($prefillSteamRaw !== '') {
@@ -87,6 +88,18 @@ if ($prefillSteamRaw !== '') {
         $prefillType  = in_array($prefillTypeRaw, [1, 2, 3], true) ? $prefillTypeRaw : 0;
     }
 }
+/*
+ * Issue #1440 — `?name=<player>` smart-default companion to
+ * `?steam=…`, single sanitation contract across both menu-target
+ * surfaces via `Sbpp\Util\PlayerName::sanitisePrefill`. See the
+ * helper's class docblock for the full strip set and the
+ * sibling block in `admin.bans.php` for the decoupling
+ * rationale ("name is its own thing"; `?name=` survives even
+ * when `?steam=` is missing or invalid — the operator landed
+ * here because they want to type a block, the nickname is a
+ * convenience not a gating dependency).
+ */
+$prefillName = \Sbpp\Util\PlayerName::sanitisePrefill($prefillNameRaw);
 
 // SourceComms reuses the bans permission set: there is no
 // ADMIN_ADD_COMM flag, so the gate uses ADMIN_OWNER|ADMIN_ADD_BAN.
@@ -100,6 +113,7 @@ $perms = \Sbpp\View\Perms::for($userbank);
     permission_addban: $perms['can_add_ban'],
     prefill_steam: $prefillSteam,
     prefill_type: $prefillType,
+    prefill_name: $prefillName,
 ));
 ?>
 <script type="text/javascript">

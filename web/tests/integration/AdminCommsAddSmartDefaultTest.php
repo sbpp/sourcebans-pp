@@ -66,6 +66,21 @@ use Smarty\Smarty;
  *    steam input empty + leaves the type select at its native
  *    default — regression guard against an over-eager pre-fill
  *    that fires when the smart default isn't on the URL.
+ * 9. **Issue #1440 — `?name=<player>` pre-fills the Nickname input.**
+ *    Sanitisation mirrors the bans side byte-for-byte via the
+ *    shared `Sbpp\Util\PlayerName::sanitisePrefill` helper: strip
+ *    ASCII controls (`\x00-\x1F\x7F`), C1 controls (`\x80-\x9F`),
+ *    soft hyphen (U+00AD), ZWSP (U+200B), line / paragraph
+ *    separators (U+2028 / U+2029), bidi formatting (U+202A-U+202E),
+ *    bidi isolates (U+2066-U+2069), and BOM (U+FEFF). Reject
+ *    invalid UTF-8, cap at 128 codepoints (matches
+ *    `:prefix_comms.name varchar(128)`). Smarty auto-escape is
+ *    the HTML-attribute safety layer.
+ *
+ *    `?name=` is intentionally decoupled from `?steam=` — a hand-
+ *    typed deep-link with only `?name=` (or with a malformed
+ *    `?steam=` that falls off the allowlist) still pre-fills the
+ *    Nickname input.
  */
 final class AdminCommsAddSmartDefaultTest extends ApiTestCase
 {
@@ -308,6 +323,246 @@ final class AdminCommsAddSmartDefaultTest extends ApiTestCase
                 "option {$opt} must NOT be `selected` on a bare ?p=admin&c=comms — no smart-default pre-fill is active",
             );
         }
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testValidNamePrefillsNicknameInput(): void
+    {
+        // Issue #1440 — `?name=<player>` smart-default pre-fills
+        // the Nickname input alongside the Steam ID.
+        $this->loginAsAdmin();
+        $this->bootstrapSmartyTheme();
+
+        $_GET = [
+            'p'     => 'admin',
+            'c'     => 'comms',
+            'steam' => 'STEAM_0:1:23498765',
+            'name'  => 'CoolPlayer123',
+        ];
+
+        $html = $this->renderAddCommsPage();
+
+        $this->assertSame(
+            'CoolPlayer123',
+            $this->extractInputValue($html, 'addcomm-nickname'),
+            'Nickname must pre-fill from `?name=…`',
+        );
+        $this->assertSame('STEAM_0:1:23498765', $this->extractInputValue($html, 'addcomm-steam'));
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testUnicodeNamePrefillsNicknameInput(): void
+    {
+        $this->loginAsAdmin();
+        $this->bootstrapSmartyTheme();
+
+        $_GET = [
+            'p'     => 'admin',
+            'c'     => 'comms',
+            'steam' => 'STEAM_0:1:23498765',
+            'name'  => '日本語プレイヤー',
+        ];
+
+        $html = $this->renderAddCommsPage();
+
+        $this->assertSame(
+            '日本語プレイヤー',
+            $this->extractInputValue($html, 'addcomm-nickname'),
+            'Unicode (CJK) names must round-trip into the Nickname input',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testHtmlInNameIsHtmlEscapedNotDropped(): void
+    {
+        $this->loginAsAdmin();
+        $this->bootstrapSmartyTheme();
+
+        $_GET = [
+            'p'     => 'admin',
+            'c'     => 'comms',
+            'steam' => 'STEAM_0:1:23498765',
+            'name'  => '<script>alert(1)</script>',
+        ];
+
+        $html = $this->renderAddCommsPage();
+
+        $this->assertSame(
+            '&lt;script&gt;alert(1)&lt;/script&gt;',
+            $this->extractInputValue($html, 'addcomm-nickname'),
+            'HTML in the name must be entity-escaped inside the value attribute (Smarty auto-escape contract)',
+        );
+        $this->assertStringNotContainsString(
+            'value="<script>',
+            $html,
+            'raw `<script>` must never appear inside an HTML attribute value',
+        );
+    }
+
+    /**
+     * @return list<array{0: string, 1: string, 2: string}>
+     */
+    public static function hostileNamePrefillProvider(): array
+    {
+        // Mirrors `Sbpp\Util\PlayerName::SANITISE_STRIP_REGEX` —
+        // every codepoint class in the strip set has at least one
+        // representative row here. Kept in sync with the bans-side
+        // sibling test (single sanitisation contract; reviewer
+        // finding #1 from the #1440 adversarial review).
+        return [
+            ["\x00\x01\x02hidden",                'hidden',  'NUL/SOH/STX prefix stripped (C0)'],
+            ["bob\nlogin",                        'boblogin', 'newline (log-injection vector) stripped'],
+            ["bob\rfoo",                          'bobfoo',  'carriage return stripped'],
+            ["bob\tfoo",                          'bobfoo',  'tab stripped'],
+            ["bob\x7Ffoo",                        'bobfoo',  'DEL (0x7F) stripped'],
+            ["bob\u{0085}foo",                    'bobfoo',  'U+0085 NEXT LINE (C1) stripped'],
+            ["bob\u{009F}foo",                    'bobfoo',  'U+009F APPLICATION PROGRAM COMMAND (C1) stripped'],
+            ["bob\u{00AD}foo",                    'bobfoo',  'U+00AD SOFT HYPHEN stripped (invisible split spoof)'],
+            ["bob\u{200B}foo",                    'bobfoo',  'U+200B ZERO WIDTH SPACE stripped'],
+            ["bob\u{2028}foo",                    'bobfoo',  'U+2028 LINE SEPARATOR stripped'],
+            ["bob\u{2029}foo",                    'bobfoo',  'U+2029 PARAGRAPH SEPARATOR stripped'],
+            ["bob\u{202A}foo",                    'bobfoo',  'U+202A LEFT-TO-RIGHT EMBEDDING (bidi) stripped'],
+            ["bob\u{202E}foo",                    'bobfoo',  'U+202E RIGHT-TO-LEFT OVERRIDE (bidi spoof) stripped'],
+            ["bob\u{2066}foo",                    'bobfoo',  'U+2066 LEFT-TO-RIGHT ISOLATE (bidi) stripped'],
+            ["bob\u{2069}foo",                    'bobfoo',  'U+2069 POP DIRECTIONAL ISOLATE (bidi) stripped'],
+            ["\u{FEFF}bob",                       'bob',     'U+FEFF BYTE ORDER MARK stripped'],
+            ['   bob   ',                         'bob',     'leading / trailing whitespace trimmed'],
+            [str_repeat('a', 200),                str_repeat('a', 128), 'truncated to 128 codepoints'],
+            [str_repeat('日', 200),               str_repeat('日', 128), '3-byte multi-byte truncated to 128 codepoints (not bytes)'],
+            [str_repeat("\u{1F600}", 200),        str_repeat("\u{1F600}", 128), '4-byte emoji truncated to 128 codepoints (mb_substr codepoint semantics)'],
+        ];
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    #[DataProvider('hostileNamePrefillProvider')]
+    public function testHostileNameIsSanitised(string $rawName, string $expectedSanitised, string $why): void
+    {
+        $this->loginAsAdmin();
+        $this->bootstrapSmartyTheme();
+
+        $_GET = [
+            'p'     => 'admin',
+            'c'     => 'comms',
+            'steam' => 'STEAM_0:1:23498765',
+            'name'  => $rawName,
+        ];
+
+        $html = $this->renderAddCommsPage();
+
+        $this->assertSame(
+            $expectedSanitised,
+            $this->extractInputValue($html, 'addcomm-nickname'),
+            "hostile name ({$why}) must sanitise to the documented shape",
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testInvalidUtf8NameIsDropped(): void
+    {
+        $this->loginAsAdmin();
+        $this->bootstrapSmartyTheme();
+
+        $_GET = [
+            'p'     => 'admin',
+            'c'     => 'comms',
+            'steam' => 'STEAM_0:1:23498765',
+            'name'  => "\xFF\xFE\xFDinvalid utf8",
+        ];
+
+        $html = $this->renderAddCommsPage();
+
+        $this->assertSame(
+            '',
+            $this->extractInputValue($html, 'addcomm-nickname'),
+            'invalid UTF-8 must drop the prefill entirely',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBareCommsWithoutNameLeavesNicknameEmpty(): void
+    {
+        $this->loginAsAdmin();
+        $this->bootstrapSmartyTheme();
+
+        $_GET = ['p' => 'admin', 'c' => 'comms'];
+
+        $html = $this->renderAddCommsPage();
+
+        $this->assertSame(
+            '',
+            $this->extractInputValue($html, 'addcomm-nickname'),
+            'Nickname must default to empty value when no `?name=` is on the URL',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testNameWithoutSteamPrefillsNicknameOnly(): void
+    {
+        // Orthogonality contract: the context menu always emits
+        // `&steam=` AND `&name=` together, but the page handler
+        // treats them as orthogonal smart-defaults. A hand-typed
+        // deep-link carrying only `?name=Alice` still pre-fills the
+        // Nickname input. Mirrors the bans-side test of the same
+        // name; documented under "Issue #1440 — `?name=<player>`
+        // smart-default companion to `?steam=…`" in
+        // `admin.comms.php`'s smart-default block.
+        $this->loginAsAdmin();
+        $this->bootstrapSmartyTheme();
+
+        $_GET = [
+            'p'    => 'admin',
+            'c'    => 'comms',
+            'name' => 'Alice',
+        ];
+
+        $html = $this->renderAddCommsPage();
+
+        $this->assertSame(
+            'Alice',
+            $this->extractInputValue($html, 'addcomm-nickname'),
+            'Nickname must pre-fill from `?name=` even without `?steam=` — they are orthogonal smart-defaults',
+        );
+        $this->assertSame('', $this->extractInputValue($html, 'addcomm-steam'),
+            'Steam input must stay empty when `?steam=` is missing',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testValidNameWithInvalidSteamPrefillsNicknameOnly(): void
+    {
+        // Sibling orthogonality test: a malformed `?steam=` falls
+        // off the SteamID/IP allowlist and lands as empty, but the
+        // valid `?name=` survives. Without this contract, a typo in
+        // the Steam ID half of a deep-link would silently wipe out
+        // the operator's pre-typed nickname too.
+        $this->loginAsAdmin();
+        $this->bootstrapSmartyTheme();
+
+        $_GET = [
+            'p'     => 'admin',
+            'c'     => 'comms',
+            'steam' => '<script>alert(1)</script>',
+            'name'  => 'Alice',
+        ];
+
+        $html = $this->renderAddCommsPage();
+
+        $this->assertSame(
+            'Alice',
+            $this->extractInputValue($html, 'addcomm-nickname'),
+            'Nickname must survive even when `?steam=` falls off the allowlist',
+        );
+        $this->assertSame('', $this->extractInputValue($html, 'addcomm-steam'),
+            'hostile `?steam=` must still be dropped',
+        );
     }
 
     #[RunInSeparateProcess]

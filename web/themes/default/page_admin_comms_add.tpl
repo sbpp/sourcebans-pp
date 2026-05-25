@@ -71,12 +71,19 @@
         <form id="addcomm-form" class="card p-6 space-y-4" onsubmit="return false;" data-testid="addcomm-form">
             <div>
                 <label class="label" for="nickname">Nickname</label>
+                {* #1440: smart-default pre-fill via `?name=…` (paired
+                   with `?steam=…`) — used by the public servers list's
+                   right-click context menu's "Block comms" item.
+                   admin.comms.php strips control chars + caps at 128
+                   codepoints; Smarty auto-escape is the HTML-attribute
+                   safety layer. *}
                 <input type="text"
                        class="input"
                        id="nickname"
                        name="nickname"
                        autocomplete="off"
                        data-testid="addcomm-nickname"
+                       value="{$prefill_name}"
                        placeholder="Display name as it appeared in-game"
                        required>
                 <input type="hidden" id="fromsub" value="">
