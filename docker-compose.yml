@@ -40,6 +40,13 @@ services:
       - vendor:/var/www/html/web/includes/vendor
       - cache:/var/www/html/web/cache
       - smarty:/var/www/html/web/templates_c
+      # Read-only mount of the docker/ tree so file-shape integration
+      # tests under web/tests/integration/ can read the production
+      # Apache + entrypoint config they're gating without leaving the
+      # container. CI's `actions/checkout@v4` pulls the full repo, so
+      # `web/../docker/...` resolves naturally there; this mount keeps
+      # the local `./sbpp.sh test` runner symmetric with CI.
+      - ./docker:/var/www/html/docker:ro
 
   db:
     image: mariadb:10.11

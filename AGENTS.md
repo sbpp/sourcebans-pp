@@ -3071,6 +3071,46 @@ contacting every contributor individually.
   back to the raw message for unrecognised codes so debugging
   stays possible. Anti-pattern: surfacing `$e->getMessage()`
   directly to operator-facing error banners.
+- Adding a `<FilesMatch>` regex pattern in
+  `docker/apache/sbpp-prod.conf` whose alternation matches a
+  basename shared by a published browser asset → removed at
+  #1419. Pre-fix the union carried `api-contract\..*` (intended
+  to shield some never-existed `api-contract.*` config artifact
+  at the panel root). `<FilesMatch>` matches the **basename**
+  regardless of which directory the URL resolves under, so the
+  regex also denied the published `web/scripts/api-contract.js`
+  — the chrome JS `core/header.tpl` loads on every page render
+  to define the `Actions.*` / `Perms.*` namespaces every
+  `sb.api.call(Actions.PascalName, …)` site depends on. The
+  panel-runtime symptom under the production Docker image:
+  password login spins forever (the form's submit handler
+  `e.preventDefault()`s and `setBusy(submitBtn, true)` BEFORE
+  `sb.api.call(Actions.AuthLogin, …)` fires; with `Actions`
+  undefined the call throws and neither `.then` branch ever
+  releases the spinner), and every panel chrome action button
+  that drives a JSON action (Notes pane, ban/comm unblock,
+  admin/mod delete, group-ban dispatcher, server refresh, …)
+  is dead-on-arrival. Steam login is unaffected because the
+  OpenID round-trip is server-side redirects with no JS
+  dependency on `Actions.*` — exactly the asymmetry the bug
+  reporter saw. **The bug only surfaces under
+  `docker/Dockerfile.prod` →
+  `ghcr.io/sbpp/sourcebans-pp:*`** (the dev compose stack
+  uses a different Apache config; tarball installs don't
+  ship Apache at all). When extending the deny list, prefer
+  `<Files "exact-name">` for root-only configs that have a
+  unique basename, or a path-anchored
+  `<LocationMatch "^/exact-path$">` block when the basename
+  could collide with a published asset. Regression guard:
+  `web/tests/integration/ProdApacheConfigTest.php` runs every
+  extracted `<FilesMatch>` regex (and every `<Files>`
+  exact-name) against every published basename under
+  `web/scripts/` and `web/themes/default/js/` — a match
+  anywhere fails the build. The local `./sbpp.sh test`
+  runner stays symmetric with CI because
+  `docker-compose.yml` bind-mounts `./docker:/var/www/html/docker:ro`
+  so the test can read the conf from inside the dev
+  container.
 - `openTab()` JS (and the matching `<button onclick="openTab(...)">`
   chrome on `core/admin_tabs.tpl`) → the JS handler was dropped with
   sourcebans.js at #1123 D1; the buttons did nothing and every pane

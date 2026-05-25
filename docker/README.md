@@ -61,7 +61,13 @@ sbpp.sh                  thin wrapper around `docker compose` + common dev tasks
 
 The web container mounts `./web` from the host, with two named-volume
 overlays (`vendor/` and `cache/`) so Composer artifacts and Smarty cache
-don't leak onto the host filesystem.
+don't leak onto the host filesystem. The `./docker` tree is also bind-
+mounted read-only at `/var/www/html/docker` so file-shape integration
+tests under `web/tests/integration/` can read production-only configs
+(`docker/apache/sbpp-prod.conf`, `docker/Dockerfile.prod`, etc.) the
+runtime panel never touches; CI's `actions/checkout@v4` pulls the full
+repo, so this mount keeps the local `./sbpp.sh test` runner symmetric
+with the CI gate.
 
 ## Common tasks
 
