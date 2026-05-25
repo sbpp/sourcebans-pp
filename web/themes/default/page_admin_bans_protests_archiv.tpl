@@ -69,7 +69,7 @@
                                 <div class="font-medium text-sm truncate" data-testid="protest-archive-row-name">
                                     {if $protest.archiv != 2}
                                         <a class="link"
-                                           href="./index.php?p=banlist{if $protest.authid != ''}&advSearch={$protest.authid|escape:'url'}&advType=steamid{else}&advSearch={$protest.ip|escape:'url'}&advType=ip{/if}"
+                                           href="./index.php?p=banlist&searchText={if $protest.authid != ''}{$protest.authid|escape:'url'}{else}{$protest.ip|escape:'url'}{/if}"
                                            title="Show ban"
                                            onclick="event.stopPropagation();">{$protest.name|escape}</a>
                                     {else}

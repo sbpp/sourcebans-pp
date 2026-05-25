@@ -150,6 +150,67 @@ final class PublicBanListRegressionTest extends ApiTestCase
         );
     }
 
+    /**
+     * #1442 — destination half of the dashboard "Latest bans"
+     * click-through fix. When the URL carries `?searchText=…` (the
+     * simple-bar filter the dashboard now stamps) WITHOUT
+     * `?advSearch=…`, the advanced-search disclosure MUST stay
+     * closed. Pre-fix the dashboard stamped `?advSearch=…&advType=…`
+     * which triggered `$banlistAdvancedOpen` and pushed the matched
+     * ban below the fold (the DNA-styx report). The sister
+     * source-side contract is pinned by
+     * `HomeDashboardLatestBansLinkTest`; this test is the half
+     * that validates the URL the dashboard now produces actually
+     * keeps the destination disclosure collapsed.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistAdvancedSearchDisclosureStaysClosedWithSearchText(): void
+    {
+        // The "Latest bans" Steam-type click-through shape — the
+        // setUp() seeded an active ban with authid `STEAM_0:1:50001`,
+        // so a `?searchText=STEAM_0:1:50001` URL must:
+        //   1. NOT auto-open the advanced-search disclosure
+        //   2. ACTUALLY surface the matched ban in the row table
+        //      (the user-visible expectation behind #1442: "I want
+        //      to see THE BAN I clicked, above the fold")
+        $_GET = [
+            'p'          => 'banlist',
+            'searchText' => 'STEAM_0:1:50001',
+        ];
+
+        $html = $this->renderBanlistPage();
+
+        $this->assertStringContainsString(
+            'data-testid="banlist-advsearch-disclosure"',
+            $html,
+            'disclosure shell must still render so power users can reach the advanced form',
+        );
+        $this->assertMatchesRegularExpression(
+            '/<details[^>]+data-testid="banlist-advsearch-disclosure"(?![^>]*\bopen\b)[^>]*>/',
+            $html,
+            '?searchText=… must NOT trigger the disclosure auto-open contract — #1442',
+        );
+        $this->assertStringNotContainsString(
+            'data-testid="banlist-advsearch-active"',
+            $html,
+            'count badge must not render when only the simple-bar filter is active (no advanced-search criteria)',
+        );
+
+        // The matched ban MUST surface in the row table. This is the
+        // user-visible contract — disclosure-closed without the
+        // matched ban would still leave the reporter with an empty
+        // page. The row-level identifier is `data-testid="ban-row"
+        // data-id="<bid>"` (`page_bans.tpl:301`), so look for that
+        // pair rather than the sibling row-action button attrs which
+        // also carry the bid.
+        $this->assertMatchesRegularExpression(
+            '/<tr[^>]+data-id="' . $this->activeBid . '"[^>]+data-testid="ban-row"|<tr[^>]+data-testid="ban-row"[^>]+data-id="' . $this->activeBid . '"/',
+            $html,
+            'matched ban (bid=' . $this->activeBid . ', authid=STEAM_0:1:50001) must surface in the rowset under ?searchText=… — #1442',
+        );
+    }
+
     #[RunInSeparateProcess]
     #[PreserveGlobalState(false)]
     public function testBanlistRendersUnbanMetaOnUnbannedRow(): void
@@ -482,6 +543,52 @@ final class PublicBanListRegressionTest extends ApiTestCase
             '/<details[^>]+data-testid="commslist-advsearch-disclosure"[^>]*\bopen\b[^>]*>/',
             $html,
             'commslist post-submit paint must render <details open>',
+        );
+    }
+
+    /**
+     * #1442 — destination half of the dashboard "Latest comm blocks"
+     * click-through fix. Mirrors the banlist contract: when only
+     * `?searchText=…` is set (no `?advSearch=…`), the disclosure
+     * must stay closed. The commslist case is HIGHER priority than
+     * the banlist's because the commslist has NO drawer fallback —
+     * the disclosure auto-opening is the sole obstacle between the
+     * user and the matched row.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCommslistAdvancedSearchDisclosureStaysClosedWithSearchText(): void
+    {
+        // setUp() seeded an active comm block with authid
+        // `STEAM_0:1:60001` (`$this->activeCid`). The matched
+        // commslist row must surface as well as the disclosure
+        // staying closed — see the sibling banlist test for the
+        // user-visible contract rationale.
+        $_GET = [
+            'p'          => 'commslist',
+            'searchText' => 'STEAM_0:1:60001',
+        ];
+
+        $html = $this->renderCommslistPage();
+
+        $this->assertStringContainsString(
+            'data-testid="commslist-advsearch-disclosure"',
+            $html,
+            'commslist disclosure shell must still render so power users can reach the advanced form',
+        );
+        $this->assertMatchesRegularExpression(
+            '/<details[^>]+data-testid="commslist-advsearch-disclosure"(?![^>]*\bopen\b)[^>]*>/',
+            $html,
+            '?searchText=… on commslist must NOT trigger the disclosure auto-open contract — #1442',
+        );
+
+        // The matched comm block MUST surface in the rowset.
+        // Row-level identifier is `data-testid="comm-row" data-id="<cid>"`
+        // on `page_comms.tpl:214`.
+        $this->assertMatchesRegularExpression(
+            '/<tr[^>]+data-id="' . $this->activeCid . '"[^>]+data-testid="comm-row"|<tr[^>]+data-testid="comm-row"[^>]+data-id="' . $this->activeCid . '"/',
+            $html,
+            'matched comm block (cid=' . $this->activeCid . ', authid=STEAM_0:1:60001) must surface in the rowset under ?searchText=… — #1442',
         );
     }
 

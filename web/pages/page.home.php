@@ -55,14 +55,30 @@ foreach ($rows as $row) {
     $info['ip']         = $row['ip'];
     $info['server']     = "block_" . $row['sid'] . "_$blcount";
 
+    // Search links ride the simple-bar `?searchText=` shim — `?advSearch=…`
+    // triggers the destination banlist's disclosure auto-open contract
+    // (`page.banlist.php`'s `$banlistAdvancedOpen` predicate, #1315) which
+    // pushes the matched ban below the fold on cramped viewports. The
+    // simple-bar branch fires the same `BA.ip` / `BA.authid` / `BA.name` /
+    // `BA.reason` LIKE/REGEXP filter so the matched ban still surfaces in
+    // the rowset (#1442).
+    //
+    // The `$row['ip']` / `$row['authid']` reads can return null from the
+    // `LEFT JOIN :prefix_bans` when the banlog points at a deleted ban,
+    // so cast at the urlencode boundary (PHP 8.5 null-into-scalar
+    // discipline — AGENTS.md). For the anonymous-viewer IP-type fallback
+    // we URL-encode `$cleaned_name` (raw bytes), NOT `$info['name']`
+    // (htmlspecialchars-escaped) — the destination's SQL filter compares
+    // against the raw `:prefix_bans.name` column, so encoding `&amp;`
+    // would never match a real `&` in the player name.
     $blockedBanType = BanType::tryFrom((int) $row['type']) ?? BanType::Steam;
     if ($blockedBanType === BanType::Ip) {
         if ($userbank->is_admin())
-            $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['ip']) . '&advType=ip&Submit';
+            $info['search_link'] = 'index.php?p=banlist&searchText=' . urlencode((string) $info['ip']);
         else
-            $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['name']) . '&advType=name';
+            $info['search_link'] = 'index.php?p=banlist&searchText=' . urlencode($cleaned_name);
     } else {
-        $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['auth']) . '&advType=steamid&Submit';
+        $info['search_link'] = 'index.php?p=banlist&searchText=' . urlencode((string) $info['auth']);
     }
     $info['link_url'] = "window.location = '" . $info['search_link'] . "';";
 
@@ -132,14 +148,19 @@ foreach ($rows as $row) {
     $info['icon']    = empty($row['icon']) ? 'web.png' : $row['icon'];
     $info['authid']  = $row['authid'];
     $info['ip']      = $row['ip'];
+    // See the `$stopped` loop above for the simple-bar shim rationale (#1442).
+    // `:prefix_bans.ip` / `.authid` are NOT NULL so no cast needed here,
+    // but the anonymous-viewer arm still URL-encodes `$cleaned_name`
+    // (raw) instead of `$info['name']` (htmlspecialchars-escaped) so
+    // names with `&` match the destination's raw-column SQL filter.
     $rowBanType = BanType::tryFrom((int) $row['type']) ?? BanType::Steam;
     if ($rowBanType === BanType::Ip) {
         if ($userbank->is_admin())
-            $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['ip']) . '&advType=ip&Submit';
+            $info['search_link'] = 'index.php?p=banlist&searchText=' . urlencode($info['ip']);
         else
-            $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['name']) . '&advType=name';
+            $info['search_link'] = 'index.php?p=banlist&searchText=' . urlencode($cleaned_name);
     } else {
-        $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['authid']) . '&advType=steamid&Submit';
+        $info['search_link'] = 'index.php?p=banlist&searchText=' . urlencode($info['authid']);
     }
     $info['link_url']   = "window.location = '" . $info['search_link'] . "';";
     $info['short_name'] = trunc($cleaned_name, 40);
@@ -215,7 +236,11 @@ foreach ($rows as $row) {
     $info['length']      = $ltemp[0];
     $info['icon']        = empty($row['icon']) ? 'web.png' : $row['icon'];
     $info['authid']      = $row['authid'];
-    $info['search_link'] = 'index.php?p=commslist&advSearch=' . urlencode($info['authid']) . '&advType=steamid&Submit';
+    // Commslist mirrors the banlist disclosure auto-open contract
+    // (`page.commslist.php`'s `$commsAdvancedOpen` predicate), so the
+    // simple-bar `?searchText=` shim from the `$stopped` loop above
+    // applies here too (#1442).
+    $info['search_link'] = 'index.php?p=commslist&searchText=' . urlencode($info['authid']);
     $info['link_url']    = "window.location = '" . $info['search_link'] . "';";
     $info['short_name']  = trunc($cleaned_name, 40);
     $info['type']        = $row['type'] == 2 ? "fas fa-comment-slash fa-lg" : "fas fa-microphone-slash fa-lg";

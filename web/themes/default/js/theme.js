@@ -388,7 +388,7 @@
     const playersHtml = bans.length
       ? '<div style="' + sectionStyle + ';margin-top:8px">Players</div>'
         + bans.map((b) => {
-            const href = '?p=banlist&advType=name&advSearch=' + encodeURIComponent(b.name);
+            const href = '?p=banlist&searchText=' + encodeURIComponent(b.name);
             const steamid = b.steam || b.ip || '';
             return '<a href="' + href + '"'
               + ' class="sidebar__link palette__row"'
@@ -1151,7 +1151,7 @@
       // restores the same graceful-degradation for the keyboard-modifier
       // chords. The href on every [data-drawer-bid] / [data-drawer-cid] /
       // [data-drawer-href] anchor IS the fallback path:
-      //   - palette rows: `?p=banlist&advType=name&advSearch=<name>`
+      //   - palette rows: `?p=banlist&searchText=<name>`
       //     opens a name-filtered banlist in a new tab,
       //   - banlist rows: `?p=banlist&id=<bid>` opens the banlist URL
       //     in a new tab (the panel-history shape),

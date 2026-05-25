@@ -398,9 +398,9 @@ test.describe('command palette', () => {
         // suppressed and the drawer opened in the current tab. The
         // delegate now guards `e.metaKey || e.ctrlKey || e.shiftKey ||
         // e.button !== 0` and bails before preventDefault, so the
-        // anchor's `href` (?p=banlist&advType=name&advSearch=<name>)
-        // takes over and the new tab lands on the name-filtered
-        // banlist. This test locks that contract.
+        // anchor's `href` (?p=banlist&searchText=<name>) takes over
+        // and the new tab lands on the name-filtered banlist. This
+        // test locks that contract.
         //
         // mobile-chromium skipped: same palette typing-search flake
         // as the sibling 'type' / 'enter' / 'hints' / 'copy' subtests
@@ -447,11 +447,14 @@ test.describe('command palette', () => {
         await newPage.waitForURL(/[?&]p=banlist/, { timeout: 10000 });
 
         // The new tab's URL is the row's href fallback — the
-        // name-filtered banlist URL.
-        expect(newPage.url()).toMatch(/[?&]advType=name(?:&|$)/);
+        // name-filtered banlist URL. Post-#1442 the palette emits the
+        // simple-bar `?searchText=<name>` shape so the destination's
+        // advanced-search disclosure stays closed (same auto-open
+        // contract that the dashboard's "Latest bans" links ride).
         expect(newPage.url()).toMatch(
-            new RegExp(`[?&]advSearch=${encodeURIComponent(seed.nick)}(?:&|$)`),
+            new RegExp(`[?&]searchText=${encodeURIComponent(seed.nick)}(?:&|$)`),
         );
+        expect(newPage.url()).not.toMatch(/[?&]advSearch=/);
         await newPage.close();
 
         // The original tab's drawer did NOT open — the modifier-guard
@@ -501,9 +504,9 @@ test.describe('command palette', () => {
         // stacked behind the palette dialog, then `loadDrawer(bid)`
         // fetches `bans.detail` and renders the player drawer.
         //
-        // The href fallback (`?p=banlist&advType=name&advSearch=…`)
-        // is preserved on the anchor so middle-click / Cmd+click
-        // still expands the result to a name-filtered banlist for
+        // The href fallback (`?p=banlist&searchText=…`) is preserved
+        // on the anchor so middle-click / Cmd+click still expands the
+        // result to a name-filtered banlist for
         // users who want the wider context — that's why we focus +
         // press Enter rather than asserting on the href shape.
         await result.focus();

@@ -75,7 +75,7 @@
                             <div class="queue-row__body">
                                 <div class="font-medium text-sm truncate" data-testid="protest-row-name">
                                     <a class="link"
-                                       href="./index.php?p=banlist&advSearch={$protest.authid|escape:'url'}&advType=steamid"
+                                       href="./index.php?p=banlist&searchText={$protest.authid|escape:'url'}"
                                        title="Show ban"
                                        onclick="event.stopPropagation();">{$protest.name|escape}</a>
                                 </div>
