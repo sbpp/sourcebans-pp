@@ -30,11 +30,16 @@ if ($userbank->is_logged_in()) {
     exit;
 }
 
-// Issue #1102: when normal login is disabled the entire password-recovery
-// flow is meaningless (a reset password can't be used to log in), and the
-// reachable form would otherwise let an unauthenticated visitor probe for
-// registered email addresses via the "not_registered" error. Bounce both
-// the form and the recovery-link branch back to the login page.
+// Issue #1102 / #1456: when normal login is disabled the entire
+// password-recovery flow is meaningless — a reset password can't be
+// used to log in. Bounce both the form and the recovery-link branch
+// back to the login page. The companion email-enumeration leak the
+// original #1102 comment referenced (the "not_registered" error
+// envelope) has since been closed by #1456 — `api_auth_lost_password`
+// now returns the same generic envelope regardless of whether the
+// email matches an admin row — but the disable-normal-login bounce
+// is still load-bearing because rendering the form on a panel where
+// normal login is off would surface a non-functional UI to the user.
 if (!Config::getBool('config.enablenormallogin')) {
     header('Location: index.php?p=login');
     die();

@@ -3,26 +3,143 @@
 namespace Sbpp\Tests\Api;
 
 use Sbpp\Tests\ApiTestCase;
-use Sbpp\Tests\Fixture;
 
 final class AuthTest extends ApiTestCase
 {
-    public function testLostPasswordRejectsUnknownEmail(): void
+    /**
+     * #1456 — privacy fix. The pre-fix handler threw
+     * `ApiError('not_registered', …)` on the miss branch and let any
+     * unauthenticated visitor probe the panel for registered emails
+     * one HTTP request at a time. Post-fix every reachable branch
+     * (unknown email, known email + mail ok, known email + mail err)
+     * returns the SAME generic envelope. This test pins the miss
+     * branch's wire shape; the next test pins the matched-but-mail-
+     * failed branch; together with the snapshot they assert
+     * byte-for-byte equality between miss and mail-failed responses,
+     * which is the structural contract for #1456.
+     */
+    public function testLostPasswordReturnsGenericResponseForUnknownEmail(): void
     {
         $env = $this->api('auth.lost_password', ['email' => 'nobody@example.test']);
-        $this->assertEnvelopeError($env, 'not_registered');
-        $this->assertSnapshot('auth/lost_password_not_registered', $env);
+        $this->assertTrue($env['ok'] ?? false, 'expected ok envelope: ' . json_encode($env));
+        $this->assertGenericLostPasswordEnvelope($env);
+        $this->assertSnapshot('auth/lost_password_generic', $env);
     }
 
-    public function testLostPasswordReportsMailFailureForKnownEmail(): void
+    /**
+     * Companion to {@see testLostPasswordReturnsGenericResponseForUnknownEmail}
+     * — without working SMTP the handler reaches the `Mail::send`
+     * false-branch. Pre-#1456 that translated to a `mail_failed`
+     * error envelope; post-fix it returns the SAME generic envelope
+     * as the unknown-email branch, because surfacing the mail-failed
+     * shape would let an attacker distinguish a registered email
+     * (mail attempted -> failure visible) from an unregistered one
+     * (mail never attempted -> immediate success), trivially
+     * undoing the privacy gate.
+     *
+     * We re-run the unknown-email request inline (no second API call
+     * — `api()` is idempotent given the same params) and assert the
+     * two envelopes are STRUCTURALLY identical via the same snapshot
+     * file. If a future refactor accidentally re-introduces a
+     * branch-specific code path, this assertion catches the
+     * drift loudly.
+     */
+    public function testLostPasswordReturnsGenericResponseForKnownEmailEvenWhenMailFails(): void
     {
-        // Without working SMTP the handler hits the Mail::send false path,
-        // which translates to the structured `mail_failed` envelope. The
-        // mail send is best-effort by design — the wire shape of the
-        // failure envelope is what we are locking down here.
         $env = $this->api('auth.lost_password', ['email' => 'admin@example.test']);
-        $this->assertEnvelopeError($env, 'mail_failed');
-        $this->assertSnapshot('auth/lost_password_mail_failed', $env);
+        $this->assertTrue($env['ok'] ?? false, 'expected ok envelope: ' . json_encode($env));
+        $this->assertGenericLostPasswordEnvelope($env);
+        $this->assertSnapshot('auth/lost_password_generic', $env);
+    }
+
+    /**
+     * Structural contract for #1456: the response for a known email
+     * is byte-for-byte indistinguishable from the response for an
+     * unknown email. Pinning both `===` AND the JSON-encoded form
+     * because an attacker observing the wire would diff the raw
+     * response body, not the parsed PHP array.
+     */
+    public function testLostPasswordResponseIsIdenticalForKnownAndUnknownEmail(): void
+    {
+        $unknown = $this->api('auth.lost_password', ['email' => 'nobody@example.test']);
+        $known   = $this->api('auth.lost_password', ['email' => 'admin@example.test']);
+
+        $this->assertSame(
+            json_encode($unknown),
+            json_encode($known),
+            '#1456 — known-email and unknown-email responses must be byte-identical, '
+                . 'otherwise the response shape leaks whether the address is registered',
+        );
+    }
+
+    /**
+     * The `:prefix_admins.validate` column must only be touched when
+     * the email actually matched a row. Probing the form for an
+     * unknown email must not mutate any DB state — otherwise an
+     * attacker could detect a hit by observing a behavior change
+     * after a flurry of probes. Defense in depth on top of the
+     * envelope-shape contract above.
+     */
+    public function testLostPasswordDoesNotTouchAdminsTableForUnknownEmail(): void
+    {
+        $rowBefore = $this->row('admins', ['user' => 'admin']);
+        $this->api('auth.lost_password', ['email' => 'nobody@example.test']);
+        $rowAfter  = $this->row('admins', ['user' => 'admin']);
+
+        $this->assertSame(
+            $rowBefore['validate'] ?? null,
+            $rowAfter['validate']  ?? null,
+            'Unknown-email probe must not touch :prefix_admins.validate on any row',
+        );
+    }
+
+    /**
+     * Conversely, a hit on a known email DOES roll the validate
+     * token. Without this we wouldn't detect a regression that
+     * accidentally short-circuited the match branch too (e.g. a
+     * "let's always skip the UPDATE" refactor would silently break
+     * the actual reset flow without any of the privacy tests above
+     * catching it).
+     */
+    public function testLostPasswordRollsValidateTokenForKnownEmail(): void
+    {
+        $rowBefore = $this->row('admins', ['user' => 'admin']);
+        $this->api('auth.lost_password', ['email' => 'admin@example.test']);
+        $rowAfter  = $this->row('admins', ['user' => 'admin']);
+
+        $this->assertNotSame(
+            $rowBefore['validate'] ?? null,
+            $rowAfter['validate']  ?? null,
+            'Known-email request must roll the :prefix_admins.validate token so the '
+                . 'subsequent ?validation=… link can authorise the reset',
+        );
+        $this->assertNotNull(
+            $rowAfter['validate'] ?? null,
+            'Expected validate token to be populated for the admin row after a known-email probe',
+        );
+    }
+
+    /**
+     * Helper: assert the envelope is the documented generic shape.
+     * One-stop check used by both the miss-branch and matched-but-
+     * mail-failed-branch tests above so a tweak to the copy / kind
+     * lands in one place.
+     *
+     * @param array<string, mixed> $env
+     */
+    private function assertGenericLostPasswordEnvelope(array $env): void
+    {
+        $data = $env['data'] ?? null;
+        $this->assertIsArray($data, 'expected ok envelope to carry data array');
+        $msg = $data['message'] ?? null;
+        $this->assertIsArray($msg, 'expected data.message to be an array');
+        $this->assertSame('Check E-Mail', $msg['title'] ?? null);
+        $this->assertSame('blue',         $msg['kind']  ?? null);
+        // Body wording is asserted via the snapshot so future copy
+        // edits show up as a single diff in the snapshot file rather
+        // than as a wall of inline string assertions here.
+        $this->assertIsString($msg['body'] ?? null);
+        $this->assertNotEmpty($msg['body']);
     }
 
     public function testLoginActionIsPublic(): void

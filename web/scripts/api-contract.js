@@ -67,6 +67,34 @@
  * @typedef {Object} ApiAuthLoginResponse
  */
 /**
+ * Public password-recovery entrypoint.  #1456 — DO NOT reveal whether the
+ * supplied email matches a row. The pre-fix shape threw
+ * `ApiError('not_registered', …)` on the miss branch, which let an
+ * unauthenticated visitor probe the panel for registered email addresses one
+ * HTTP request at a time. The post-fix contract:  - Unknown email          ->
+ * generic 'Check E-Mail' envelope. - Known email + send ok  -> generic 'Check
+ * E-Mail' envelope. - Known email + send err -> generic 'Check E-Mail'
+ * envelope, server-side audit log entry only. - `config.enablenormallogin` off
+ * -> `disabled` error envelope (an operator-side toggle, not a per-user
+ * signal; revealing it does not help an attacker enumerate).  Audit-log
+ * semantics:  - Unknown email: NOT logged. Logging every miss would let an
+ * attacker flood `:prefix_log` with arbitrary garbage and double as a
+ * denial-of-service against the panel's log surface. - Known email + send ok:
+ * not logged at the handler level. The follow-up reset
+ * (`page.lostpassword.php`'s `?validation=…` branch) logs the actual
+ * password change. - Known email + send err: LogType::Error so an operator can
+ * diagnose the SMTP misconfiguration that's silently swallowing reset requests
+ * (otherwise the failure would be invisible).  Caveat (documented in
+ * `AGENTS.md` "Public auth surfaces …"): the response-shape uniformity above
+ * is the load-bearing privacy gate, but the response-time differential remains
+ * — the matched branch performs an SMTP round-trip, the missed branch does
+ * not. A determined attacker can still enumerate via timing. Closing that
+ * requires either a queued / asynchronous send (out of scope here — the
+ * panel has no background worker), or a deliberate pad-the-miss approach
+ * that's brittle in practice. Leaving the timing leak open is the documented
+ * trade-off; the user-visible envelope-shape leak (which the #1456 reporter
+ * saw) is closed.
+ *
  * @typedef {Object} ApiAuthLostPasswordRequest
  * @typedef {Object} ApiAuthLostPasswordResponse
  */
