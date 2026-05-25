@@ -3645,6 +3645,44 @@ contacting every contributor individually.
   every keyboard / screen-reader user. New surfaces add visible
   buttons in the same shape as `.queue-row` (admin moderation
   queue) or the comms-list desktop table (`web/themes/default/page_comms.tpl`).
+- Row-wide `cursor: pointer` on `.table tbody tr` (or any other
+  `tbody tr` / `tr.ban-row` / `tr[data-testid="ban-row"]` /
+  `tr[data-testid="comm-row"]` selector) → the `<tr>` element is
+  NOT a click target on any list page. The v2.0 chrome delegates
+  interaction to specific *child* elements: the player-name `<a>`
+  carries `[data-drawer-bid]` / `[data-drawer-cid]` /
+  `[data-drawer-href]` for the drawer; row-action buttons carry
+  `data-action="…"` for delete / unban / unmute / re-apply / copy;
+  the per-row comments toggle via its native `<summary>`. The row
+  itself has no click handler. Painting `cursor: pointer` on the
+  row falsely advertised every pixel as clickable, so users would
+  click on dead cells (steam id, IP, reason, status, server,
+  admin, length, banned timestamp) and nothing would happen — the
+  reporter's exact symptom on #1443. The fix dropped the
+  declaration from `.table tbody tr` (`web/themes/default/css/theme.css`);
+  native cursors on the inner `<a>` / `<button>` / `<summary>`
+  elements already paint correctly without help, so removing the
+  row-wide declaration restored honest affordance ("pointer only
+  where clicking does something"). The hover-background rule
+  (`.table tbody tr:hover { background: var(--bg-muted); }`) is
+  intentionally retained — it's a scanning aid for tracking which
+  row the mouse is on, not a clickability claim, mirroring the
+  Linear / Notion / GitHub / Vercel data-table convention of
+  hover-bg-without-pointer-cursor. Regression guard:
+  `web/tests/integration/TableRowCursorPointerRegressionTest.php`
+  pins three contracts — the bare `.table tbody tr` rule carries
+  no `cursor: pointer`, the hover-bg rule survives, AND no other
+  selector silently re-applies `cursor: pointer` to any
+  table-row scope (the "fail closed" arm catches a future
+  copy-paste from a tooltip / popover demo or a well-meaning
+  "rows feel clickable, let me make them clickable" PR). If a
+  future list page genuinely needs row-wide click delegation,
+  gate the cursor behind a specific class on the table
+  (`.table--clickable-rows tbody tr { cursor: pointer; }`) AND
+  wire a real click handler on the `<tr>` AND update the
+  regression test's allowlist — never restore the bare
+  `.table tbody tr { cursor: pointer; }` shape (it would lie on
+  every other table on the panel).
 - Viewport-based `@media` queries for hiding `.table` columns
   (`@media (max-width: 1535px) { .col-tier-2 { display: none; } }`
   shape) → use `@container tablescroll (max-width: …)` rules
