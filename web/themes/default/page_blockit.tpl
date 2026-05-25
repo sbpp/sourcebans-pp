@@ -9,6 +9,21 @@
     match the kickit template — see that file for the per-block
     explanation. The only delta on the wire is `$length` (the block
     duration in minutes) being forwarded into Actions.BlockitBlockPlayer.
+
+    Anti-FOUC bootloader (#1438): paired with the same change to
+    `page_kickit.tpl`. Today the blockit iframe is `display:none` in
+    `page_admin_comms_add.tpl` (it exists purely to fan a `sm_block_*`
+    rcon out to every server; the operator never sees it), so the
+    user-visible dark-mode bug only manifests on kickit. The
+    bootloader is added here for parity and future-proofing: if the
+    blockit iframe is ever made visible (matching the kickit shape)
+    OR reached as a top-level navigation (matching the kickit
+    server-context-menu shape), the dark-mode regression would
+    silently come back. Keeping both templates in lockstep is what
+    makes the regression test `IframeChromeAntiFoucBootloaderTest`
+    a reliable gate. See the matching block in `page_kickit.tpl` for
+    the full rationale and the byte-equivalence contract with
+    `core/header.tpl`.
 *}-
 <!DOCTYPE html>
 <html lang="en">
@@ -17,6 +32,16 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="-{$csrf_token}-">
     <title>Block player</title>
+    <script>
+    (function () {
+        try {
+            var m = localStorage.getItem('sbpp-theme') || 'system';
+            var d = m === 'dark' || (m === 'system' && window.matchMedia
+                && matchMedia('(prefers-color-scheme: dark)').matches);
+            if (d) document.documentElement.classList.add('dark');
+        } catch (e) { /* localStorage / matchMedia unavailable; default to light */ }
+    })();
+    </script>
     <link rel="stylesheet" href="../themes/default/css/theme.css">
     <script src="../scripts/api-contract.js"></script>
     <script src="../scripts/sb.js"></script>

@@ -1,28 +1,55 @@
 {*
-    SourceBans++ 2026 — page_uploadfile.tpl
-    Bound view: \Sbpp\View\UploadFileView (web/includes/View/UploadFileView.php).
+ SourceBans++ 2026 — page_uploadfile.tpl
+ Bound view: \Sbpp\View\UploadFileView (web/includes/View/UploadFileView.php).
 
-    Self-contained popup window opened via window.open(...) from one
-    of the parent admin pages (admin.uploadicon.php,
-    admin.uploadmapimg.php, admin.uploaddemo.php). On a successful
-    upload the page handler builds a {$message} blob containing
-    `<script>window.opener.<cb>(<json-encoded args>);self.close()</script>`
-    using JSON_HEX_* flags so the admin-controlled filename is safe
-    to interpolate into both the HTML attribute and the JS string
-    layers (#1113 fix). The template is the only Phase B/C template
-    that legitimately needs `{$message nofilter}`.
+ Self-contained popup window opened via window.open(...) from one
+ of the parent admin pages (admin.uploadicon.php,
+ admin.uploadmapimg.php, admin.uploaddemo.php). On a successful
+ upload the page handler builds a {$message} blob containing
+ `<script>window.opener.<cb>(<json-encoded args>);self.close()</script>`
+ using JSON_HEX_* flags so the admin-controlled filename is safe
+ to interpolate into both the HTML attribute and the JS string
+ layers (#1113 fix). The template is the only Phase B/C template
+ that legitimately needs `{$message nofilter}`.
 
-    The theme stylesheet path is hardcoded relative to the popup's
-    URL (/pages/admin.upload*.php), so `../themes/default/css/theme.css`
-    resolves correctly.
+ The theme stylesheet path is hardcoded relative to the popup's
+ URL (/pages/admin.upload*.php), so `../themes/default/css/theme.css`
+ resolves correctly.
+
+ Anti-FOUC bootloader (#1438): this template renders a separate
+ popup window opened with `window.open(...)` from a parent admin
+ page (which is dark-mode-aware via `core/header.tpl`). The popup
+ is same-origin, so `localStorage['sbpp-theme']` is reachable
+ from here — but the popup ships its own chromeless `<head>` and
+ doesn't load `theme.js`, so without the bootloader below the
+ popup paints stark white over the operator's dark-mode parent.
+ The inline script mirrors `core/header.tpl`'s bootloader exactly
+ (same THEME_KEY 'sbpp-theme', same default 'system', same dark-
+ resolution predicate). Note the body explicitly uses
+ `background:var(--bg-page)`, so the resolved tokens drive the
+ paint directly; without `html.dark` the page would resolve to
+ the `:root` light tokens regardless of operator preference. See
+ "Anti-FOUC theme bootloader" in AGENTS.md Conventions for the
+ full contract; regression gate is
+ `web/tests/integration/IframeChromeAntiFoucBootloaderTest.php`.
 *}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{$title} : SourceBans++</title>
-    <link rel="stylesheet" href="../themes/default/css/theme.css">
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>{$title} : SourceBans++</title>
+ <script>
+ (function () {
+ try {
+ var m = localStorage.getItem('sbpp-theme') || 'system';
+ var d = m === 'dark' || (m === 'system' && window.matchMedia
+ && matchMedia('(prefers-color-scheme: dark)').matches);
+ if (d) document.documentElement.classList.add('dark');
+ } catch (e) { /* localStorage / matchMedia unavailable; default to light */ }
+ })();
+ </script>
+ <link rel="stylesheet" href="../themes/default/css/theme.css">
 </head>
 <body style="padding:1rem;background:var(--bg-page)">
 <div class="card" style="max-width:24rem;margin:0 auto">

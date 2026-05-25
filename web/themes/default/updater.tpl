@@ -1,28 +1,53 @@
 {*
-    SourceBans++ 2026 — updater.tpl
+ SourceBans++ 2026 — updater.tpl
 
-    Standalone wizard rendered by web/updater/index.php after Updater.php
-    has finished applying any pending migrations. View:
-    Sbpp\View\UpdaterView (just `$updates`).
+ Standalone wizard rendered by web/updater/index.php after Updater.php
+ has finished applying any pending migrations. View:
+ Sbpp\View\UpdaterView (just `$updates`).
 
-    The updater runs in its own bootstrap context — it does NOT go
-    through index.php's page-builder, so the chrome from
-    `core/header.tpl` + `core/footer.tpl` is intentionally not pulled
-    in. This template is therefore a complete <!DOCTYPE html> document
-    and links the theme stylesheet directly. Asset paths are relative
-    to /web/updater/ (where the script runs from), so `../themes/...`
-    points at /web/themes/default/.
+ The updater runs in its own bootstrap context — it does NOT go
+ through index.php's page-builder, so the chrome from
+ `core/header.tpl` + `core/footer.tpl` is intentionally not pulled
+ in. This template is therefore a complete <!DOCTYPE html> document
+ and links the theme stylesheet directly. Asset paths are relative
+ to /web/updater/ (where the script runs from), so `../themes/...`
+ points at /web/themes/default/.
 
-    Test hooks: each card header carries a stable
-    `data-testid="updater-<step>"` attribute.
+ Test hooks: each card header carries a stable
+ `data-testid="updater-<step>"` attribute.
+
+ Anti-FOUC bootloader (#1438): the updater is hit by logged-in
+ admins (same origin as the panel), and the body uses
+ `background:var(--bg-page);color:var(--text)` directly — so
+ without the bootloader, an admin in dark mode upgrading the
+ panel lands on a stark-white "Updater" page. The inline script
+ below mirrors `core/header.tpl`'s bootloader exactly; the
+ byte-equivalence contract is gated by
+ `web/tests/integration/IframeChromeAntiFoucBootloaderTest.php`.
+ See "Anti-FOUC theme bootloader" in AGENTS.md Conventions for
+ the full contract. Distinct from the install wizard's
+ `_chrome.tpl` (which is intentionally exempt — pre-install
+ panel has no logged-in user / no theme.js / no persisted
+ preference); the updater runs against a configured panel and
+ inherits the operator's already-set theme preference.
 *}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Updater | SourceBans++</title>
-    <link rel="stylesheet" href="../themes/default/css/theme.css">
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Updater | SourceBans++</title>
+ <script>
+ (function () {
+ try {
+ var m = localStorage.getItem('sbpp-theme') || 'system';
+ var d = m === 'dark' || (m === 'system' && window.matchMedia
+ && matchMedia('(prefers-color-scheme: dark)').matches);
+ if (d) document.documentElement.classList.add('dark');
+ } catch (e) { /* localStorage / matchMedia unavailable; default to light */ }
+ })();
+ </script>
+ <link rel="stylesheet" href="../themes/default/css/theme.css">
 </head>
 <body style="background:var(--bg-page);color:var(--text);min-height:100vh">
 

@@ -19,6 +19,32 @@
     preserve the IDs the legacy template used so existing
     parent-window dialog hooks (set_counter, height adjustment) keep
     working.
+
+    Anti-FOUC bootloader (#1438): the `pages/admin.kickit.php` URL is
+    reachable two ways in v2.0 chrome: as an iframe inside the
+    post-Ban "Ban Added" `sb.message.show` dialog (legacy default-theme
+    surface — `#dialog-placement` only exists on the default theme),
+    AND as a top-level navigation from the public Servers page's
+    right-click context menu's "Kick player" item (`web/scripts/server-context-menu.js`
+    builds the href directly to `pages/admin.kickit.php?check=…`). The
+    latter is the user-reported #1438 path: an operator in dark mode
+    right-clicks a player, picks Kick, and lands on this chromeless
+    iframe template rendered as a full-page document — and the page
+    paints stark white because `<html>` never gets the `dark` class.
+    The inline bootloader below mirrors `core/header.tpl`'s shape
+    (same THEME_KEY 'sbpp-theme', same default 'system', same dark-
+    resolution predicate; only ADDS the class, never removes — :root
+    defaults to light) so the very first paint lands in the operator's
+    persisted theme regardless of how the page was reached. Logic
+    must stay byte-equivalent to the canonical bootloader in
+    `core/header.tpl` (which in turn mirrors `theme.js`'s
+    `applyTheme(currentTheme())` minus the localStorage write); the
+    regression gate is `web/tests/integration/IframeChromeAntiFoucBootloaderTest.php`.
+    See "Anti-FOUC theme bootloader" in AGENTS.md Conventions for the
+    full contract. Wrapped in IIFE + try/catch because localStorage
+    throws on private-mode iframes / SecurityError and matchMedia is
+    missing on very old browsers — defaults to light on either failure,
+    matching the chrome's shape.
 *}-
 <!DOCTYPE html>
 <html lang="en">
@@ -27,6 +53,16 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="-{$csrf_token}-">
     <title>Kick player</title>
+    <script>
+    (function () {
+        try {
+            var m = localStorage.getItem('sbpp-theme') || 'system';
+            var d = m === 'dark' || (m === 'system' && window.matchMedia
+                && matchMedia('(prefers-color-scheme: dark)').matches);
+            if (d) document.documentElement.classList.add('dark');
+        } catch (e) { /* localStorage / matchMedia unavailable; default to light */ }
+    })();
+    </script>
     <link rel="stylesheet" href="../themes/default/css/theme.css">
     <script src="../scripts/api-contract.js"></script>
     <script src="../scripts/sb.js"></script>
