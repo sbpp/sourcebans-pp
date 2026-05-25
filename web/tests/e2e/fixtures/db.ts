@@ -35,6 +35,8 @@ const SEED_ANNOUNCEMENTS_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-announcements-e2e.php';
 const SEED_LOSTPASSWORD_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-lostpassword-e2e.php';
+const SEED_LOSTPASSWORD_ENUM_ADMIN_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/seed-lostpassword-enum-admin-e2e.php';
 const SET_SETTING_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/set-setting-e2e.php';
 const ORPHAN_BAN_AID_INSIDE_CONTAINER =
@@ -300,6 +302,65 @@ export async function seedLostpasswordE2e(): Promise<LostpasswordSeed> {
         const msg = err instanceof Error ? err.message : String(err);
         throw new Error(
             `seed-lostpassword-e2e.php: malformed stdout (${msg})\nstdout:\n${trimmed}\nstderr:\n${stderr}`,
+        );
+    }
+}
+
+/**
+ * Shape of the `seedLostpasswordEnumAdminE2e` return value.
+ *
+ * Only `email` is exposed — the form-POST tests don't need a
+ * password / token because they never log in as the seeded user
+ * and the handler rolls a fresh `validate` on every match.
+ */
+export interface LostpasswordEnumAdminSeed {
+    email: string;
+}
+
+/**
+ * Seed a dedicated admin row whose validate column can be freely
+ * rolled by the `api_auth_lost_password` handler (#1456 form-POST
+ * E2E tests).
+ *
+ * The seeded user lives separately from `admin@example.test` so
+ * the form-POST specs can drive the match branch — which UPDATEs
+ * `:prefix_admins.validate` — without racing the marquee #1403
+ * happy-path test, which seeds `admin@example.test`'s validate
+ * column to a known token and `GET`s a URL keyed on it. Cross-
+ * project (chromium ⇄ mobile-chromium) Playwright runs are
+ * intrinsically parallel even with `test.describe.configure({
+ * mode: 'serial' })` (serial is within-project), so the two
+ * tests would otherwise race on the same row.
+ *
+ * See `web/tests/e2e/scripts/seed-lostpassword-enum-admin-e2e.php`
+ * for the per-row contract (idempotent `INSERT IGNORE`, low-
+ * privilege, unguessable password).
+ */
+export async function seedLostpasswordEnumAdminE2e(): Promise<LostpasswordEnumAdminSeed> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SEED_LOSTPASSWORD_ENUM_ADMIN_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', SEED_LOSTPASSWORD_ENUM_ADMIN_INSIDE_CONTAINER];
+
+    const { stdout, stderr } = await execFileP(cmd, cmdArgs, {
+        maxBuffer: 1 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+    const trimmed = stdout.trim();
+    if (trimmed === '') {
+        throw new Error(`seed-lostpassword-enum-admin-e2e.php: empty stdout\nstderr:\n${stderr}`);
+    }
+    try {
+        const parsed = JSON.parse(trimmed) as LostpasswordEnumAdminSeed;
+        if (typeof parsed.email !== 'string') {
+            throw new Error('missing email key');
+        }
+        return parsed;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(
+            `seed-lostpassword-enum-admin-e2e.php: malformed stdout (${msg})\nstdout:\n${trimmed}\nstderr:\n${stderr}`,
         );
     }
 }

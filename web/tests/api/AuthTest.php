@@ -3,6 +3,7 @@
 namespace Sbpp\Tests\Api;
 
 use Sbpp\Tests\ApiTestCase;
+use Sbpp\Tests\Fixture;
 
 final class AuthTest extends ApiTestCase
 {
@@ -95,17 +96,39 @@ final class AuthTest extends ApiTestCase
 
     /**
      * Conversely, a hit on a known email DOES roll the validate
-     * token. Without this we wouldn't detect a regression that
-     * accidentally short-circuited the match branch too (e.g. a
-     * "let's always skip the UPDATE" refactor would silently break
-     * the actual reset flow without any of the privacy tests above
-     * catching it).
+     * token AND reaches the Mail::send call site. Without this we
+     * wouldn't detect a regression that accidentally short-circuited
+     * the match branch too (e.g. a "let's always skip the UPDATE"
+     * refactor would silently break the actual reset flow without
+     * any of the privacy tests above catching it).
+     *
+     * The Mail::send-reached assertion is observable via the audit-
+     * log entry the handler emits on the SMTP-failure branch
+     * (`Log::add(LogType::Error, 'Password reset mail failed', …)`)
+     * paired with `Mail::send`'s own "Mail not configured" entry
+     * (the e2e fixture leaves `smtp.*` empty by default, so the
+     * matched branch always falls through to the failure log).
+     * Asserting BOTH entries land catches:
+     *   - a regression that skips the `Mail::send` call (silent
+     *     "no email sent" — log entry from Mail::send absent),
+     *   - a regression that swallows the failure without logging
+     *     (the handler's own entry absent),
+     *   - a regression that always emits the failure log even on
+     *     success branches (we'd see the entry on both the
+     *     matched-mail-failed test AND the unknown-email test,
+     *     which doesn't add a log entry).
      */
     public function testLostPasswordRollsValidateTokenForKnownEmail(): void
     {
         $rowBefore = $this->row('admins', ['user' => 'admin']);
+        $logCountBefore = $this->countLogEntries('Password reset mail failed');
+        $mailNotConfiguredBefore = $this->countLogEntries('Mail not configured');
+
         $this->api('auth.lost_password', ['email' => 'admin@example.test']);
+
         $rowAfter  = $this->row('admins', ['user' => 'admin']);
+        $logCountAfter = $this->countLogEntries('Password reset mail failed');
+        $mailNotConfiguredAfter = $this->countLogEntries('Mail not configured');
 
         $this->assertNotSame(
             $rowBefore['validate'] ?? null,
@@ -117,6 +140,90 @@ final class AuthTest extends ApiTestCase
             $rowAfter['validate'] ?? null,
             'Expected validate token to be populated for the admin row after a known-email probe',
         );
+        $this->assertSame(
+            $logCountBefore + 1,
+            $logCountAfter,
+            'Known-email request with broken SMTP must emit ONE "Password reset mail failed" '
+                . 'audit-log entry so operators can diagnose the misconfiguration',
+        );
+        $this->assertSame(
+            $mailNotConfiguredBefore + 1,
+            $mailNotConfiguredAfter,
+            'Known-email request must reach Mail::send (which logs "Mail not configured" '
+                . 'against the empty-SMTP fixture). Asserting this catches a regression '
+                . 'that skips the actual send attempt while still rolling the token + '
+                . 'returning the generic envelope — the real reset flow would silently '
+                . 'never email anyone.',
+        );
+    }
+
+    /**
+     * #1456 — the `config.enablenormallogin=0` branch returns an
+     * `ApiError('disabled', …)` envelope. The contract documented in
+     * AGENTS.md "Public auth surfaces: response-shape uniformity" is
+     * that operator-side toggles MAY surface as a per-toggle error
+     * code because the value is the same for every caller — the
+     * envelope doesn't branch on per-account state.
+     *
+     * This test pins that contract: the disabled envelope is byte-
+     * identical for matched (`admin@example.test`) and unmatched
+     * (`nobody@example.test`) emails. A future regression that says
+     * "Normal login is disabled — try Steam login instead, $username"
+     * would diverge the two responses and break this assertion.
+     *
+     * The handler is reached because we hit the JSON API directly;
+     * the page-handler guard at `page.lostpassword.php:43-46` 302s
+     * the form away on the same toggle so browser-driven callers
+     * never see this surface, but curl-driven third parties do.
+     */
+    public function testLostPasswordReturnsDisabledEnvelopeUniformlyWhenNormalLoginIsOff(): void
+    {
+        $rawPdo = Fixture::rawPdo();
+        $stmt = $rawPdo->prepare(sprintf(
+            'REPLACE INTO `%s_settings` (`setting`, `value`) VALUES (?, ?)',
+            DB_PREFIX,
+        ));
+
+        try {
+            $stmt->execute(['config.enablenormallogin', '0']);
+            \Config::init($GLOBALS['PDO']);
+
+            $unknown = $this->api('auth.lost_password', ['email' => 'nobody@example.test']);
+            $known   = $this->api('auth.lost_password', ['email' => 'admin@example.test']);
+
+            $this->assertFalse($unknown['ok'] ?? true, 'expected error envelope: ' . json_encode($unknown));
+            $this->assertSame('disabled', $unknown['error']['code'] ?? null);
+
+            $this->assertSame(
+                json_encode($unknown),
+                json_encode($known),
+                '#1456 — the disabled envelope must be byte-identical for matched '
+                    . 'and unmatched emails. A divergent envelope here would re-open '
+                    . 'enumeration on the panels that have normal login off.',
+            );
+        } finally {
+            $stmt->execute(['config.enablenormallogin', '1']);
+            \Config::init($GLOBALS['PDO']);
+        }
+    }
+
+    /**
+     * Helper: count the number of `:prefix_log` rows whose `title`
+     * column matches the given literal. Used by
+     * {@see testLostPasswordRollsValidateTokenForKnownEmail} to
+     * assert the matched-branch SMTP-failure path emits its
+     * documented audit entry.
+     */
+    private function countLogEntries(string $title): int
+    {
+        $rawPdo = Fixture::rawPdo();
+        $stmt = $rawPdo->prepare(sprintf(
+            'SELECT COUNT(*) AS c FROM `%s_log` WHERE `title` = ?',
+            DB_PREFIX,
+        ));
+        $stmt->execute([$title]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return (int)($row['c'] ?? 0);
     }
 
     /**

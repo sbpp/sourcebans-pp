@@ -927,12 +927,29 @@ The contract:
   ("if that email is registered, …, please check your inbox and
   spam folder") — the wording is identical across every branch.
 - **Audit-log discipline mirrors the response.** Log mail failures
-  / transient SMTP errors (Operator needs to fix SMTP). Do NOT log
-  the miss branch — anonymous visitors get to write to
-  `:prefix_log` once per request would let a hostile actor flood
-  the audit table at request-rate; AND the log entries would
-  themselves be a side-channel into "this is an unknown email"
-  visible to anyone who can read the audit log.
+  / transient SMTP errors so an operator can diagnose them
+  (`Mail::send` already logs the underlying transport exception
+  via `LogType::Error`; the handler adds a paired entry that
+  pins the *action* that triggered the failure). Do NOT log the
+  miss branch — anonymous visitors get to write to `:prefix_log`
+  once per request would let a hostile actor flood the audit
+  table at request-rate; AND the log entries would themselves be
+  a side-channel into "this is an unknown email" visible to
+  anyone who can read the audit log.
+
+  Residual log-DoS surface (documented, NOT closed by #1456):
+  the matched-branch SMTP-failure path emits a log entry per
+  call. An attacker who knows a single registered email AND
+  catches the panel with broken SMTP can hammer the endpoint
+  to flood `:prefix_log` (and, as a side effect, roll the
+  legitimate user's outstanding `validate` token on every
+  request, invalidating any reset link in flight). Closing that
+  channel cleanly requires a per-(IP × email) rate limiter the
+  panel doesn't currently have. The pragmatic mitigation today
+  is the implicit one — SMTP failures should be rare on a
+  healthy deployment, and the audit-log table is acceptably
+  sized for the access pattern — but the surface is a tracking
+  follow-up; do not depend on it remaining quiet under attack.
 - **DB writes only happen on the matched branch.** Never UPDATE
   or INSERT a row keyed on an attacker-supplied identifier when the
   identifier didn't match — that's both a write amplification
@@ -977,13 +994,23 @@ in `web/api/handlers/auth.php` ALSO branches its `Api::redirect()`
 target on per-account signals — empty-password vs. unknown-user vs.
 locked-account each redirect to a different `?m=…` flag on the
 login page, which the page handler then surfaces as different toast
-titles. That's a sibling enumeration oracle but with a smaller blast
-radius (an attacker needs to repeatedly POST passwords to enumerate
-state, and the lockout-after-5 gate inhibits sustained probing).
-Tracked as a follow-up to #1456; do not silently introduce a NEW
-public auth surface with the same branching shape — every new
-endpoint added here goes through the response-uniformity contract
-above.
+titles. The concrete oracle: POST `{username: 'admin', password: ''}`
+returns `?p=login&m=empty_pwd` (known user, empty-password
+short-circuit at `api_auth_login` line 50-52 runs BEFORE
+`NormalAuthHandler` so `attempts` is not incremented); POST
+`{username: 'doesnotexist', password: ''}` returns
+`?p=login&m=failed` (unknown-user short-circuit at line 41-43,
+never touches `:prefix_admins` at all). That's a one-request-per-
+username enumeration channel, no DB writes, no lockout
+interaction — the `attempts` counter only gates the password-
+attempt branch downstream, so the lockout-after-5 gate provides
+**no** protection against this surface (the gate fires on
+`NormalAuthHandler` failures, which the empty-password branch
+returns before reaching). Sized similarly to the pre-#1456
+`api_auth_lost_password` leak; tracked as a follow-up to #1456.
+Do not silently introduce a NEW public auth surface with the same
+branching shape — every new endpoint added here goes through the
+response-uniformity contract above.
 
 ### Permissions
 

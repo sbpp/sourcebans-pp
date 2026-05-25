@@ -81,20 +81,30 @@
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
-import { seedLostpasswordE2e } from '../../fixtures/db.ts';
+import { seedLostpasswordE2e, seedLostpasswordEnumAdminE2e } from '../../fixtures/db.ts';
 
-// #1456 cross-test isolation: every test in this file touches the seeded
-// admin row (`admin@example.test`) — the marquee #1403 test seeds the
-// `:prefix_admins.validate` column to a known token then GETs a URL
-// keyed on it; the form-POST tests below call `api_auth_lost_password`
-// which UPDATEs that column to a fresh random value. With Playwright's
-// default `workers > 1` the form-POST UPDATE can race the marquee
-// test's seed→goto window, invalidating its token and turning a real
-// regression run into a false failure. Force the file to one worker so
-// the existing CI behaviour (`workers: 1`, per AGENTS.md "Playwright
-// E2E specifics") is mirrored locally. The cost is ~1-2s extra wall
-// time on a multi-core dev box; the benefit is deterministic test
-// outcomes regardless of the harness's worker pool.
+// #1456 cross-test isolation: the marquee #1403 test seeds the
+// `admin@example.test` row's `:prefix_admins.validate` column to a
+// known token then GETs a URL keyed on it. The form-POST tests at
+// the tail of this file call `api_auth_lost_password` which UPDATEs
+// the matched admin's `validate` to a fresh random value. Two
+// safeguards keep these from racing:
+//
+//   1. The form-POST tests seed (and exclusively target) a DEDICATED
+//      admin row (`lostpw-enum-known@example.test`, see
+//      `seedLostpasswordEnumAdminE2e`). Hitting the same `validate`
+//      column as the marquee test would otherwise produce a cross-
+//      project flake — Playwright runs the same spec under both
+//      `chromium` and `mobile-chromium` IN PARALLEL by default, and
+//      `test.describe.configure({ mode: 'serial' })` only constrains
+//      within a single project's worker. The dedicated row sidesteps
+//      the race at the data layer rather than the scheduler layer.
+//   2. We ALSO mark the file `serial` so within-project ordering is
+//      deterministic (CI runs `workers: 1` per AGENTS.md "Playwright
+//      E2E specifics"; keeping the file in serial mode mirrors that
+//      behaviour locally and protects against future regressions
+//      where two tests within this file accidentally race on a
+//      shared resource we hadn't anticipated).
 test.describe.configure({ mode: 'serial' });
 
 const SHORT_TOKEN = 'short';
@@ -345,6 +355,19 @@ test.describe('flow: lostpassword form POST (#1456 user-enumeration leak)', () =
     // authenticated visitors to /index.php before the form renders.
     test.use({ storageState: { cookies: [], origins: [] } });
 
+    // Use a dedicated admin row for the "known email" arm so we
+    // don't UPDATE `admin@example.test`'s validate column out from
+    // under the marquee #1403 happy-path test. Cross-project (chromium
+    // ⇄ mobile-chromium) Playwright runs are intrinsically parallel.
+    // See the top-of-file comment + `seedLostpasswordEnumAdminE2e`
+    // docblock for the full rationale. Idempotent shim — re-runs are
+    // free, so the `beforeAll` cost is one INSERT IGNORE per project.
+    let knownEmail: string;
+    test.beforeAll(async () => {
+        const seed = await seedLostpasswordEnumAdminE2e();
+        knownEmail = seed.email;
+    });
+
     test('Form submission with an unknown email shows the generic "Check E-Mail" toast (NOT an error)', async ({ page }) => {
         const consoleErrors: string[] = [];
         page.on('pageerror', (err) => consoleErrors.push(err.message));
@@ -376,10 +399,11 @@ test.describe('flow: lostpassword form POST (#1456 user-enumeration leak)', () =
         // body-copy contract is the whole point: a "we sent you
         // an email" wording would leak that the address exists,
         // an "address not registered" wording would leak that it
-        // doesn't, and ONLY the "if that email is registered"
-        // wording is neutral. Spec the wording explicitly so a
-        // future copy edit can't silently undo the fix.
-        await expect(toast).toContainText(/if that email is registered/i);
+        // doesn't, and ONLY the conditional "if an account is
+        // registered" wording is neutral. Spec the wording
+        // explicitly so a future copy edit can't silently undo
+        // the fix.
+        await expect(toast).toContainText(/if an account is registered/i);
 
         // Crucially: NO error toast paints. If the regression
         // re-surfaces, the chrome would paint a kind=error toast
@@ -401,9 +425,12 @@ test.describe('flow: lostpassword form POST (#1456 user-enumeration leak)', () =
         await page.goto('/index.php?p=lostpassword');
         await expect(page.getByTestId('lostpw-email')).toBeVisible();
 
-        // The seeded admin row's email is admin@example.test (the
-        // default in `data.sql` + `Fixture::seedAdmin`).
-        await page.getByTestId('lostpw-email').fill('admin@example.test');
+        // Use the dedicated `lostpw-enum-known@example.test` row
+        // seeded in `beforeAll` rather than `admin@example.test` so
+        // we don't race the marquee #1403 happy-path test's
+        // `validate`-token seed (the handler UPDATEs `validate` on
+        // every match — see the top-of-file comment).
+        await page.getByTestId('lostpw-email').fill(knownEmail);
         await page.getByTestId('lostpw-submit').click();
 
         // The toast HAS to look identical to the unknown-email
@@ -416,7 +443,7 @@ test.describe('flow: lostpassword form POST (#1456 user-enumeration leak)', () =
             .locator('.toast[data-kind="info"]')
             .filter({ hasText: 'Check E-Mail' });
         await expect(toast).toBeVisible();
-        await expect(toast).toContainText(/if that email is registered/i);
+        await expect(toast).toContainText(/if an account is registered/i);
 
         // Same loud absence assertion: no error toast paints.
         // Pre-fix this branch was the only one that COULD have

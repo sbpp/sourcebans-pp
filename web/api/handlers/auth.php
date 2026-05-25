@@ -87,13 +87,17 @@ function api_auth_login(array $params): array
  * places and silently desync the wire shape one branch uses from the
  * other — which is exactly how the user-enumeration leak slips back in.
  *
- * The body intentionally uses "If that email is registered…" rather
- * than "We sent an email to…" so the message is honest in both
- * the matched and unmatched cases. Mirrors Django's password_reset
- * + Rails's devise/recoverable defaults: indistinguishable response
- * for present vs absent accounts is the W3C/OWASP-aligned shape
- * (OWASP ASVS v4 §3.2.1; OWASP Forgot Password Cheat Sheet §"Return
- * a consistent message").
+ * The body intentionally uses "If an account is registered to that
+ * email address…" rather than "We sent an email to…" so the message
+ * is honest in both the matched and unmatched cases. Mirrors
+ * Django's password_reset, Rails's devise/recoverable, and GitHub's
+ * password-recovery defaults: indistinguishable response for present
+ * vs absent accounts is the OWASP-aligned shape (OWASP ASVS v4
+ * Credential Recovery §V2.5; OWASP Forgot Password Cheat Sheet §
+ * "Return a consistent message"). The wording avoids "admin account
+ * on this panel" — the panel URL + form heading already advertise
+ * the surface, but the response copy itself should not narrow the
+ * scope further (matches the major-framework convention).
  *
  * @return array{message: array{title: string, body: string, kind: string}}
  */
@@ -102,7 +106,7 @@ function _api_auth_lost_password_generic_response(): array
     return [
         'message' => [
             'title' => 'Check E-Mail',
-            'body'  => 'If that email is registered to an admin account on this panel, '
+            'body'  => 'If an account is registered to that email address, '
                 . 'a password reset link has been sent. '
                 . 'Please check your inbox (and your spam folder).',
             'kind'  => 'blue',
