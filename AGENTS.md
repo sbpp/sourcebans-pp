@@ -965,6 +965,35 @@ enum.
 - **Do not** reintroduce MooTools, React, or a runtime bundler.
  Self-hosters install by unzipping the release tarball.
 
+### Button class chains (`class="btn btn--ghost btn--icon"`)
+
+Every `<button>` / `<a>` chrome affordance that pulls the panel's
+button styling MUST carry the base `btn` token alongside any
+`btn--*` modifier:
+
+- `class="btn btn--primary"` ✓
+- `class="btn btn--ghost btn--icon"` ✓
+- `class="btn btn--secondary btn--sm"` ✓
+- `class="btn--ghost btn--icon"` ✗ — no `btn` base; `<button>`
+ falls back to UA-default chrome (visible grey 1px-border pill).
+
+Only `.btn` carries the load-bearing `background` / `color` /
+`border` / `display: inline-flex` / `padding` / `height`
+declarations — every modifier (colour or sizing) sets CSS
+custom properties + (for `.btn--sm` / `.btn--icon` / `.btn--xs`)
+adds a thin layer of geometry on top, but nothing applies the
+chrome without `.btn`. Order: base first, modifiers after. Pinned
+by `web/tests/integration/ButtonClassChainTest.php` (#1448);
+canonical anti-pattern entry under "Anti-patterns" with the
+user-reported regression details.
+
+The same rule applies to button strings emitted at runtime by
+`web/themes/default/js/theme.js`'s
+`renderDrawerBody()` / `renderDrawerLoading()` /
+`renderToast()` / `renderNotePane()` paths — the gate scans
+`*.js` too, so a copy-paste of the pre-#1448 broken shape into a
+new chrome surface fails CI at PR time.
+
 ### Loading state on action buttons (`window.SBPP.setBusy`)
 
 Every action button that fires `sb.api.call(...)` from a click handler
@@ -2448,6 +2477,51 @@ contacting every contributor individually.
  to defend the path. New popup-upload surfaces wire through
  `UploadHandler::handle()`; never `move_uploaded_file()`
  directly.
+- `class="btn--ghost btn--icon"` (or any other modifier-only chain
+ of `.btn--*` classes without the base `btn` token) on a `<button>`
+ / `<a>` chrome affordance → always ship `class="btn btn--ghost
+ btn--icon"` (base token first, modifiers after). The base `.btn`
+ rule in `theme.css` is the load-bearing site that declares the
+ `--btn-bg` / `--btn-color` / `--btn-border` / `--btn-bg-hover`
+ custom-property defaults AND applies them as `background` /
+ `color` / `border` / `display: inline-flex` / `padding` /
+ `height` declarations. The colour-modifier rules (`.btn--ghost`,
+ `.btn--primary`, `.btn--secondary`, `.btn--danger`) are pure
+ custom-property overrides — they set `--btn-bg` / `--btn-color`
+ / `--btn-border` / `--btn-bg-hover` and that's all. The sizing
+ modifiers (`.btn--sm`, `.btn--icon`, `.btn--xs`) layer geometry
+ on top (`width` / `height` / `padding` / `font-size`) but still
+ don't carry the load-bearing `background` / `color` / `border`
+ / `display: inline-flex` declarations — those live exclusively
+ on `.btn`. Without `.btn` in the same class chain the variables
+ get set but nothing reads them, so the `<button>` falls back to
+ the user-agent default chrome (typically a visible grey
+ 1px-border pill). The marquee user-reported regression: pre-#1448
+ `core/title.tpl`'s mobile burger menu shipped
+ `class="btn--ghost btn--icon"`, which on mobile (where
+ `[data-mobile-menu]` flips from `display: none` to `display:
+ inline-flex` at `<=1024px`) rendered a glaring grey square in
+ the top-left of the topbar, fighting the dark theme's near-black
+ background (#1448's screenshot). Sister sites swept in the same
+ PR: `core/footer.tpl`'s palette `Esc` button (live bug — same
+ wrong-chrome shape as the burger button), and the
+ `partials/player-drawer.tpl` reference template (documentation
+ sync — the live drawer chrome is rendered by
+ `web/themes/default/js/theme.js`, which always shipped the
+ correct three-class chain). Regression guard:
+ `web/tests/integration/ButtonClassChainTest.php` (parser-style
+ sweep across `web/themes/`, `web/pages/`, `web/includes/View/`,
+ `web/install/`, `web/updater/`, `web/api/handlers/`, AND
+ `web/scripts/` + `web/themes/default/js/` for `*.tpl` / `*.php`
+ / `*.js` — every `class="..."` attribute carrying a `btn--*`
+ modifier MUST also carry the base `btn`). Class attributes
+ containing `{` (Smarty-conditional shapes) are skipped — the
+ gate doesn't expand templates, so it can't validate which branch
+ a given token came from. False negatives are bounded to chains
+ with NO base in any branch (e.g.
+ `class="{if $x}btn--primary{else}btn--ghost{/if}"`); none in
+ the codebase today, would surface as a visible UA-default render
+ whenever the conditional path runs.
 - `btn.disabled = true` (or any other manual `disabled` flip) inside
  a confirm-modal submit handler or any other action button that
  fires `sb.api.call(...)` from a click handler without an immediate
@@ -3943,6 +4017,7 @@ contacting every contributor individually.
 | Trap PHP 8.1 null-into-scalar deprecations at runtime (the bits PHPStan can't see) | `web/tests/integration/Php82DeprecationsTest.php` (#1273) — process-isolated render harness with a stub Smarty + `set_error_handler` that promotes `E_DEPRECATED` / `E_USER_DEPRECATED` to `\ErrorException`. Mirrors the LostPasswordChromeTest stub-Smarty pattern; each test method runs in a separate process because the page handlers declare top-level helpers (`setPostKey()` etc.) that PHP can't redeclare in one process. Add a marquee route here whenever a new high-traffic page handler ships, especially if it reads nullable `:prefix_*` columns or `$_POST` / `$_GET` lookups. |
 | Pin the "every `:name` PDO placeholder needs as many `bind()` calls as occurrences" contract under native prepares | `web/tests/integration/SrvAdminsPdoParamTest.php` (#1314) — two methods. `testReusedNamedPlaceholderUnderNativePreparesIsRejected` issues a tiny `SELECT 1 ... WHERE aid = :sid OR aid = :sid` against `Sbpp\Db\Database` with one `bind()` and asserts it throws `HY093`; this is the contract pin (also a regression guard if anyone re-flips `EMULATE_PREPARES` back to `true`). `testAdminSrvadminsPageRendersWithoutPdoException` is the page-level regression guard for the actual #1314 fatal — process-isolated `require` of `pages/admin.srvadmins.php` with `?id=0` asserting no `PDOException` escapes. Mirrors the Php82DeprecationsTest stub-Smarty + process-isolation shape. |
 | Pin "dead v1.x JS call sites + their server-side feeders stay deleted" (the `<script>LoadServerHost(...)</script>` / `$data['unban_link']` / `$info['popup']` shapes the v2.0.0 `sourcebans.js` cutover left without a JS landing site) | `web/tests/integration/DeadJsCallSitesTest.php` (#1404) — three methods, 12 assertions. Per-file forbidden-substring map (`page.banlist.php` / `page.commslist.php` / `page.home.php` / `admin.admins.php` / `admin.groups.php`) scanned against the **comment-stripped** source of each handler via `php_strip_whitespace()`, so the cleanup's own `// #1404 — ...` explanatory comments (and pre-existing historical-context comments that name the dead helpers in passing) don't false-fire the gate. The Smarty half (`{$server_script nofilter}`, the `<div id="servers_{$group.gid}">` hydration slot, the "Servers populate via the legacy LoadServerHostPlayersList hook." placeholder copy) is pinned by `testDeadTemplateSidesStayDropped` (also comment-stripped via `{* *}`-regex). The View-DTO side (`Sbpp\View\AdminAdminsAddView::server_script` orphan property) is pinned independently by `testAdminAdminsAddViewDoesNotCarryServerScriptProperty` so the failure points at the View directly instead of cascading through SmartyTemplateRule. Pure file scanning — extends `PHPUnit\Framework\TestCase` (no DB / session / Smarty bring-up). Sister #1402 (rewire dead JS handlers) and #1403 (ShowBox→`window.SBPP.showToast` rewrite) extend the per-file forbidden-substring map as their PRs land. |
+| Pin "every `class="btn--*"` modifier carries the base `btn` token" structural contract | `web/tests/integration/ButtonClassChainTest.php` (#1448) — single-method parser-style sweep across `web/themes/`, `web/pages/`, `web/includes/View/`, `web/install/`, `web/updater/`, `web/api/handlers/`, AND `web/scripts/` + `web/themes/default/js/` for `*.tpl` / `*.php` / `*.js`. Strips Smarty `{* … *}` (default delimiters) and `-{* … *}-` (the non-default-delimiter shape used by `page_login.tpl` / `page_blockit.tpl` / `page_kickit.tpl` / `page_admin_servers_rcon.tpl`), PHP comments via `php_strip_whitespace()`, and JS `/* */` + `//` comments. Extracts every `class="…"` / `class='…'` attribute body (negative lookbehind on the `class` keyword skips name-prefixed `data-class=` / `aria-class=` shapes), splits on whitespace, and asserts every chain carrying a `btn--*` modifier also carries `btn`. Class attributes containing `{` (Smarty-conditional shapes) are skipped — the gate doesn't expand templates. Sanity-check assertions guard against `ROOT` / `scanRoots()` typos that would silently scan zero files. Sister gate to `DeadJsCallSitesTest`; same pure-file-scanning shape. The JS-side coverage (`web/themes/default/js/theme.js`'s `renderDrawerBody()` / `renderDrawerLoading()` / toast / Notes-pane delete chrome, plus the `web/scripts/sb.js` legacy `'btn ok'` button factory) is what makes the gate's "panel chrome" coverage actually structural — that file ships seven `<button class="btn btn--ghost btn--icon[ btn--xs]">` strings via runtime concatenation, and the regression guard would be papering over the live bug surface without it. |
 | Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |
 | Add a route to the screenshot gallery  | `web/tests/e2e/specs/_screenshots.spec.ts` (`ROUTES` array) |
 | Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock). Sub-paged admin routes (servers / mods / groups / comms / settings / admins / bans) use the `<details open>` accordion in the `#1259` `@media (min-width: 1024px)` block (sidebar inline at `<1024px`, sticky 14rem rail at `>=1024px`); see "Sub-paged admin routes" in Conventions. |

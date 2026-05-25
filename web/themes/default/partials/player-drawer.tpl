@@ -45,7 +45,8 @@
         <div class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em">Ban #{$detail.bid}</div>
         <h2 class="font-semibold" style="margin:0.125rem 0 0;font-size:1.125rem">{$detail.player.name}</h2>
     </div>
-    <button class="btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">
+    {* #1448: keep `btn` first — only `.btn` carries the load-bearing chrome declarations; modifiers set CSS custom properties + (for sizing) geometry on top. See AGENTS.md "Anti-patterns". This template is the canonical reference shape; the live drawer is rendered by `theme.js`'s `renderDrawerBody()` and friends — those sites also carry the three-class chain. *}
+    <button class="btn btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">
         <i data-lucide="x"></i>
     </button>
 </header>

@@ -179,8 +179,9 @@
                placeholder="Search players, SteamIDs, pages…"
                aria-label="Search players, SteamIDs, pages"
                data-testid="palette-input">
+        {* #1448: keep `btn` first — only `.btn` carries the load-bearing chrome declarations; modifiers set CSS custom properties + (for sizing) geometry on top. See AGENTS.md "Anti-patterns". *}
         <button type="button"
-                class="btn--ghost btn--icon"
+                class="btn btn--ghost btn--icon"
                 data-palette-close
                 data-testid="palette-close"
                 aria-label="Close command palette"

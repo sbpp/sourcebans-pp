@@ -19,8 +19,9 @@
 *}
 <div class="main">
     <header class="topbar" data-testid="topbar">
+        {* #1448: keep `btn` first — only `.btn` carries the load-bearing `background` / `color` / `border` / `display: inline-flex` declarations; the modifiers set CSS custom properties + (for sizing) geometry on top. See AGENTS.md "Anti-patterns" → modifier-only `btn--*` chains. *}
         <button type="button"
-                class="btn--ghost btn--icon"
+                class="btn btn--ghost btn--icon"
                 data-mobile-menu
                 data-testid="mobile-menu-toggle"
                 aria-label="Open navigation menu"
