@@ -25,9 +25,10 @@
  *   1. The wire-format JSON blob the PHP-side emits for a NOT-* branch
  *      carries `duration_ms: 0` (round-trip check at the wire layer).
  *   2. The `[data-testid="toast"]` paints AND outlasts the default
- *      `SHOWTOAST_DEFAULT_DURATION` (~4000ms) — the regression the
- *      issue describes (toast disappearing before the operator
- *      finishes reading the severe-error confirmation).
+ *      `SHOWTOAST_DEFAULT_DURATION` (~6000ms after #1444 — was
+ *      ~4000ms pre-fix) — the regression the issue describes
+ *      (toast disappearing before the operator finishes reading
+ *      the severe-error confirmation).
  *   3. Clicking the `[data-toast-close]` button dismisses the toast
  *      (the X-button is the only escape hatch on a persistent toast).
  *
@@ -73,13 +74,21 @@
  * One `waitForTimeout` is intentional and load-bearing here — AGENTS.md
  * "Playwright E2E specifics" notes the persistent-toast-after-N-ms
  * assertion is the canonical case where a timer wait is legitimate.
- * Specifically: we wait 4500ms (past the default 4000ms auto-dismiss
- * window) THEN assert the toast is STILL visible. A `toBeVisible`
- * assertion alone wouldn't catch the "auto-dismisses after the
- * default" regression because the toast paints immediately on
- * `DOMContentLoaded` and the assertion would pass before the timer
- * fires. The 4500ms gives a ~500ms safety margin over the
+ * Specifically: we wait 6500ms (past the default 6000ms auto-dismiss
+ * window, post-#1444) THEN assert the toast is STILL visible. A
+ * `toBeVisible` assertion alone wouldn't catch the "auto-dismisses
+ * after the default" regression because the toast paints immediately
+ * on `DOMContentLoaded` and the assertion would pass before the timer
+ * fires. The 6500ms gives a ~500ms safety margin over the
  * `SHOWTOAST_DEFAULT_DURATION` constant in `theme.js`.
+ *
+ * #1444 raised the default from 4000ms to 6000ms. The waits in this
+ * file were bumped in lockstep — without the paired bump the
+ * "outlasts the default" assertion would land BEFORE the auto-dismiss
+ * timer and pass for the wrong reason (the toast would still be
+ * visible because the timer hadn't fired yet, NOT because
+ * `duration_ms: 0` disabled the timer). Future tweaks to
+ * `SHOWTOAST_DEFAULT_DURATION` must update both halves.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
@@ -208,15 +217,34 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
         await expect(toast).toContainText(/There was an error unbanning/);
         await expect(toast).toHaveAttribute('data-kind', 'error');
 
-        // 6. Wait past `SHOWTOAST_DEFAULT_DURATION` (4000ms; we add
-        //    500ms safety margin). The single load-bearing timer wait
-        //    in the spec — AGENTS.md "Playwright E2E specifics" notes
-        //    the persistent-toast-after-N-ms assertion is the
-        //    canonical legitimate use of `waitForTimeout`. A `toBeVisible`
-        //    by itself wouldn't catch the auto-dismiss regression
-        //    because the toast paints immediately.
+        // 6. Wait past `SHOWTOAST_DEFAULT_DURATION` + a 500ms safety
+        //    margin. The single load-bearing timer wait in the spec
+        //    — AGENTS.md "Playwright E2E specifics" notes the
+        //    persistent-toast-after-N-ms assertion is the canonical
+        //    legitimate use of `waitForTimeout`. A `toBeVisible` by
+        //    itself wouldn't catch the auto-dismiss regression
+        //    because the toast paints immediately. The chrome's
+        //    default duration is read at runtime from
+        //    `window.SBPP.SHOWTOAST_DEFAULT_DURATION` (#1444 review
+        //    M-2): the spec's wait window moves in lockstep with the
+        //    production constant automatically. Hardcoding `6500`
+        //    here would silently pass for the wrong reason if a
+        //    future PR bumped the default — the wait would land
+        //    INSIDE the new default window and "still visible"
+        //    would pass because the timer hadn't fired yet, NOT
+        //    because `duration_ms: 0` disabled it.
+        const defaultMs = await page.evaluate(() => {
+            const sbpp = (window as unknown as {
+                SBPP?: { SHOWTOAST_DEFAULT_DURATION?: unknown };
+            }).SBPP;
+            return sbpp ? sbpp.SHOWTOAST_DEFAULT_DURATION : undefined;
+        });
+        expect(
+            typeof defaultMs,
+            'window.SBPP.SHOWTOAST_DEFAULT_DURATION must be exposed for lockstep timing — chrome JS did not boot',
+        ).toBe('number');
         // eslint-disable-next-line playwright/no-wait-for-timeout
-        await page.waitForTimeout(4500);
+        await page.waitForTimeout((defaultMs as number) + 500);
 
         // 7. The toast is STILL visible — this is the #1409 contract.
         //    A regression that drops `duration_ms: 0` from the call
@@ -226,9 +254,9 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
         //    HERE.
         await expect(
             toast,
-            'toast should persist past SHOWTOAST_DEFAULT_DURATION (~4000ms) when emit'
-            + ' passes duration_ms: 0 — this is the #1409 contract restoring v1.x'
-            + ' ShowBox(..., sticky=true) semantics for severe-error confirmations',
+            'toast should persist past SHOWTOAST_DEFAULT_DURATION when emit passes duration_ms: 0'
+            + ' — this is the #1409 contract restoring v1.x ShowBox(..., sticky=true) semantics'
+            + ' for severe-error confirmations',
         ).toBeVisible();
 
         // 8. Click the X button — the only escape hatch on a
@@ -253,12 +281,12 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
     });
 
     test('Routine toast (no duration_ms override) STILL auto-dismisses — contract regression guard', async ({ page }) => {
-        // Belt-and-braces: the 4000ms default behaviour must NOT
-        // regress with the #1409 additions. A "we forgot to skip the
-        // setTimeout call when durationMs is undefined" regression
-        // would make EVERY toast persistent — the worst kind of
-        // regression because every routine info / success surface
-        // would suddenly require manual dismissal.
+        // Belt-and-braces: the default-duration behaviour must NOT
+        // regress with the #1409 additions or the #1444 bump. A "we
+        // forgot to skip the setTimeout call when durationMs is
+        // undefined" regression would make EVERY toast persistent —
+        // the worst kind of regression because every routine info /
+        // success surface would suddenly require manual dismissal.
         //
         // **Why we don't drive a page-flow route here**: the obvious
         // shape (hit a 404-shaped GET-fallback like
@@ -266,13 +294,13 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
         // branch) carries a non-null `$redirect`, so the chrome's
         // `flushPendingToasts` schedules a `window.location.href`
         // navigation ~1500ms after paint. The toast disappears
-        // because the PAGE TEARS DOWN, not because the 4000ms timer
+        // because the PAGE TEARS DOWN, not because the default timer
         // fired — a regression that bumped `SHOWTOAST_DEFAULT_DURATION`
-        // to 10000ms would still silently pass that test because
-        // the navigation happens well before the (broken) timer
-        // would have. Reviewer Suggested #2 (post-PR #1414) caught
-        // this: the test was nominally green but proved nothing
-        // about the timer contract.
+        // unreasonably high would still silently pass that test
+        // because the navigation happens well before the (broken)
+        // timer would have. Reviewer Suggested #2 (post-PR #1414)
+        // caught this: the test was nominally green but proved
+        // nothing about the timer contract.
         //
         // The replacement isolates the contract under test. We:
         //   1. Navigate to a panel page that has no pending toasts
@@ -287,25 +315,37 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
         //      `web/scripts/globals.d.ts`; it's the same code path
         //      `flushPendingToasts` uses internally.)
         //   3. Assert the toast paints immediately.
-        //   4. Wait ~3500ms — STILL inside the default ~4000ms
-        //      window — and assert the toast is still visible.
-        //      Catches a regression where `SHOWTOAST_DEFAULT_DURATION`
-        //      was accidentally LOWERED to ~3000ms.
-        //   5. Wait another ~1500ms (total 5000ms — well past the
-        //      default 4000ms + a generous margin for slow CI
-        //      runners) and assert the toast is GONE. Catches the
-        //      "every toast is now persistent" regression (the
-        //      worst case the contract guards against) AND the
-        //      "default duration was bumped past 5000ms" regression.
+        //   4. Wait until defaultMs - 500 (still INSIDE the default
+        //      window with a ~500ms safety margin) — and assert the
+        //      toast is still visible. Catches a regression where
+        //      `SHOWTOAST_DEFAULT_DURATION` was accidentally LOWERED
+        //      back below the read-time threshold.
+        //   5. Wait until defaultMs + 2000 (~2000ms past the default
+        //      — generous margin for slow CI runners but tight enough
+        //      to catch a regression bumping the default
+        //      unreasonably high) and assert the toast is GONE.
+        //      Catches the "every toast is now persistent"
+        //      regression (the worst case the contract guards
+        //      against).
         //
         // The test proves ONLY the timer contract: no page-flow
         // dependency, no redirect interference, no orphan-ban
-        // setup. The single load-bearing `waitForTimeout` is the
-        // 3500ms / 5000ms pair documented above; AGENTS.md
-        // "Playwright E2E specifics" notes the auto-dismiss
-        // timing assertion is the canonical case where a timer
-        // wait is legitimate (along with the persistent-toast
-        // sister assertion in the test above).
+        // setup. The two load-bearing `waitForTimeout` calls are
+        // derived at runtime from `SHOWTOAST_DEFAULT_DURATION`
+        // (#1444 review M-2); AGENTS.md "Playwright E2E specifics"
+        // notes the auto-dismiss timing assertion is the canonical
+        // case where a timer wait is legitimate (along with the
+        // persistent-toast sister assertion in the test above).
+        //
+        // **The thresholds and the production constant are now
+        // machine-locked.** The spec reads
+        // `window.SBPP.SHOWTOAST_DEFAULT_DURATION` and derives every
+        // wait window from it — bumping the constant
+        // automatically widens the windows. No paired edit needed,
+        // and a future PR can't silently make a "still visible"
+        // assertion pass for the wrong reason (the wait would no
+        // longer land inside the new default window because the
+        // window itself moved).
         const consoleErrors: string[] = [];
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 
@@ -323,6 +363,22 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
             + ' assertion below is meaningless',
         ).toHaveCount(0);
 
+        // Read the chrome's default duration at runtime — the spec
+        // moves in lockstep with the production constant
+        // automatically. See the test's docblock for the lockstep
+        // contract (#1444 review M-2).
+        const defaultMs = await page.evaluate(() => {
+            const sbpp = (window as unknown as {
+                SBPP?: { SHOWTOAST_DEFAULT_DURATION?: unknown };
+            }).SBPP;
+            return sbpp ? sbpp.SHOWTOAST_DEFAULT_DURATION : undefined;
+        });
+        expect(
+            typeof defaultMs,
+            'window.SBPP.SHOWTOAST_DEFAULT_DURATION must be exposed for lockstep timing — chrome JS did not boot',
+        ).toBe('number');
+        const defaultMsNumber = defaultMs as number;
+
         // Fire a routine toast directly through the chrome's
         // exposed API. `window.SBPP.showToast` is the documented
         // entry point (see `web/scripts/globals.d.ts`); calling
@@ -339,7 +395,7 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
             sbpp.showToast({
                 kind: 'info',
                 title: '1409 routine timer probe',
-                body: 'This toast must auto-dismiss after the default 4000ms.',
+                body: 'This toast must auto-dismiss after the chrome default duration.',
             });
         });
 
@@ -348,32 +404,32 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
             .filter({ hasText: '1409 routine timer probe' });
         await expect(toast).toBeVisible({ timeout: 1500 });
 
-        // Wait ~3500ms — still well inside the default 4000ms
-        // window with a ~500ms safety margin. The toast MUST
+        // Wait until defaultMs - 500ms (still inside the default
+        // window with a ~500ms safety margin). The toast MUST
         // still be visible. Catches a regression that lowered
-        // `SHOWTOAST_DEFAULT_DURATION` (e.g. to 3000ms during a
-        // "make toasts disappear faster" tweak).
+        // `SHOWTOAST_DEFAULT_DURATION` back below the read-time
+        // threshold.
         // eslint-disable-next-line playwright/no-wait-for-timeout
-        await page.waitForTimeout(3500);
+        await page.waitForTimeout(defaultMsNumber - 500);
         await expect(
             toast,
-            'routine toast must still be visible at ~3500ms (well within the SHOWTOAST_DEFAULT_DURATION ~4000ms'
-            + ' window) — a regression that lowered the default below ~3500ms would fail HERE',
+            'routine toast must still be visible at (defaultMs - 500ms) — still well within the'
+            + ' SHOWTOAST_DEFAULT_DURATION window. A regression that lowered the default below'
+            + ' (defaultMs - 500) would fail HERE',
         ).toBeVisible();
 
-        // Wait another ~1500ms (total ~5000ms post-paint), then
-        // assert the toast has been removed by the auto-dismiss
-        // timer. Total wait is ~1000ms past the default 4000ms
-        // window — generous margin for slow CI runners but
-        // tight enough that a regression bumping the default to
-        // 6000ms+ fails here. A regression that disabled the
-        // auto-dismiss timer entirely (e.g. dropped the
-        // `if (durationMs > 0)` guard's `setTimeout` call when
-        // `durationMs` is `undefined`) would ALSO fail here:
-        // the toast would still be visible at 5000ms because
-        // nothing schedules its removal.
+        // Wait another 2500ms (total defaultMs + 2000ms post-paint),
+        // then assert the toast has been removed by the auto-dismiss
+        // timer. Total wait is ~2000ms past the default window —
+        // generous margin for slow CI runners but tight enough that
+        // a regression bumping the default unreasonably high fails
+        // here. A regression that disabled the auto-dismiss timer
+        // entirely (e.g. dropped the `if (durationMs > 0)` guard's
+        // `setTimeout` call when `durationMs` is `undefined`) would
+        // ALSO fail here: the toast would still be visible at
+        // (defaultMs + 2000) because nothing schedules its removal.
         // eslint-disable-next-line playwright/no-wait-for-timeout
-        await page.waitForTimeout(1500);
+        await page.waitForTimeout(2500);
         await expect(
             toast,
             'routine toast (no `durationMs` option) MUST auto-dismiss within'

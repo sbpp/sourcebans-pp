@@ -594,9 +594,10 @@ final class ToastEmitRegressionTest extends ApiTestCase
     //
     // The 5th parameter on `Sbpp\View\Toast::emit` is the persistent-
     // toast escape hatch — `null` (default) keeps the chrome's
-    // SHOWTOAST_DEFAULT_DURATION (~4000ms) timing, `0` disables auto-
-    // dismiss entirely (X-button only), `> 0` overrides the timer in
-    // milliseconds. The tests below pin every leg of the contract:
+    // SHOWTOAST_DEFAULT_DURATION (~6000ms post-#1444; was ~4000ms in
+    // the v2 RC chrome) timing, `0` disables auto-dismiss entirely
+    // (X-button only), `> 0` overrides the timer in milliseconds.
+    // The tests below pin every leg of the contract:
     //
     //   - omitted from the wire format when caller passed null
     //   - included on the wire when caller passed 0 or a positive int
@@ -642,7 +643,7 @@ final class ToastEmitRegressionTest extends ApiTestCase
         $this->assertArrayNotHasKey(
             'duration_ms',
             $data,
-            'Wire payload must omit `duration_ms` when the caller did not pass a 5th argument. The chrome consumer\'s `typeof data.duration_ms === \'number\'` gate keeps absence and the chrome\'s SHOWTOAST_DEFAULT_DURATION (~4000ms) as the single source of truth for the default timing.',
+            'Wire payload must omit `duration_ms` when the caller did not pass a 5th argument. The chrome consumer\'s `typeof data.duration_ms === \'number\'` gate keeps absence and the chrome\'s SHOWTOAST_DEFAULT_DURATION (~6000ms post-#1444) as the single source of truth for the default timing.',
         );
     }
 
@@ -1096,7 +1097,7 @@ final class ToastEmitRegressionTest extends ApiTestCase
                 . "        null,                           // \$redirect MUST be null (persistent+redirect mutex)\n"
                 . "        0,                              // \$duration_ms MUST be 0 (persistent)\n"
                 . "    );\n"
-                . "A drop to non-persistent (5th arg removed or non-zero) re-enables the chrome's ~4000ms auto-dismiss timer — the operator misses the severe-error confirmation and the v1.x `ShowBox(..., sticky=true)` semantic #1409 restored is gone again. "
+                . "A drop to non-persistent (5th arg removed or non-zero) re-enables the chrome's ~6000ms auto-dismiss timer (post-#1444; was ~4000ms in the v2 RC chrome) — the operator misses the severe-error confirmation and the v1.x `ShowBox(..., sticky=true)` semantic #1409 restored is gone again. "
                 . "A non-null \$redirect re-introduces the chrome's `flushPendingToasts` redirect setTimeout, which navigates ~1500ms after paint and tears down the persistent toast (the chrome's whole-drain inhibit is defence-in-depth but the call-site half is the primary contract). "
                 . "If you intentionally split or merged a NOT-* branch, update `notStarBranches()` above with the new expected count or remove the entry entirely.",
                 $rel,

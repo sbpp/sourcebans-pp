@@ -186,9 +186,10 @@ interface Window {
          * `{kind?, title, body?, durationMs?}`. `durationMs` is the
          * #1409 follow-up to `Sbpp\View\Toast::emit`'s `duration_ms`
          * wire-format field — `undefined` falls through to
-         * `SHOWTOAST_DEFAULT_DURATION` (~4000ms), `0` is persistent
-         * (user must click the X button), `> 0` is an explicit
-         * override in milliseconds.
+         * `SHOWTOAST_DEFAULT_DURATION` (the chrome constant; see
+         * `theme.js` for the canonical value and rationale), `0`
+         * is persistent (user must click the X button), `> 0` is
+         * an explicit override in milliseconds.
          */
         showToast?: (opts: {
             kind?: 'info' | 'success' | 'warn' | 'error';
@@ -196,7 +197,20 @@ interface Window {
             body?: string;
             durationMs?: number;
         }) => void;
+        /**
+         * The chrome's default toast auto-dismiss duration in
+         * milliseconds. Exposed on the SBPP namespace so E2E
+         * specs can read it at runtime instead of hardcoding
+         * the literal value into wait thresholds — the lockstep
+         * relationship between this constant and the
+         * `toast-*` specs' timing windows is then
+         * machine-enforced rather than prose-documented. Defined
+         * in `web/themes/default/js/theme.js`.
+         */
+        SHOWTOAST_DEFAULT_DURATION?: number;
         openDrawer?: (bid: number | string) => void;
+        closeDrawer?: () => void;
+        setBusy?: (btn: HTMLElement | null, busy: boolean) => void;
         /**
          * Hydrate every `[data-testid="server-tile"]` inside a
          * container with the live A2S response. Defined in

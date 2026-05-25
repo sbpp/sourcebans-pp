@@ -1418,13 +1418,61 @@
    * `Sbpp\View\Toast::emit` PHP-side contract: a `null` /
    * missing `duration_ms` field on the wire payload means
    * "use this default". The constant is named (not inlined as
-   * a `4000` literal) so a future tweak / theme override lands
-   * in one place. Don't reach for this from outside the toast
-   * pathway — `showToast({durationMs: SHOWTOAST_DEFAULT_DURATION})`
-   * is identical to the default and noisier than just omitting
+   * a literal) so a future tweak / theme override lands in one
+   * place. Don't reach for this from outside the toast pathway
+   * — `showToast({durationMs: SHOWTOAST_DEFAULT_DURATION})` is
+   * identical to the default and noisier than just omitting
    * the option.
+   *
+   * #1444 bumped this from 4000ms (v2 RC chrome) to 6000ms
+   * AND added pause-on-hover / pause-on-keyboard-focus to
+   * the timer below. The user-reported regression was
+   * "notification appear top right and disappears very
+   * quickly (I was expecting it... and couldn't get a
+   * screenshot of it)" — 4 seconds was below the read-time
+   * threshold for a corner notification that asks the user
+   * to shift gaze from the action site (centre / list) to
+   * the corner and parse the title + body. 6 seconds (50%
+   * longer) lands in the industry sweet spot: Bootstrap 5
+   * Toast defaults to 5000ms, Material Design Snackbar
+   * guidelines recommend 4000-10000ms with ~5500ms for
+   * medium-length messages, and modern React libs
+   * (react-toastify, Mantine, react-hot-toast, Sonner,
+   * Notistack) ship 4000-5000ms defaults. The bump alone
+   * isn't enough for the screenshot use case the reporter
+   * called out — even 6s is tight if the user has to find
+   * the keyboard shortcut for a screenshot tool. Pairing
+   * the bump with pause-on-hover (the showToast() body
+   * below) covers both halves of the contract: 6s is the
+   * baseline "I read it casually" window, hover/focus is
+   * the "I want to read it carefully or screenshot it"
+   * escape hatch. Every modern toast library (Sonner,
+   * react-hot-toast, Notistack, Mantine) ships both
+   * defaults; Material UI Snackbar deliberately omits
+   * pause-on-hover (with the rationale that snackbars are
+   * for non-actionable status; toasts can be actionable so
+   * the pause-on-hover ladder is the right shape here).
+   * The bump is conservative: doesn't disturb the
+   * persistent (`0`) semantic, doesn't disturb the
+   * explicit-override (`> 0`) semantic, doesn't require
+   * any call-site changes, and doesn't introduce a config
+   * knob (operators with stronger preferences can fork
+   * the theme — same escape hatch as every other
+   * chrome-token default). The matching E2E regression
+   * guard (`toast-persistent-duration.spec.ts`) keys its
+   * "persistent toast outlasts the default" assertion off
+   * a hardcoded wait > this value; bumping here without
+   * paired bumps there silently breaks the persistence
+   * proof (the wait would land BEFORE the default's
+   * auto-dismiss timer, so the assertion would pass for
+   * the wrong reason — see the spec for the full
+   * rationale). The pause-on-hover regression guard lives
+   * in `toast-hover-pause.spec.ts`; it probes the
+   * mouseenter/mouseleave + focusin/focusout pairs by
+   * stalling at hover for longer than the default
+   * duration and asserting the toast is still painted.
    */
-  const SHOWTOAST_DEFAULT_DURATION = 4000;
+  const SHOWTOAST_DEFAULT_DURATION = 6000;
 
   /**
    * @typedef {Object} ToastOpts
@@ -1432,7 +1480,7 @@
    * @property {string} title
    * @property {string} [body]
    * @property {number} [durationMs]  Auto-dismiss timer in ms. Three values are meaningful:
-   *   - `undefined` (default): the chrome uses `SHOWTOAST_DEFAULT_DURATION` (~4000ms).
+   *   - `undefined` (default): the chrome uses `SHOWTOAST_DEFAULT_DURATION` (~6000ms).
    *   - `0`: persistent — the toast does NOT auto-dismiss; user must click the X button.
    *   - `> 0`: explicit override in ms.
    *   Mirrors the `duration_ms` field on `Sbpp\View\Toast::emit`'s
@@ -1453,7 +1501,21 @@
     // for the default fall-through; `!opts.durationMs` would
     // collapse `0` into the default branch and silently disable
     // the persistent semantic.
-    const durationMs = opts.durationMs === undefined ? SHOWTOAST_DEFAULT_DURATION : opts.durationMs;
+    //
+    // #1444 review m-5: normalize ANY non-numeric / negative input
+    // back to the default (`null`, `NaN`, `'5000'`, `false` from
+    // hand-rolled `window.SBPP.showToast(...)` callers would
+    // otherwise compare `false` against `> 0` below and silently
+    // become persistent — exactly the wrong default for a caller
+    // who passed garbage by accident). The wire path's `int|null`
+    // PHP type and the `typeof === 'number'` consumer gate at
+    // L1668 keep the wire-format surface safe; this guard is for
+    // direct JS callers (third-party themes, inline page-tail
+    // scripts, console diagnostics).
+    const rawDuration = opts.durationMs;
+    const durationMs = rawDuration === undefined || typeof rawDuration !== 'number' || rawDuration < 0
+      ? SHOWTOAST_DEFAULT_DURATION
+      : rawDuration;
     let stack = document.getElementById('toast-stack');
     if (!stack) {
       stack = document.createElement('div');
@@ -1505,8 +1567,109 @@
     // shape (no timer; user must click the X button). A naive
     // `setTimeout(..., 0)` would auto-dismiss IMMEDIATELY on the
     // next tick — exactly the opposite of what `0` means here.
+    //
+    // #1444 review #2: pause-on-hover (and pause-on-keyboard-focus,
+    // the keyboard-equivalent affordance — screen-reader / tab
+    // navigation users get the same "let me read this without
+    // scrambling" semantic as the mouse user gets via hover). The
+    // industry-standard pattern: Sonner, react-hot-toast,
+    // Notistack, Mantine all ship pause-on-hover by default. The
+    // pause logic uses `setTimeout` / `clearTimeout` rather than
+    // CSS `animation-play-state` because the dismiss is JS-side
+    // (`el.remove()`); we can't pause an `el.remove()` setTimeout
+    // by toggling CSS state on the element. Timing math runs on
+    // `performance.now()` (monotonic — survives NTP / system-clock
+    // jumps and laptop suspend/resume that would clamp wall-clock
+    // math to a negative `remainingMs` and auto-dismiss-on-next-
+    // tick the user's still-active toast). Example: at T=0 with
+    // durationMs=6000, hovering at T=2000 records remainingMs=4000
+    // and the un-hover at T=5000 schedules a new 4000ms timer (so
+    // dismiss lands at T=9000, NOT at the original T=6000). The
+    // `data-toast-close` button click is wired here too (rather
+    // than relying on the document-level delegate below) so the
+    // click can cancel the in-flight timer AND tear down the
+    // pause/resume listeners — without that explicit teardown
+    // the click would trigger `focusout` on the (now-detached)
+    // element, which would call `resume()` and schedule a fresh
+    // setTimeout whose closure holds the detached subtree until
+    // the timer fires (~remainingMs of transient memory per
+    // X-click; a code smell more than a leak — the eventual
+    // `el.remove()` on a detached node is a no-op). Persistent
+    // toasts (`durationMs === 0`) skip the hover hooks entirely
+    // (no timer to pause).
+    //
+    // #1444 review M-1: the pause/resume state tracks `hovered`
+    // and `focused` INDEPENDENTLY rather than collapsing them
+    // into a single "is the timer paused?" signal. Multi-modal
+    // users (mouse + keyboard, AT user + mouse, anyone using
+    // two input devices simultaneously) hit the prior bug shape
+    // where leaving ONE input surface while still actively on
+    // the OTHER would resume the timer and auto-dismiss out
+    // from under them. Example trace pre-fix: tab to X (T=1000,
+    // focused=true, pause), cursor over (T=2000, mouseenter
+    // hits the `if (timerId === null) return` guard, no-op),
+    // cursor off (T=3000, mouseleave calls resume() → schedules
+    // a fresh setTimeout even though X is still focused) →
+    // toast auto-dismisses at T=8000 while X-button still has
+    // focus. Post-fix: `resumeIfIdle()` short-circuits when
+    // EITHER `hovered` or `focused` is still true.
     if (durationMs > 0) {
-      setTimeout(() => el.remove(), durationMs);
+      let remainingMs = durationMs;
+      let startedAt = performance.now();
+      let timerId = /** @type {ReturnType<typeof setTimeout> | null} */ (setTimeout(() => el.remove(), remainingMs));
+      let hovered = false;
+      let focused = false;
+      const pauseIfActive = () => {
+        if (timerId === null) return;
+        clearTimeout(timerId);
+        timerId = null;
+        remainingMs = Math.max(0, remainingMs - (performance.now() - startedAt));
+      };
+      const resumeIfIdle = () => {
+        if (timerId !== null) return;
+        if (hovered || focused) return;
+        startedAt = performance.now();
+        timerId = setTimeout(() => el.remove(), remainingMs);
+      };
+      const onMouseEnter = () => { hovered = true; pauseIfActive(); };
+      const onMouseLeave = () => { hovered = false; resumeIfIdle(); };
+      const onFocusIn = () => { focused = true; pauseIfActive(); };
+      const onFocusOut = () => { focused = false; resumeIfIdle(); };
+      // Mouse hover surfaces (pointer users) AND focus surfaces
+      // (keyboard / screen-reader users who Tab into the X
+      // button). Both pause the dismiss timer; the timer only
+      // resumes when BOTH surfaces are idle (see M-1 docblock
+      // above). Using the bubbling `focusin` / `focusout` events
+      // instead of `focus` / `blur` so a tab landing on the
+      // inner X button still counts as "the toast has focus"
+      // (focus/blur don't bubble, focusin/focusout do).
+      el.addEventListener('mouseenter', onMouseEnter);
+      el.addEventListener('mouseleave', onMouseLeave);
+      el.addEventListener('focusin', onFocusIn);
+      el.addEventListener('focusout', onFocusOut);
+      // Wire the X-button click here (in addition to the
+      // document-level delegate below) so we can cancel the
+      // in-flight timer and detach the focus/hover listeners
+      // BEFORE the click's focus-shift fires `focusout` on the
+      // detached element. Without this teardown the focusout
+      // listener (still attached on the detached node) calls
+      // `resumeIfIdle()` and schedules a fresh setTimeout whose
+      // closure pins the detached subtree until the timer
+      // fires. The document-level delegate at L1605 stays as
+      // defence-in-depth for third-party themes that strip
+      // this wiring or for any future toast factory that
+      // doesn't reach this code path.
+      const closeBtn = el.querySelector('[data-toast-close]');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          if (timerId !== null) { clearTimeout(timerId); timerId = null; }
+          el.removeEventListener('mouseenter', onMouseEnter);
+          el.removeEventListener('mouseleave', onMouseLeave);
+          el.removeEventListener('focusin', onFocusIn);
+          el.removeEventListener('focusout', onFocusOut);
+          el.remove();
+        });
+      }
     }
   }
 
@@ -1708,7 +1871,22 @@
     }
   }
 
-  /** @type {any} */ (window).SBPP = { showToast: showToast, openDrawer: openDrawer, closeDrawer: closeDrawer, setBusy: setBusy };
+  // `SHOWTOAST_DEFAULT_DURATION` is exposed on the SBPP namespace
+  // so E2E specs can read it at runtime instead of hardcoding
+  // `6000` (or `6500` / `7500` derived literals) into per-spec
+  // wait thresholds. The lockstep contract between the constant
+  // and the specs is documented in AGENTS.md "Duration semantics"
+  // and the per-spec docblocks — exposing the value here is what
+  // makes the lockstep machine-enforceable. Bumping the constant
+  // automatically widens the specs' wait windows; no paired
+  // edit needed (#1444 review M-2).
+  /** @type {any} */ (window).SBPP = {
+    showToast: showToast,
+    openDrawer: openDrawer,
+    closeDrawer: closeDrawer,
+    setBusy: setBusy,
+    SHOWTOAST_DEFAULT_DURATION: SHOWTOAST_DEFAULT_DURATION,
+  };
 
   // ---- HELPERS ---------------------------------------------
   /**

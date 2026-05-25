@@ -89,7 +89,9 @@ namespace Sbpp\View;
  * the caller didn't pass an override — the chrome consumer's
  * `flushPendingToasts` reads `data.duration_ms` only when present
  * and otherwise falls through to `showToast`'s
- * `SHOWTOAST_DEFAULT_DURATION` (~4000ms). Three values are
+ * `SHOWTOAST_DEFAULT_DURATION` (~6000ms post-#1444; was ~4000ms in
+ * the v2 RC chrome — the bump addressed the user-reported regression
+ * "notification appear top right and disappears very quickly"). Three values are
  * meaningful: `null` (omit the field, default chrome timing — the
  * common case for routine info / success / warn toasts), `0`
  * (persistent — the toast does NOT auto-dismiss; the user has to
@@ -182,7 +184,8 @@ final class Toast
      *
      *   - `null` (default) — omit the field from the wire format;
      *     the chrome consumer falls through to
-     *     `SHOWTOAST_DEFAULT_DURATION` in `theme.js` (~4000ms).
+     *     `SHOWTOAST_DEFAULT_DURATION` in `theme.js` (~6000ms
+     *     post-#1444; was ~4000ms in the v2 RC chrome).
      *     The right choice for every routine info / success / warn
      *     confirmation.
      *   - `0` — persistent. The chrome does NOT schedule an
@@ -225,7 +228,7 @@ final class Toast
             throw new \InvalidArgumentException(
                 sprintf(
                     'Toast::emit: $duration_ms must be null, 0, or a positive integer; got %d. '
-                    . 'Pass null for the chrome\'s default ~4000ms timer, 0 for a persistent '
+                    . 'Pass null for the chrome\'s default ~6000ms timer (post-#1444), 0 for a persistent '
                     . 'toast (user must dismiss via the X button), or a positive ms count for '
                     . 'an explicit override.',
                     $duration_ms,
