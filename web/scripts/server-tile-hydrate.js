@@ -149,16 +149,40 @@
     var onlineDelta = 0;
 
     /**
-     * @param {Element | null} root
+     * Resolve the `[data-testid="servers-summary"]` node the
+     * `updateOnlineCount` helper paints into.
+     *
+     * On `page_servers.tpl` the summary lives inside the page-level
+     * `<header>`, while the hydration container is the sibling
+     * `.servers-grid` `<div data-server-hydrate="auto">`. Querying the
+     * container only would miss the summary (it's not a descendant —
+     * `Element.querySelector` walks descendants, not siblings) and the
+     * `0 online` counter would stay frozen at the server-rendered
+     * value forever (issue #1446 — "Server page always reports zero
+     * online servers"). The descendant-first lookup is kept as a
+     * forward-looking allowance for surfaces that wrap the summary
+     * inside the hydration container; the document-wide fallback is
+     * what actually fires today because the public Server List is the
+     * only consumer that ships the summary node and it ships it as
+     * a sibling.
+     *
+     * Admin / dashboard / Add-Admin / Server Groups surfaces don't
+     * render the summary node at all (see the per-surface notes at
+     * the top of this file), so the fallback returns null for them
+     * too and `updateOnlineCount` early-returns harmlessly.
+     *
+     * @param {Element | DocumentFragment | null} root
      * @returns {HTMLElement | null}
      */
     function summaryNode(root) {
-        var doc = root || document;
-        return /** @type {HTMLElement | null} */ (
-            doc instanceof Element || doc instanceof DocumentFragment
-                ? doc.querySelector('[data-testid="servers-summary"]')
-                : document.querySelector('[data-testid="servers-summary"]')
-        );
+        var found = null;
+        if (root && (root instanceof Element || root instanceof DocumentFragment)) {
+            found = root.querySelector('[data-testid="servers-summary"]');
+        }
+        if (!found) {
+            found = document.querySelector('[data-testid="servers-summary"]');
+        }
+        return /** @type {HTMLElement | null} */ (found);
     }
 
     /**
@@ -171,7 +195,7 @@
      */
     function updateOnlineCount(container, delta) {
         onlineDelta += delta;
-        var summary = summaryNode(/** @type {Element | null} */ (container));
+        var summary = summaryNode(/** @type {Element | DocumentFragment | null} */ (container));
         if (!summary) return;
         var num = summary.querySelector('[data-online-num]');
         if (num) num.textContent = String(Math.max(0, onlineDelta));
