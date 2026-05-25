@@ -8,25 +8,24 @@ sidebar:
 
 import { Aside, Code } from '@astrojs/starlight/components';
 
-The home dashboard surfaces a slim "Latest announcement" strip
-between the stat cards and the recent-activity panels — visible only
-to logged-in administrators. Content is sourced from a JSON feed
-the SourceBans++ maintainers publish at:
+The home dashboard shows a slim "Latest announcement" strip between
+the stat cards and the recent-activity panels. It's visible only to
+logged-in administrators. Content comes from a JSON feed the
+SourceBans++ maintainers publish at:
 
 <Code lang="text" code="https://sbpp.github.io/announcements.json" />
 
 The panel fetches the feed once per install per day in the
-background, caches it on disk, and renders the freshest non-expired
-entry on every dashboard render thereafter. The fetch uses the same
-opt-out-by-default architecture as the panel's update check (a
-shutdown hook fires after the user's response is flushed; it never
-delays a request and never fails one if the upstream is unreachable).
+background, caches it on disk, and renders the latest non-expired
+entry on every dashboard load. The fetch uses the same opt-out
+architecture as the panel's update check: a shutdown hook fires
+after the response is flushed, so it never delays a request and
+never fails one if the upstream is unreachable.
 
 ## What gets fetched
 
-The published feed is a public, anonymous-readable JSON file. You
-can open it in your browser and read it yourself — there's no
-hidden state. A typical entry looks like this:
+The feed is a public JSON file you can open in your browser. There's
+no hidden state. A typical entry looks like this:
 
 ```json
 [
@@ -43,17 +42,16 @@ hidden state. A typical entry looks like this:
 
 Field-by-field:
 
-- `id` — short stable identifier (≤64 chars). Required.
-- `title` — one-line headline. Required.
-- `body_md` — optional Markdown body. Rendered through CommonMark in
-  safe mode (raw HTML is escaped, `javascript:` / `data:` URLs are
+- `id`: short stable identifier (≤64 chars). Required.
+- `title`: one-line headline. Required.
+- `body_md`: optional Markdown body. Rendered through CommonMark in
+  safe mode (raw HTML is escaped, `javascript:` and `data:` URLs are
   stripped). Same renderer your dashboard intro uses.
-- `url` — optional "read more" link. Must be `http://` or `https://`.
-- `published_at` — optional ISO-8601 timestamp; sets the displayed
+- `url`: optional "read more" link. Must be `http://` or `https://`.
+- `published_at`: optional ISO-8601 timestamp. Sets the displayed
   date and the sort order.
-- `expires_at` — optional ISO-8601 timestamp. The panel stops
-  rendering the entry after this time and silently drops it from
-  the cache.
+- `expires_at`: optional ISO-8601 timestamp. The panel stops
+  rendering the entry after this time and drops it from the cache.
 
 ## What's NOT sent
 
@@ -66,24 +64,22 @@ cookies, no tracking pixels. The only outbound metadata is the
 
 ## Why this is opt-out by default
 
-The strip is intentionally narrow — single banner, admin-only
-visibility, low-frequency content (security advisories,
-release announcements, occasional release-blocker heads-up). The
-maintainers want to be able to reach panel operators with one-click
+The strip is narrow: one banner, admin-only, low-frequency content
+(security advisories, release announcements, occasional release-blocker
+heads-up). The maintainers want a way to reach panel operators with
 visibility for things like:
 
-- A critical CVE is published — please update.
-- A backwards-incompatible upgrade just landed — read the upgrade
-  notes before running the updater.
-- A new SourceMod / MariaDB version requirement is shipping.
+- A critical CVE is published. Please update.
+- A backwards-incompatible upgrade landed. Read the upgrade notes
+  before running the updater.
+- A new SourceMod or MariaDB version requirement is shipping.
 
-Operators audit content via the **public diff history** of the
+Operators can audit content via the **public diff history** of the
 [`docs/public/announcements.json`](https://github.com/sbpp/sourcebans-pp/blob/main/docs/public/announcements.json)
 file. Every change ships through a pull request with the same
 review process as the rest of the project. There's no separate
-"announcements server" or admin-only API endpoint that could be
-compromised independently — the upstream is just a static file in
-this git repo.
+announcements server or admin-only API endpoint to compromise. The
+upstream is just a static file in this git repo.
 
 The cost of "always on" is one HTTPS GET per install per day to
 sbpp.github.io, capped at 256 KiB of response body, with a 5-second
@@ -102,17 +98,16 @@ the outbound network call regardless, define
 define('SB_ANNOUNCEMENTS_URL', '');
 ```
 
-When the constant is the empty string, the shutdown hook
-short-circuits before flushing the response — no network call ever
-fires, the cache file is never written, and the dashboard simply
-omits the strip. There is no in-panel toggle by design: the JSON
-feed is intentionally low-frequency and audit-friendly, so the only
-sensible "off" position is the air-gap escape hatch above.
+With an empty string, the shutdown hook short-circuits before
+flushing the response. No network call fires, the cache file is
+never written, and the dashboard omits the strip. There is no
+in-panel toggle: the feed is low-frequency and audit-friendly, so
+the only "off" position is the air-gap escape hatch above.
 
 <Aside type="note">
-The `define()` must run BEFORE `init.php`'s default define fires —
-`config.php` is loaded first, so this works as written. Don't put it
-in a hook that runs later.
+The `define()` must run before `init.php`'s default define fires.
+`config.php` is loaded first, so this works as written. Don't put
+it in a hook that runs later.
 </Aside>
 
 ## How announcements are proposed
@@ -123,16 +118,15 @@ docs site:
 
 1. Open a PR against
    [`sbpp/sourcebans-pp`](https://github.com/sbpp/sourcebans-pp).
-2. Edit `docs/public/announcements.json` to prepend your entry
-   (newest-first ordering — the panel sorts by `published_at` but
-   the file convention is "newest at the top of the array" so
-   reviewers see the most relevant change first).
+2. Edit `docs/public/announcements.json` to prepend your entry.
+   The panel sorts by `published_at`, but the file convention is
+   "newest at the top of the array" so reviewers see the most
+   relevant change first.
 3. The maintainers will review and merge. The
    [docs deploy trigger workflow](https://github.com/sbpp/sourcebans-pp/blob/main/.github/workflows/docs-deploy-trigger.yml)
    ships the updated file to `https://sbpp.github.io/announcements.json`
    within a few minutes of merge.
 
-The strict schema, audit history, and one-file source-of-truth are
-the load-bearing properties: any operator with internet access can
-inspect every announcement that has ever been pushed before it
-lands on their dashboard.
+The strict schema, audit history, and one-file source make this
+auditable: any operator with internet access can review every
+announcement before it lands on their dashboard.

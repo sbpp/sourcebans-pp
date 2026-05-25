@@ -201,7 +201,7 @@
         <form method="dialog" data-testid="admins-delete-form">
             <h2 id="admins-delete-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Delete admin</h2>
             <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
-                You're about to permanently delete <strong data-testid="admins-delete-target">this admin</strong>. This cannot be undone &mdash; their server access is revoked immediately and any rehash queue is flushed.
+                You're about to permanently delete <strong data-testid="admins-delete-target">this admin</strong>. This cannot be undone. Their server access is revoked immediately and any rehash queue is flushed.
             </p>
             <label class="label" for="admins-delete-reason">Reason (optional)</label>
             {* aria-required (not the native `required`) parity with the

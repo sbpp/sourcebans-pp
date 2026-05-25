@@ -31,8 +31,7 @@
     <header class="mb-6">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Submit a ban request</h1>
         <p class="text-sm text-muted m-0 mt-2">
-            Report a player for cheating, harassment, or other rule violations. Fill in as much detail as
-            you can &mdash; demos and screenshots help admins act faster.
+            Report a player for cheating, harassment, or other rule violations. Demos and screenshots help admins act faster.
         </p>
     </header>
 
@@ -172,8 +171,7 @@
                           aria-describedby="submitban-reason-help"
                           data-testid="submitban-reason">{$ban_reason}</textarea>
                 <p id="submitban-reason-help" class="text-xs text-muted m-0 mt-2">
-                    Be specific. &ldquo;hacking&rdquo; is not enough &mdash; describe what you saw,
-                    when, and on which server.
+                    Be specific. &ldquo;hacking&rdquo; is not enough. Describe what you saw, when, and on which server.
                 </p>
             </div>
         </div>

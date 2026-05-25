@@ -10,8 +10,8 @@ import { Aside } from '@astrojs/starlight/components';
 SourceBans++ 2.0.0 is a major version bump. This page covers what
 changes between 1.8.x and 2.0.x and the prep work an admin should do
 **before** running the panel updater. The general upgrade flow
-(back up, upload, visit `/updater/`) is the same as any other version —
-see [Updating SourceBans++](/updating/) for that.
+(back up, upload, visit `/updater/`) is the same as any other version.
+See [Updating SourceBans++](/updating/) for that.
 
 The four things to know about the v2.0 upgrade:
 
@@ -34,19 +34,19 @@ v2.0.0 raises the PHP requirement to **8.5** (up from 1.8.x's 8.2)
 and pulls in several new Composer dependencies. A 1.8.x install that
 has a `vendor/` directory left over from a prior `composer install`
 will pass the panel's autoload check but fatal at runtime the first
-time v2.0 code references a class the old `vendor/` doesn't have —
-usually mid-page, with the `Class "…" not found` line buried in your
+time v2.0 code references a class the old `vendor/` doesn't have.
+Usually mid-page, with the `Class "…" not found` line buried in your
 PHP error log.
 
 What's new:
 
-- `php >= 8.5` — **upgrade your host's PHP before uploading the v2.0
+- `php >= 8.5`: **upgrade your host's PHP before uploading the v2.0
   files.** A panel on PHP 8.4 or earlier won't boot.
-- `symfony/mailer ^7.2` — replaced 1.8.x's PHPMailer.
-- `league/commonmark ^2.5` — added so admin-authored Markdown on the
+- `symfony/mailer ^7.2`: replaced 1.8.x's PHPMailer.
+- `league/commonmark ^2.5`: added so admin-authored Markdown on the
   dashboard intro text renders safely.
-- `lcobucci/jwt ^5.0` — major-bumped from 1.8.x.
-- `smarty/smarty ^v5.4` — major-bumped from 1.8.x.
+- `lcobucci/jwt ^5.0`: major-bumped from 1.8.x.
+- `smarty/smarty ^v5.4`: major-bumped from 1.8.x.
 
 ### Tarball install (the easy path)
 
@@ -70,7 +70,7 @@ state without losing data.
 
 ## Theme reset
 
-v2.0.0 is a complete chrome rewrite — new typed View DTOs, new admin
+v2.0.0 is a complete chrome rewrite: new typed View DTOs, new admin
 sidebar layout, every template signature changed, MooTools and xajax
 are gone, the `openTab()` JS helper is deleted. A fork theme
 inherited from a 1.8.x install **does not have the templates v2.0
@@ -86,7 +86,7 @@ If you maintain a fork theme:
 
 1. After upgrading, the panel will be on `default`.
 
-2. Port your fork against the v2.0 default theme — diff
+2. Port your fork against the v2.0 default theme. Diff
    `web/themes/default/` between the 1.8.x and 2.0 trees to see what
    changed. The new conventions live in
    [`AGENTS.md`](https://github.com/sbpp/sourcebans-pp/blob/main/AGENTS.md)
@@ -96,12 +96,12 @@ If you maintain a fork theme:
 
 3. Once your fork ships v2.0-shaped templates, re-select it from
    **Admin Panel → Settings → Themes**. The DB-side reset is a
-   one-shot at upgrade time — the panel won't flip back to `default`
+   one-shot at upgrade time. The panel won't flip back to `default`
    on its own.
 
-Your fork directory under `web/themes/<fork>/` is left in place —
+Your fork directory under `web/themes/<fork>/` is left in place;
 only the `:prefix_settings.config.theme` row is rewritten. Your work
-isn't lost; the panel just stops trying to render against templates
+isn't lost. The panel just stops trying to render against templates
 that don't exist (yet).
 
 ## Anonymous telemetry
@@ -116,14 +116,14 @@ Once per day per install, the panel sends an anonymous JSON payload
 to a SourceBans++ Cloudflare Worker. The payload covers four
 categories:
 
-- **panel** — version, short git SHA, dev flag, theme name (only
-  `default` or `custom` is reported — fork theme **names are never
+- **panel**: version, short git SHA, dev flag, theme name (only
+  `default` or `custom` is reported; fork theme **names are never
   sent**).
-- **env** — PHP `major.minor`, DB engine + `major.minor`, web server
+- **env**: PHP `major.minor`, DB engine + `major.minor`, web server
   family, OS family.
-- **scale** — counts of admins, enabled servers, active and total
+- **scale**: counts of admins, enabled servers, active and total
   bans / comm blocks, 30-day submission / protest counts.
-- **features** — every checkbox under
+- **features**: every checkbox under
   **Admin Panel → Settings → Features**, plus three derived booleans:
   SMTP-configured, Steam API key set, GeoIP DB present.
 
@@ -164,8 +164,8 @@ WHERE setting = 'telemetry.endpoint';
 
 Setting the value to the empty string disables network calls
 without flipping the user-facing toggle. There's no UI for this
-knob — it's a debug / escape-hatch surface. The Worker source lives
-at [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) for
+knob; it's a debug escape hatch. The Worker source lives at
+[sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) for
 operators who want to inspect or fork the collector.
 
 ### Performance impact
@@ -177,8 +177,8 @@ On PHP-FPM, `fastcgi_finish_request()` closes the user's TCP
 socket **before** the cURL POST runs, so a panel response time of
 N ms remains N ms regardless of telemetry. The cURL call has
 3-second connect / 5-second total timeouts and is silent on
-failure — telemetry can never hard-fail a panel page or a JSON
-API request.
+failure. Telemetry can never hard-fail a panel page or a JSON API
+request.
 
 ## Project announcements feed
 
@@ -192,18 +192,17 @@ panels. Anonymous viewers and non-admin users never see the strip.
 
 This is a **second always-on outbound channel** in addition to
 telemetry. Like telemetry, it ships on by default and is
-opt-out-by-config. The two channels are intentionally separate:
-telemetry is a write-only push (panel → collector), announcements
-is a read-only pull (panel ← static JSON). Neither can affect the
-other; opting out of one leaves the other running.
+opt-out-by-config. The two channels are separate: telemetry is a
+write-only push (panel → collector), announcements is a read-only
+pull (panel ← static JSON). Neither can affect the other; opting
+out of one leaves the other running.
 
 ### What's sent
 
 The GET request carries:
 
-- `User-Agent: SourceBans++/<version> (announcements)` — same
-  shape as the existing `system.check_version` release-check
-  fetch.
+- `User-Agent: SourceBans++/<version> (announcements)`: same shape
+  as the existing `system.check_version` release-check fetch.
 - Standard HTTP headers added by PHP's stream wrapper.
 
 Specifically **not** sent:
@@ -243,5 +242,5 @@ The announcements tick runs in `register_shutdown_function`.
 the upstream fetch runs, so the user-perceived response time
 is unaffected. The fetch has a 5-second total timeout, a 256 KiB
 hard cap on the response body, stale-while-error caching, and
-is silent on failure — a flapping `sbpp.github.io` can never
+is silent on failure. A flapping `sbpp.github.io` can never
 hard-fail a panel page.

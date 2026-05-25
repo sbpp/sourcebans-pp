@@ -14,9 +14,8 @@
     <div class="install-alert install-alert--ok"
          role="status"
          data-testid="install-schema-success">
-        Created <strong>{$tables_created}</strong> table{if $tables_created != 1}s{/if}
-        successfully. Continue to the next step to create your admin
-        account.
+        Created <strong>{$tables_created}</strong> table{if $tables_created != 1}s{/if}.
+        Continue to create your admin account.
     </div>
 {else}
     <div class="install-alert install-alert--error"
@@ -24,9 +23,8 @@
          data-testid="install-schema-error">
         <strong>Schema creation failed.</strong>
         {$errors_text}
-        Go back to the database step and double-check the credentials
-        + permissions for your DB user (it needs CREATE / ALTER /
-        INDEX / INSERT).
+        Go back to the database step and check the DB user's
+        credentials and permissions (CREATE, ALTER, INDEX, INSERT).
     </div>
 {/if}
 

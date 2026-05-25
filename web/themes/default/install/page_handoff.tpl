@@ -28,7 +28,7 @@
 
             <noscript>
                 <p class="text-sm text-muted" style="margin-bottom:1rem">
-                    JavaScript is disabled &mdash; click the button to continue.
+                    JavaScript is disabled. Click the button to continue.
                 </p>
             </noscript>
 

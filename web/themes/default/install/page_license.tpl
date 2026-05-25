@@ -6,9 +6,8 @@
 {include file="install/_chrome.tpl"}
 
 <p class="lead">
-    To use this web panel you have to read and accept the license
-    below. If you don't agree, you can't install the panel.
-    A plain-language explanation of the license lives at
+    You need to accept the license below to install the panel.
+    A plain-language summary is at
     <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/"
        target="_blank" rel="noopener">creativecommons.org</a>.
 </p>
@@ -17,7 +16,7 @@
     <div class="card__header">
         <div>
             <h2 style="margin:0;font-size:0.95rem;font-weight:600">
-                Creative Commons &mdash; Attribution-NonCommercial-ShareAlike 3.0
+                Creative Commons Attribution-NonCommercial-ShareAlike 3.0
             </h2>
         </div>
     </div>

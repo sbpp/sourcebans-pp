@@ -21,10 +21,10 @@ Before adding a server, have these on hand:
   startup config (`server.cfg` or similar) under `rcon_password`.
 - The **game / mod** the server runs (Team Fortress 2,
   Counter-Strike: Source, Garry's Mod, etc.). Each lives in its own
-  mod folder — `tf`, `cstrike`, `garrysmod`, …
+  mod folder: `tf`, `cstrike`, `garrysmod`, etc.
 
 If you have RCON disabled or don't know the password, set one in
-`server.cfg` and reload the server first — the panel can't manage
+`server.cfg` and reload the server first. The panel can't manage
 a server without RCON access.
 
 ## Register the server in the panel
@@ -36,10 +36,10 @@ a server without RCON access.
 
 3. Fill in:
 
-   - **Game** — pick the mod from the dropdown.
-   - **IP** — the server's public IP.
-   - **Port** — the server's port (`27015` if you didn't change it).
-   - **RCON password** — the password from `server.cfg`.
+   - **Game**: pick the mod from the dropdown.
+   - **IP**: the server's public IP.
+   - **Port**: the server's port (`27015` if you didn't change it).
+   - **RCON password**: the password from `server.cfg`.
 
 4. Click **Add server**.
 
@@ -48,9 +48,9 @@ a server without RCON access.
    write into the SourceMod plugin's config in the next step.
 
 The panel attempts an RCON connection right away to validate the
-details. If it can't reach the server, you'll see a warning — but
-the row still gets saved, so you can fix the issue (firewall, IP,
-password) and the panel will reconnect on the next poll.
+details. If it can't reach the server, you'll see a warning, but
+the row still gets saved. Fix the issue (firewall, IP, password)
+and the panel will reconnect on the next poll.
 
 ## Wire the plugin's `ServerID`
 
@@ -70,8 +70,8 @@ On the game server itself:
    the change.
 
 If you skip the `ServerID` step, the plugin will still try to write
-bans to the database but with no server-side identity — meaning the
-panel can't tell them apart from bans on other servers.
+bans to the database but with no server-side identity, so the panel
+can't tell them apart from bans on other servers.
 
 ## Verifying
 
@@ -84,18 +84,18 @@ Back in the panel's **Servers** page, your new server should show:
 If it doesn't:
 
 - The panel can probably reach the server but can't read the player
-  list back — see
+  list back. See
   [Server connection issues](/troubleshooting/debugging-connection/)
   for the firewall / `listip` / RCON checklist.
 
 - If you also can't ban from in-game, the plugin likely can't reach
-  the database — see [Driver not found](/troubleshooting/could-not-find-driver/)
+  the database. See [Driver not found](/troubleshooting/could-not-find-driver/)
   and [Database errors](/troubleshooting/database-errors/).
 
 :::tip
 Adding a second or third server later? Repeat the same two halves
 (panel registration + plugin `ServerID` edit) on each new server.
-Each server gets its own row in the panel and its own
-`ServerID` — the `databases.cfg` section stays the same across all
-servers as long as they share the same database.
+Each server gets its own row in the panel and its own `ServerID`.
+The `databases.cfg` section stays the same across all servers as
+long as they share the same database.
 :::

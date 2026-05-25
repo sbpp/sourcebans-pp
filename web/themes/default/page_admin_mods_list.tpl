@@ -175,7 +175,7 @@
         <form method="dialog" data-testid="mod-delete-form">
             <h2 id="mod-delete-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Delete mod</h2>
             <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
-                You're about to permanently delete <strong data-testid="mod-delete-target">this mod</strong>. This cannot be undone &mdash; historical bans + comm blocks that were recorded against this mod will keep their rows but their game-association becomes orphaned (the banlist will read &ldquo;Unknown&rdquo; in the Server / Mod column for those entries).
+                You're about to permanently delete <strong data-testid="mod-delete-target">this mod</strong>. This cannot be undone. Historical bans and comm blocks recorded against this mod keep their rows but lose their game association, so the banlist will show &ldquo;Unknown&rdquo; in the Server / Mod column for those entries.
             </p>
             <label class="label" for="mod-delete-reason">Reason (optional)</label>
             {* aria-required (not the native `required`) parity with the

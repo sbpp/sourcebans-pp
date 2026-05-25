@@ -6,15 +6,15 @@
 {include file="install/_chrome.tpl"}
 
 <p class="lead">
-    Quick environment check before we touch your database.
+    Environment check before we touch your database.
     {if $errors > 0}
         <strong>{$errors} blocking issue{if $errors != 1}s{/if}</strong>
         must be fixed before continuing.
     {elseif $warnings > 0}
-        <strong>{$warnings} warning{if $warnings != 1}s{/if}</strong>
-        &mdash; you can continue, but some features may not work.
+        <strong>{$warnings} warning{if $warnings != 1}s{/if}</strong>.
+        You can continue, but some features may not work.
     {else}
-        Everything looks good!
+        Everything looks good.
     {/if}
 </p>
 

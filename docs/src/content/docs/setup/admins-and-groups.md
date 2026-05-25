@@ -16,15 +16,15 @@ SourceBans++ uses a two-layer model:
 
 - **Groups** are named bundles of permission flags (e.g. "Junior
   admin", "Moderator", "Senior admin", "Owner").
-- **Admins** are individuals — each has a SteamID, email, optional
+- **Admins** are individuals. Each has a SteamID, email, optional
   password, and is assigned to one or more groups.
 
 In practice most installs only ever edit groups: you set up three or
 four group templates that match your community's hierarchy, then
-each new admin just gets added to the right group. Per-admin
-permission overrides exist for edge cases.
+each new admin gets added to the right group. Per-admin permission
+overrides exist for edge cases.
 
-There are also **server groups**, separate from web groups — these
+There are also **server groups**, separate from web groups. These
 control which game servers an admin can use in-game. An admin who
 moderates Server A but not Server B gets added to a server group
 scoped to Server A.
@@ -38,15 +38,15 @@ scoped to Server A.
 
 3. Fill in:
 
-   - **Username** — what the panel displays.
-   - **SteamID** — the admin's SteamID in `STEAM_0:0:…` form.
+   - **Username**: what the panel displays.
+   - **SteamID**: the admin's SteamID in `STEAM_0:0:…` form.
      [SteamID I/O](https://steamid.io/) converts other formats.
-   - **Email** — the admin's email. Required if they'll use
+   - **Email**: the admin's email. Required if they'll use
      password login; optional if they'll use Steam OpenID only.
-   - **Password** — set one or leave empty to force Steam-only
+   - **Password**: set one or leave empty to force Steam-only
      login.
-   - **Web group** — which group's flags they get on the panel.
-   - **Server group(s)** — which game servers they can moderate
+   - **Web group**: which group's flags they get on the panel.
+   - **Server group(s)**: which game servers they can moderate
      in-game.
 
 4. Click **Add admin**.
@@ -61,27 +61,27 @@ Groups live under **Admin Panel → Groups**.
 
 ### Web groups
 
-Web groups control panel access — who can do what *inside the web
+Web groups control panel access: who can do what *inside the web
 UI*. Common flags:
 
-- **Owner** — full access to everything.
-- **Add ban** — can apply bans from the panel.
-- **Edit ban / Unban** — can lift or amend bans.
-- **Add admin** — can create new admin accounts.
-- **Web settings** — can edit panel settings.
-- **Settings → Servers / Mods / Groups** — granular admin-area
+- **Owner**: full access to everything.
+- **Add ban**: can apply bans from the panel.
+- **Edit ban / Unban**: can lift or amend bans.
+- **Add admin**: can create new admin accounts.
+- **Web settings**: can edit panel settings.
+- **Settings → Servers / Mods / Groups**: granular admin-area
   access.
 
 For a small community two or three groups is usually enough:
 
-- **Senior admin / Owner** — everything.
-- **Admin** — ban / unban / edit comms, add new admins, but no
+- **Senior admin / Owner**: everything.
+- **Admin**: ban / unban / edit comms, add new admins, but no
   settings access.
-- **Junior admin** — ban / unban only.
+- **Junior admin**: ban / unban only.
 
 ### Server groups
 
-Server groups control in-game permissions — who can use what
+Server groups control in-game permissions: who can use what
 SourceMod commands on which servers. These flags follow SourceMod's
 standard letter codes (`a`-`z`):
 
@@ -134,15 +134,15 @@ manually reload admins in-game with `sm_reloadadmins`.
 
 Each admin can sign in two ways:
 
-- **SteamID + password** — they enter their SteamID and the
+- **SteamID + password**: they enter their SteamID and the
   password you set, just like a normal login form.
-- **Steam OpenID** — they click "Sign in with Steam" and Steam
+- **Steam OpenID**: they click "Sign in with Steam" and Steam
   confirms their identity.
 
 The Steam OpenID flow has no password to forget or leak, so it's
 the recommended default for most communities. You can disable
 password login site-wide under **Admin Panel → Settings → Features
-→ Steam-only login**, but **think twice** — if you lose Steam access
+→ Steam-only login**, but **think twice**: if you lose Steam access
 later you'll need a database query to get back in (covered in the
 [FAQ](/faq/#i-locked-myself-out-by-enabling-steam-only-login)).
 
@@ -160,7 +160,7 @@ unexpected changed.
 ## Removing an admin
 
 Under **Admin Panel → Admins**, find the row and click the trash icon.
-You'll be asked for a reason — it goes into the audit log alongside
+You'll be asked for a reason. It goes into the audit log alongside
 the removal.
 
 Removed admins lose panel access immediately. In-game admin status
@@ -178,5 +178,5 @@ clears on the next map change.
   includes the relevant servers and flag `d`.
 
 - **Admin can ban from in-game but not the panel.** Mirror image of
-  the above — they're in a server group but no web group with the
+  the above: they're in a server group but no web group with the
   Add ban flag.

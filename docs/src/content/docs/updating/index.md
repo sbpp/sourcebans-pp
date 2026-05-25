@@ -1,6 +1,6 @@
 ---
 title: Updating SourceBans++
-description: Safely upgrade an existing SourceBans++ install — web panel and plugin.
+description: Safely upgrade an existing SourceBans++ install. Web panel and plugin.
 sidebar:
   order: 1
 ---
@@ -11,7 +11,7 @@ This page covers the safe upgrade path for both halves.
 
 :::tip
 Upgrading from **1.8.x to 2.0.x**? Read
-[Upgrading from 1.8.x to 2.0.x](/updating/1-8-to-2-0/) first — v2.0
+[Upgrading from 1.8.x to 2.0.x](/updating/1-8-to-2-0/) first. v2.0
 raises the PHP version floor, resets the active theme, and ships
 default-on anonymous telemetry.
 :::
@@ -66,7 +66,7 @@ want the `sourcebans-pp-X.Y.Z.webpanel-only.zip` for the web side and
 
 :::caution
 Leaving `install/` or `updater/` accessible after an upgrade is a
-foot-gun — anyone who can reach the panel can re-run them. The
+foot-gun: anyone who can reach the panel can re-run them. The
 panel guards against `install/` automatically; the `updater/`
 directory has no such guard, so it's on you to remove it.
 :::
@@ -77,7 +77,7 @@ directory has no such guard, so it's on you to remove it.
    to your game server's root.
 
 2. **Review the plugin config files** at
-   `addons/sourcemod/configs/sourcebans/` — new versions sometimes
+   `addons/sourcemod/configs/sourcebans/`. New versions sometimes
    add new options. Defaults are sensible if you don't touch them.
 
 3. **Reload the map or restart the game server** so SourceMod picks
@@ -90,7 +90,7 @@ directory has no such guard, so it's on you to remove it.
 
 ### Upgrading from 1.8.x to 2.0.x
 
-The biggest jump SourceBans++ has shipped — PHP 8.5 requirement,
+The biggest jump SourceBans++ has shipped: PHP 8.5 requirement,
 chrome rewrite, default-on telemetry. The full breakdown lives in
 [Upgrading from 1.8.x to 2.0.x](/updating/1-8-to-2-0/).
 
@@ -108,9 +108,9 @@ need that value generated before they can log in.
 3. **Set the JWT signing secret by hand.** SourceBans++ 1.7 moved the
    panel's session-signing key into `config.php` as `SB_SECRET_KEY`.
    Older releases shipped an `upgrade.php` helper that wrote it for
-   you, but it was removed in 2.0
-   ([#903](https://github.com/sbpp/sourcebans-pp/issues/903)) because
-   of a security issue — set the value manually instead.
+   you, but it was removed in 2.0 for security reasons
+   ([#903](https://github.com/sbpp/sourcebans-pp/issues/903)). Set
+   the value manually instead.
 
    Skip the rest of this step if your existing `config.php` already
    contains a `define('SB_SECRET_KEY', '…')` line (anyone who ran
@@ -156,7 +156,7 @@ cleanly.
 
 If you're on an install older than 1.6.x and the pages above don't
 cover your starting point, drop into our
-[Discord](https://discord.gg/tzqYqmAtF5) `#help-support` channel —
+[Discord](https://discord.gg/tzqYqmAtF5) `#help-support` channel and
 we'll walk you through it.
 
 ## After the upgrade
@@ -179,9 +179,9 @@ A quick smoke test once everything's uploaded:
 
 If anything looks off, the most useful starting points are:
 
-- [Panel not loading](/troubleshooting/panel-not-loading/) — blank
+- [Panel not loading](/troubleshooting/panel-not-loading/): blank
   page or hanging tab after upgrade.
-- [Database errors](/troubleshooting/database-errors/) — if the
+- [Database errors](/troubleshooting/database-errors/): if the
   panel reports a SQL or table error.
-- [Driver not found](/troubleshooting/could-not-find-driver/) — if
+- [Driver not found](/troubleshooting/could-not-find-driver/): if
   the plugin can't talk to the DB after the plugin upgrade.

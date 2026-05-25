@@ -1,16 +1,16 @@
 ---
 title: Database errors
-description: Common MySQL / MariaDB errors during install or runtime — and how to fix them.
+description: Common MySQL / MariaDB errors during install or runtime, and how to fix them.
 sidebar:
   order: 3
 ---
 
 The most common database errors SourceBans++ users hit, with the
-fix that usually resolves each. They're ordered roughly by how
-often they show up.
+fix that usually resolves each. Ordered roughly by how often they
+show up.
 
 If the panel reports `Could not find driver` instead of one of the
-errors below, it's not a SQL error — PHP can't load the MySQL driver
+errors below, it's not a SQL error: PHP can't load the MySQL driver
 at all. Jump to [Driver not found](/troubleshooting/could-not-find-driver/).
 
 ## Access denied
@@ -48,7 +48,7 @@ Usually one of:
 - **The TCP port is blocked** by a firewall or port-blocking
   service. The default is `3306`.
 - **Wrong host / port** in `config.php`. `localhost` and `127.0.0.1`
-  are not always equivalent on Unix — `localhost` typically routes
+  are not always equivalent on Unix: `localhost` typically routes
   through a socket file, while `127.0.0.1` uses TCP.
 
 If the panel and database are on the same host, the **socket path**
@@ -70,7 +70,7 @@ almost always it.
 
 More rarely, the **initial connection** times out. If your
 `connect_timeout` is set to only a few seconds, bump it to ten or
-more — useful on slow long-distance connections.
+more. Useful on slow long-distance connections.
 
 ## MySQL server has gone away
 
@@ -119,8 +119,8 @@ https://example.com/updater/
 ```
 
 Watch the output for errors. If a specific migration step fails,
-the page will say which one and why — share that in
-`#help-support` if you can't decipher it.
+the page will say which one and why. Share that in `#help-support`
+if you can't decipher it.
 
 ## Incorrect string value
 
@@ -141,7 +141,7 @@ ALTER TABLE `_bans` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 -- (etc. for every panel table)
 ```
 
-Back up your database before running these — `CONVERT TO` rewrites
+Back up your database before running these. `CONVERT TO` rewrites
 every row.
 
 ## Anything else

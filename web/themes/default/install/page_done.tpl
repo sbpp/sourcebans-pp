@@ -43,10 +43,9 @@
              role="status"
              data-testid="install-done-local-warning"
              style="margin-top:0.75rem">
-            <strong>Heads up:</strong> you used <code>localhost</code>
-            for the database host. That's fine for the panel itself,
-            but gameservers on a different machine need a hostname or
-            IP they can route to &mdash; update the
+            You used <code>localhost</code> for the database host. That
+            works for the panel, but gameservers on another machine
+            need a routable hostname or IP. Update the
             <code>"host"</code> value above for those.
         </div>
     {/if}
@@ -69,11 +68,10 @@
 {/if}
 
 <div class="install-section">
-    <h2>{if $config_writable}3{else}4{/if}. Optional &mdash; import AMXBans</h2>
+    <h2>{if $config_writable}3{else}4{/if}. Optional: import AMXBans</h2>
     <p>
-        If you're migrating from AMXBans, the next step copies your
-        existing bans into SourceBans++. You can also skip this and
-        log in now.
+        Migrating from AMXBans? The next step copies your existing bans
+        into SourceBans++. Skip it to log in now.
     </p>
 </div>
 

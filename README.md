@@ -17,7 +17,7 @@ engine.
 
 ## Links
 
-- **Docs:** <https://sbpp.github.io/> — install, upgrade, configure, FAQ
+- **Docs:** <https://sbpp.github.io/> (install, upgrade, configure, FAQ)
 - **Releases:** <https://github.com/sbpp/sourcebans-pp/releases>
 - **Issues:** <https://github.com/sbpp/sourcebans-pp/issues>
 - **Discord:** <https://discord.gg/tzqYqmAtF5>
@@ -46,7 +46,7 @@ dev stack, and [`ARCHITECTURE.md`](ARCHITECTURE.md) for the codebase
 tour.
 
 PRs that touch the web panel (`web/**`) are covered by a Contributor
-License Agreement — see [`CLA.md`](CLA.md). The CLA bot leaves
+License Agreement; see [`CLA.md`](CLA.md). The CLA bot leaves
 one-line sign instructions on your first such PR; you only need to
 sign once. Plugin-only PRs (`game/addons/sourcemod/**`) stay under
 GPLv3 and don't need a signature.
@@ -58,12 +58,12 @@ contact a maintainer on Discord if the report needs to be private.
 
 SourceBans++ is built and maintained on volunteer time. If your
 community, server network, or hosting business depends on it,
-sponsoring development helps keep the panel healthy &mdash; and
-funds the modernization work that's been landing across v2.x.
+sponsoring development helps keep the panel healthy and funds the
+modernization work landing across v2.x.
 
 [![Sponsor on GitHub](https://img.shields.io/github/sponsors/sbpp?style=flat-square&logo=github&label=Sponsor%20on%20GitHub)](https://github.com/sponsors/sbpp)
 
-**Game-server hosts and SourceBans++-as-a-feature providers** &mdash;
+**Game-server hosts and SourceBans++-as-a-feature providers:**
 production / commercial use of the web panel is covered by a
 separate commercial license; see **License** below.
 
@@ -78,5 +78,5 @@ separate commercial license; see **License** below.
   Hobby / community use is free under the linked terms; for
   production / commercial use (e.g. game-server hosting companies
   bundling SourceBans++ as a paid feature), a separate commercial
-  license is available &mdash; reach out via the contact link on
-  the [sponsor page](https://sbpp.github.io/sponsor/) or Discord.
+  license is available. Reach out via the contact link on the
+  [sponsor page](https://sbpp.github.io/sponsor/) or Discord.

@@ -77,7 +77,7 @@
     <div class="card__header">
         <div>
             <h3>Advanced search</h3>
-            <p>Each row is its own search criterion &mdash; the &laquo;Search&raquo; button on the right submits using just that row's value.</p>
+            <p>Each row is its own search criterion. The &laquo;Search&raquo; button on the right submits using just that row's value.</p>
         </div>
     </div>
 

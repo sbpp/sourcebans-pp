@@ -201,23 +201,9 @@
                                     <span class="text-sm font-medium">Anonymous telemetry</span>
                                 </label>
                                 <p class="settings-fieldset__help" id="telemetry_enabled_help" data-testid="setting-help-telemetry.enabled">
-                                    Sends one anonymous ping per day to a SourceBans++ collector
-                                    so maintainers can see what versions, environments, and feature
-                                    toggles are in real-world use. The payload covers four categories:
-                                    panel (version, git SHA, dev flag, theme — <code>default</code> or
-                                    <code>custom</code>); environment (PHP <code>major.minor</code>,
-                                    DB engine + <code>major.minor</code>, web server family, OS family);
-                                    scale (counts of admins, enabled servers, active and total bans /
-                                    comms, and 30-day submissions / protests); and feature toggles
-                                    (every checkbox above plus SMTP-configured / Steam-API-key-set /
-                                    GeoIP-present yes/no). A random per-install ID is included so
-                                    pings can be deduplicated; <strong>no</strong> hostnames, IPs,
-                                    admin names, SteamIDs, or ban reasons are ever sent.
-                                    <a href="https://sbpp.github.io/updating/1.8-to-2.0/#telemetry" target="_blank" rel="noopener noreferrer">
-                                        Read more on the docs site
-                                    </a>.
-                                    Disabling clears the random ID, so re-enabling later issues
-                                    a fresh one.
+                                    Sends one anonymous ping per day with panel version, PHP / DB / OS family, counts (admins, servers, bans, comms, 30-day submissions / protests), and which features are turned on. <strong>No</strong> hostnames, IPs, admin names, SteamIDs, or ban reasons are sent. A random install ID is included so pings can be deduplicated.
+                                    <a href="https://sbpp.github.io/updating/1.8-to-2.0/#telemetry" target="_blank" rel="noopener noreferrer">See the full payload</a>.
+                                    Disabling clears the random ID; turning it back on issues a fresh one.
                                 </p>
                             </div>
                         </div>

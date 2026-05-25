@@ -1,14 +1,14 @@
 ---
 title: Panel won't load
-description: The panel hangs, shows a blank page, or doesn't respond — checklist for the usual causes.
+description: The panel hangs, shows a blank page, or doesn't respond. A checklist for the usual causes.
 sidebar:
   order: 1
 ---
 
-If the panel won't paint — blank tab, spinning forever, "this site
-can't be reached", or a half-rendered page that never finishes — the
-cause is almost always one of a small handful of things. This page
-walks through the checks in order from easiest to most involved.
+If the panel won't paint (blank tab, spinning forever, "this site
+can't be reached", or a half-rendered page that never finishes), the
+cause is usually one of a handful of things. This page walks through
+the checks in order from easiest to most involved.
 
 ## 1. Server-level errors (blank white page)
 
@@ -24,13 +24,13 @@ locations:
   log
 - Docker / our dev stack: `./sbpp.sh logs web`
 
-Open the most recent entry. It'll be specific — typically a missing
+Open the most recent entry. It'll be specific: usually a missing
 PHP extension, a syntax error in `config.php`, or a memory-limit hit
 on a heavy page.
 
 If you can't find the log file, set `display_errors = On` in `php.ini`
 **temporarily**, reload the page, and read the error in the browser.
-Set it back to `Off` immediately after — leaving error display on in
+Set it back to `Off` immediately after. Leaving error display on in
 production leaks internal paths and stack traces.
 
 ## 2. Database connection problems
@@ -44,8 +44,8 @@ If PHP loads but reports "could not find driver", see
 ## 3. The page paints but JavaScript doesn't run
 
 If the panel renders content (you see the layout, sidebar, and so
-on) but interactive elements don't respond — buttons don't click,
-modals don't open, the command palette doesn't appear — JavaScript
+on) but interactive elements don't respond (buttons don't click,
+modals don't open, the command palette doesn't appear), JavaScript
 is failing to execute somewhere. Common causes:
 
 ### A reverse proxy is rewriting the JavaScript
@@ -75,7 +75,7 @@ recently added any of these, try disabling them first.
 
 Aggressive ad/script blockers (uBlock Origin with custom rules,
 NoScript, Privacy Badger) can block the panel's own scripts. Open
-the page in a private window with extensions disabled — if it works
+the page in a private window with extensions disabled. If it works
 there, your extension is the cause.
 
 ### The browser cache is stale after an upgrade
@@ -102,7 +102,7 @@ This is rare on a current panel but worth diagnosing:
 6. Click **Save profile** (Firefox) or **Save** (Chrome).
 
 Then drop into our [Discord](https://discord.gg/tzqYqmAtF5)
-`#help-support` channel and share the trace — it'll tell us
+`#help-support` channel and share the trace. It'll tell us
 whether the hang is in our JS, an upstream library, or your
 browser environment.
 

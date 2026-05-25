@@ -1,6 +1,6 @@
 ---
 title: Plugin setup
-description: Wire up the SourceMod side of SourceBans++ — databases.cfg, sourcebans.cfg, and the optional companion plugins.
+description: Wire up the SourceMod side of SourceBans++. databases.cfg, sourcebans.cfg, and the optional companion plugins.
 sidebar:
   order: 2
 ---
@@ -41,27 +41,27 @@ lists every database any plugin on the server can talk to. Add a
 
 :::caution
 The web panel offers to generate this block for you, but treat it as
-a starting point — review every value before pasting. The panel
+a starting point. Review every value before pasting. The panel
 guesses based on its own config, which is often wrong for game
 servers on a different host.
 
 If the panel and the game server live on **different networks**,
 your DB will also need to allow the game server's IP in the user
-grant — see
+grant. See
 [Database setup → Granting permission](/setup/mariadb/#granting-permission).
 :::
 
 ### `sourcebans.cfg`
 
 `addons/sourcemod/configs/sourcebans/sourcebans.cfg` is the per-server
-config. The single most important field is **`ServerID`** — the
+config. The single most important field is **`ServerID`**: the
 numeric ID the panel assigned when you
 [added the server](/setup/adding-server/). Without a correct
 `ServerID`, bans applied from in-game won't show up against the right
 server in the panel.
 
 The rest of the file controls in-game admin menu behaviour (ban
-durations, default reasons, immunity flags, …). The defaults are
+durations, default reasons, immunity flags, etc.). The defaults are
 sensible; tweak as you go.
 
 After editing either file, **reload the map or restart the game
@@ -74,9 +74,9 @@ is mandatory; the others are opt-in based on what you want:
 
 | Plugin                | What it does | Most installs want it? |
 | --------------------- | ------------ | ---------------------- |
-| `sbpp_main.smx`       | The core. Ban / unban, in-game admin menu, panel write-back. | **Yes** — required. |
+| `sbpp_main.smx`       | The core. Ban / unban, in-game admin menu, panel write-back. | **Yes**, required. |
 | `sbpp_comms.smx`      | Communication blocks (mute / gag). | Yes if you care about voice / text moderation. |
-| `sbpp_checker.smx`    | Re-checks every connecting client against the panel's ban list — catches bans issued while the player was offline. | Yes — closes a real loophole. |
+| `sbpp_checker.smx`    | Re-checks every connecting client against the panel's ban list. Catches bans issued while the player was offline. | Yes. Closes a real loophole. |
 | `sbpp_report.smx`     | In-game `!report` command for players. | Up to you. |
 | `sbpp_sleuth.smx`     | Detects alt accounts by recording IP / SteamID associations. | Useful for larger communities. |
 | `sbpp_admcfg.smx`     | Loads admin / group / override definitions from the panel into SourceMod. Replaces SourceMod's stock `admin-flatfile.smx` and pre-1.6 `sb_admcfg.smx`. | Yes if you want panel-managed admins. |
@@ -104,9 +104,9 @@ After your first ban from in-game (or from the panel), check:
 
 If any of these don't happen:
 
-- **Plugin can't reach the database** — see
+- **Plugin can't reach the database**: see
   [Driver not found](/troubleshooting/could-not-find-driver/).
-- **Database is reachable but queries fail** — see
+- **Database is reachable but queries fail**: see
   [Database errors](/troubleshooting/database-errors/).
-- **Panel doesn't show the server's player list** — see
+- **Panel doesn't show the server's player list**: see
   [Server connection issues](/troubleshooting/debugging-connection/).

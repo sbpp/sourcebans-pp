@@ -15,15 +15,15 @@ self-host path) and creating the user and database the panel will use.
 If you already run MySQL or MariaDB and just need the user / grant
 syntax, jump straight to [Granting permission](#granting-permission).
 
-If you're on **shared hosting** (cPanel, Plesk, DirectAdmin, …) you
-don't need any of this — your control panel has a "Create database"
-wizard that gives you the host, name, user, and password. Use those
-values directly in the SourceBans++ install wizard.
+If you're on **shared hosting** (cPanel, Plesk, DirectAdmin, etc.)
+you don't need any of this. Your control panel has a "Create
+database" wizard that gives you the host, name, user, and password.
+Use those values directly in the SourceBans++ install wizard.
 
 ## Why MariaDB?
 
 MariaDB is a drop-in MySQL replacement maintained by the original
-MySQL authors. SourceBans++ supports both engines equally — we just
+MySQL authors. SourceBans++ supports both engines equally. We
 recommend MariaDB by default because:
 
 - It's what our dev stack and CI run against.
@@ -38,7 +38,7 @@ If your host already provides MySQL, that's perfectly fine.
 
 <Tabs syncKey="db">
   <TabItem label="MariaDB (Ubuntu repo)" icon="seti:db">
-    The simplest path on Ubuntu 22.04 / 24.04 — the distro repo
+    The simplest path on Ubuntu 22.04 / 24.04. The distro repo
     carries a recent enough MariaDB:
 
     ```sh
@@ -76,7 +76,7 @@ If your host already provides MySQL, that's perfectly fine.
     ```
 
     The [Granting permission](#granting-permission) syntax differs
-    slightly on MySQL 8+ — see the tabs in that section.
+    slightly on MySQL 8+; see the tabs in that section.
   </TabItem>
 </Tabs>
 
@@ -91,7 +91,7 @@ sudo mysql_secure_installation
 
 Accept the defaults unless you have a specific reason not to. The
 root password it sets is for the **database root account**, not your
-OS root — pick something different from your sudo password.
+OS root. Pick something different from your sudo password.
 
 ## Configure for remote connections
 
@@ -150,10 +150,10 @@ Enter the root password you set during `mysql_secure_installation`.
 
 Decide on three values:
 
-- A **username** — by convention, `sourcebans`.
-- A **password** — pick a strong one; the panel saves it in
+- A **username**: by convention, `sourcebans`.
+- A **password**: pick a strong one; the panel saves it in
   `config.php` and the SourceMod plugins save it in `databases.cfg`.
-- A **source host** — `localhost` if everything's on the same
+- A **source host**: `localhost` if everything's on the same
   machine, the IP of the other host, or `%` to allow any source IP
   (paired with a firewall rule, please).
 
@@ -201,7 +201,7 @@ Then create the database, the user, and grant access:
   </TabItem>
 </Tabs>
 
-The `utf8mb4` charset is required — SourceBans++ won't insert player
+The `utf8mb4` charset is required. SourceBans++ won't insert player
 names with emoji or some CJK characters into a 3-byte `utf8` table.
 
 ## Done

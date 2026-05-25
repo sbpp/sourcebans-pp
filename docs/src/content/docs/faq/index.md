@@ -44,10 +44,10 @@ Take a stab at the issues labelled `good first issue` or `help wanted`
 on the [issue tracker](https://github.com/sbpp/sourcebans-pp/issues).
 The
 [`AGENTS.md`](https://github.com/sbpp/sourcebans-pp/blob/main/AGENTS.md)
-file in the repo root is the contributor cheatsheet — conventions,
+file in the repo root is the contributor cheatsheet: conventions,
 the local Docker dev stack, and the "where to find what" index.
 
-Translation PRs are always welcome too — see
+Translation PRs are always welcome too. See
 [Translating](/customization/translating/).
 
 ## Installing
@@ -56,7 +56,7 @@ Translation PRs are always welcome too — see
 
 Not really. You need the web panel at minimum to install, configure,
 and add servers. In theory you could stop using the panel after that
-and the in-game half would keep enforcing bans — but you'd lose
+and the in-game half would keep enforcing bans, but you'd lose
 access to most of what makes SourceBans++ useful: adding admins,
 managing bans, processing appeals, viewing the audit log.
 
@@ -75,7 +75,7 @@ If SourceMod runs on it, SourceBans++ usually runs on it.
 Yes. The panel and plugin halves only need to share a database; they
 can be on different hosts, different networks, even different
 continents. The DB user's grant has to allow connections from both
-hosts, which is the most common stumbling block — see
+hosts, which is the most common stumbling block. See
 [Database setup → Granting permission](/setup/mariadb/#granting-permission).
 
 ### Will it work on shared hosting?
@@ -84,7 +84,7 @@ Yes, with two caveats:
 
 - The host must run **PHP >= 8.5** with `pdo_mysql`, `openssl`,
   `xml`, and `mbstring`. Most modern shared hosts do. (Older 1.x
-  installs also required `gmp`; not needed since 2.x — native
+  installs also required `gmp`. Not needed since 2.x; native
   64-bit `int` math handles Steam ID conversion.)
 - The host must allow **remote database connections** if your
   game servers aren't on the same host. Many shared hosts
@@ -96,7 +96,7 @@ Yes, with two caveats:
 ### Why am I seeing a blank white page?
 
 PHP hit a fatal error before any output was sent. The actual error
-goes to your webserver's PHP error log — see
+goes to your webserver's PHP error log. See
 [Panel won't load](/troubleshooting/panel-not-loading/#1-server-level-errors-blank-white-page)
 for the typical log paths and how to read them.
 
@@ -126,7 +126,7 @@ That re-enables password login alongside Steam OpenID. Sign in,
 then fix the configuration the way you intended.
 
 :::caution
-Editing `_settings` directly is a foot-gun — bad values can break
+Editing `_settings` directly is a foot-gun: bad values can break
 the panel's bootstrap. Touch only the row you intend to fix, and
 back up the table first if you're not sure.
 :::
@@ -154,7 +154,7 @@ files; if `basebans.smx` is still in `plugins/`, move it manually.
 
 The `"sourcebans"` block is missing from SourceMod's
 `databases.cfg`. The [Quickstart](/getting-started/quickstart/#databasescfg)
-shows the canonical block — add it, save, reload the map, and the
+shows the canonical block. Add it, save, reload the map, and the
 plugin will pick it up.
 
 ### Why does the panel only show "Max Players" instead of the actual player list?
@@ -191,7 +191,7 @@ delete the `install/` and `updater/` directories when done.
 
 ### Is upgrading to 2.0.x different?
 
-Yes — read [Upgrading from 1.8.x to 2.0.x](/updating/1-8-to-2-0/)
+Yes. Read [Upgrading from 1.8.x to 2.0.x](/updating/1-8-to-2-0/)
 first. v2.0 raises the PHP version floor, resets the active theme,
 and ships default-on anonymous telemetry. The upgrade itself is
 otherwise normal.

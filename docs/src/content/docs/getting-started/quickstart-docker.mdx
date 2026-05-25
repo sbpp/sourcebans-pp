@@ -1,6 +1,6 @@
 ---
 title: Quickstart (Docker)
-description: Deploy SourceBans++ with Docker Compose end-to-end — single host, persistent volumes, automatic TLS via Caddy.
+description: Deploy SourceBans++ with Docker Compose. Single host, persistent volumes, automatic TLS via Caddy.
 sidebar:
   order: 4
   label: Quickstart (Docker)
@@ -17,18 +17,18 @@ Compose** in a few minutes. By the end you'll have:
 - An initial admin account ready to log in.
 
 The Docker image (`ghcr.io/sbpp/sourcebans-pp`) is a multi-arch build
-(linux/amd64 + linux/arm64), signed with Sigstore cosign, and
-hardened: it ships no install wizard, no developer tools, and runs
-the panel as the non-root `www-data` user.
+(linux/amd64 + linux/arm64) signed with Sigstore cosign. It ships no
+install wizard, no developer tools, and runs the panel as the
+non-root `www-data` user.
 
 <Aside type="tip" title="Tarball or Docker?">
 The [tarball quickstart](/getting-started/quickstart/) walks through
-an "unzip + upload + wizard" install — best when you're sharing
+an "unzip + upload + wizard" install. Use it when you're sharing
 hosting or already run a webserver you'd like to drop the panel into.
 
-This Docker path is best when you want one-command upgrades
-(`docker compose pull && up -d`), zero-touch TLS, and reproducible
-deploys across machines. Same panel either way; pick whichever
+This Docker path is for when you want one-command upgrades
+(`docker compose pull && up -d`), automatic TLS, and reproducible
+deploys across machines. Same panel either way. Pick whichever
 matches your operations setup.
 </Aside>
 
@@ -37,8 +37,8 @@ matches your operations setup.
 You need:
 
 - **Docker 24+** and **Compose v2** (bundled into Docker Desktop and
-  recent Docker Engine releases — `docker compose version` should
-  print `v2.x` or newer).
+  recent Docker Engine releases). `docker compose version` should
+  print `v2.x` or newer.
 - **A host with at least 512 MB of free RAM.** The panel itself uses
   ~150 MB at idle; MariaDB takes the rest.
 - A **Steam Web API key** from
@@ -48,8 +48,8 @@ You need:
   (`STEAM_0:0:12345678` form). [SteamID I/O](https://steamid.io/)
   converts between formats.
 
-You do **not** need PHP, Composer, MariaDB, or a webserver installed
-on the host — the image carries everything.
+You do **not** need PHP, Composer, MariaDB, or a webserver on the
+host. The image carries everything.
 
 ## Step 1 — Get the compose stack
 
@@ -85,8 +85,8 @@ Open `.env` in your editor. The template is grouped into
 **Optional** sections. At minimum:
 
 <Steps>
-1. **`SB_SECRET_KEY`** — the JWT signing key. Generate once and
-   persist it forever (rotating it logs every admin out):
+1. **`SB_SECRET_KEY`**: the JWT signing key. Generate once and keep
+   it forever. Rotating it logs every admin out.
 
    ```sh
    openssl rand -base64 47
@@ -94,7 +94,7 @@ Open `.env` in your editor. The template is grouped into
 
    Paste the output into `SB_SECRET_KEY=...`.
 
-2. **`DB_ROOT_PASS`** and **`DB_PASS`** — the MariaDB root password
+2. **`DB_ROOT_PASS`** and **`DB_PASS`**: the MariaDB root password
    (used once for first-boot DB creation) and the panel user's
    password. Generate two distinct strong passwords:
 
@@ -103,21 +103,21 @@ Open `.env` in your editor. The template is grouped into
    openssl rand -base64 24    # DB_PASS
    ```
 
-3. **`STEAMAPIKEY`** — paste your Steam Web API key.
+3. **`STEAMAPIKEY`**: paste your Steam Web API key.
 
-4. **`INITIAL_ADMIN_*`** — fill in all four fields (name, SteamID,
+4. **`INITIAL_ADMIN_*`**: fill in all four fields (name, SteamID,
    email, password). The entrypoint seeds an Owner-flagged admin from
-   these values on first boot only; subsequent boots ignore them.
+   these values on first boot only. Subsequent boots ignore them.
    Change the password from the panel's "Your account" page after
    first login.
 
-5. **`SBPP_DOMAIN`** — if you plan to use the Caddy reverse-proxy
+5. **`SBPP_DOMAIN`**: if you plan to use the Caddy reverse-proxy
    stub for automatic TLS, set this to the public domain that points
    at your host (e.g. `panel.yourcommunity.example`).
 </Steps>
 
-The template is heavily commented; read through the rest of it for
-the optional knobs (image-tag pinning, trusted-proxy CIDR ranges,
+The template is commented in detail. Read through the rest of it
+for the optional knobs (image-tag pinning, trusted-proxy CIDR ranges,
 `DATABASE_URL` for managed databases, the `*_FILE` Docker-secret
 pattern).
 
@@ -130,7 +130,7 @@ is not.
 ## Step 3 — Start the stack
 
 If you're putting the panel behind your own existing reverse proxy
-(nginx, Traefik, Cloudflare Tunnel, …) or skipping TLS for a private
+(nginx, Traefik, Cloudflare Tunnel) or skipping TLS for a private
 network deploy:
 
 ```sh
@@ -152,9 +152,9 @@ stub:
 
 3. Set `SBPP_TRUSTED_PROXIES=172.16.0.0/12 10.0.0.0/8` in `.env` so
    the panel trusts Caddy's `X-Forwarded-*` headers from the Docker
-   bridge range. (Caddy adds these headers on every reverse-proxy
-   directive; without trust, the panel would log Caddy's IP instead
-   of the real client.)
+   bridge range. Caddy adds these headers on every reverse-proxy
+   directive. Without trust, the panel would log Caddy's IP instead
+   of the real client.
 
 4. Bring the stack up:
 
@@ -187,7 +187,7 @@ You should see a sequence of `[prod-entrypoint]` lines:
 [prod-entrypoint] step 6: checking for pending updater migrations
 [prod-entrypoint] step 7: removing install/ + updater/ from writable layer
 [prod-entrypoint] step 8: ensuring writable cache/templates_c/demos
-[prod-entrypoint] boot complete — handing off to: apache2-foreground
+[prod-entrypoint] boot complete; handing off to: apache2-foreground
 ```
 
 Once the last line lands, the panel is up. Open
@@ -226,8 +226,8 @@ tarball install:
 </CardGrid>
 
 The plugins live on your **game** servers and read directly from the
-same database the panel writes to — they don't need to know the
-panel is running in Docker.
+same database the panel writes to. They don't need to know the panel
+is running in Docker.
 
 ## Persistent volumes
 
@@ -238,7 +238,7 @@ panel is running in Docker.
 | `dbdata` | `/var/lib/mysql` | **Required.** The only source of truth for ban / admin / log rows. Loss = panel reset. |
 | `demos` | `/var/www/html/web/demos` | **Required.** Uploaded ban-evidence demos; not regenerable from anything else. |
 | `cache` | `/var/www/html/web/cache` | Optional. Smarty compile cache + PHP sessions. Wiping logs every admin out but doesn't lose data. |
-| `smarty` | `/var/www/html/web/templates_c` | Optional. Same shape as `cache` — rebuilt on demand. |
+| `smarty` | `/var/www/html/web/templates_c` | Optional. Same shape as `cache`, rebuilt on demand. |
 
 Back up the `dbdata` and `demos` volumes regularly. The simplest
 backup is a `mariadb-dump` for the DB and a `tar` for the demos:
@@ -255,12 +255,12 @@ docker run --rm -v <stack>_demos:/data -v "$PWD:/backup" alpine \
 ```
 
 (`<stack>` is the project name compose derives from the directory
-the compose file lives in — usually the directory's basename, e.g.
+the compose file lives in, usually the directory's basename, e.g.
 `sourcebans-prod_demos`.)
 
 ## Upgrading
 
-The image is **immutable** — upgrades are a tag bump. Pin
+The image is **immutable**. Upgrades are a tag bump. Pin
 `SBPP_IMAGE_TAG` in `.env` to a specific version for reproducible
 deploys:
 
@@ -277,9 +277,9 @@ docker compose -f docker-compose.prod.yml up -d
 ```
 
 The new container's entrypoint runs any pending updater migrations
-against the existing database (idempotent — every migration script
-in `web/updater/data/<N>.php` is forward-only and safe to re-run).
-The `dbdata` and `demos` volumes survive the swap unchanged.
+against the existing database. The migrations are idempotent: every
+script in `web/updater/data/<N>.php` is forward-only and safe to
+re-run. The `dbdata` and `demos` volumes survive the swap unchanged.
 
 Image tags:
 
@@ -290,10 +290,9 @@ Image tags:
 | `X.Y` | Floats forward across patch releases of `X.Y.*`. |
 | `X` | Floats forward across minor releases of `X.*.*`. |
 
-Only tagged release builds are published — there is no rolling
-`:main` or per-commit `:sha-<short>` tag. Self-hosters who want to
-test a yet-unreleased fix should `git checkout` the relevant ref and
-build the image locally with
+Only tagged release builds are published. There is no rolling
+`:main` or per-commit `:sha-<short>` tag. To test an unreleased fix,
+`git checkout` the relevant ref and build the image locally with
 `docker buildx build -f docker/Dockerfile.prod -t sbpp:dev .`.
 
 Every published tag is signed with Sigstore cosign in keyless mode.
@@ -310,7 +309,7 @@ cosign verify ghcr.io/sbpp/sourcebans-pp:1.7.0 \
 Every secret-shaped env var (`SB_SECRET_KEY`, `DB_PASS`,
 `DB_ROOT_PASS`, `STEAMAPIKEY`, `INITIAL_ADMIN_PASSWORD`) supports a
 sibling `_FILE` form that reads the value from a file path inside
-the container. This is the canonical Docker Swarm / Kubernetes
+the container. This is the standard Docker Swarm / Kubernetes
 secret-injection pattern.
 
 A worked Swarm example with two secrets:
@@ -353,23 +352,23 @@ deploy on those platforms by pointing the relevant service at the
 vars from `.env.example.prod`. The image already speaks the
 platform-conventional knobs:
 
-- **`PORT`** — the entrypoint rewrites Apache's `Listen` directive
-  to match. Render / Fly / Heroku-style injection works out of the
-  box.
+- **`PORT`**: the entrypoint rewrites Apache's `Listen` directive
+  to match. Render / Fly / Heroku-style injection works without
+  extra config.
 
   :::caution[Don't set `PORT` on the docker-compose deploy above]
   The `docker-compose.prod.yml` shipped in this repo hardcodes
-  `${SBPP_HOST_PORT}:80` — host port to container port 80. Setting
-  `PORT=8000` in `.env` would rewrite Apache's listen to `8000`
-  but compose would still map the host port to the container's
-  port `80` (which nothing is listening on), making the panel
+  `${SBPP_HOST_PORT}:80` (host port to container port 80). Setting
+  `PORT=8000` in `.env` would rewrite Apache's listen to `8000`,
+  but compose would still map the host port to the container's port
+  `80` (which nothing is listening on), making the panel
   unreachable. `PORT` is exclusively for the app-platform shape
   above; on compose deploys, `SBPP_HOST_PORT` is the host-side knob.
   :::
-- **`DATABASE_URL`** — parsed before the split `DB_*` vars get
+- **`DATABASE_URL`**: parsed before the split `DB_*` vars get
   applied. Railway / Render / Fly's "attached database" pattern
   works without extra config.
-- **`/health.php`** — DB-aware healthcheck. Point the platform's
+- **`/health.php`**: DB-aware healthcheck. Point the platform's
   health probe at this path.
 
 ## Troubleshooting
@@ -380,13 +379,13 @@ The first place to look is the container's stderr:
 docker compose -f docker-compose.prod.yml logs --tail=200 web
 ```
 
-Common failures + fixes:
+Common failures and fixes:
 
 | Symptom | Likely cause / fix |
 | --- | --- |
-| Boot stalls at `step 3: waiting for DB`. | The `db` service hasn't passed its healthcheck. `docker compose ... logs db` for the underlying MariaDB error — typically a wrong `DB_ROOT_PASS` on a re-deploy over an existing `dbdata` volume. |
+| Boot stalls at `step 3: waiting for DB`. | The `db` service hasn't passed its healthcheck. Run `docker compose ... logs db` to see the underlying MariaDB error. Usually a wrong `DB_ROOT_PASS` on a re-deploy over an existing `dbdata` volume. |
 | `step 4: minted fresh SB_SECRET_KEY` on every restart. | You haven't set `SB_SECRET_KEY` in `.env`. The first boot wrote a randomly-generated key into the writable layer's `config.php`, but a container recreation rebuilds the layer fresh. Set the env var to persist. |
-| Healthcheck flips to `unhealthy` repeatedly. | `curl https://<host>/health.php` to see the failure reason. If it's a DB connect error, the panel and DB containers have lost their network — `docker compose ... restart` typically resolves. |
+| Healthcheck flips to `unhealthy` repeatedly. | Run `curl https://<host>/health.php` to see the failure reason. If it's a DB connect error, the panel and DB containers have lost their network. `docker compose ... restart` usually resolves it. |
 | Panel renders but Steam OpenID login fails. | `STEAMAPIKEY` is empty or wrong. Set it in `.env`; bring the panel back with `docker compose ... up -d`. |
 | Apache logs `mod_remoteip` warnings about `RemoteIPInternalProxy`. | The `SBPP_TRUSTED_PROXIES` value isn't a valid CIDR. The entrypoint passes the value through verbatim; check for typos. |
 
@@ -403,7 +402,7 @@ apply identically to the Docker install:
   <LinkCard
     title="Driver not found"
     href="/troubleshooting/could-not-find-driver/"
-    description="If the plugin can't reach the database; rarely applies to the Docker image (it bundles pdo_mysql)."
+    description="If the plugin can't reach the database. Rarely applies to the Docker image, which bundles pdo_mysql."
   />
   <LinkCard
     title="Database errors"

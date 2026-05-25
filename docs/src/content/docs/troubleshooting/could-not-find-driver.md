@@ -121,5 +121,5 @@ After the fix, restart the relevant service:
 
 If you're still stuck, drop into `#help-support` on our
 [Discord](https://discord.gg/tzqYqmAtF5) with the output of
-`php -m | grep pdo` (web) or `sm exts list` (plugin) — that
+`php -m | grep pdo` (web) or `sm exts list` (plugin). That
 narrows it down quickly.

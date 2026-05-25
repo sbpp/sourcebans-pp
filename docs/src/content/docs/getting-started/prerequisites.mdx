@@ -8,10 +8,9 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-A single-page list of what your host needs to provide before you can
-install SourceBans++. If anything below is unfamiliar, ask your host's
-support team — most shared and dedicated hosts can confirm or enable
-these in a few clicks.
+What your host needs to provide before you can install SourceBans++.
+If anything below is unfamiliar, ask your host's support team. Most
+shared and dedicated hosts can confirm or enable these in a few clicks.
 
 ## Web side
 
@@ -29,21 +28,21 @@ Pick the path you'll use:
   <TabItem label="Docker" icon="seti:docker">
     You need:
 
-    - **Docker 24+** — `docker --version` should print `24.x` or
+    - **Docker 24+**. `docker --version` should print `24.x` or
       newer. Docker Desktop ships a current version; Docker Engine
       on Linux can be upgraded via the [official install
       instructions](https://docs.docker.com/engine/install/).
-    - **Docker Compose v2** — `docker compose version` should
+    - **Docker Compose v2**. `docker compose version` should
       print `v2.x` or newer. v2 ships as a Docker CLI plugin (built
       into Docker Desktop; available as `docker-compose-plugin` on
       Debian/Ubuntu, `docker-compose` on RHEL/Fedora).
     - **At least 512 MB of free RAM** on the host. The panel itself
       idles around 150 MB; MariaDB takes the rest.
 
-    You do NOT need PHP, Composer, MariaDB, or a webserver installed
-    on the host — the image bundles all four. The **Database** /
-    **PHP** sections below are informational only for the Docker
-    install path.
+    You do NOT need PHP, Composer, MariaDB, or a webserver on the
+    host. The image bundles all four. The **Database** and **PHP**
+    sections below are informational only for the Docker install
+    path.
 
     Step it out in the [Docker quickstart](/getting-started/quickstart-docker/).
   </TabItem>
@@ -65,14 +64,14 @@ SourceBans++ has supported both since the project started.
 
 <Tabs syncKey="db">
   <TabItem label="MariaDB" icon="seti:db">
-    **>= 10.0** is the floor. We recommend MariaDB for new installs —
-    it's what the dev stack and CI use, and the
+    **>= 10.0** is the floor. We recommend MariaDB for new installs.
+    It's what the dev stack and CI use, and the
     [Database setup](/setup/mariadb/) guide targets it directly.
   </TabItem>
 
   <TabItem label="MySQL" icon="seti:db">
     **>= 5.6** is the floor (8.0+ is fine and recommended). MySQL 8
-    dropped the combined `GRANT … IDENTIFIED BY` syntax — use the
+    dropped the combined `GRANT … IDENTIFIED BY` syntax. Use the
     two-statement form shown in
     [Database setup → Granting permission](/setup/mariadb/#granting-permission).
   </TabItem>
@@ -90,8 +89,8 @@ some CJK characters fail to insert and the plugin logs a SQL error.
   but the panel can run out of memory on large ban-list pages below
   64 MB.
 - These PHP extensions must be loaded:
-  - `pdo_mysql` — MySQL/MariaDB driver
-  - `openssl` — TLS for SMTP and the panel's session tokens
+  - `pdo_mysql`: MySQL/MariaDB driver
+  - `openssl`: TLS for SMTP and the panel's session tokens
   - `xml`
   - `mbstring`
 
@@ -110,7 +109,7 @@ fix.
 ### Composer (only when installing from `main`)
 
 The release zip on the GitHub Releases page bundles everything
-already — **a normal install needs no Composer step.**
+already. **A normal install needs no Composer step.**
 
 You only need Composer if you're installing from a `git clone` of
 the `main` branch (development install). In that case:
@@ -126,16 +125,16 @@ recovery page (`/install/recovery.php`) that explains the fix.
 
 The SourceMod plugins are what runs on your game servers:
 
-- **SourceMod 1.11 or newer** — 1.12 stable recommended.
-- **Metamod: Source** — SourceMod's loader.
+- **SourceMod 1.11 or newer** (1.12 stable recommended).
+- **Metamod: Source**: SourceMod's loader.
 
-Most game-server hosts ship SourceMod 1.11+ by default; if yours
+Most game-server hosts ship SourceMod 1.11+ by default. If yours
 doesn't, you can install it from
 [sourcemod.net](https://www.sourcemod.net/).
 
 The plugin also needs SourceMod's `dbi.mysql` extension to talk to
 the database. On Linux this is bundled with SourceMod itself; on
-exotic setups it may need to be enabled explicitly — see
+exotic setups it may need to be enabled explicitly. See
 [Driver not found](/troubleshooting/could-not-find-driver/) if the
 plugin logs a connection error.
 
@@ -160,17 +159,17 @@ picked at the top of this page:
 
 <Tabs syncKey="install-path">
   <TabItem label="Tarball / shared hosting" icon="cloud-download">
-    [Tarball quickstart](/getting-started/quickstart/) — unzip,
+    [Tarball quickstart](/getting-started/quickstart/): unzip,
     upload, run the wizard.
   </TabItem>
 
   <TabItem label="Docker" icon="seti:docker">
-    [Docker quickstart](/getting-started/quickstart-docker/) —
+    [Docker quickstart](/getting-started/quickstart-docker/):
     `docker compose up -d` to a fully running panel.
   </TabItem>
 
   <TabItem label="App platform (one click)" icon="rocket">
-    [Docker quickstart](/getting-started/quickstart-docker/) — the
+    [Docker quickstart](/getting-started/quickstart-docker/): the
     "Deploy with one click" section covers the per-platform shape.
   </TabItem>
 </Tabs>

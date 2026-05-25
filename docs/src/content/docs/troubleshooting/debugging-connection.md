@@ -6,8 +6,8 @@ sidebar:
   label: Server connection
 ---
 
-When the panel shows a game server as offline — or as online but
-with an empty player list — it can't reach the server's query
+When the panel shows a game server as offline (or as online but
+with an empty player list), it can't reach the server's query
 (UDP) or RCON (TCP) port. This page walks through the checks in
 order, from "is the server actually online?" to "test it with the
 diagnostic tool."
@@ -59,13 +59,13 @@ If everything's wired right, it'll print the server's info (map,
 hostname, player count), the result of the RCON handshake (if you
 filled in a password), and the player list.
 
-If something fails, it'll tell you which step — that maps directly
+If something fails, it'll tell you which step. That maps directly
 to the sections below.
 
 :::caution
 The diagnostic tool exposes server info and (if you filled it in)
 the RCON password. **Delete `sb_debug_connection.php` when you're
-done** — don't leave it on a production install.
+done.** Don't leave it on a production install.
 :::
 
 ## UDP errors
@@ -73,7 +73,7 @@ done** — don't leave it on a production install.
 > The panel can't read server info / player list back from the game
 > server.
 
-UDP is the protocol Source uses for its A2S queries — the panel
+UDP is the protocol Source uses for its A2S queries: the panel
 sends a small "tell me about yourself" packet and waits for the
 reply.
 

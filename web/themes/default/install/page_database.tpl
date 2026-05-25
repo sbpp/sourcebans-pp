@@ -6,10 +6,9 @@
 {include file="install/_chrome.tpl"}
 
 <p class="lead">
-    Tell the wizard how to reach your MySQL or MariaDB database.
-    Create the database first via your hosting control panel
-    (phpMyAdmin, cPanel "MySQL Databases", &hellip;), then come back
-    here with the credentials.
+    Enter your MySQL or MariaDB connection details. Create the database
+    first in your hosting control panel (phpMyAdmin, cPanel "MySQL
+    Databases"), then come back here with the credentials.
 </p>
 
 {if $error !== ''}
@@ -91,7 +90,7 @@
                        value="{$val_database}"
                        data-testid="install-database-database"
                        required>
-                <p class="text-xs text-muted">Must already exist &mdash; the wizard fills it.</p>
+                <p class="text-xs text-muted">Must already exist. The wizard fills it.</p>
             </div>
 
             <div>
@@ -111,7 +110,7 @@
     </div>
 
     <div class="install-section">
-        <h2>Optional &mdash; Steam &amp; admin email</h2>
+        <h2>Optional: Steam &amp; admin email</h2>
         <div class="install-grid">
             <div>
                 <label class="label" for="install-database-apikey">Steam API key</label>
@@ -122,11 +121,11 @@
                        value="{$val_apikey}"
                        data-testid="install-database-apikey">
                 <p class="text-xs text-muted">
-                    Powers profile lookups + the Steam OpenID login.
-                    Get one from
+                    Used for Steam profile lookups and OpenID login. Get
+                    one from
                     <a href="https://steamcommunity.com/dev/apikey"
                        target="_blank" rel="noopener">steamcommunity.com</a>.
-                    Can be added later in <em>Admin &rarr; Settings</em>.
+                    Optional, can be added later in <em>Admin &rarr; Settings</em>.
                 </p>
             </div>
 
@@ -139,8 +138,7 @@
                        value="{$val_email}"
                        data-testid="install-database-email">
                 <p class="text-xs text-muted">
-                    Sender address for password resets and ban
-                    notifications. Can be configured later.
+                    Sender address for password resets and ban notifications. Optional.
                 </p>
             </div>
         </div>

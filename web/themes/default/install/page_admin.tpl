@@ -6,9 +6,9 @@
 {include file="install/_chrome.tpl"}
 
 <p class="lead">
-    Create the first administrator account. This account has the
-    <strong>Owner</strong> permission flag &mdash; it can do
-    everything in the panel, including creating other admins.
+    Create the first administrator account. This account gets the
+    <strong>Owner</strong> permission flag, which can do everything in
+    the panel, including creating other admins.
 </p>
 
 {if $error !== ''}

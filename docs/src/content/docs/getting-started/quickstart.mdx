@@ -1,15 +1,15 @@
 ---
 title: Quickstart
-description: Install SourceBans++ end-to-end — database, web panel, plugin, first server.
+description: Install SourceBans++ end-to-end. Database, web panel, plugin, first server.
 sidebar:
   order: 3
 ---
 
 import { Tabs, TabItem, Aside, LinkCard, CardGrid, Steps } from '@astrojs/starlight/components';
 
-This guide walks you through a fresh SourceBans++ install from scratch.
-By the end you'll have a working panel, a connected database, and at
-least one game server reporting back to it.
+A fresh SourceBans++ install from scratch. By the end you'll have a
+working panel, a connected database, and at least one game server
+reporting back to it.
 
 If you haven't yet, the [Overview](/getting-started/overview/) is the
 2-minute background read.
@@ -30,7 +30,7 @@ Ubuntu host in a handful of commands.
 You'll also want:
 
 - The SteamID of the **account you want to make the first admin**
-  (it's you, probably). In `STEAM_0:0:12345678` form — see the
+  (probably you). In `STEAM_0:0:12345678` form. See the
   [SteamID tip](#admin-account-setup) below if you only know the
   numeric form.
 - A **Steam Web API key** from
@@ -42,7 +42,7 @@ You'll also want:
 Grab the latest release zip from the
 [Releases page](https://github.com/sbpp/sourcebans-pp/releases). You
 want the `sourcebans-pp-X.Y.Z.webpanel-only.zip` (web side) and the
-`sourcebans-pp-X.Y.Z.plugin-only.zip` (game side) — or the combined
+`sourcebans-pp-X.Y.Z.plugin-only.zip` (game side), or the combined
 zip if you prefer.
 
 ## Step 2 — Upload the web panel
@@ -68,18 +68,18 @@ host:
     `chown` the files to that user.
 
     ```sh
-    # config.php — the wizard appends DB credentials and the secret
+    # config.php: the wizard appends DB credentials and the secret
     # key to this file.
     sudo chmod 644 config.php
 
-    # demos/ — uploaded ban-evidence demos.
+    # demos/: uploaded ban-evidence demos.
     sudo chmod -R 644 demos
 
-    # themes_c/ — Smarty's template cache. The panel writes here on
+    # themes_c/: Smarty's template cache. The panel writes here on
     # every page render.
     sudo chmod -R 774 themes_c
 
-    # images/games/, images/maps/ — admin-uploaded thumbnails.
+    # images/games/, images/maps/: admin-uploaded thumbnails.
     sudo chmod -R 644 images/games
     sudo chmod -R 644 images/maps
     ```
@@ -110,12 +110,12 @@ host:
     directories. `themes_c/` may need **775**.
 
     If your host runs PHP under a different user and you don't have
-    suEXEC / suPHP, ask support to enable it — that's the proper
-    fix. World-writable (`666` / `777`) works as a last resort.
+    suEXEC / suPHP, ask support to enable it. World-writable (`666`
+    / `777`) works as a last resort.
   </TabItem>
 
   <TabItem label="Docker" icon="docker">
-    Our official `Dockerfile` handles this automatically — the
+    Our official `Dockerfile` handles this automatically. The
     webroot is owned by `www-data` inside the container and the
     wizard runs as that user.
 
@@ -125,9 +125,9 @@ host:
 </Tabs>
 
 <Aside type="tip">
-If the wizard complains a path isn't writable, that's working as
-intended — it refuses to proceed rather than leave you with a panel
-that fails mysteriously later. Fix the permissions and reload.
+If the wizard complains a path isn't writable, it's refusing to
+proceed rather than leave you with a panel that fails later. Fix the
+permissions and reload.
 </Aside>
 
 ## Step 3 — Run the install wizard
@@ -164,9 +164,9 @@ if PHP can't talk to MySQL at all.
 
 ### System check
 
-The wizard runs a final sanity check — PHP version, extensions,
-paths it needs to write to. Every row should be green. Fix any
-yellow / red rows before continuing.
+The wizard runs a final sanity check: PHP version, extensions, paths
+it needs to write to. Every row should be green. Fix any yellow or
+red rows before continuing.
 
 ### Table creation
 
@@ -175,12 +175,12 @@ and shows a success notification.
 
 ### Admin account setup
 
-This is the first admin account — that's you.
+The first admin account is you.
 
 <Aside type="tip" title="SteamID format">
 Use the **SteamID2** form: `STEAM_0:0:12345678`. Not the SteamID3
 (`[U:1:24691356]`) or numeric / SteamID64 form. Tools like
-[SteamID I/O](https://steamid.io/) convert between them — paste any
+[SteamID I/O](https://steamid.io/) convert between them. Paste any
 form in and copy the `STEAM_0:0:…` line back out.
 </Aside>
 
@@ -189,16 +189,16 @@ Fill it in and click **OK**. Your panel is now live at
 
 <Aside type="caution" title="Delete the install directory">
 After the wizard finishes, **delete the `install/` directory** from
-your webserver. The panel actively refuses to boot while
-`install/` exists — leaving it accessible would let anyone re-run
-the wizard and hijack your panel.
+your webserver. The panel refuses to boot while `install/` exists,
+since leaving it accessible would let anyone re-run the wizard and
+hijack your panel.
 </Aside>
 
 ## Step 4 — Register your first game server
 
 In the panel, navigate to **Admin Panel → Server Settings → Add new
 server**. Fill in the form (game, RCON password, IP, port), click
-**Add Server**, and note the **`ID` column** for the new row — that
+**Add Server**, and note the **`ID` column** for the new row. That
 number is the `ServerID` the plugin needs in the next step.
 
 Full walkthrough with screenshots:
@@ -232,10 +232,10 @@ section pointing at the same database the panel uses:
 
 <Aside type="caution">
 The web panel offers to generate this section for you, but treat
-that as a starting point, not a finished config — especially if
-your game server isn't on the same host as the database. If the
-two hosts are on different networks, you'll also need to allow
-the game server's IP in your database's user grant (see
+that as a starting point, especially if your game server isn't on
+the same host as the database. If the two hosts are on different
+networks, you'll also need to allow the game server's IP in your
+database's user grant (see
 [Database setup → Granting permission](/setup/mariadb/#granting-permission)).
 </Aside>
 
@@ -256,18 +256,18 @@ Back in the panel:
 
 - The **Servers** page should show your new server as **online** with
   the current map and player list within ~30 seconds.
-- Try banning a test player from in-game via SourceMod's admin menu —
-  the ban should appear on the panel's **Bans** page within seconds.
-- Try banning from the panel — the ban should kick the player from
+- Try banning a test player from in-game via SourceMod's admin menu.
+  The ban should appear on the panel's **Bans** page within seconds.
+- Try banning from the panel. The ban should kick the player from
   the game server.
 
 If something isn't working, the most useful starting points are:
 
-- [Server connection issues](/troubleshooting/debugging-connection/) —
-  the panel doesn't show your server's map / players.
-- [Driver not found](/troubleshooting/could-not-find-driver/) — the
+- [Server connection issues](/troubleshooting/debugging-connection/):
+  the panel doesn't show your server's map or players.
+- [Driver not found](/troubleshooting/could-not-find-driver/): the
   plugin can't talk to the database.
-- [Database errors](/troubleshooting/database-errors/) — anything else
+- [Database errors](/troubleshooting/database-errors/): anything else
   database-related.
 
 ## What's next?

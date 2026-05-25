@@ -405,7 +405,7 @@
                                     <i data-lucide="search-x" style="width:18px;height:18px"></i>
                                 </span>
                                 <h2 class="empty-state__title">No comm blocks match those filters</h2>
-                                <p class="empty-state__body">Try a different search term, server, or time range &mdash; or clear the active filters to see every recorded mute / gag.</p>
+                                <p class="empty-state__body">Try a different search term, server, or time range, or clear the active filters to see every recorded mute / gag.</p>
                                 <div class="empty-state__actions">
                                     <a class="btn btn--secondary btn--sm"
                                        href="?p=commslist"
