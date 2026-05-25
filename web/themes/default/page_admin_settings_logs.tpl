@@ -70,7 +70,16 @@
                         </div>
 
                         {if count($log_items) > 0}
-                            <table class="table" data-testid="logs-table">
+                            {* #1443: this is the in-tree canonical surface where
+                               the table-row IS the click target — `onclick="toggleLogRow"`
+                               flips a sibling detail row. `.table--clickable-rows`
+                               opts the rows into the row-wide `cursor: pointer`
+                               affordance from `theme.css`. New surfaces that want
+                               the same shape add the modifier class AND wire a
+                               real `<tr>`-level click handler AND update the
+                               regression test's allowlist; see the comment above
+                               the `.table tbody tr` rule in `theme.css`. *}
+                            <table class="table table--clickable-rows" data-testid="logs-table">
                                 <thead>
                                     <tr>
                                         <th style="width:6rem">Type</th>
@@ -81,7 +90,22 @@
                                 </thead>
                                 <tbody>
                                     {foreach from=$log_items item="log"}
-                                        <tr data-testid="log-row" data-id="{$log.lid}" onclick="toggleLogRow(this);">
+                                        {* #1443 a11y: `role="button"` + `tabindex="0"` +
+                                           `aria-expanded` + matching keydown handler make
+                                           the row keyboard-reachable AND screen-reader-
+                                           announced as an expandable disclosure. Pre-fix
+                                           the only affordance was the `onclick` attribute
+                                           — a bare `<tr>` with no role / tabindex / key
+                                           handling — so keyboard-only and AT users had no
+                                           way to expand a log row. *}
+                                        <tr data-testid="log-row"
+                                            data-id="{$log.lid}"
+                                            role="button"
+                                            tabindex="0"
+                                            aria-expanded="false"
+                                            aria-controls="log-detail-{$log.lid}"
+                                            onclick="toggleLogRow(this);"
+                                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLogRow(this);}">
                                             <td>
                                                 {if $log.type == 'm'}
                                                     <span class="pill pill--online"><i data-lucide="info" style="width:0.75rem;height:0.75rem"></i> Info</span>
@@ -97,7 +121,7 @@
                                             <td class="font-mono text-xs">{$log.user}</td>
                                             <td class="font-mono text-xs tabular-nums">{$log.date_str}</td>
                                         </tr>
-                                        <tr data-detail-for="{$log.lid}" hidden>
+                                        <tr data-detail-for="{$log.lid}" id="log-detail-{$log.lid}" hidden>
                                             <td colspan="4" style="background:var(--bg-muted)">
                                                 <dl class="grid gap-2 text-xs" style="grid-template-columns:8rem 1fr;margin:0">
                                                     <dt class="text-muted">Details</dt>
@@ -134,6 +158,12 @@
      * are emitted with data-detail-for="<lid>", so a click on the summary
      * row finds its sibling by id and flips the `hidden` attribute. No
      * accordion library, no jQuery, no global state.
+     *
+     * #1443 a11y: also flips the summary row's `aria-expanded` so AT users
+     * hear the disclosure state. The summary row carries
+     * `role="button" tabindex="0" aria-controls="log-detail-<lid>"` so it's
+     * keyboard-reachable; the inline `onkeydown` handler dispatches Enter /
+     * Space to the same toggle path.
      */
     window.toggleLogRow = function (row) {
         if (!row || !row.dataset || !row.dataset.id) return;
@@ -141,8 +171,10 @@
         if (!detail) return;
         if (detail.hasAttribute('hidden')) {
             detail.removeAttribute('hidden');
+            row.setAttribute('aria-expanded', 'true');
         } else {
             detail.setAttribute('hidden', '');
+            row.setAttribute('aria-expanded', 'false');
         }
     };
 

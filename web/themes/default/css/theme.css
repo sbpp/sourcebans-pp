@@ -1118,25 +1118,40 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table th { text-align: left; font-size: 0.625rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); padding: 0.625rem 0.75rem; }
 .table th:first-child, .table td:first-child { padding-left: 1.25rem; }
 .table th:last-child, .table td:last-child { padding-right: 1.25rem; }
-/* #1443: NO `cursor: pointer` on the row itself. The `<tr>` is not
-   a click target — every list-page table in the panel delegates
-   interaction to specific child elements (the player-name anchor
-   carries `[data-drawer-bid]` / `[data-drawer-cid]` / `[data-drawer-href]`
-   for the drawer; row-actions buttons carry `data-action="…"`; the
+/* #1443: NO `cursor: pointer` on the bare `.table tbody tr`. On
+   every list page where the table-row is NOT itself a click target
+   — banlist, commslist, admin admins / mods / groups / overrides /
+   servers, kickit, blockit, bans-groups, admin-edit-group,
+   admin-edit-admins-perms — interaction is delegated to specific
+   *child* elements (the player-name anchor carries
+   `[data-drawer-bid]` / `[data-drawer-cid]` / `[data-drawer-href]`
+   for the drawer; row-action buttons carry `data-action="…"`; the
    per-row comments `<details>` toggles via its native `<summary>`).
    Painting `cursor: pointer` on the row falsely advertised every
    pixel of the row as clickable, so users would click on dead cells
    (steam id, IP, reason, status, server, admin, length, banned
-   timestamp) and nothing would happen — the reporter's exact
-   symptom on #1443. Native cursors on the inner anchors / buttons /
-   summaries already paint correctly without help, so dropping the
-   rule restores honest affordance: pointer only where clicking does
-   something. Hover-bg stays — it's a scanning aid, not a
-   clickability claim (every modern data table from Linear / Notion /
-   GitHub leans on the same row-hover-background-without-cursor-
-   pointer convention). */
+   timestamp) and nothing would happen — the reporter's exact symptom
+   on #1443. Native cursors on the inner `<a>` / `<button>` /
+   `<summary>` elements already paint correctly without help, so
+   dropping the row-wide declaration restores honest affordance:
+   pointer only where clicking does something. Hover-bg stays — it's
+   a scanning aid for tracking which row the mouse is on, not a
+   clickability claim (Linear / Notion / GitHub / Vercel all converge
+   on hover-bg-without-pointer-cursor for data tables where the row
+   is not itself clickable).
+
+   The opt-in `.table--clickable-rows` modifier below restores the
+   row-wide cursor on the one in-tree surface that legitimately needs
+   it: the System Log table (`page_admin_settings_logs.tpl`) where
+   the row's `onclick="toggleLogRow(this)"` flips a hidden sibling
+   detail row. Any future surface that genuinely wires a row-wide
+   click handler MUST add the modifier class to the `<table>` AND
+   wire the real handler on the `<tr>` AND update the regression
+   test's allowlist (see
+   `web/tests/integration/TableRowCursorPointerRegressionTest.php`). */
 .table tbody tr { border-bottom: 1px solid var(--border); }
 .table tbody tr:hover { background: var(--bg-muted); }
+.table.table--clickable-rows tbody tr { cursor: pointer; }
 .table td { padding: 0.75rem; vertical-align: middle; }
 /* #1207 ADM-5: row actions are *always* visible — the previous
    `opacity: 0 → 1 on tr:hover` treatment was a discoverability dead
