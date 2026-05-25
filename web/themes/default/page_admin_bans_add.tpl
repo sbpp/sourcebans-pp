@@ -17,11 +17,19 @@
     legacy ProcessBan validation, and dispatches Actions.BansAdd
     directly through sb.api.call. Toasts go through window.SBPP.showToast
     when present (theme.js, sbpp2026) with sb.message as a fallback.
-    The kickit branch defers to ShowKickBox/TabToReload only when
-    sourcebans.js is also loaded — sbpp2026 has no native UI for the
-    kickit popup yet so the call would otherwise no-op silently. The
-    default theme keeps its own page_admin_bans_add.tpl which still
-    uses onclick="ProcessBan();" via sourcebans.js.
+
+    Kickit (kick-on-ban) — when `config.enablekickit` is on (the
+    install default), api_bans_add returns a `kickit` envelope
+    (`{check, type}`). The success branch spawns a hidden iframe
+    pointing at `pages/admin.kickit.php?check=...&type=...` — the
+    iframe enumerates enabled servers and fires `sm_kick` via rcon
+    on each. This mirrors the comms.add → blockit.php pattern one
+    flow over and replaces the v1.x `ShowKickBox()` / `TabToReload()`
+    helpers that lived in `web/scripts/sourcebans.js` (deleted at
+    #1123 D1). Pre-#1441 the branch checked `typeof window.ShowKickBox
+    === 'function'` which silently resolved to `false`, falling
+    through to a "Ban added" toast while the ban DB row landed but
+    no live server ever kicked the player.
 
     Permission gate: $permission_addban is precomputed in admin.bans.php
     from ADMIN_OWNER | ADMIN_ADD_BAN.
@@ -373,18 +381,48 @@
             reason: reason,
             fromsub: Number(($id('fromsub') && $id('fromsub').value) || 0)
         }).then(function (r) {
+            if (r && r.ok && r.data && r.data.kickit) {
+                // Success - keep the button busy (matches the comms.add
+                // shape) so the operator can't queue a second submit
+                // while the iframe fires rcon at every server.
+                var k = r.data.kickit;
+                toast('success', 'Ban Added',
+                    'The ban has been successfully added.');
+                // The iframe is load-bearing - pages/admin.kickit.php
+                // loops the enabled servers and fires `sm_kick` via
+                // rcon for each one. Without it the DB row exists but
+                // no live server kicks the banned player. Mirror of
+                // the comms.add → blockit.php pattern one branch over
+                // (#1441 - replaces the v1.x ShowKickBox helper that
+                // was deleted with sourcebans.js at #1123 D1).
+                var iframe = document.createElement('iframe');
+                iframe.id = 'srvkicker';
+                iframe.style.display = 'none';
+                iframe.src = 'pages/admin.kickit.php?check='
+                    + encodeURIComponent(k.check)
+                    + '&type=' + encodeURIComponent(k.type);
+                document.body.appendChild(iframe);
+                if (r.data.reload) {
+                    setTimeout(function () {
+                        window.location.href = window.location.href.replace(/#\^.*$/, '');
+                    }, 2000);
+                }
+                return;
+            }
             setBusy(btn, false);
             if (!r || r.ok === false) {
                 toast('error', 'Add ban failed', (r && r.error && r.error.message) || 'Unknown error');
                 return;
             }
-            if (r.data && r.data.kickit && typeof window.ShowKickBox === 'function') {
-                window.ShowKickBox(r.data.kickit.check, r.data.kickit.type);
-                if (r.data.reload && typeof window.TabToReload === 'function') window.TabToReload();
-                return;
-            }
             var msg = (r.data && r.data.message) || null;
-            toast('success', (msg && msg.title) || 'Ban added', (msg && msg.body) || 'The ban has been successfully added');
+            // 'Ban Added' (Title Case) matches the kickit branch above
+            // AND comms.add's 'Block Added'. Pre-#1441 the kickit branch
+            // never fired, so only this fallback's lowercase 'Ban added'
+            // was visible to operators; the casing inconsistency was
+            // invisible. With #1441 both branches now run on different
+            // installs (kickit enabled vs disabled) and operators would
+            // see two casings; standardise on Title Case for symmetry.
+            toast('success', (msg && msg.title) || 'Ban Added', (msg && msg.body) || 'The ban has been successfully added');
             reset();
         });
     });

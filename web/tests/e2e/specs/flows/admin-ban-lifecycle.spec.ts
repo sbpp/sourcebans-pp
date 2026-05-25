@@ -107,18 +107,34 @@ test.describe('flow: admin ban lifecycle', () => {
         // The inline handler fires sb.api.call(Actions.BansAdd) and
         // shows a `success` toast on the resolution path. The toast
         // matrix is:
-        //   - api success + kickit enabled (default) + ShowKickBox
-        //     undefined (sourcebans.js gone) → falls through to the
-        //     'Ban added' toast (no message envelope).
+        //   - api success + kickit enabled (default) → kickit branch
+        //     in page_admin_bans_add.tpl creates the hidden
+        //     `srvkicker` iframe AND surfaces the 'Ban Added' toast
+        //     (post-#1441 the iframe replaces the dead `ShowKickBox`
+        //     legacy helper; the kick-on-ban contract is now the
+        //     symmetric mirror of comms.add → blockit.php).
         //   - api success + kickit disabled → message envelope
         //     surfaces the same 'Ban Added' title.
         // We anchor on `data-kind="success"` (the deterministic
         // attribute set by theme.js's showToast) and disambiguate
-        // via the case-insensitive title the matrix produces.
+        // via the case-insensitive title the matrix produces. The
+        // kickit-iframe spawn path is exercised end-to-end by
+        // `ban-kickit-iframe.spec.ts`; this lifecycle spec stays
+        // anchored on the toast so the 2s reload below doesn't race
+        // with the rest of the lifecycle assertions.
         const successToast = page
             .locator('.toast[data-kind="success"]')
             .filter({ hasText: /ban added/i });
         await expect(successToast).toBeVisible();
+
+        // The kickit branch schedules a 2s `window.location.href`
+        // reset. We navigate to the ban list explicitly below so the
+        // reload never fires inside this spec (Playwright's goto
+        // cancels the pending timer). The hidden `srvkicker` iframe
+        // is harmless in either case: the e2e DB has no enabled
+        // servers, so `Actions.KickitLoadServers` returns an empty
+        // list and the iframe's per-row `processRow` loop never
+        // runs.
 
         // ---- 2. List: find the new ban row -------------------------------
         // The ban list lives at ?p=banlist (the marquee page rendered

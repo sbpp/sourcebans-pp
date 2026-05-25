@@ -137,14 +137,17 @@ export function adminSubmissionRow(page: Page, steam: string): ReturnType<Page['
  *      the queue).
  *   6. Wait for the success toast: theme.js's showToast emits a
  *      `.toast[data-kind="success"]` element synchronously inside
- *      the BansAdd `.then()` handler. The visible title is "Ban added"
- *      (the kickit-disabled fallback string from
- *      page_admin_bans_add.tpl — server-side `'message' => null` when
- *      `config.enablekickit=1` and ShowKickBox is undefined in
- *      sbpp2026, so the inline script falls through to the literal
- *      'Ban added' default). We disambiguate via `hasText` while
- *      keeping `[data-kind="success"]` as the primary attribute
- *      selector.
+ *      the BansAdd `.then()` handler. The visible title is "Ban Added"
+ *      (post-#1441 the kickit branch of page_admin_bans_add.tpl
+ *      surfaces the toast directly — kickit is enabled by default,
+ *      so the api response carries `'kickit' => [...]` + `'message'
+ *      => null`, and the inline script paints the toast literal
+ *      rather than relying on a server-supplied message envelope).
+ *      We disambiguate via case-insensitive `hasText` while keeping
+ *      `[data-kind="success"]` as the primary attribute selector.
+ *      The hidden `srvkicker` iframe spawned in the same branch is
+ *      harmless here — the e2e DB has no enabled servers and the
+ *      iframe's per-row kick loop never runs.
  *
  * `reasonOption` defaults to "Inappropriate Language" because it's a
  * legacy-locked option in the static `<optgroup label="Behavior">`
@@ -183,7 +186,7 @@ export async function adminApprove(
 
     await page.locator('[data-testid="addban-submit"]').click();
 
-    const toast = page.locator('.toast[data-kind="success"]').filter({ hasText: 'Ban added' });
+    const toast = page.locator('.toast[data-kind="success"]').filter({ hasText: /ban added/i });
     await expect(toast).toBeVisible();
 }
 

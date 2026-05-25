@@ -21,16 +21,22 @@
     working.
 
     Anti-FOUC bootloader (#1438): the `pages/admin.kickit.php` URL is
-    reachable two ways in v2.0 chrome: as an iframe inside the
-    post-Ban "Ban Added" `sb.message.show` dialog (legacy default-theme
-    surface — `#dialog-placement` only exists on the default theme),
-    AND as a top-level navigation from the public Servers page's
-    right-click context menu's "Kick player" item (`web/scripts/server-context-menu.js`
-    builds the href directly to `pages/admin.kickit.php?check=…`). The
-    latter is the user-reported #1438 path: an operator in dark mode
-    right-clicks a player, picks Kick, and lands on this chromeless
-    iframe template rendered as a full-page document — and the page
-    paints stark white because `<html>` never gets the `dark` class.
+    reachable two ways in v2.0 chrome: as a hidden `#srvkicker` iframe
+    spawned by the post-Ban "Ban Added" success branch in
+    `page_admin_bans_add.tpl` (the modern theme's mirror of the
+    comms.add → blockit.php flow; post-#1441 this replaces the
+    pre-v2.0 `sb.message.show` dialog surface — `#dialog-placement`
+    only existed on the v1.x default theme and the legacy
+    `parent.document.getElementById('dialog-control')` lookups in
+    the JS below gracefully no-op when run inside the new hidden
+    iframe), AND as a top-level navigation from the public Servers
+    page's right-click context menu's "Kick player" item
+    (`web/scripts/server-context-menu.js` builds the href directly
+    to `pages/admin.kickit.php?check=…`). The latter is the
+    user-reported #1438 path: an operator in dark mode right-clicks
+    a player, picks Kick, and lands on this chromeless iframe
+    template rendered as a full-page document — and the page paints
+    stark white because `<html>` never gets the `dark` class.
     The inline bootloader below mirrors `core/header.tpl`'s shape
     (same THEME_KEY 'sbpp-theme', same default 'system', same dark-
     resolution predicate; only ADDS the class, never removes — :root
