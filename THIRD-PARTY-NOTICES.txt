@@ -11,13 +11,14 @@ are present in this distribution and the attributions owed to their
 authors per their respective licences.
 
 Pre-Elastic-License-2.0 (CC-BY-NC-SA 3.0) history note: prior to
-`goals#4`, the web panel rode CC BY-NC-SA 3.0. The relicense to ELv2
-was made under the authority of the contributor licence agreement
-(`CLA.md` §3(b)) and the audit recorded at `goals#3`. The InterWave
-Studios + SourceBans Team / GameConnect attributions below ride that
-historical CC-BY-NC-SA 3.0 lineage; they are preserved here as a
-matter of courtesy and to honour the spirit of CC BY-NC-SA 3.0 §4(c)
-as it applied to the panel at the time those upstreams were merged.
+v2.0.0, the web panel was distributed under CC BY-NC-SA 3.0. The
+relicense to ELv2 was made under the authority of the Contributor
+Licence Agreement (`CLA.md` §3(b)) and the project's pre-CLA
+contribution audit. The InterWave Studios + SourceBans Team /
+GameConnect attributions below ride that historical CC-BY-NC-SA 3.0
+lineage; they are preserved here as a matter of courtesy and to
+honour the spirit of CC BY-NC-SA 3.0 §4(c) as it applied to the
+panel at the time those upstreams were merged.
 
 If you are a downstream consumer (theme fork, distribution
 maintainer, vendor) and notice an attribution missing here, please
@@ -35,11 +36,11 @@ treat attribution drift as a bug.
                   (https://creativecommons.org/licenses/by-nc-sa/3.0/)
 
 SourceBans++ originated as a community fork of SourceBans 1.4.11 in
-2014 and has since been substantially rewritten — see issue #3 in
-https://github.com/sbpp/goals for a per-file audit confirming that
-the surviving v2.0 panel carries no substantive 1.4.11 source
-expression. However, the project's continuous-through-line traces
-back to that codebase in a number of structural ways:
+2014 and has since been substantially rewritten; the project's
+pre-CLA contribution audit confirmed that the surviving v2.0 panel
+carries no substantive 1.4.11 source expression. However, the
+project's continuous-through-line traces back to that codebase in a
+number of structural ways:
 
   - The MariaDB schema layout (`web/install/includes/sql/struc.sql`)
     inherits its table names, column names, and column types from
@@ -81,16 +82,15 @@ derivative work and remains under GPLv3 in lockstep — see
 `LICENSE-plugins.txt`. That continuity is explicit and load-
 bearing.
 
-The web panel's communications surfaces — the public
+The web panel's communications surfaces (the public
 `?p=commslist` page, the admin `?p=admin&c=comms` moderation
 queue, the `?p=admin&c=comms&section=search` advanced filter, and
-the `:prefix_comms` schema — were inspired by and historically
+the `:prefix_comms` schema) were inspired by and historically
 forked from the SourceComms panel add-on. The v2.0 panel
-rewrite (`goals#3` per-file audit + `goals#5` Route B rewrites)
-re-implemented every surface against the new typed View DTO +
-JSON API + vanilla JS chrome stack so that no SourceComms-panel
-source expression survives in the rendered v2.0 chrome. The
-remaining continuities are:
+rewrite re-implemented every surface against the new typed View
+DTO + JSON API + vanilla JS chrome stack so that no
+SourceComms-panel source expression survives in the rendered v2.0
+chrome. The remaining continuities are:
 
   - Table name (`:prefix_comms`) and column-name conventions
     (schema layout is factual, not expressive, but the lineage

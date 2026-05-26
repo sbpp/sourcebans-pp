@@ -6,8 +6,7 @@
 declare(strict_types=1);
 
 /**
- * Shared helpers for the `admin.edit.*` cluster (issue sbpp/goals#5,
- * Phase 2.5).
+ * Shared helpers for the `admin.edit.*` cluster.
  *
  * Pre-fix every page handler in the cluster carried its own ad-hoc
  * `<script>ShowBox(…)</script>` emitter, its own `errorScript .= "$('id.msg')…"`

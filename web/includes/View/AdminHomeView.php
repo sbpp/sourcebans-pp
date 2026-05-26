@@ -30,10 +30,10 @@ namespace Sbpp\View;
  * Comms intentionally folds into the sidebar nav (`admin/comms`) and
  * does not surface a separate Comms card on the landing.
  *
- * Pre-#5 this DTO also carried a `access_*` / `demosize` / `total_*` /
+ * This DTO previously carried a `access_*` / `demosize` / `total_*` /
  * `archived_*` legacy compatibility surface for theme forks of the
- * pre-v2.0.0 default. `goals#5` deletes those properties along with
- * the COUNT compute that backed them; theme forks still rendering
+ * pre-v2.0.0 default. The v2.0 rewrite deletes those properties along
+ * with the COUNT compute that backed them; theme forks still rendering
  * the legacy stat-counts row must migrate to the 8-card grid or
  * compute the values themselves.
  */

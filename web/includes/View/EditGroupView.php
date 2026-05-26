@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sbpp\View;
 
 /**
- * "Edit group" page (issue sbpp/goals#5, Phase 2.5f).
+ * "Edit group" page.
  *
  * Single template covers both `?type=web` and `?type=srv` (also the
  * legacy `?type=server` alias used by the admin-groups list links).

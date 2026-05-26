@@ -63,10 +63,10 @@ modernization work landing across v2.x.
 
 [![Sponsor on GitHub](https://img.shields.io/github/sponsors/sbpp?style=flat-square&logo=github&label=Sponsor%20on%20GitHub)](https://github.com/sponsors/sbpp)
 
-**Game-server hosts and SourceBans++-as-a-feature providers offering
-the panel as a hosted or managed service to third parties:** that
-use case is reserved by the Elastic License 2.0 and covered by a
-separate commercial license; see **License** below.
+**Game-server hosts offering the panel as a hosted or managed
+service to third parties:** that use case is reserved by the
+Elastic License 2.0 and covered by a separate commercial license;
+see **License** below.
 
 <!-- sponsors:start -->
 <!-- Corporate sponsor logos land here once the corporate tier ships. -->
@@ -76,23 +76,16 @@ separate commercial license; see **License** below.
 
 - **Web panel** (everything under `web/`): [Elastic License 2.0](LICENSE.txt).
   You may use, copy, modify, create derivative works of, and
-  redistribute the panel — for hobby use, community use, running it
+  redistribute the panel for hobby use, community use, running it
   for your own clan / network, bundling it into a Docker image,
-  publishing a Pterodactyl egg, packaging it for a distro, all of
-  that stays free. What ELv2 reserves is the right to **provide the
-  panel as a hosted or managed service to third parties** (the
-  classic "SourceBans++-as-a-feature" upsell from a game-server
-  hosting business); for that, a separate commercial license is
-  available. Open a thread in the
-  [Commercial licensing discussion category](https://github.com/sbpp/sourcebans-pp/discussions/categories/commercial-licensing)
-  or DM [@rumblefrog](https://github.com/rumblefrog) on the
-  SourceBans++ [Discord](https://discord.gg/tzqYqmAtF5) (a dedicated
-  inbox is on the roadmap once volume warrants it).
+  publishing a Pterodactyl egg, or packaging it for a distro. What
+  ELv2 reserves is the right to **provide the panel as a hosted
+  or managed service to third parties**; for that, a separate
+  commercial license is available. For commercial licensing
+  inquiries, reach out on the
+  [Discord](https://discord.gg/tzqYqmAtF5).
 - **SourceMod plugins** (everything under `game/addons/sourcemod/`):
-  [GPLv3](LICENSE-plugins.txt). Copyleft is the right tool there —
-  the managed-service loophole the Elastic License closes for the
-  panel doesn't exist for SourcePawn plugins that run in-process on
-  the customer's game server.
+  [GPLv3](LICENSE-plugins.txt).
 - **Vendored third-party code** (LightOpenID, TinyMCE, the
   SourceBans 1.4.x lineage, etc.) keeps its own license terms; see
   [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).

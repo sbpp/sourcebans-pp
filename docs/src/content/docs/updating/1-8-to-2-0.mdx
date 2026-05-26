@@ -23,8 +23,7 @@ The five things to know about the v2.0 upgrade:
    for logged-in admins. Opt-out is a one-line `config.php` define.
 5. The **web panel licence has changed** from CC BY-NC-SA 3.0 to the
    Elastic License 2.0. Hobby and community use stays free; offering
-   the panel as a hosted or managed service to third parties (the
-   classic game-server hosting "panel-as-a-feature" upsell) now
+   the panel as a hosted or managed service to third parties now
    requires a separate commercial licence. SourceMod plugins remain
    GPLv3. See [Licence change](#licence-change) below.
 
@@ -279,10 +278,8 @@ Most installs see no operational change. The matrix:
   managed service. Internal use isn't a third-party-managed-service
   use case.
 - **Game-server hosting providers offering SourceBans++ to your
-  customers as a hosted panel** (the "we install and manage it for
-  you, you click a button in your control panel and a SourceBans++
-  instance appears" upsell): this is the use case ELv2 reserves.
-  You need a commercial licence to keep doing this under v2.0.x —
+  customers as a hosted panel**: this is the use case ELv2 reserves.
+  You need a commercial licence to keep doing this under v2.0.x;
   see [Sponsor / commercial licensing](/sponsor/) for how to start
   the conversation. The project doesn't pursue retroactive
   enforcement against operators upgrading in good faith; reach out
@@ -290,7 +287,7 @@ Most installs see no operational change. The matrix:
   you.
 - **Forking and redistributing** the panel (publishing your own
   variant on GitHub, shipping a custom theme as part of a tarball):
-  still allowed. ELv2 requires you preserve the licence text +
+  still allowed. ELv2 requires you preserve the licence text and
   attribution notices (which the release artefacts already ship);
   the panel makes no other demands on your fork.
 
@@ -316,25 +313,23 @@ The maintainers' standing under ELv2 to relicense future
 contributions comes from the
 [Contributor License Agreement](https://github.com/sbpp/sourcebans-pp/blob/main/CLA.md)
 contributors sign on PRs touching `web/**`. The pre-CLA
-contribution history is covered by `sbpp/goals#3`'s audit (which
-confirmed [@rumblefrog](https://github.com/rumblefrog) as the sole
-significant pre-CLA contributor to the panel) and the relicense
-itself landed via `sbpp/goals#4`.
+contribution history is covered by the project's pre-CLA
+contribution audit, which confirmed the project maintainer as the
+sole significant pre-CLA contributor to the panel.
 
 ### Files that moved
 
-- `LICENSE.md` (CC BY-NC-SA 3.0 text) → deleted. ELv2 text now lives
-  at `LICENSE.txt`.
-- `LICENSE-plugins.txt` (new) — GPLv3 text for the SourceMod
+- `LICENSE.md` (CC BY-NC-SA 3.0 text) was deleted. ELv2 text now
+  lives at `LICENSE.txt`.
+- `LICENSE-plugins.txt` (new): GPLv3 text for the SourceMod
   plugins, broken out so the two licences are unambiguous.
-- `THIRD-PARTY-NOTICES.txt` (new) — bundled-third-party attributions
+- `THIRD-PARTY-NOTICES.txt` (new): bundled-third-party attributions
   (LightOpenID MIT, SourceBans 1.4.x + SourceComms + InterWave
   Studios theme.conf historical CC BY-NC-SA 3.0).
 - Every `.php` / `.js` / `.tpl` source-file header was updated from
-  the 17-line / 4-line legacy banner to the new 4-line ELv2 banner
-  (104 files swept; same operation that landed in `goals#5`).
+  the legacy banner to the new 4-line ELv2 banner.
 
-No operator action required for any of the file moves — the panel
+No operator action required for any of the file moves; the panel
 keeps running through the upgrade. The
 [Sponsor / commercial licensing](/sponsor/) page is the right place
 to read if you're affected by the managed-service reservation; the

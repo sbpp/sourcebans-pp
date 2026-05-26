@@ -425,7 +425,7 @@ matching its directory. PSR-4 autoloads from `web/includes/` →
 | `Sbpp\View\*`                            | view DTOs (page-level + partials)     |
 | `Sbpp\Servers\SourceQueryCache`          | per-`(ip, port)` on-disk cache around the xPaw A2S probe (#1311) |
 | `Sbpp\Servers\RconStatusCache`           | per-`sid` on-disk cache around the RCON `status` command (#PLAYER_CTX_MENU) |
-| `Sbpp\Upload\UploadHandler`              | shared file-upload handler (size + extension allowlist + filename sanitiser) for the three popup upload pages — see `goals#5` |
+| `Sbpp\Upload\UploadHandler`              | shared file-upload handler (size + extension allowlist + filename sanitiser) for the three popup upload pages |
 | `Sbpp\Markup\IntroRenderer`              | admin-authored Markdown renderer      |
 | `Sbpp\Mail\Mail` / `Sbpp\Mail\Mailer` / `Sbpp\Mail\EmailType` | `Mail::send(...)` entry point + Symfony Mailer SMTP wrapper + email-type enum |
 | `Sbpp\Version`                           | three-tier `SB_VERSION` resolver (tarball JSON → git → `'dev'`) |
@@ -2658,16 +2658,15 @@ contributions without contacting every contributor individually.
   to gate execution, and CLA.md §10 is what the contributor is told
   to type. Drift between any two silently breaks the signing flow.
 - Historical-contributor coverage was the precondition for the
- `goals#4` ELv2 relicense and was resolved by the `goals#3` audit:
- every pre-CLA `web/**` contribution of substance was authored by
- `rumblefrog`, who as the project maintainer is also the licensor
- under ELv2. The handful of small one-off external PRs from before
- the CLA workflow landed either (a) survived intact through the
- v2.0 panel rewrite (in which case their authors are listed on
- `goals#3`'s audit and the CLA's §3(b) relicense grant covers them
- going forward — pending sign-off), or (b) were removed during the
- v2.0 rewrite (in which case the question is moot; `goals#5` Route
- B rewrites covered the dead-code surface). Future inbound PRs are
+ ELv2 relicense and was resolved by the project's pre-CLA
+ contribution audit: every pre-CLA `web/**` contribution of
+ substance was authored by `rumblefrog`, who as the project
+ maintainer is also the licensor under ELv2. The handful of small
+ one-off external PRs from before the CLA workflow landed either
+ (a) survived intact through the v2.0 panel rewrite (in which case
+ the CLA's §3(b) relicense grant covers them going forward,
+ pending sign-off), or (b) were removed during the v2.0 rewrite
+ (in which case the question is moot). Future inbound PRs are
  covered by the workflow as designed. Retroactive sign-off for the
  surviving-author set is still an opt-in follow-up but is not on
  the critical path for the ELv2 relicense.
@@ -2698,11 +2697,11 @@ contributions without contacting every contributor individually.
  truth. The source-of-truth attribution surface for upstream
  lineage (SourceBans 1.4.x, SourceComms, InterWave Studios
  theme.conf, LightOpenID, TinyMCE) is `THIRD-PARTY-NOTICES.txt`.
- Issue `goals#5` swept all 36 files onto the 4-line shape; the
+ The v2.0 rewrite swept all 36 files onto the 4-line shape; the
  license-name + filename swap from CC-BY-NC-SA / `LICENSE.md` to
- ELv2 / `LICENSE.txt` rode the same PR that landed `LICENSE.txt`
- (`goals#4` Phase 2). New files take the 4-line shape from day
- one. Files with their own licence (`web/includes/Auth/openid.php`,
+ ELv2 / `LICENSE.txt` rode the same PR that landed `LICENSE.txt`.
+ New files take the 4-line shape from day one. Files with their
+ own licence (`web/includes/Auth/openid.php`,
  `web/includes/tinymce/`) keep their original headers.
 - Inline `echo '<form action="…">'` HTML blobs at the top of
  admin page handlers (`web/pages/admin.edit.<x>.php`) → build a
@@ -2717,7 +2716,8 @@ contributions without contacting every contributor individually.
  is set in `init.php`); the only escape hatch is `nofilter` which
  carries its own annotation rule (see "`nofilter` discipline" in
  Conventions). The `admin.edit.*` cluster was migrated wholesale
- in `goals#5`; new edit pages follow the same shape from day one.
+ in the v2.0 rewrite; new edit pages follow the same shape from
+ day one.
 - `echo '<div id="msg-red">…';` / `echo '<div id="msg-green">…';`
  inline-PHP error / success banners → use Smarty's
  `{if $error}<div class="alert alert--error">{$error|escape}</div>{/if}`
@@ -2732,8 +2732,8 @@ contributions without contacting every contributor individually.
  silent invisible div forever. The legacy markup also escaped
  nothing — `echo '<div id="msg-red">' . $username . ' is taken</div>'`
  was a stored-XSS surface for any field that survives validation.
- Migrated wholesale in `goals#5`. Search anchor for any future
- sweep: `rg "msg-(red|green)" web/`.
+ Migrated wholesale in the v2.0 rewrite. Search anchor for any
+ future sweep: `rg "msg-(red|green)" web/`.
 - Legacy 1.4.11 JS handler names — `ButtonOver(…)`,
  `ProcessEditAdminPermissions(…)`, `ProcessEditGroup(…)`,
  `ProcessEditMod(…)`, `ProcessEditServer(…)`, `errorScript(…)`
@@ -2745,10 +2745,10 @@ contributions without contacting every contributor individually.
  page rendered, the button looked clickable, the click did
  nothing — not even a console error). The legacy handler names
  are documented here defensively because `rg` searches against
- third-party theme forks may still surface them; the
- `goals#5` sweep removed every reference under `web/themes/default/`,
- but a fork that copy-pasted the templates pre-#1123 D1 will
- still carry them. Wire to `sb.api.call(Actions.PascalName, …)`
+ third-party theme forks may still surface them; the v2.0 rewrite
+ removed every reference under `web/themes/default/`, but a fork
+ that copy-pasted the templates pre-#1123 D1 will still carry them.
+ Wire to `sb.api.call(Actions.PascalName, …)`
  via `data-action` + a page-tail vanilla-JS dispatcher per the
  canonical confirm-modal shape under "Add a confirm + reason
  modal" in "Where to find what".
@@ -2815,9 +2815,9 @@ contributions without contacting every contributor individually.
  silently because nothing defined it post-#1123, so old `$('id').value`
  reads returned `undefined.value` → `TypeError`. Page-tail
  scripts inside templates use plain DOM access plus the
- `window.SBPP.showToast` / `setBusy` chrome helpers. The
- `goals#5` admin.edit.* sweep removed every surviving call site;
- don't reintroduce. (The `sb.$id` / `sb.$idRequired` helpers in
+ `window.SBPP.showToast` / `setBusy` chrome helpers. The v2.0
+ admin.edit.* sweep removed every surviving call site; don't
+ reintroduce. (The `sb.$id` / `sb.$idRequired` helpers in
  `web/scripts/sb.js` are the canonical shape for code that ships
  with the panel; inline page-tail scripts can use either shape.)
 - The DELETE-then-INSERT loop on
@@ -2832,8 +2832,8 @@ contributions without contacting every contributor individually.
  etc. The schema doesn't carry a UNIQUE on the (admin_id,
  server_group_id) / (server_id, group_id) pairs, so collapsing
  to `INSERT … ON DUPLICATE KEY UPDATE` would need a paired
- schema migration (out of `goals#5`'s scope; tracked as a
- follow-up). Until then, transactions are the contract — see
+ schema migration (tracked as a follow-up). Until then,
+ transactions are the contract — see
  `web/pages/admin.edit.adminservers.php` and
  `web/pages/admin.edit.server.php` for the canonical shape.
 - Hand-rolled per-page upload handling — `move_uploaded_file($_FILES['x']['tmp_name'], $dst)`
@@ -2843,7 +2843,7 @@ contributions without contacting every contributor individually.
  wraps every step (CSRF, permission gate, extension allowlist,
  filename sanitisation via `sanitiseName()`, the `move_uploaded_file()`
  call, the audit-log entry, the success / error popup chrome).
- The pre-`goals#5` shape duplicated all of this across the three
+ The pre-v2.0 shape duplicated all of this across the three
  popup upload pages (`admin.uploaddemo.php`, `admin.uploadicon.php`,
  `admin.uploadmapimg.php`) and trusted `$_FILES[…]['name']`
  verbatim — so a `name=../../etc/passwd` upload could escape
@@ -4507,9 +4507,9 @@ contributions without contacting every contributor individually.
 | Validate a server-address input (IPv4 / IPv6 / hostname) on either Add-Server (`api_servers_add`) or Edit-Server (`admin.edit.server.php`) | Shared validator pattern: `filter_var($x, FILTER_VALIDATE_IP) \|\| filter_var($x, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)`. Both surfaces MUST share the same predicate so a value either round-trips through Add AND Edit or fails on both (#1433); pre-fix the JSON dispatcher ran IP-only while the page handler ran a too-loose hand-rolled `^[a-zA-Z0-9.\-]+$` regex. The matching schema-width gate (`strlen($x) > 64`, surfacing as `validation` envelope or `$validationErrors['address']`) is paired with the IP/hostname check because `:prefix_servers.ip` is `VARCHAR(64) NOT NULL` (see `web/install/includes/sql/struc.sql`) — well below RFC 1035's 253-char hostname max, and MariaDB strict mode would otherwise raise `SQLSTATE[22001] 1406 Data too long for column 'ip'` mid-INSERT (generic 500 + no audit-log entry). Bumping the column to `VARCHAR(255)` is a paired schema-migration follow-up. Pinned by `web/tests/api/ServersTest.php::testAddAcceptsHostname` / `testAddAcceptsFqdn` / `testAddAcceptsBareIPv6` / `testAddRejectsAddressExceedingSchemaWidth` / `testAddRefusesDuplicateHostnamePort` / `testAddRejectsWhitespaceInAddress`. |
 | Add or rename a permission             | `web/configs/permissions/web.json`, then regen contract  |
 | Render a page                          | `web/pages/<page>.php` + `web/includes/View/*View.php`   |
-| Add a new edit page in the admin.edit.* cluster (e.g. `admin.edit.<x>.php`) | `web/pages/admin.edit.<x>.php` (the page handler — thin "validate input, build View, render" shape) + `web/includes/View/AdminEdit<X>View.php` (typed View DTO) + `web/themes/default/page_admin_edit_<x>.tpl` (template). Shared helpers live in `web/pages/_admin_edit_helpers.php` (`sbpp_admin_edit_die_with_toast()` for permission / not-found guards, `sbpp_admin_edit_emit_tail_script()` for form-success / validation-error feedback that fires `window.SBPP.showToast()` and writes errors into `<id>.msg` divs, `sbpp_admin_edit_collect_rehash_sids()` for the post-save Rehash Admins step). Anti-patterns to avoid: inline `echo '<form>...'` blocks, `echo '<div id="msg-red">…'` banners, MooTools `$('id').value` reads, legacy JS handler names (`ButtonOver`, `ProcessEditAdminPermissions`, etc.) — all swept as part of `goals#5`. CSRF gate every POST via `\CSRF::rejectIfInvalid();` after the `isset($_POST['<sentinel>'])` arm. |
+| Add a new edit page in the admin.edit.* cluster (e.g. `admin.edit.<x>.php`) | `web/pages/admin.edit.<x>.php` (the page handler — thin "validate input, build View, render" shape) + `web/includes/View/AdminEdit<X>View.php` (typed View DTO) + `web/themes/default/page_admin_edit_<x>.tpl` (template). Shared helpers live in `web/pages/_admin_edit_helpers.php` (`sbpp_admin_edit_die_with_toast()` for permission / not-found guards, `sbpp_admin_edit_emit_tail_script()` for form-success / validation-error feedback that fires `window.SBPP.showToast()` and writes errors into `<id>.msg` divs, `sbpp_admin_edit_collect_rehash_sids()` for the post-save Rehash Admins step). Anti-patterns to avoid: inline `echo '<form>...'` blocks, `echo '<div id="msg-red">…'` banners, MooTools `$('id').value` reads, legacy JS handler names (`ButtonOver`, `ProcessEditAdminPermissions`, etc.) — all swept as part of the v2.0 rewrite. CSRF gate every POST via `\CSRF::rejectIfInvalid();` after the `isset($_POST['<sentinel>'])` arm. |
 | Wire a `window.opener.<callback>(...)` slot on the parent template of a popup file-upload page (e.g. `window.icon`, `window.demo`, `window.mapimg`) | The parent template defines `window.<callback> = function (filename) { … }` inside an inline `<script>` block (use the `{literal}…{/literal}` Smarty guard so `{` / `}` inside the JS body don't trigger Smarty parsing). The function patches the parent form's hidden input (e.g. `document.getElementById('icon_hid').value = filename;`) and any visible affordances (toggle a thumbnail preview, swap a "Choose file" label for the filename). Reference: `web/themes/default/page_admin_mods_add.tpl` + `page_admin_edit_mod.tpl` for the `window.icon` wiring (#1402), and `web/themes/default/page_admin_bans_add.tpl` / `page_admin_edit_ban.tpl` for the `window.demo` wiring. Without this slot the popup emits `<script>window.opener.icon('foo.jpg')</script>` and the call throws `TypeError: window.opener.icon is not a function` — popup never closes, the parent form's hidden input never updates, the uploaded asset is orphaned on disk. The `UploadHandler` emits the call unconditionally; the parent's job is to be ready for it. |
-| Add a popup file-upload page (demo / icon / mapimage / new asset type) | `Sbpp\Upload\UploadHandler::handle()` (`web/includes/Upload/UploadHandler.php`). The page handler at `web/pages/admin.upload<x>.php` is a thin wrapper passing the per-page knobs (`permission` mask, `field` `$_FILES` key, `allowed` extensions, `destDir`, `callback` JS function name on `window.opener`, `auditOk` / `auditFmt` / `errorMsg` / `title` / `formName` / `formats` strings, optional `renameToHash` for demo-style randomised filenames). The handler runs CSRF + permission check, sanitises `$_FILES[…]['name']` via `sanitiseName()` (basename + strip backslashes + trim leading dots — defends LFI on the icon / mapimage paths where the filename hits disk), `move_uploaded_file()`s to the destination, calls `Log::add(LogType::Message, …)`, and on success emits the `<script>window.opener.<callback>(...)</script>` blob the parent page picks up. The three reference call sites (`admin.uploaddemo.php`, `admin.uploadicon.php`, `admin.uploadmapimg.php`) are 30-line wrappers; new asset types should match that line budget. Anti-pattern: hand-rolling the move / log / popup-emission sequence per page (the pre-`goals#5` shape). |
+| Add a popup file-upload page (demo / icon / mapimage / new asset type) | `Sbpp\Upload\UploadHandler::handle()` (`web/includes/Upload/UploadHandler.php`). The page handler at `web/pages/admin.upload<x>.php` is a thin wrapper passing the per-page knobs (`permission` mask, `field` `$_FILES` key, `allowed` extensions, `destDir`, `callback` JS function name on `window.opener`, `auditOk` / `auditFmt` / `errorMsg` / `title` / `formName` / `formats` strings, optional `renameToHash` for demo-style randomised filenames). The handler runs CSRF + permission check, sanitises `$_FILES[…]['name']` via `sanitiseName()` (basename + strip backslashes + trim leading dots — defends LFI on the icon / mapimage paths where the filename hits disk), `move_uploaded_file()`s to the destination, calls `Log::add(LogType::Message, …)`, and on success emits the `<script>window.opener.<callback>(...)</script>` blob the parent page picks up. The three reference call sites (`admin.uploaddemo.php`, `admin.uploadicon.php`, `admin.uploadmapimg.php`) are 30-line wrappers; new asset types should match that line budget. Anti-pattern: hand-rolling the move / log / popup-emission sequence per page (the pre-v2.0 shape). |
 | Edit a template                        | `web/themes/default/*.tpl`                               |
 | Reuse the moderation-queue card layout (admin submissions / protests, mobile-stacked summary rows) | `web/themes/default/css/theme.css` (`.queue-row`, `.queue-row__body`, `.queue-row__date` — #1207 PUB-2). Apply by adding `class="queue-row …"` to the outer `<details>` and dropping the inline `flex` / `flex-shrink:0` styles from the summary children. |
 | Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. The public banlist (`web/themes/default/page_bans.tpl`) follows the same shape — same chrome (Lucide icon + visible text label inside `.btn--ghost` / `.btn--secondary btn--sm`), same `.ban-card__actions` mobile row, same `data-action` / `data-fallback-href` wiring (`bans-unban` / `bans-delete`). The Remove affordance points at the legacy GET handler (`?p=banlist&a=delete&id=…&key=…` at the top of `page.banlist.php`) because no JSON `bans.delete` action exists yet — the inline JS `confirm()`-prompts then navigates, mirroring commslist's flow without adding a new handler / snapshot / permission-matrix entry. |

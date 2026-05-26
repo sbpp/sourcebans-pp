@@ -3,8 +3,8 @@
     Licensed under the Elastic License 2.0.
     See LICENSE.txt for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-    "Edit admin permissions" — pair: web/pages/admin.edit.adminperms.php +
-    web/includes/View/EditAdminPermsView.php (issue sbpp/goals#5, Phase 2.5c).
+    "Edit admin permissions" pair: web/pages/admin.edit.adminperms.php +
+    web/includes/View/EditAdminPermsView.php.
 
     Replaces the v1.x-era inline `echo` of `groups.web.perm.php` and
     `groups.server.perm.php` partials and their `ProcessEditAdminPermissions()`

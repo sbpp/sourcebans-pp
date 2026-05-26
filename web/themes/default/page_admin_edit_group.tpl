@@ -3,8 +3,8 @@
     Licensed under the Elastic License 2.0.
     See LICENSE.txt for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-    "Edit group" — pair: web/pages/admin.edit.group.php +
-    web/includes/View/EditGroupView.php (issue sbpp/goals#5, Phase 2.5f).
+    "Edit group" pair: web/pages/admin.edit.group.php +
+    web/includes/View/EditGroupView.php.
 
     Replaces the v1.x-era inline `echo` of `groups.web.perm.php` /
     `groups.server.perm.php` partials and the `ProcessEditGroup()` /

@@ -3,9 +3,8 @@
     Licensed under the Elastic License 2.0.
     See LICENSE.txt for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-    "Edit mod" — pair: web/pages/admin.edit.mod.php +
-    web/includes/View/AdminEditModView.php (issue sbpp/goals#5,
-    Phase 2.5g).
+    "Edit mod" pair: web/pages/admin.edit.mod.php +
+    web/includes/View/AdminEditModView.php.
 
     Submission stays form-POST (admin.edit.mod.php still owns the
     UPDATE round-trip) but error display is now server-side: empty
