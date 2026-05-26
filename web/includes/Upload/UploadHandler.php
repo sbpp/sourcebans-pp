@@ -15,7 +15,7 @@ use LogType;
 /**
  * Shared file-upload chrome for the three pop-up upload handlers
  * (`admin.uploaddemo.php`, `admin.uploadicon.php`,
- * `admin.uploadmapimg.php` — issue sbpp/goals#5, Phase 2.5i).
+ * `admin.uploadmapimg.php`).
  *
  * The pre-rewrite path duplicated the same six-step flow across the
  * three pages (CSRF check → extension allowlist → `move_uploaded_file`

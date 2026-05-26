@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace Sbpp\View;
 
 /**
- * "Edit admin permissions" page (issue sbpp/goals#5, Phase 2.5c).
+ * "Edit admin permissions" page.
  *
  * Pre-rewrite the page handler `echo`'d a 1.4.11-shaped HTML form
  * built around `groups.web.perm.php` / `groups.server.perm.php`

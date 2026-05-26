@@ -31,7 +31,7 @@ global $userbank, $theme;
  * for the legacy v1.x stat-counts row. The v2.0 8-card grid never
  * displayed those values, and the compute was gated behind a
  * `Sbpp\Theme::wantsLegacyAdminCounts()` opt-in for theme forks that
- * still rendered them. `goals#5` deletes both halves: the gate, the
+ * still rendered them. The v2.0 rewrite deletes both halves: the gate, the
  * `access_*` / `total_*` / `archived_*` / `demosize` properties on
  * `AdminHomeView`, and the matching `{if false}` parity block in
  * `page_admin.tpl` that kept SmartyTemplateRule green. Theme forks

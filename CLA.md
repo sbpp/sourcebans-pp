@@ -152,18 +152,14 @@ the date the bot records it.
 ### Pre-CLA contribution history
 
 Contributions made to the Project before this CLA workflow landed
-(initial workflow rollout in `sbpp/goals#4` Phase 2) are addressed by
-the audit recorded at
-[`sbpp/goals#3`](https://github.com/sbpp/goals/issues/3). That audit
-confirmed that the surviving substantive `web/**` contributions
-prior to the CLA workflow are attributable to the project
-maintainer ([@rumblefrog](https://github.com/rumblefrog)), whose
-authorship clears the path for the
-[`sbpp/goals#4`](https://github.com/sbpp/goals/issues/4) relicense
-from CC BY-NC-SA 3.0 to the Elastic License 2.0 without contacting
-third-party contributors individually. The handful of small one-off
-external pre-CLA `web/**` PRs identified by the audit are listed in
-that issue; their authors are welcome to retroactively sign this
+are addressed by the project's pre-CLA contribution audit. The
+audit confirmed that the surviving substantive `web/**`
+contributions prior to the CLA workflow are attributable to the
+project maintainer ([@rumblefrog](https://github.com/rumblefrog)),
+whose authorship covers the relicense from CC BY-NC-SA 3.0 to the
+Elastic License 2.0 without contacting third-party contributors
+individually. Authors of the handful of small one-off external
+pre-CLA `web/**` PRs are welcome to retroactively sign this
 Agreement against any subsequent PR so the §3(b) relicense grant
 applies to their historical contributions too, but the project's
 ELv2 standing does not depend on those retroactive signatures.

@@ -22,7 +22,7 @@ The [Overview](/getting-started/overview/) has the longer answer.
 
 ### Is it free?
 
-Yes — for everyone except game-server hosting companies who want to
+Yes, for everyone except game-server hosting companies who want to
 offer the panel to their customers as a hosted, managed service.
 
 The web panel is distributed under the
@@ -30,14 +30,13 @@ The web panel is distributed under the
 the SourceMod plugins are under
 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html). Hobby use,
 community use, running it for your own clan / network, bundling it
-into a Docker image, publishing a Pterodactyl egg, packaging it for
-a distro — all of that stays free under ELv2's terms. What ELv2
+into a Docker image, publishing a Pterodactyl egg, and packaging
+it for a distro all stay free under ELv2's terms. What ELv2
 reserves is the right to provide the panel as a hosted or managed
 service to third parties; if that's your business model, the
-project offers a separate commercial license. Open a thread in the
-[Commercial licensing discussion category](https://github.com/sbpp/sourcebans-pp/discussions/categories/commercial-licensing)
-or DM [@rumblefrog](https://github.com/rumblefrog) on the
-[Discord](https://discord.gg/tzqYqmAtF5) — see the
+project offers a separate commercial license. For commercial
+licensing inquiries, reach out on the
+[Discord](https://discord.gg/tzqYqmAtF5). See the
 [sponsor page](/sponsor/) for the longer breakdown.
 
 We don't sell hosting, support, or plugins ourselves.
