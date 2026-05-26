@@ -259,8 +259,8 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
  * constant twice in one process, so the regex is the only way to
  * enumerate without resetting state). B18 keeps the regex-based
  * discovery and just enriches it with author / version / link /
- * screenshot — every theme.conf.php is expected to declare those four
- * constants (single- or double-quoted string values; see #1466).
+ * screenshot — every theme.conf.php is expected to declare those five
+ * define() keys (single- or double-quoted string literals; see #1466).
  */
 $validThemes = [];
 $themesDir   = opendir(SB_THEMES);
@@ -279,8 +279,11 @@ if ($themesDir !== false) {
             'name'       => ThemeConf::parseDefine($confSrc, 'theme_name', $filename),
             'author'     => ThemeConf::parseDefine($confSrc, 'theme_author', 'Unknown'),
             'version'    => ThemeConf::parseDefine($confSrc, 'theme_version', '?'),
-            'link'       => ThemeConf::parseDefine($confSrc, 'theme_link', ''),
-            'screenshot' => 'themes/' . $filename . '/' . ThemeConf::parseDefine($confSrc, 'theme_screenshot', 'screenshot.jpg'),
+            'link'       => ThemeConf::sanitizeLink(ThemeConf::parseDefine($confSrc, 'theme_link', '')),
+            'screenshot' => 'themes/' . $filename . '/' . ThemeConf::sanitizeScreenshotFilename(
+                ThemeConf::parseDefine($confSrc, 'theme_screenshot', 'screenshot.jpg'),
+                'screenshot.jpg',
+            ),
             'active'     => $filename === SB_THEME,
         ];
     }

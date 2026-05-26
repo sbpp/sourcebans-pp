@@ -21,17 +21,25 @@ translations, and select your new theme in the panel's settings.
    the copy to something distinctive (e.g. `german`, `default-fr`).
 
 2. **Edit `theme.conf.php`** in your new theme. Update the metadata
-   so the panel's theme picker displays your theme correctly:
+   so the panel's theme picker displays your theme correctly. The
+   shipped default theme uses **single-quoted** string literals; double
+   quotes work too. Use plain `define('key', 'value');` lines — the
+   picker regex-reads the file without executing it, so concatenation
+   and other PHP expressions are not reflected on the Settings → Themes
+   cards (the JSON theme-preview API does execute the manifest).
 
    ```php
    <?php
-   define('theme_name',       "SourceBans++ Deutsch");
-   define('theme_author',     "Your name");
-   define('theme_version',    "1.0.0");
-   define('theme_link',       "https://your-site.example.com");
-   define('theme_screenshot', "screenshot.jpg");
-   ?>
+   define('theme_name', 'SourceBans++ Deutsch');
+   define('theme_author', 'Your name');
+   define('theme_version', '1.0.0');
+   define('theme_link', 'https://your-site.example.com');
+   define('theme_screenshot', 'screenshot.jpg');
    ```
+
+   Leave `theme_link` empty if you have no homepage; use only the
+   screenshot **filename** (not a path) — it must live in your theme
+   directory next to the templates.
 
 3. **Translate each `.tpl` file.** Open the `.tpl` files in your
    theme directory and replace the English copy with your

@@ -97,6 +97,7 @@ web/
 │   ├── View/                 Sbpp\View\* — typed Smarty view-model DTOs
 │   ├── View/Install/         Sbpp\View\Install\* — install-wizard step DTOs (#1332)
 │   ├── Markup/               Sbpp\Markup\IntroRenderer — admin Markdown -> safe HTML
+│   ├── Theme/                Sbpp\Theme\ThemeConf — regex-read theme.conf.php metadata for the admin Themes picker (#1466)
 │   ├── Servers/              Sbpp\Servers\{SourceQueryCache, RconStatusCache} — per-(ip, port) cache around the xPaw A2S probe (#1311) + per-sid cache around the RCON `status` command (#PLAYER_CTX_MENU)
 │   ├── Upload/               Sbpp\Upload\UploadHandler — shared file-upload handler (perm + CSRF + extension allowlist + filename sanitiser + popup chrome) for the demo / icon / mapimage popup pages
 │   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum

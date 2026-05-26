@@ -250,6 +250,11 @@ function api_system_check_version(array $params): array
     ];
 }
 
+/**
+ * Preview a theme manifest. Includes theme.conf.php so PHP expressions
+ * in the file are honoured; the admin Settings → Themes grid uses
+ * {@see \Sbpp\Theme\ThemeConf::parseDefine()} instead (no second define()).
+ */
 function api_system_sel_theme(array $params): array
 {
     $theme = rawurldecode((string)($params['theme'] ?? ''));
