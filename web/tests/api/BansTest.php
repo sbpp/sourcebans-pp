@@ -26,6 +26,38 @@ final class BansTest extends ApiTestCase
         return (int)$pdo->lastInsertId();
     }
 
+    private function seedDemoForBan(int $bid, string $filename = 'testdemo1464.dem'): void
+    {
+        $path = SB_DEMOS . '/' . $filename;
+        if (!is_dir(SB_DEMOS)) {
+            mkdir(SB_DEMOS, 0775, true);
+        }
+        file_put_contents($path, 'demo-bytes');
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_demos` (demid, demtype, filename, origname) VALUES (?, ?, ?, ?)',
+            DB_PREFIX
+        ))->execute([$bid, 'B', $filename, 'evidence.dem']);
+    }
+
+    private function createAdminWithFlags(int $mask): int
+    {
+        $pdo = Fixture::rawPdo();
+        $stmt = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins` (user, authid, password, gid, email, validate, extraflags, immunity)
+             VALUES (?, ?, ?, -1, ?, NULL, ?, 50)',
+            DB_PREFIX,
+        ));
+        $stmt->execute([
+            'flagged-' . $mask,
+            'STEAM_0:0:' . (4_000_000 + $mask),
+            password_hash('x', PASSWORD_BCRYPT),
+            'flagged-' . $mask . '@example.test',
+            $mask,
+        ]);
+        return (int) $pdo->lastInsertId();
+    }
+
     private function seedSubmission(string $name = 'Bob', string $steam = 'STEAM_0:1:99'): int
     {
         $pdo = Fixture::rawPdo();
@@ -968,26 +1000,30 @@ final class BansTest extends ApiTestCase
         $this->assertEnvelopeError($env, 'not_found');
     }
 
+    public function testRemoveDemoForbiddenWhenAdminCannotEditBan(): void
+    {
+        $bid = $this->seedBan();
+        $this->seedDemoForBan($bid, 'forbidden1464.dem');
+        $aid = $this->createAdminWithFlags(ADMIN_ADD_BAN);
+        $this->loginAs($aid);
+
+        $env = $this->api('bans.remove_demo', ['bid' => $bid]);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
     public function testRemoveDemoSuccess(): void
     {
         $this->loginAsAdmin();
         $bid = $this->seedBan();
         $filename = 'testdemo1464.dem';
+        $this->seedDemoForBan($bid, $filename);
         $path = SB_DEMOS . '/' . $filename;
-        if (!is_dir(SB_DEMOS)) {
-            mkdir(SB_DEMOS, 0775, true);
-        }
-        file_put_contents($path, 'demo-bytes');
-        $pdo = Fixture::rawPdo();
-        $pdo->prepare(sprintf(
-            'INSERT INTO `%s_demos` (demid, demtype, filename, origname) VALUES (?, ?, ?, ?)',
-            DB_PREFIX
-        ))->execute([$bid, 'B', $filename, 'evidence.dem']);
 
         $env = $this->api('bans.remove_demo', ['bid' => $bid]);
         $this->assertTrue($env['ok'], json_encode($env));
         $this->assertTrue($env['data']['removed']);
 
+        $pdo = Fixture::rawPdo();
         $row = $pdo->prepare(sprintf(
             'SELECT COUNT(*) FROM `%s_demos` WHERE demid = ? AND UPPER(demtype) = ?',
             DB_PREFIX

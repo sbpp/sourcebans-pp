@@ -391,8 +391,12 @@ function api_bans_remove_demo(array $params): array
     }
 
     $onDisk = basename((string) $demo['filename']);
-    if ($onDisk !== '' && is_file(SB_DEMOS . '/' . $onDisk)) {
-        @unlink(SB_DEMOS . '/' . $onDisk);
+    $path   = SB_DEMOS . '/' . $onDisk;
+    $listing = is_dir(SB_DEMOS) ? scandir(SB_DEMOS) : false;
+    if ($onDisk !== '' && $listing !== false && in_array($onDisk, $listing, true) && is_file($path)) {
+        if (!unlink($path)) {
+            throw new ApiError('server_error', 'Unable to delete demo file from disk.');
+        }
     }
 
     $GLOBALS['PDO']

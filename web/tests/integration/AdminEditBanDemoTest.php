@@ -21,6 +21,7 @@ final class AdminEditBanDemoTest extends TestCase
     {
         $contents = file_get_contents(self::webRoot() . '/pages/admin.edit.ban.php');
         $this->assertIsString($contents);
+        $this->assertStringContainsString("UPPER(demtype) = 'B'", $contents);
         $this->assertStringContainsString('getdemo.php?type=B&id=', $contents);
         $this->assertStringContainsString('data-testid="editban-demo-download"', $contents);
         $this->assertStringContainsString('Actions.BansRemoveDemo', $contents);
