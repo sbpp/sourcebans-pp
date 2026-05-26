@@ -573,6 +573,10 @@
  * @typedef {Object} ApiSystemRehashAdminsResponse
  */
 /**
+ * Preview a theme manifest. Includes theme.conf.php so PHP expressions in the
+ * file are honoured; the admin Settings → Themes grid uses {@see
+ * \Sbpp\Theme\ThemeConf::parseDefine()} instead (no second define()).
+ *
  * @typedef {Object} ApiSystemSelThemeRequest
  * @typedef {Object} ApiSystemSelThemeResponse
  */
