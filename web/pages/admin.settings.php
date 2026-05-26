@@ -12,6 +12,7 @@ global $userbank, $theme;
 use Sbpp\View\AdminFeaturesView;
 use Sbpp\View\AdminLogsView;
 use Sbpp\View\AdminSettingsView;
+use Sbpp\Theme\ThemeConf;
 use Sbpp\View\AdminThemesView;
 use Sbpp\View\Perms;
 use Sbpp\View\Renderer;
@@ -259,7 +260,7 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
  * enumerate without resetting state). B18 keeps the regex-based
  * discovery and just enriches it with author / version / link /
  * screenshot — every theme.conf.php is expected to declare those four
- * constants.
+ * constants (single- or double-quoted string values; see #1466).
  */
 $validThemes = [];
 $themesDir   = opendir(SB_THEMES);
@@ -275,31 +276,17 @@ if ($themesDir !== false) {
         $confSrc = (string) @file_get_contents($confPath);
         $validThemes[] = [
             'dir'        => $filename,
-            'name'       => themeConfMatch($confSrc, 'theme_name', $filename),
-            'author'     => themeConfMatch($confSrc, 'theme_author', 'Unknown'),
-            'version'    => themeConfMatch($confSrc, 'theme_version', '?'),
-            'link'       => themeConfMatch($confSrc, 'theme_link', ''),
-            'screenshot' => 'themes/' . $filename . '/' . themeConfMatch($confSrc, 'theme_screenshot', 'screenshot.jpg'),
+            'name'       => ThemeConf::parseDefine($confSrc, 'theme_name', $filename),
+            'author'     => ThemeConf::parseDefine($confSrc, 'theme_author', 'Unknown'),
+            'version'    => ThemeConf::parseDefine($confSrc, 'theme_version', '?'),
+            'link'       => ThemeConf::parseDefine($confSrc, 'theme_link', ''),
+            'screenshot' => 'themes/' . $filename . '/' . ThemeConf::parseDefine($confSrc, 'theme_screenshot', 'screenshot.jpg'),
             'active'     => $filename === SB_THEME,
         ];
     }
     closedir($themesDir);
 }
 usort($validThemes, fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
-
-/**
- * Pluck a `define('<key>', "<value>")` literal out of a theme.conf.php
- * source string. Mirrors the legacy regex shape (double-quoted only)
- * so existing theme manifests keep parsing identically.
- */
-function themeConfMatch(string $src, string $key, string $default): string
-{
-    $pattern = '/define\(\s*\'' . preg_quote($key, '/') . '\'\s*,\s*"([^"]*)"\s*\)\s*;/';
-    if (preg_match($pattern, $src, $m) === 1) {
-        return strip_tags($m[1]);
-    }
-    return $default;
-}
 
 /**
  * Whether STEAMAPIKEY is set to a non-empty value at runtime. Wrapped
