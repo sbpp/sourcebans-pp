@@ -29,8 +29,37 @@
 #endif
 #define _sourcebanspp_included
 
-#define SB_VERSION_MAJOR "1"
-#define SB_VERSION_MINOR "9"
+// -------------------------------------------------------------------------
+// Native API revision (bump MAJOR when third-party plugins must recompile)
+// -------------------------------------------------------------------------
+//
+// 2.0 native surface (this release):
+//   sourcebanspp.inc / library "sourcebans++"
+//     - Added forward SBPP_OnClientPostAdminCheck (#1431).
+//     - SBBanPlayer remains deprecated; use SBPP_BanPlayer.
+//
+//   sourcebanschecker.inc / library "sourcechecker++" (separate #include)
+//     - RegPluginLibrary name changed from "sourcebans++" to
+//       "sourcechecker++" (#1034) — update GetFeatureStatus / library checks.
+//     - Added natives SBPP_CheckerGetClientsMutes,
+//       SBPP_CheckerGetClientsGags (#1032).
+//
+// Third-party plugins should compile against this header and guard at the top:
+//
+//   #if SOURCEBANSPP_VERSION_MAJOR != 2
+//   #error Recompile this plugin against SourceBans++ 2.0 sourcebanspp.inc
+//   #endif
+//
+// -------------------------------------------------------------------------
+
+#define MAJOR_REVISION          2
+#define MINOR_REVISION          0
+
+#define SOURCEBANSPP_VERSION_MAJOR    MAJOR_REVISION
+#define SOURCEBANSPP_VERSION_MINOR    MINOR_REVISION
+
+#define SB_VERSION_MAJOR "2"
+#define SB_VERSION_MINOR "0"
 #define SB_VERSION_PATCH "0"
 
 #define SB_VERSION   SB_VERSION_MAJOR..."."...SB_VERSION_MINOR..."."...SB_VERSION_PATCH

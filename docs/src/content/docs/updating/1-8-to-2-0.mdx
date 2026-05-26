@@ -250,6 +250,40 @@ hard cap on the response body, stale-while-error caching, and
 is silent on failure. A flapping `sbpp.github.io` can never
 hard-fail a panel page.
 
+## Plugin authors
+
+If your server runs a **third-party SourceMod plugin** that
+`#include <sourcebanspp>` and calls SBPP natives or forwards, plan
+to **recompile** it against the `sourcebanspp.inc` shipped with
+SourceBans++ 2.0.0 before you deploy the new `.smx` files.
+
+The public header now exposes `SOURCEBANSPP_VERSION_MAJOR` (2 for
+this release). Guard your plugin at compile time:
+
+```sourcepawn
+#if SOURCEBANSPP_VERSION_MAJOR != 2
+#error Recompile this plugin against SourceBans++ 2.0 sourcebanspp.inc
+#endif
+```
+
+Changes since the 1.x native API that affect third-party code:
+
+- **`sourcebanspp.inc`** (library `"sourcebans++"`): new forward
+  `SBPP_OnClientPostAdminCheck` ([#1431](https://github.com/sbpp/sourcebans-pp/pull/1431)).
+- **`sourcebanschecker.inc`** (library `"sourcechecker++"` — renamed
+  from `"sourcebans++"` in
+  [#1034](https://github.com/sbpp/sourcebans-pp/pull/1034)): new
+  natives `SBPP_CheckerGetClientsMutes` and `SBPP_CheckerGetClientsGags`
+  ([#1032](https://github.com/sbpp/sourcebans-pp/pull/1032)).
+
+Ship the rebuilt `.smx` with the 2.0 plugin bundle
+(`sbpp_main.smx`, `sbpp_comms.smx`, `sbpp_checker.smx`, …). SourceMod
+**1.12.x** is the compiler floor the project CI uses (match your
+release build to the same toolchain).
+
+Native API bump tracking:
+[#1114](https://github.com/sbpp/sourcebans-pp/issues/1114).
+
 ## Licence change
 
 The 1.8.x line shipped the web panel under

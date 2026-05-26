@@ -101,6 +101,16 @@ Legend:
         `AGENTS.md` (workflow / conventions) live alongside
         `README.md`; user-facing install / upgrade / configure
         guides moved to the Starlight site at sbpp.github.io
+36. ? SourceMod native API `MAJOR_REVISION` bumped to 2 in
+        `sourcebanspp.inc` (`MINOR_REVISION` reset to 0; plugin
+        release string `SB_VERSION` → 2.0.0). Third-party plugins
+        must recompile against this header. See also checker comms
+        natives ([#1032](https://github.com/sbpp/sourcebans-pp/pull/1032)),
+        checker library rename
+        ([#1034](https://github.com/sbpp/sourcebans-pp/pull/1034)),
+        and post-admin forward
+        ([#1431](https://github.com/sbpp/sourcebans-pp/pull/1431)).
+        ([#1114](https://github.com/sbpp/sourcebans-pp/issues/1114))
 ```
 
 ### Privacy
