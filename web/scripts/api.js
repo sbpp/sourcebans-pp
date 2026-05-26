@@ -1,20 +1,12 @@
 // @ts-check
-/*************************************************************************
-This file is part of SourceBans++
-
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
-
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-JSON API client. Calls /api.php with {action, params}, returns the parsed
-envelope. Honours `redirect` automatically (sets window.location). On
-network failures returns a synthetic error envelope so callers don't have
-to special-case fetch rejections.
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under the Elastic License 2.0.
+// See LICENSE.txt for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+//
+// JSON API client. Calls /api.php with {action, params}, returns the parsed
+// envelope. Honours `redirect` automatically (sets window.location). On
+// network failures returns a synthetic error envelope so callers don't have
+// to special-case fetch rejections.
 
 (function (global) {
     'use strict';

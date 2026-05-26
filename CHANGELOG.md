@@ -17,6 +17,14 @@ Legend:
 > Custom themes that forked the pre-2.0 default keep working but
 > render in a compatibility mode; see the migration notes in the
 > release for details.
+>
+> **The web panel licence has changed** from CC BY-NC-SA 3.0 to the
+> Elastic License 2.0. Hobby / community self-hosting stays free
+> (most operators see no operational change). Offering SourceBans++
+> to third parties as a hosted or managed service is now reserved
+> by ELv2 and needs a separate commercial licence. SourceMod
+> plugins remain GPLv3. Full breakdown:
+> [Upgrading 1.8 → 2.0 — Licence change](https://sbpp.github.io/updating/1-8-to-2-0/#licence-change).
 ```
 01. * Rebuilt default theme: drawer-based admin nav, command palette
         (Ctrl/Cmd-K), light/dark/system theming, accessibility-first

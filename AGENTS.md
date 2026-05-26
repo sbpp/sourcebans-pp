@@ -2611,11 +2611,13 @@ the spec, target a 1920px viewport, not 1440px.
 ### Contributor License Agreement gate (`web/**`)
 
 Pull requests that touch `web/**` are gated on a signed Contributor
-License Agreement. The web panel is dual-licensable (free for hobby /
-community use under CC BY-NC-SA 3.0; separate commercial licence for
-production use by hosting providers), and the CLA is the mechanism
-that lets the maintainer relicense future contributions without
-contacting every contributor individually.
+License Agreement. The web panel is dual-licensable (free under the
+Elastic License 2.0 for hobby / community / self-hosted use; separate
+commercial licence for game-server hosts offering the panel as a
+managed service to third parties — see [`LICENSE.txt`](LICENSE.txt)
+and the README "License" section for the contract details), and the
+CLA is the mechanism that lets the maintainer relicense future
+contributions without contacting every contributor individually.
 
 - Agreement text: [`CLA.md`](CLA.md). Ten sections, ~1 page. Contributor
   keeps copyright; maintainer gets a perpetual, irrevocable, worldwide,
@@ -2655,10 +2657,20 @@ contacting every contributor individually.
   `custom-pr-sign-comment`, the `if:` matches against the same string
   to gate execution, and CLA.md §10 is what the contributor is told
   to type. Drift between any two silently breaks the signing flow.
-- Historical contributors haven't signed; their pre-CLA web-panel
-  contributions aren't covered by the new grant. Retroactive sign-off
-  is a separate piece of work (opt-in follow-up) and isn't blocked
-  by the workflow being in place.
+- Historical-contributor coverage was the precondition for the
+ `goals#4` ELv2 relicense and was resolved by the `goals#3` audit:
+ every pre-CLA `web/**` contribution of substance was authored by
+ `rumblefrog`, who as the project maintainer is also the licensor
+ under ELv2. The handful of small one-off external PRs from before
+ the CLA workflow landed either (a) survived intact through the
+ v2.0 panel rewrite (in which case their authors are listed on
+ `goals#3`'s audit and the CLA's §3(b) relicense grant covers them
+ going forward — pending sign-off), or (b) were removed during the
+ v2.0 rewrite (in which case the question is moot; `goals#5` Route
+ B rewrites covered the dead-code surface). Future inbound PRs are
+ covered by the workflow as designed. Retroactive sign-off for the
+ surviving-author set is still an opt-in follow-up but is not on
+ the critical path for the ELv2 relicense.
 
 ## Anti-patterns (do NOT reintroduce)
 
@@ -2670,8 +2682,8 @@ contacting every contributor individually.
  ```php
  <?php
  // SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
- // Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
- // See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+ // Licensed under the Elastic License 2.0.
+ // See LICENSE.txt for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
  ```
 
  Smarty `.tpl` files use the `{* … *}` shape with the same three
@@ -2681,12 +2693,16 @@ contacting every contributor individually.
  was 100% v2.0 expression), it shipped two parallel year ranges
  (`2014-2024` and `2014-2026`) with no automated drift gate, and
  it pointed at `creativecommons.org/licenses/by-nc-sa/3.0/` for
- the licence text but `LICENSE.md` is the actual licence. The
- source-of-truth attribution surface for upstream lineage
- (SourceBans 1.4.x, SourceComms, InterWave Studios theme.conf,
- LightOpenID, TinyMCE) is `THIRD-PARTY-NOTICES.txt`. Issue
- `goals#5` swept all 36 files; new files take the 4-line shape
- from day one. Files with their own licence (`web/includes/Auth/openid.php`,
+ the licence text but the project's actual root license file
+ (today `LICENSE.txt`, formerly `LICENSE.md`) is the source of
+ truth. The source-of-truth attribution surface for upstream
+ lineage (SourceBans 1.4.x, SourceComms, InterWave Studios
+ theme.conf, LightOpenID, TinyMCE) is `THIRD-PARTY-NOTICES.txt`.
+ Issue `goals#5` swept all 36 files onto the 4-line shape; the
+ license-name + filename swap from CC-BY-NC-SA / `LICENSE.md` to
+ ELv2 / `LICENSE.txt` rode the same PR that landed `LICENSE.txt`
+ (`goals#4` Phase 2). New files take the 4-line shape from day
+ one. Files with their own licence (`web/includes/Auth/openid.php`,
  `web/includes/tinymce/`) keep their original headers.
 - Inline `echo '<form action="…">'` HTML blobs at the top of
  admin page handlers (`web/pages/admin.edit.<x>.php`) → build a

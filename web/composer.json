@@ -1,12 +1,11 @@
 {
     "name": "sbpp/sourcebans-pp",
     "description": "Admin, ban, and comms management system for the Source engine.",
-    "version": "1.8.1",
     "type": "project",
     "keywords": [],
     "homepage": "https://sbpp.github.io",
-    "readme": "https://github.com/sbpp/sourcebans-pp/blob/v1.x/README.md",
-    "license": ["CC BY-NC-SA 3.0", "GPL-3.0"],
+    "readme": "https://github.com/sbpp/sourcebans-pp/blob/main/README.md",
+    "license": "Elastic-2.0",
     "support": {
         "issues": "https://github.com/sbpp/sourcebans-pp/issues",
         "forum": "https://forums.alliedmods.net/forumdisplay.php?f=152",

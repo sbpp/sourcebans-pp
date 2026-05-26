@@ -20,11 +20,13 @@ the project's developer guides.
 ## Contributor License Agreement (web panel only)
 
 The SourceBans++ **web panel** (everything under
-[`web/`](web/)) is offered under a dual-licence model: free for hobby
-and community use under [CC BY-NC-SA 3.0](LICENSE.md), and under a
-separate commercial licence for production use by game-server hosting
-companies that bundle SourceBans++ as a paid feature (see
-[README.md](README.md#license) for the commercial-licence contact).
+[`web/`](web/)) is offered under a dual-licence model: free under the
+[Elastic License 2.0](LICENSE.txt) for hobby use, community use, and
+every redistributor that isn't operating the panel as a hosted /
+managed service to third parties; and under a separate commercial
+licence for game-server hosting companies that bundle SourceBans++ as
+a paid feature (see [README.md](README.md#license) for the
+commercial-licence contact).
 
 To make that arrangement workable, contributions to `web/**` from
 anyone other than the project maintainer are accepted under a
@@ -61,18 +63,20 @@ PR you open against this repo, and is recorded on the
   [`.github/workflows/cla.yml`](.github/workflows/cla.yml) is the
   source of truth.
 - **PRs that only touch SourceMod plugins** under
-  `game/addons/sourcemod/**` — those stay under GPLv3 (strong
-  copyleft) and aren't part of the dual-licence arrangement. If your
-  PR mixes `web/**` and plugin files, the CLA check fires because of
-  the `web/**` half; signing once unblocks both.
+  `game/addons/sourcemod/**` — those stay under
+  [GPLv3](LICENSE-plugins.txt) (strong copyleft) and aren't part of
+  the dual-licence arrangement. If your PR mixes `web/**` and plugin
+  files, the CLA check fires because of the `web/**` half; signing
+  once unblocks both.
 
 ### Why a CLA
 
-The web panel is offered free for hobby and community use, and under
-a separate commercial licence for production use. The CLA gives the
-maintainer the right to offer both — without it, every contributor
-would need to be contacted individually for every future relicensing
-decision, which doesn't scale.
+The web panel is offered free under the Elastic License 2.0 for
+hobby and community use, and under a separate commercial licence for
+game-server hosts offering the panel as part of a managed-service
+product. The CLA gives the maintainer the right to offer both —
+without it, every contributor would need to be contacted individually
+for every future relicensing decision, which doesn't scale.
 
 If you have legal questions about the CLA, please open an issue or
 reach out via the [Discord](https://discord.gg/tzqYqmAtF5) before

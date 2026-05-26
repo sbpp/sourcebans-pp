@@ -58,10 +58,10 @@ tiers of sublicensees.
 
 For clarity, the licence granted in Section 3(b) is the practical
 mechanism by which the Maintainer may dual-license the Project (for
-example, offering it under both a community open-source licence and a
-separate commercial licence) and by which the Maintainer may relicense
-the Project under different terms in the future without seeking your
-further permission.
+example, offering it under both the Elastic License 2.0
+[`LICENSE.txt`](LICENSE.txt) and a separate commercial licence) and
+by which the Maintainer may relicense the Project under different
+terms in the future without seeking your further permission.
 
 ## 4. Patent Grant
 
@@ -126,8 +126,9 @@ This Agreement applies **only** to Contributions to the `web/`
 directory of the Project. Contributions to other parts of the
 SourceBans++ repository, including the SourceMod plugins under
 `game/addons/sourcemod/`, are governed by the licence terms of those
-subprojects (currently GPLv3 for the SourceMod plugins) and are not
-covered by this Agreement.
+subprojects (currently GPLv3 for the SourceMod plugins, see
+[`LICENSE-plugins.txt`](LICENSE-plugins.txt)) and are not covered by
+this Agreement.
 
 ## 9. Miscellaneous
 
@@ -147,3 +148,25 @@ pull request that the project's CLA bot has flagged:
 Your signature is recorded automatically by the bot, applies to all
 future Contributions you make to the Project, and is effective as of
 the date the bot records it.
+
+### Pre-CLA contribution history
+
+Contributions made to the Project before this CLA workflow landed
+(initial workflow rollout in `sbpp/goals#4` Phase 2) are addressed by
+the audit recorded at
+[`sbpp/goals#3`](https://github.com/sbpp/goals/issues/3). That audit
+confirmed that the surviving substantive `web/**` contributions
+prior to the CLA workflow are attributable to the project
+maintainer ([@rumblefrog](https://github.com/rumblefrog)), whose
+authorship clears the path for the
+[`sbpp/goals#4`](https://github.com/sbpp/goals/issues/4) relicense
+from CC BY-NC-SA 3.0 to the Elastic License 2.0 without contacting
+third-party contributors individually. The handful of small one-off
+external pre-CLA `web/**` PRs identified by the audit are listed in
+that issue; their authors are welcome to retroactively sign this
+Agreement against any subsequent PR so the §3(b) relicense grant
+applies to their historical contributions too, but the project's
+ELv2 standing does not depend on those retroactive signatures.
+
+This subsection is informational and does not modify the substantive
+terms of the Agreement above.

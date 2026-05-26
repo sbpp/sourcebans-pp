@@ -13,18 +13,34 @@ topic. If yours isn't here, drop into our
 
 ### What is SourceBans++?
 
-A free, open-source admin and ban-management system for Source-engine
-game servers. It has a web panel your admins log into and a set of
-SourceMod plugins running on each of your game servers. They share a
-database and coordinate through it.
+A source-available admin and ban-management system for Source-engine
+game servers, free for community use. It has a web panel your admins
+log into and a set of SourceMod plugins running on each of your game
+servers. They share a database and coordinate through it.
 
 The [Overview](/getting-started/overview/) has the longer answer.
 
 ### Is it free?
 
-Yes. SourceBans++ is open source under CC BY-NC-SA 3.0 for the web
-panel and GPLv3 for the plugins. We don't sell hosting, support, or
-plugins.
+Yes — for everyone except game-server hosting companies who want to
+offer the panel to their customers as a hosted, managed service.
+
+The web panel is distributed under the
+[Elastic License 2.0](https://www.elastic.co/licensing/elastic-license);
+the SourceMod plugins are under
+[GPLv3](https://www.gnu.org/licenses/gpl-3.0.html). Hobby use,
+community use, running it for your own clan / network, bundling it
+into a Docker image, publishing a Pterodactyl egg, packaging it for
+a distro — all of that stays free under ELv2's terms. What ELv2
+reserves is the right to provide the panel as a hosted or managed
+service to third parties; if that's your business model, the
+project offers a separate commercial license. Open a thread in the
+[Commercial licensing discussion category](https://github.com/sbpp/sourcebans-pp/discussions/categories/commercial-licensing)
+or DM [@rumblefrog](https://github.com/rumblefrog) on the
+[Discord](https://discord.gg/tzqYqmAtF5) — see the
+[sponsor page](/sponsor/) for the longer breakdown.
+
+We don't sell hosting, support, or plugins ourselves.
 
 ### Where can I get help?
 

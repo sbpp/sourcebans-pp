@@ -44,7 +44,55 @@ jobs:
           cp game/addons/sourcemod/plugins/*.smx "/tmp/${pkg}/common/addons/sourcemod/plugins/"
           cp -R game/addons/sourcemod/configs "/tmp/${pkg}/common/addons/sourcemod/"
           cp -R game/addons/sourcemod/translations "/tmp/${pkg}/common/addons/sourcemod/"
+          # GPLv3 §4 requires the licence text be conveyed with every
+          # redistribution of the covered work. Ship it at the tarball
+          # root so a self-hoster who only extracts the addons/ subtree
+          # still gets the licence side-by-side with the .smx files.
+          # The file is renamed from `LICENSE-plugins.txt` (the
+          # disambiguated source-tree name — the source tree carries
+          # both LICENSE.txt for the web panel + LICENSE-plugins.txt
+          # for the plugins) to the GPL-convention `LICENSE.txt` for
+          # the tarball root: GPLv3-licensed releases by convention
+          # ship the licence as `LICENSE` / `LICENSE.txt` next to the
+          # binaries, NOT under a non-default name. Operators
+          # extracting the plugin tarball expect that convention; an
+          # operator who extracts both tarballs into the same parent
+          # dir would clobber the webpanel zip's LICENSE.txt with the
+          # plugins' GPLv3 text, but the two install paths are
+          # disjoint by design (panel → web server's docroot,
+          # plugins → game server's `addons/sourcemod/`) so the
+          # collision is theoretical.
+          cp LICENSE-plugins.txt "/tmp/${pkg}/LICENSE.txt"
+          # THIRD-PARTY-NOTICES.txt carries the SourceBans 1.4.11 +
+          # SourceComms upstream-lineage attributions the plugins
+          # inherit (sbpp_comms.sp descends from SourceComms; the
+          # rest of the .sp files descend from the original
+          # SourceBans 1.4.x plugin set). Ship it next to LICENSE.txt
+          # so the GPLv3 §5 "preserve all notices" obligation is
+          # discoverable without cracking open the tarball's
+          # per-file headers.
+          cp THIRD-PARTY-NOTICES.txt "/tmp/${pkg}/THIRD-PARTY-NOTICES.txt"
           tar -C /tmp -czf "${pkg}.tar.gz" "${pkg}"
+
+      # Smoke-check that the required licence files actually landed
+      # in the tarball. Future shell refactors that silently drop
+      # the cp commands above would ship a GPLv3-non-compliant
+      # tarball; fail the release instead.
+      - name: Verify required files are bundled in the plugin tarball
+        run: |
+          pkg="sourcebans-pp-${GITHUB_REF_NAME}.plugin-only"
+          missing=0
+          for f in \
+              "${pkg}/LICENSE.txt" \
+              "${pkg}/THIRD-PARTY-NOTICES.txt"; do
+              if ! tar -tzf "${pkg}.tar.gz" "${f}" >/dev/null 2>&1; then
+                  echo "::error::Plugin tarball is missing ${f}; release would ship GPLv3-non-compliant."
+                  missing=1
+              fi
+          done
+          if [ "$missing" -ne 0 ]; then
+              exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -80,6 +128,26 @@ jobs:
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
           cp -R web "/tmp/${pkg}"
+          # ELv2 "Notices" requires preserving the licence text + the
+          # ELASTIC LICENSE attribution notice when redistributing the
+          # Software. THIRD-PARTY-NOTICES.txt carries the
+          # upstream-lineage + bundled-third-party attributions a
+          # self-hoster needs to comply with (LightOpenID MIT,
+          # SourceBans 1.4.x + SourceComms + theme.conf.php
+          # CC-BY-NC-SA 3.0 historical attributions per the file's
+          # preamble). LICENSE-plugins.txt ships alongside so the
+          # install wizard's step 1 promise ("LICENSE-plugins.txt
+          # shipped at the root of this install" — see
+          # `web/install/pages/page.1.php`) is honoured even though
+          # the webpanel zip doesn't ship the plugins themselves;
+          # this also lets a self-hoster who only ever pulls the
+          # webpanel zip discover the GPLv3 terms governing the
+          # paired plugin tarball without a docs round-trip. All
+          # three files ship at the package root next to README.md /
+          # install/.
+          cp LICENSE.txt "/tmp/${pkg}/LICENSE.txt"
+          cp LICENSE-plugins.txt "/tmp/${pkg}/LICENSE-plugins.txt"
+          cp THIRD-PARTY-NOTICES.txt "/tmp/${pkg}/THIRD-PARTY-NOTICES.txt"
           cat > "/tmp/${pkg}/configs/version.json" <<EOF
           {
               "version": "${GITHUB_REF_NAME}",
@@ -98,7 +166,7 @@ jobs:
       # Smoke-check the actual zip (not the staged tree) so a future
       # change that makes `zip` silently drop vendor/ — a stray
       # .zipignore, an exclusion flag, etc. — fails the build loudly
-      # instead of shipping a broken artifact. Two anchor files:
+      # instead of shipping a broken artifact. Three anchor files:
       #   - includes/vendor/autoload.php — the file init.php gates on.
       #   - includes/vendor/smarty/smarty/src/Smarty.php — the highest-
       #     value transitive dep (templates won't render without it).
@@ -106,20 +174,30 @@ jobs:
       #     web/init.php via Smarty 5.x's PSR-4 autoload (`Smarty\` =>
       #     `src/`); the legacy libs/Smarty.class.php is only a back-
       #     compat shim for non-composer callers, which the panel isn't.
-      - name: Verify vendor/ is bundled in the zip
+      #   - LICENSE.txt + LICENSE-plugins.txt + THIRD-PARTY-NOTICES.txt
+      #     — ELv2 "Notices" compliance gate + the install wizard's
+      #     step 1 contract (`web/install/pages/page.1.php` tells
+      #     the user LICENSE-plugins.txt is "shipped at the root of
+      #     this install" — without it the user-visible promise lies).
+      #     A release that silently drops any of the three makes every
+      #     downstream redistribution non-compliant.
+      - name: Verify required files are bundled in the zip
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
           missing=0
           for f in \
               "${pkg}/includes/vendor/autoload.php" \
-              "${pkg}/includes/vendor/smarty/smarty/src/Smarty.php"; do
+              "${pkg}/includes/vendor/smarty/smarty/src/Smarty.php" \
+              "${pkg}/LICENSE.txt" \
+              "${pkg}/LICENSE-plugins.txt" \
+              "${pkg}/THIRD-PARTY-NOTICES.txt"; do
               if ! unzip -l "${pkg}.zip" "${f}" >/dev/null 2>&1; then
                   echo "::error::Missing required artifact file in ${pkg}.zip: ${f}"
                   missing=1
               fi
           done
           if [ "$missing" -ne 0 ]; then
-              echo "::error::Webpanel zip is missing bundled composer dependencies; release would ship broken to self-hosters."
+              echo "::error::Webpanel zip is missing required bundled files; release would ship broken or ELv2-non-compliant to self-hosters."
               exit 1
           fi
 

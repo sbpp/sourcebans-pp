@@ -122,7 +122,7 @@ jobs:
             org.opencontainers.image.url=https://sbpp.github.io
             org.opencontainers.image.source=https://github.com/sbpp/sourcebans-pp
             org.opencontainers.image.documentation=https://sbpp.github.io/getting-started/quickstart-docker/
-            org.opencontainers.image.licenses=CC-BY-NC-SA-3.0 AND GPL-3.0-or-later
+            org.opencontainers.image.licenses=Elastic-2.0
             org.opencontainers.image.vendor=SourceBans++ Dev Team
             org.opencontainers.image.revision=${{ github.sha }}
 

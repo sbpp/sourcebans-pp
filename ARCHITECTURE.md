@@ -40,7 +40,10 @@ plugins are stable and updated less often.
 ├── AGENTS.md             Conventions for AI agents / contributors
 ├── CHANGELOG.md          Release notes
 ├── docs/                 Starlight docs site (install / upgrade / configure)
-└── LICENSE.md
+├── LICENSE.txt           Elastic License 2.0 (web panel)
+├── LICENSE-plugins.txt   GPLv3 (SourceMod plugins)
+├── CLA.md                Contributor License Agreement (web/** PRs)
+└── THIRD-PARTY-NOTICES.txt
 ```
 
 ## Web panel (`web/`)

@@ -185,6 +185,27 @@ COPY --from=builder --chown=www-data:www-data /build/web/ /var/www/html/web/
 # successful `SELECT 1`, 503 with a one-line stderr log otherwise.
 COPY --chown=www-data:www-data web/health.php /var/www/html/web/health.php
 
+# Ship the licence + attribution files inside the runtime image so an
+# operator who `docker exec`s in can satisfy the ELv2 "Notices"
+# obligation without having to fetch them out of band. The image
+# itself only carries the web panel (the SourceMod plugins ship
+# separately as the .plugin-only tarball — they're not bundled into
+# the panel's runtime image because the panel's docker is the web
+# server, not the gameserver), but we ship LICENSE-plugins.txt
+# alongside as a reference for self-hosters whose docker host is
+# also their gameserver host.
+#
+# Stable docroot-adjacent path at /var/www/html/. The Apache
+# DocumentRoot is /var/www/html/web/ (one level deeper), so these
+# files sit OUTSIDE the docroot and Apache cannot serve them at
+# any HTTP URL regardless of the request shape — no deny rule
+# needed in docker/apache/sbpp-prod.conf. Operator access is via
+# `docker cp <container>:/var/www/html/LICENSE.txt .` or
+# `docker exec <container> cat /var/www/html/LICENSE.txt`.
+COPY --chown=root:root LICENSE.txt /var/www/html/LICENSE.txt
+COPY --chown=root:root LICENSE-plugins.txt /var/www/html/LICENSE-plugins.txt
+COPY --chown=root:root THIRD-PARTY-NOTICES.txt /var/www/html/THIRD-PARTY-NOTICES.txt
+
 # Pre-create the writable directories the runtime needs. cache/ +
 # templates_c/ are Smarty + sessions; demos/ is the only must-persist
 # user-data dir (uploaded ban-evidence demos). The compose file binds
@@ -259,7 +280,7 @@ LABEL org.opencontainers.image.title="SourceBans++" \
       org.opencontainers.image.url="https://sbpp.github.io" \
       org.opencontainers.image.source="https://github.com/sbpp/sourcebans-pp" \
       org.opencontainers.image.documentation="https://sbpp.github.io/getting-started/quickstart-docker/" \
-      org.opencontainers.image.licenses="CC-BY-NC-SA-3.0 AND GPL-3.0-or-later" \
+      org.opencontainers.image.licenses="Elastic-2.0" \
       org.opencontainers.image.vendor="SourceBans++ Dev Team"
 
 WORKDIR /var/www/html/web

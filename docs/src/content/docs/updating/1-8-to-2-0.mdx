@@ -13,7 +13,7 @@ changes between 1.8.x and 2.0.x and the prep work an admin should do
 (back up, upload, visit `/updater/`) is the same as any other version.
 See [Updating SourceBans++](/updating/) for that.
 
-The four things to know about the v2.0 upgrade:
+The five things to know about the v2.0 upgrade:
 
 1. The **PHP version floor moves up** to 8.5. Check your host first.
 2. The **active theme resets** to default. Custom themes need
@@ -21,6 +21,12 @@ The four things to know about the v2.0 upgrade:
 3. **Anonymous telemetry ships on by default.** Opt-out is one click.
 4. A **daily project-announcements feed** also ships on by default
    for logged-in admins. Opt-out is a one-line `config.php` define.
+5. The **web panel licence has changed** from CC BY-NC-SA 3.0 to the
+   Elastic License 2.0. Hobby and community use stays free; offering
+   the panel as a hosted or managed service to third parties (the
+   classic game-server hosting "panel-as-a-feature" upsell) now
+   requires a separate commercial licence. SourceMod plugins remain
+   GPLv3. See [Licence change](#licence-change) below.
 
 <Aside type="caution" title="Back up your database first">
 The updater scripts are idempotent, but a half-completed upload is
@@ -244,3 +250,93 @@ is unaffected. The fetch has a 5-second total timeout, a 256 KiB
 hard cap on the response body, stale-while-error caching, and
 is silent on failure. A flapping `sbpp.github.io` can never
 hard-fail a panel page.
+
+## Licence change
+
+The 1.8.x line shipped the web panel under
+[Creative Commons Attribution-NonCommercial-ShareAlike 3.0](https://creativecommons.org/licenses/by-nc-sa/3.0/)
+(the CC BY-NC-SA 3.0 you saw referenced in `LICENSE.md`). v2.0.0
+moves the panel to the
+[Elastic License 2.0](https://www.elastic.co/licensing/elastic-license)
+(ELv2), a source-available licence whose only restriction is that
+you can't offer the Software as a hosted or managed service to
+third parties.
+
+The full text now lives at `LICENSE.txt` in the panel root. The
+v1.x `LICENSE.md` file is gone.
+
+### What changes for you in practice
+
+Most installs see no operational change. The matrix:
+
+- **Running the panel for your own community, clan, or network**
+  (the typical self-host): no change. Free use of every kind ELv2
+  covers — copy, modify, redistribute, bundle into a Docker image,
+  ship a Pterodactyl egg, package for a Linux distro.
+- **Internal use inside a company** (a corporate gameserver, a
+  studio QA panel, an esports org's competitive servers): no change.
+  ELv2 only restricts offering the panel **to third parties** as a
+  managed service. Internal use isn't a third-party-managed-service
+  use case.
+- **Game-server hosting providers offering SourceBans++ to your
+  customers as a hosted panel** (the "we install and manage it for
+  you, you click a button in your control panel and a SourceBans++
+  instance appears" upsell): this is the use case ELv2 reserves.
+  You need a commercial licence to keep doing this under v2.0.x —
+  see [Sponsor / commercial licensing](/sponsor/) for how to start
+  the conversation. The project doesn't pursue retroactive
+  enforcement against operators upgrading in good faith; reach out
+  before your next billing cycle and the maintainers will work with
+  you.
+- **Forking and redistributing** the panel (publishing your own
+  variant on GitHub, shipping a custom theme as part of a tarball):
+  still allowed. ELv2 requires you preserve the licence text +
+  attribution notices (which the release artefacts already ship);
+  the panel makes no other demands on your fork.
+
+### Why the change
+
+The v1.x CC BY-NC-SA 3.0 licence had two structural problems for a
+non-trivially-monetisable codebase: Creative Commons licences
+[explicitly aren't recommended for software](https://creativecommons.org/faq/#can-i-apply-a-creative-commons-license-to-software)
+(no patent grant, ambiguous treatment of source / object code), and
+"non-commercial" is famously vague — the
+[NC compatibility chart](https://creativecommons.org/faq/#does-my-use-violate-the-noncommercial-clause-of-the-licenses)
+declines to define "commercial" at all. Practical consequence: every
+operator wanting to be sure they were on the right side of CC's NC
+clause had to take their own legal advice, and large hosting
+providers had no clean path to clear it with their legal teams. ELv2
+replaces the wooly NC distinction with a single, explicit
+"no managed service to third parties" line. Self-hosters get a
+clearer "yes, this is fine" answer; the project gets a workable
+legal basis for the long-overdue dual-licensing arrangement that
+funds further development.
+
+The maintainers' standing under ELv2 to relicense future
+contributions comes from the
+[Contributor License Agreement](https://github.com/sbpp/sourcebans-pp/blob/main/CLA.md)
+contributors sign on PRs touching `web/**`. The pre-CLA
+contribution history is covered by `sbpp/goals#3`'s audit (which
+confirmed [@rumblefrog](https://github.com/rumblefrog) as the sole
+significant pre-CLA contributor to the panel) and the relicense
+itself landed via `sbpp/goals#4`.
+
+### Files that moved
+
+- `LICENSE.md` (CC BY-NC-SA 3.0 text) → deleted. ELv2 text now lives
+  at `LICENSE.txt`.
+- `LICENSE-plugins.txt` (new) — GPLv3 text for the SourceMod
+  plugins, broken out so the two licences are unambiguous.
+- `THIRD-PARTY-NOTICES.txt` (new) — bundled-third-party attributions
+  (LightOpenID MIT, SourceBans 1.4.x + SourceComms + InterWave
+  Studios theme.conf historical CC BY-NC-SA 3.0).
+- Every `.php` / `.js` / `.tpl` source-file header was updated from
+  the 17-line / 4-line legacy banner to the new 4-line ELv2 banner
+  (104 files swept; same operation that landed in `goals#5`).
+
+No operator action required for any of the file moves — the panel
+keeps running through the upgrade. The
+[Sponsor / commercial licensing](/sponsor/) page is the right place
+to read if you're affected by the managed-service reservation; the
+[FAQ "Is it free?" entry](/faq/#is-it-free) covers the same ground
+shorter.

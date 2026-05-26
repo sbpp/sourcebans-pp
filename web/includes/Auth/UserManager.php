@@ -9,8 +9,8 @@ use Sbpp\Db\Database;
 use WebPermission;
 
 // SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
-// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
-// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+// Licensed under the Elastic License 2.0.
+// See LICENSE.txt for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 final class UserManager
 {
     private readonly int $aid;

@@ -2,12 +2,22 @@ SourceBans++ Third-Party Notices
 ================================
 
 The SourceBans++ panel (the `web/` subdirectory) is licensed under the
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported
-License — see `LICENSE.md` for the full text.
+Elastic License 2.0 — see `LICENSE.txt` for the full text. The bundled
+SourceMod plugins (`game/addons/sourcemod/`) are licensed under the
+GNU General Public License version 3 — see `LICENSE-plugins.txt`.
 
 This file lists upstream projects whose code, schema, or other works
 are present in this distribution and the attributions owed to their
 authors per their respective licences.
+
+Pre-Elastic-License-2.0 (CC-BY-NC-SA 3.0) history note: prior to
+`goals#4`, the web panel rode CC BY-NC-SA 3.0. The relicense to ELv2
+was made under the authority of the contributor licence agreement
+(`CLA.md` §3(b)) and the audit recorded at `goals#3`. The InterWave
+Studios + SourceBans Team / GameConnect attributions below ride that
+historical CC-BY-NC-SA 3.0 lineage; they are preserved here as a
+matter of courtesy and to honour the spirit of CC BY-NC-SA 3.0 §4(c)
+as it applied to the panel at the time those upstreams were merged.
 
 If you are a downstream consumer (theme fork, distribution
 maintainer, vendor) and notice an attribution missing here, please
@@ -60,16 +70,47 @@ to honour the spirit of CC BY-NC-SA 3.0 §4(c).
   GitHub:        https://github.com/d-ai/SourceComms
   Licensed under: GNU General Public License version 3 or later
 
-The communications-management surfaces of the panel — the public
-`?p=commslist` page, the admin `?p=admin&c=comms` moderation queue,
-the `?p=admin&c=comms&section=search` advanced filter, and the
-`:prefix_comms` schema — descend from Alexandr Duplishchev's
-SourceComms plugin (a SourceBans 1.4.11 sister-plugin that added
-mute / gag / silence tracking to the panel's ban-management UI).
+The SourceComms project consists of two parts: a SourceMod plugin
+(server-side mute / gag / silence enforcement) and a paired web
+panel surface (a SourceBans 1.4.11 sister add-on that added
+moderation UI for comm blocks).
 
-The PHP surfaces have been rewritten in v2.0 idioms (typed View
-DTOs, JSON API actions, vanilla JS chrome) but the data model and
-the filter semantics descend from SourceComms.
+This repository's SourceMod-plugin lineage of SourceComms
+(`sbpp_comms.sp` under `game/addons/sourcemod/scripting/`) is a
+derivative work and remains under GPLv3 in lockstep — see
+`LICENSE-plugins.txt`. That continuity is explicit and load-
+bearing.
+
+The web panel's communications surfaces — the public
+`?p=commslist` page, the admin `?p=admin&c=comms` moderation
+queue, the `?p=admin&c=comms&section=search` advanced filter, and
+the `:prefix_comms` schema — were inspired by and historically
+forked from the SourceComms panel add-on. The v2.0 panel
+rewrite (`goals#3` per-file audit + `goals#5` Route B rewrites)
+re-implemented every surface against the new typed View DTO +
+JSON API + vanilla JS chrome stack so that no SourceComms-panel
+source expression survives in the rendered v2.0 chrome. The
+remaining continuities are:
+
+  - Table name (`:prefix_comms`) and column-name conventions
+    (schema layout is factual, not expressive, but the lineage
+    is documented defensively).
+  - The `BanType` / `BanRemoval` letter-code conventions shared
+    with the bans surfaces (also descended from SourceBans 1.4.x
+    rather than SourceComms specifically).
+  - The general workflow concept of "operator types a SteamID +
+    reason + duration, the plugin enforces the block, the panel
+    surfaces the audit trail." This is a workflow concept, not
+    code.
+
+The attribution above is preserved to honour the spirit of
+GPLv3 §5 / §7 ("preserve all notices") even though the v2.0
+panel surfaces no longer fall under GPLv3's "modified version"
+test on the substantive-source-expression analysis. If a
+downstream consumer reviewing this attribution disagrees with
+that analysis on technical grounds, please open an issue at
+https://github.com/sbpp/sourcebans-pp/issues — the project
+treats this kind of question seriously.
 
 --------------------------------------------------------------------
 3. InterWave Studios — default theme chrome (origin)
@@ -110,7 +151,7 @@ sole intentional global-namespace class allowed in
 `web/includes/`.
 
 The MIT license terms apply only to the LightOpenID file itself; the
-rest of the panel is governed by `LICENSE.md`.
+rest of the panel is governed by `LICENSE.txt`.
 
   MIT License
   -----------
@@ -159,7 +200,56 @@ editor in. A future PR will remove the directory once the
 fork-fallout window has elapsed.
 
 --------------------------------------------------------------------
-6. Composer dependencies (`web/composer.json`)
+6. SourceMod (runtime dependency of the bundled plugins)
+--------------------------------------------------------------------
+
+  Copyright (C) 2006-present AlliedModders LLC. All rights reserved.
+  Project URL:    https://www.sourcemod.net/
+  Licensed under: GNU General Public License version 3
+                  (with the AlliedModders link-exception below)
+
+The SourceMod plugins this repository ships
+(`game/addons/sourcemod/scripting/*.sp`) compile against and link
+into SourceMod's SDK at runtime. SourceMod itself is not bundled
+in this repository — operators install it separately on each game
+server. The plugins are GPLv3-licensed (`LICENSE-plugins.txt`),
+and that licence is what governs redistribution of the plugin
+source / .smx artifacts.
+
+For completeness, the AlliedModders LLC link-exception notice that
+permits SourceMod-derivative-works to link into Source-engine code
+is reproduced verbatim below. This exception applies to SourceMod
+itself and to its derivative works (SourcePawn plugins and
+SourceMod Extensions); the panel's plugin set falls into the
+"derivative works" category:
+
+  As a special exception, AlliedModders LLC gives you permission
+  to link the code of this program (as well as its derivative
+  works) to "Half-Life 2," the "Source Engine," the "SourcePawn
+  JIT," and any Game MODs that run on software by the Valve
+  Corporation. You must obey the GNU General Public License in all
+  respects for all other code used. Additionally, AlliedModders
+  LLC grants this exception to all derivative works.
+
+  As an additional special exception to the GNU General Public
+  License 3.0, AlliedModders LLC permits dual-licensing of
+  DERIVATIVE WORKS ONLY (that is, SourcePawn/SourceMod Plugins and
+  SourceMod Extensions, or any software built from the SourceMod
+  SDK or header files) under the GNU General Public License version
+  2 "or any higher version." As such, you may choose for your
+  derivative work(s) to be compatible with the GNU General Public
+  License version 2 as long as it is also compatible with the GNU
+  General Public License version 3, via the "or any higher version"
+  clause. This is intended for compatibility with other software.
+
+The full GPLv3 text is at `LICENSE-plugins.txt` in this repository
+and at https://www.gnu.org/licenses/gpl-3.0.html upstream. The
+AlliedModders link-exception notice originates from AlliedModders
+LLC and is reproduced here under the spirit of GPLv3 §7 (additional
+permissions).
+
+--------------------------------------------------------------------
+7. Composer dependencies (`web/composer.json`)
 --------------------------------------------------------------------
 
 The panel's runtime PHP dependencies (`smarty/smarty`, `lcobucci/jwt`,

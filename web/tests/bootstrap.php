@@ -1,10 +1,10 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
-
-PHPUnit bootstrap. Sets up env constants the panel expects without
-requiring config.php (production installer artifact).
-*************************************************************************/
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under the Elastic License 2.0.
+// See LICENSE.txt for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+//
+// PHPUnit bootstrap. Sets up env constants the panel expects without
+// requiring config.php (production installer artifact).
 
 // Don't barf on the installer guard.
 define('IN_SB',     true);
