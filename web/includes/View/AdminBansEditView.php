@@ -16,10 +16,14 @@ namespace Sbpp\View;
  *   - `$ban_name`        Current player name on the ban row.
  *   - `$ban_authid`      Current Steam2 authid on the ban row.
  *   - `$ban_ip`          Current IP on the ban row.
- *   - `$ban_demo`        Pre-built "Uploaded: <b>safename</b>" snippet
- *                        (or empty), htmlspecialchars'd in the page handler
- *                        per #1113. Rendered with `{nofilter}`; the safety
- *                        annotation lives at the call site in the template.
+ *   - `$ban_id`          Ban row id (`:prefix_bans.bid`); drives the demo
+ *                        download URL and the remove-demo JSON action.
+ *   - `$has_demo`        Whether a demo row exists for this ban.
+ *   - `$ban_demo`        Pre-built "Uploaded: <a …><b>safename</b></a>"
+ *                        snippet (or empty), htmlspecialchars'd in the
+ *                        page handler per #1113. Rendered with
+ *                        `{nofilter}`; the safety annotation lives at the
+ *                        call site in the template.
  *   - `$customreason`    `false` when custom reasons are disabled, otherwise
  *                        the list of reason strings from `bans.customreasons`.
  *
@@ -38,6 +42,8 @@ final class AdminBansEditView extends View
      */
     public function __construct(
         public readonly bool $can_edit_ban,
+        public readonly int $ban_id,
+        public readonly bool $has_demo,
         public readonly string $ban_name,
         public readonly string $ban_authid,
         public readonly string $ban_ip,

@@ -79,6 +79,7 @@ final class PermissionMatrixTest extends TestCase
             'bans.add_comment'            => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.edit_comment'           => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.remove_comment'         => ['perm' => ADMIN_OWNER, 'requireAdmin' => false, 'public' => false],
+            'bans.remove_demo'            => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.group_ban'              => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
             'bans.ban_member_of_group'    => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
             'bans.ban_friends'            => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],

@@ -182,6 +182,10 @@
  * @typedef {Object} ApiBansRemoveCommentResponse
  */
 /**
+ * @typedef {Object} ApiBansRemoveDemoRequest
+ * @typedef {Object} ApiBansRemoveDemoResponse
+ */
+/**
  * Autocomplete backend for the command palette (#1123 C2).  Returns up to
  * `limit` matching ban rows for a free-text query that the palette types into
  * as the admin presses keys. The handler is admin-only (the palette only
@@ -662,6 +666,7 @@ var Actions = Object.freeze({
     BansPlayerHistory: 'bans.player_history',
     BansPrepareReban: 'bans.prepare_reban',
     BansRemoveComment: 'bans.remove_comment',
+    BansRemoveDemo: 'bans.remove_demo',
     BansSearch: 'bans.search',
     BansSendMessage: 'bans.send_message',
     BansSetupBan: 'bans.setup_ban',

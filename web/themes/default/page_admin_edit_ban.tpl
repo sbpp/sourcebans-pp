@@ -236,18 +236,27 @@
                      style="color:var(--danger);display:none"></div>
             </div>
 
-            <div>
+            <div data-ban-id="{$ban_id}" data-testid="editban-demo-section">
                 <label class="label">Demo upload</label>
-                <button type="button"
-                        class="btn btn--secondary btn--sm"
-                        id="uploaddemo"
-                        data-testid="editban-demo"
-                        onclick="childWindow=open('pages/admin.uploaddemo.php','upload','resizable=no,width=300,height=130');">
-                    Upload a demo
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button"
+                            class="btn btn--secondary btn--sm"
+                            id="uploaddemo"
+                            data-testid="editban-demo"
+                            onclick="childWindow=open('pages/admin.uploaddemo.php','upload','resizable=no,width=300,height=130');">
+                        Upload a demo
+                    </button>
+                    <button type="button"
+                            class="btn btn--ghost btn--sm"
+                            id="removedemo"
+                            data-testid="editban-demo-remove"
+                            {if NOT $has_demo}hidden{/if}>
+                        Remove demo
+                    </button>
+                </div>
                 <input type="hidden" name="did" id="did" value="">
                 <input type="hidden" name="dname" id="dname" value="">
-                {* nofilter: $ban_demo is empty-or `Uploaded: <b>` + htmlspecialchars($res['dname'], ENT_QUOTES, 'UTF-8') + `</b>` built in admin.edit.ban.php. The `<b>…</b>` literals are server-controlled; the user-supplied dname is escaped on store-side per #1113 so dropping it raw here is safe. *}
+                {* nofilter: $ban_demo is empty-or `Uploaded: <a href="getdemo.php?type=B&id=…" data-testid="editban-demo-download"><b>` + htmlspecialchars($res['dname'], ENT_QUOTES, 'UTF-8') + `</b></a>` built in admin.edit.ban.php. The tag literals and href are server-controlled; the user-supplied dname is escaped on store-side per #1113 so dropping it raw here is safe. *}
                 <div class="text-xs mt-2" id="demo.msg" style="color:#cc0000">{$ban_demo nofilter}</div>
             </div>
 

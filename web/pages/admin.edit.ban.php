@@ -338,22 +338,31 @@ $customReason = Config::getBool('bans.customreasons')
     : false;
 /** @var false|list<string> $customReason */
 
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansEditView(
-    can_edit_ban: $canEditBan,
-    ban_name:     (string) $res['name'],
-    ban_authid:   trim((string) $res['authid']),
-    ban_ip:       (string) $res['ip'],
+$hasDemo = !empty($res['dname']);
+$banDemoHtml = '';
+if ($hasDemo) {
     // Issue #1113: dname is the admin-supplied original filename of the
     // demo (POST'd by whoever edited the ban + uploaded the demo, stored
     // as `:prefix_demos.origname`). It used to be interpolated raw into
     // HTML rendered with `nofilter`, so a filename like
     // `<img src=x onerror=…>` turned the edit-ban page into stored XSS
     // for any admin viewing that ban. htmlspecialchars + ENT_QUOTES so
-    // the value is safe inside both the surrounding `<b>…</b>` text and
-    // the `nofilter` render in the template.
-    ban_demo: !empty($res['dname'])
-        ? 'Uploaded: <b>' . htmlspecialchars((string) $res['dname'], ENT_QUOTES, 'UTF-8') . '</b>'
-        : '',
+    // the value is safe inside the link text. The href is server-built
+    // from the int-cast bid only (#1464).
+    $safeName = htmlspecialchars((string) $res['dname'], ENT_QUOTES, 'UTF-8');
+    $demoUrl  = 'getdemo.php?type=B&id=' . rawurlencode((string) $_GET['id']);
+    $banDemoHtml = 'Uploaded: <a href="' . $demoUrl . '" data-testid="editban-demo-download"><b>'
+        . $safeName . '</b></a>';
+}
+
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansEditView(
+    can_edit_ban: $canEditBan,
+    ban_id:       (int) $_GET['id'],
+    has_demo:     $hasDemo,
+    ban_name:     (string) $res['name'],
+    ban_authid:   trim((string) $res['authid']),
+    ban_ip:       (string) $res['ip'],
+    ban_demo:     $banDemoHtml,
     customreason: $customReason,
 ));
 
@@ -380,6 +389,7 @@ $banReasonJs = json_encode((string) $res['reason'], JSON_THROW_ON_ERROR | JSON_H
 $redirectUrl = 'index.php?p=banlist' . $pagelink;
 $redirectUrlJs = json_encode($redirectUrl, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 $postSuccessJs = $postSuccess ? 'true' : 'false';
+$banIdJs = json_encode((int) $_GET['id'], JSON_THROW_ON_ERROR);
 ?>
 <script>
 (function () {
@@ -389,8 +399,16 @@ $postSuccessJs = $postSuccess ? 'true' : 'false';
     var validationErrors = <?=$validationErrorsJs?>;
     var postSuccess = <?=$postSuccessJs?>;
     var redirectUrl = <?=$redirectUrlJs?>;
+    var banId = <?=$banIdJs?>;
 
     function $id(id) { return document.getElementById(id); }
+    function setBusy(btn, busy) {
+        if (window.SBPP && typeof window.SBPP.setBusy === 'function') {
+            window.SBPP.setBusy(btn, busy);
+            return;
+        }
+        if (btn) btn.disabled = busy;
+    }
     function setMsg(id, text) {
         var el = $id(id);
         if (!el) return;
@@ -486,21 +504,64 @@ $postSuccessJs = $postSuccess ? 'true' : 'false';
     // here; we still treat `name` as untrusted text and write it via
     // textContent + a leading static label so any HTML metacharacters
     // render literally, not as markup.
-    window.demo = function (id, name) {
+    function setDemoStatus(name) {
         var msg = $id('demo.msg');
         if (msg) {
             msg.textContent = '';
             var label = document.createTextNode('Uploaded: ');
+            var a = document.createElement('a');
+            a.href = 'getdemo.php?type=B&id=' + encodeURIComponent(String(banId));
+            a.setAttribute('data-testid', 'editban-demo-download');
             var b = document.createElement('b');
             b.textContent = String(name);
+            a.appendChild(b);
             msg.appendChild(label);
-            msg.appendChild(b);
+            msg.appendChild(a);
         }
+        var removeBtn = $id('removedemo');
+        if (removeBtn) {
+            removeBtn.hidden = false;
+        }
+    }
+
+    window.demo = function (id, name) {
+        setDemoStatus(name);
         var did = $id('did');
         var dname = $id('dname');
         if (did) did.value = id;
         if (dname) dname.value = name;
     };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var removeBtn = $id('removedemo');
+        if (!removeBtn) return;
+        removeBtn.addEventListener('click', function () {
+            if (!window.confirm('Remove the demo attached to this ban? This cannot be undone.')) {
+                return;
+            }
+            if (!window.sb || !window.sb.api || typeof window.sb.api.call !== 'function') {
+                toast('red', 'Error', 'Unable to remove demo — panel API unavailable.');
+                return;
+            }
+            setBusy(removeBtn, true);
+            window.sb.api.call(Actions.BansRemoveDemo, { bid: banId }).then(function (r) {
+                setBusy(removeBtn, false);
+                if (!r.ok) {
+                    var err = r.error && r.error.message ? r.error.message : 'Unable to remove demo.';
+                    toast('red', 'Demo NOT Removed', err);
+                    return;
+                }
+                var msg = $id('demo.msg');
+                if (msg) msg.textContent = '';
+                var did = $id('did');
+                var dname = $id('dname');
+                if (did) did.value = '';
+                if (dname) dname.value = '';
+                removeBtn.hidden = true;
+                toast('green', 'Demo removed', 'The demo has been deleted from this ban.');
+            });
+        });
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
         window.selectLengthTypeReason(<?=$banLengthSeconds?>, <?=$banType?>, <?=$banReasonJs?>);

@@ -952,4 +952,48 @@ final class BansTest extends ApiTestCase
         $this->assertSame(0, (int)$env['data']['total']);
         $this->assertSame([], $env['data']['items']);
     }
+
+    public function testRemoveDemoRejectsAnonymous(): void
+    {
+        $bid = $this->seedBan();
+        $env = $this->api('bans.remove_demo', ['bid' => $bid]);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    public function testRemoveDemoNotFoundWhenNoDemoAttached(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan();
+        $env = $this->api('bans.remove_demo', ['bid' => $bid]);
+        $this->assertEnvelopeError($env, 'not_found');
+    }
+
+    public function testRemoveDemoSuccess(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan();
+        $filename = 'testdemo1464.dem';
+        $path = SB_DEMOS . '/' . $filename;
+        if (!is_dir(SB_DEMOS)) {
+            mkdir(SB_DEMOS, 0775, true);
+        }
+        file_put_contents($path, 'demo-bytes');
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_demos` (demid, demtype, filename, origname) VALUES (?, ?, ?, ?)',
+            DB_PREFIX
+        ))->execute([$bid, 'B', $filename, 'evidence.dem']);
+
+        $env = $this->api('bans.remove_demo', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertTrue($env['data']['removed']);
+
+        $row = $pdo->prepare(sprintf(
+            'SELECT COUNT(*) FROM `%s_demos` WHERE demid = ? AND UPPER(demtype) = ?',
+            DB_PREFIX
+        ));
+        $row->execute([$bid, 'B']);
+        $this->assertSame(0, (int) $row->fetchColumn());
+        $this->assertFileDoesNotExist($path);
+    }
 }

@@ -69,6 +69,7 @@ Api::register('bans.paste',               'api_bans_paste',                ADMIN
 Api::register('bans.add_comment',         'api_bans_add_comment',          0, true);
 Api::register('bans.edit_comment',        'api_bans_edit_comment',         0, true);
 Api::register('bans.remove_comment',      'api_bans_remove_comment',       ADMIN_OWNER);
+Api::register('bans.remove_demo',         'api_bans_remove_demo',          0, true);
 Api::register('bans.group_ban',           'api_bans_group_ban',            ADMIN_OWNER | ADMIN_ADD_BAN);
 Api::register('bans.ban_member_of_group', 'api_bans_ban_member_of_group',  ADMIN_OWNER | ADMIN_ADD_BAN);
 Api::register('bans.ban_friends',         'api_bans_ban_friends',          ADMIN_OWNER | ADMIN_ADD_BAN);
