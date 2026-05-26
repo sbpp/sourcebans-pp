@@ -101,16 +101,15 @@ Legend:
         `AGENTS.md` (workflow / conventions) live alongside
         `README.md`; user-facing install / upgrade / configure
         guides moved to the Starlight site at sbpp.github.io
-36. ? SourceMod native API `MAJOR_REVISION` bumped to 2 in
-        `sourcebanspp.inc` (`MINOR_REVISION` reset to 0; plugin
-        release string `SB_VERSION` → 2.0.0). Third-party plugins
-        must recompile against this header. See also checker comms
-        natives ([#1032](https://github.com/sbpp/sourcebans-pp/pull/1032)),
-        checker library rename
-        ([#1034](https://github.com/sbpp/sourcebans-pp/pull/1034)),
-        and post-admin forward
-        ([#1431](https://github.com/sbpp/sourcebans-pp/pull/1431)).
-        ([#1114](https://github.com/sbpp/sourcebans-pp/issues/1114))
+36. • SourceMod native API epoch: `MAJOR_REVISION` 2 / `MINOR_REVISION` 0 in
+        `sourcebanspp.inc`; plugin `SB_VERSION` → 2.0.0 (panel 2.0 alignment).
+        New `SOURCEBANSPP_VERSION_MAJOR` for optional compile-time guards.
+        Third-party plugins need a rebuild only when they use checker library
+        detection (`"sourcechecker++"`, not `"sourcebans++"` — #1034), new
+        checker mute/gag natives (#1032), or hook
+        `SBPP_OnClientPostAdminCheck` (#1431). Plugins that only call
+        existing SBPP ban/report forwards/natives can usually keep their
+        existing `.smx`. ([#1114](https://github.com/sbpp/sourcebans-pp/issues/1114))
 ```
 
 ### Privacy

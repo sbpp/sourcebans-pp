@@ -252,37 +252,42 @@ hard-fail a panel page.
 
 ## Plugin authors
 
-If your server runs a **third-party SourceMod plugin** that
-`#include <sourcebanspp>` and calls SBPP natives or forwards, plan
-to **recompile** it against the `sourcebanspp.inc` shipped with
-SourceBans++ 2.0.0 before you deploy the new `.smx` files.
+SourceBans++ 2.0.0 aligns the public header with the 2.0 release
+(`SOURCEBANSPP_VERSION_MAJOR` = 2, plugin `SB_VERSION` 2.0.0). That is a
+**version epoch marker**, not a signal that every third-party plugin must
+be recompiled.
 
-The public header now exposes `SOURCEBANSPP_VERSION_MAJOR` (2 for
-this release). Guard your plugin at compile time:
+**You do not need to rebuild** if your plugin only uses APIs that already
+existed on the 1.x line (for example `SBPP_BanPlayer`, `SBPP_OnBanPlayer`,
+`SBPP_OnReportPlayer`) and you are not detecting the checker via
+`LibraryExists` / `GetFeatureStatus`.
+
+**Recompile (and redeploy your `.smx`) when you:**
+
+- `#include <sourcebanschecker>` and probe the checker with
+  `LibraryExists` / `GetFeatureStatus` — use library name
+  `"sourcechecker++"`, not `"sourcebans++"`
+  ([#1034](https://github.com/sbpp/sourcebans-pp/pull/1034)).
+- Call `SBPP_CheckerGetClientsMutes` or `SBPP_CheckerGetClientsGags`
+  ([#1032](https://github.com/sbpp/sourcebans-pp/pull/1032)) — deploy
+  `sbpp_checker.smx` from this release too.
+- Want to implement `SBPP_OnClientPostAdminCheck`
+  ([#1431](https://github.com/sbpp/sourcebans-pp/pull/1431)) — additive
+  forward; existing binaries ignore it until you add a hook.
+
+Optional guard when you compile against 2.0 `sourcebanspp.inc`:
 
 ```sourcepawn
 #if SOURCEBANSPP_VERSION_MAJOR != 2
-#error Recompile this plugin against SourceBans++ 2.0 sourcebanspp.inc
+#error Rebuild against SourceBans++ 2.0 sourcebanspp.inc
 #endif
 ```
 
-Changes since the 1.x native API that affect third-party code:
+Deploy the official 2.0 plugin bundle (`sbpp_main.smx`, `sbpp_comms.smx`,
+`sbpp_checker.smx`, …) with the panel upgrade. SourceMod **1.12.x** matches
+project CI.
 
-- **`sourcebanspp.inc`** (library `"sourcebans++"`): new forward
-  `SBPP_OnClientPostAdminCheck` ([#1431](https://github.com/sbpp/sourcebans-pp/pull/1431)).
-- **`sourcebanschecker.inc`** (library `"sourcechecker++"` — renamed
-  from `"sourcebans++"` in
-  [#1034](https://github.com/sbpp/sourcebans-pp/pull/1034)): new
-  natives `SBPP_CheckerGetClientsMutes` and `SBPP_CheckerGetClientsGags`
-  ([#1032](https://github.com/sbpp/sourcebans-pp/pull/1032)).
-
-Ship the rebuilt `.smx` with the 2.0 plugin bundle
-(`sbpp_main.smx`, `sbpp_comms.smx`, `sbpp_checker.smx`, …). SourceMod
-**1.12.x** is the compiler floor the project CI uses (match your
-release build to the same toolchain).
-
-Native API bump tracking:
-[#1114](https://github.com/sbpp/sourcebans-pp/issues/1114).
+Tracking: [#1114](https://github.com/sbpp/sourcebans-pp/issues/1114).
 
 ## Licence change
 

@@ -30,24 +30,33 @@
 #define _sourcebanspp_included
 
 // -------------------------------------------------------------------------
-// Native API revision (bump MAJOR when third-party plugins must recompile)
+// Native API revision (aligned with SourceBans++ 2.0 panel / plugin release)
 // -------------------------------------------------------------------------
 //
-// 2.0 native surface (this release):
-//   sourcebanspp.inc / library "sourcebans++"
-//     - Added forward SBPP_OnClientPostAdminCheck (#1431).
-//     - SBBanPlayer remains deprecated; use SBPP_BanPlayer.
+// MAJOR_REVISION tracks the documented native API epoch (2 = 2.0 line).
+// Bump MAJOR only when a change requires third-party plugins to recompile
+// (removed/changed native signatures, removed forwards). Bump MINOR for
+// additive natives/forwards that old .smx files can ignore at runtime.
 //
-//   sourcebanschecker.inc / library "sourcechecker++" (separate #include)
-//     - RegPluginLibrary name changed from "sourcebans++" to
-//       "sourcechecker++" (#1034) — update GetFeatureStatus / library checks.
-//     - Added natives SBPP_CheckerGetClientsMutes,
-//       SBPP_CheckerGetClientsGags (#1032).
+// 2.0 epoch (this header):
+//   sourcebanspp.inc — library "sourcebans++" (sbpp_main.smx)
+//     Additive: forward SBPP_OnClientPostAdminCheck (#1431).
+//     Unchanged: SBPP_BanPlayer; SBBanPlayer remains deprecated.
+//     Existing third-party .smx that only use prior natives/forwards
+//     generally keep working without a rebuild.
 //
-// Third-party plugins should compile against this header and guard at the top:
+//   sourcebanschecker.inc — RegPluginLibrary "sourcechecker++" (#1034)
+//     Recompile / update detection if you #include checker and use
+//     LibraryExists/GetFeatureStatus: was "sourcebans++", now
+//     "sourcechecker++". Additive natives: SBPP_CheckerGetClientsMutes,
+//     SBPP_CheckerGetClientsGags (#1032); require sbpp_checker.smx that
+//     implements them if you call those natives.
+//
+// Optional compile-time guard (add to your plugin if you ship against
+// this header and want a hard fail when the epoch drifts):
 //
 //   #if SOURCEBANSPP_VERSION_MAJOR != 2
-//   #error Recompile this plugin against SourceBans++ 2.0 sourcebanspp.inc
+//   #error Rebuild against SourceBans++ 2.0 sourcebanspp.inc
 //   #endif
 //
 // -------------------------------------------------------------------------
