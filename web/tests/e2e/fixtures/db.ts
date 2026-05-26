@@ -47,6 +47,8 @@ const DELETE_SERVER_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/delete-server-e2e.php';
 const CLEAR_TEST_EMAIL_THROTTLE_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/clear-test-email-throttle-e2e.php';
+const SEED_SYSTEM_LOG_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/seed-system-log-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -681,6 +683,95 @@ async function runAnnouncementsHelper(
             ));
         });
     });
+}
+
+/**
+ * Per-row shape consumed by `seedSystemLogE2e` (#1462). Mirrors the
+ * `:prefix_log` schema: `type` is the audit letter code
+ * (`m`=message, `w`=warning, `e`=error — matches `LogType`). Every
+ * field except `type` carries a string default — the spec just
+ * needs at least one row to exist so the `{if count($log_items) > 0}`
+ * gate in `page_admin_settings_logs.tpl` paints SOMETHING, and the
+ * mobile-card / desktop-table parity assertion can run.
+ */
+export interface SystemLogSeedRow {
+    type?: 'm' | 'w' | 'e';
+    title?: string;
+    message?: string;
+    function?: string;
+    query?: string;
+    host?: string;
+}
+
+/**
+ * Seed `:prefix_log` rows directly so the System Log sub-tab
+ * (`?p=admin&c=settings&section=logs`) actually paints log entries
+ * instead of the empty "No log entries." placeholder. The e2e DB's
+ * `:prefix_log` table is empty by default (`data.sql` doesn't ship
+ * audit rows + `Fixture::truncateAndReseed` truncates every table on
+ * reset) and there is no JSON action that emits audit rows directly
+ * — they're side effects of authenticated panel writes. Driving e.g.
+ * `Actions.BansAdd` to produce a row would couple the System Log
+ * spec to the bans-add audit message, so the direct INSERT is the
+ * narrow shape the spec needs.
+ *
+ * Caller responsibility: invoke after `truncateE2eDb()` so the
+ * seeded rows are the only ones the spec sees. Mirrors the
+ * `seedCommsRawE2e` shape (shell-out + stdin-JSON).
+ *
+ * Returns the list of inserted `lid` values (in insert order) so
+ * the spec can target a specific row via `[data-id="<lid>"]`.
+ */
+export async function seedSystemLogE2e(rows: SystemLogSeedRow[]): Promise<number[]> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SEED_SYSTEM_LOG_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', SEED_SYSTEM_LOG_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify(rows));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `seed-system-log-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
+
+    const trimmed = stdout.trim();
+    if (trimmed === '') {
+        throw new Error(`seed-system-log-e2e.php: empty stdout\nstderr:\n${stderr}`);
+    }
+    try {
+        const parsed = JSON.parse(trimmed) as { lids: number[] };
+        if (!Array.isArray(parsed.lids)) {
+            throw new Error('missing lids key');
+        }
+        return parsed.lids;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(
+            `seed-system-log-e2e.php: malformed stdout (${msg})\nstdout:\n${trimmed}\nstderr:\n${stderr}`,
+        );
+    }
 }
 
 /**

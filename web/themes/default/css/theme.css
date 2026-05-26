@@ -1720,6 +1720,77 @@ details.queue-row > summary > .row-actions {
   padding: 0 1rem 0.75rem;
 }
 
+/* ---- System log mobile cards (#1462) ----
+   The System Log sub-tab (`page_admin_settings_logs.tpl`) renders a
+   `<table class="table table--clickable-rows">` for the desktop view.
+   At `<=768px` the global `.table { display: none }` rule (originally
+   paired with the bans / comms `.ban-cards` mobile mirror below)
+   collapses every `<table class="table">` on the panel. The System Log
+   never shipped a paired mobile surface, so the rows silently vanished
+   on the iPhone view — the reporter on #1462 saw "no logs visible"
+   while the chrome around them rendered fine.
+
+   `.log-cards` is the paired mobile-only surface. Each entry is a
+   native `<details>` so the disclosure works without JavaScript, is
+   keyboard-reachable by default, and announces correctly to screen
+   readers (no `role="button"` / `tabindex="0"` / `onkeydown` handler
+   needed; the browser does it for free on `<details>`). The chevron
+   icon rotates 90° on `[open]` and honours
+   `prefers-reduced-motion: reduce` per the chrome's motion-of-state
+   contract (see the `@media (prefers-reduced-motion: reduce)` block
+   near the bottom of this file).
+
+   Desktop chrome is untouched: at `>=769px` the cards stay hidden
+   and the `<table>` does the same job it always did. The chrome
+   shape is "show both surfaces, viewport gates which one paints" so
+   the cards never compete with the table at intermediate viewports. */
+.log-cards { display: none; list-style: none; margin: 0; padding: 0; }
+.log-card { border-bottom: 1px solid var(--border); }
+.log-card:last-child { border-bottom: none; }
+.log-card__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.log-card__summary::-webkit-details-marker { display: none; }
+.log-card__summary::marker { content: ''; }
+.log-card__summary:hover { background: var(--bg-muted); }
+.log-card__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  word-break: break-word;
+}
+.log-card__chevron {
+  transition: transform .15s ease;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.log-card[open] > summary .log-card__chevron { transform: rotate(90deg); }
+.log-card__meta {
+  display: none;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding: 0 1rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text);
+}
+.log-card[open] > .log-card__meta { display: flex; }
+.log-card__body {
+  padding: 0.75rem 1rem 1rem;
+  background: var(--bg-muted);
+  border-top: 1px solid var(--border);
+}
+@media (prefers-reduced-motion: reduce) {
+  .log-card__chevron { transition: none; }
+}
+
 /* ---- Responsive ---- */
 [data-mobile-menu] { display: none; }
 @media (max-width: 1024px) {
@@ -1730,6 +1801,10 @@ details.queue-row > summary > .row-actions {
 @media (max-width: 768px) {
   .table { display: none; }
   .ban-cards { display: block; }
+  /* #1462: paired mobile surface for the System Log table (see
+     `.log-cards` block above for the full rationale). Same `display`
+     dance as `.ban-cards` — hidden at desktop, block at mobile. */
+  .log-cards { display: block; }
   /* #1181: filter chip rows wrap onto multiple lines on mobile
      instead of horizontal-scrolling, so every chip is reachable
      without a swipe. The .scroll-x desktop affordance is the
@@ -1739,6 +1814,7 @@ details.queue-row > summary > .row-actions {
 }
 @media (min-width: 769px) {
   .ban-cards { display: none; }
+  .log-cards { display: none; }
 }
 
 /* ---- Utility classes used by templates ---- */

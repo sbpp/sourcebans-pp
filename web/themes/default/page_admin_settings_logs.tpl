@@ -27,11 +27,26 @@
     Testability hooks:
         - Sidebar links: data-testid="admin-tab-<slug>" (#1259 unified
           shape across servers / mods / groups / settings).
-        - Each summary row: data-testid="log-row" + data-id (lid).
-        - "Clear log" button: data-testid="logs-clear".
+        - Each desktop summary row: data-testid="log-row" + data-id (lid).
+        - Each mobile card: data-testid="log-card" + data-id (lid).
+        - Desktop table wrapper: data-testid="logs-table".
+        - Mobile card wrapper:   data-testid="logs-cards".
+        - "Clear log" button:    data-testid="logs-clear".
 
     #1266 — outer `.p-6` removed; the page inset lives on
     `.admin-sidebar-shell` so both grid columns share the same top y.
+
+    #1462 — paired mobile card surface. At `<=768px` the global
+    `.table { display: none }` rule (paired originally with the bans /
+    comms `.ban-cards` mobile mirror in `theme.css`) collapses every
+    `<table class="table">` on the panel. The System Log never got a
+    paired mobile surface, so on mobile the chrome rendered (heading,
+    "Clear log" button) while the rows themselves were silently
+    hidden — the reporter saw "no logs visible" on the iPhone view.
+    The `.log-cards` block below mirrors `$log_items` as native
+    `<details>` disclosures so the same rows surface on mobile, with
+    JS-free expansion + keyboard reachability + screen-reader
+    announce out of the box. Desktop chrome unchanged.
 *}
 <div>
     <div class="mb-6">
@@ -98,6 +113,20 @@
                                            — a bare `<tr>` with no role / tabindex / key
                                            handling — so keyboard-only and AT users had no
                                            way to expand a log row. *}
+                                        {* #1462: extracted the inline `onkeydown` body to
+                                           the page-tail `<script>{literal}` block (now
+                                           `handleLogRowKey`). The original `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLogRow(this);}"`
+                                           form (added in #1451) compiles cleanly when
+                                           Smarty has a stale cached copy of the template
+                                           on disk but fails fresh-compile with
+                                           "Unexpected '.', expected one of: '}'" — the
+                                           `{event.preventDefault();...}` substring is
+                                           parsed as a Smarty tag by the default
+                                           `auto_literal=true` (no whitespace after the
+                                           open brace = parse as tag). Calling a tail-
+                                           defined helper sidesteps the per-character
+                                           braces hazard without losing keyboard
+                                           reachability. *}
                                         <tr data-testid="log-row"
                                             data-id="{$log.lid}"
                                             role="button"
@@ -105,7 +134,7 @@
                                             aria-expanded="false"
                                             aria-controls="log-detail-{$log.lid}"
                                             onclick="toggleLogRow(this);"
-                                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLogRow(this);}">
+                                            onkeydown="handleLogRowKey(event, this);">
                                             <td>
                                                 {if $log.type == 'm'}
                                                     <span class="pill pill--online"><i data-lucide="info" style="width:0.75rem;height:0.75rem"></i> Info</span>
@@ -139,6 +168,61 @@
                                     {/foreach}
                                 </tbody>
                             </table>
+
+                            {* #1462: paired mobile card surface. The desktop table
+                               above is hidden by the global `.table { display: none }`
+                               rule at `<=768px`; this `<ul class="log-cards">` block
+                               is hidden by default (`display: none`) and only paints
+                               at the same `<=768px` breakpoint. Both surfaces iterate
+                               the same `$log_items` so the visible row set is
+                               viewport-symmetric. Native `<details>` carries the
+                               disclosure semantic — no JS required, keyboard-
+                               accessible, screen-reader-announced as an expandable
+                               group out of the box. The `aria-label` on the `<ul>`
+                               names the list for AT users; the `aria-hidden="true"`
+                               on the desktop table's `<thead>` is unnecessary here
+                               because each card carries its own per-row context in
+                               the summary. *}
+                            <ul class="log-cards" data-testid="logs-cards" aria-label="System log entries">
+                                {foreach from=$log_items item="log"}
+                                    <li>
+                                        <details class="log-card"
+                                                 data-testid="log-card"
+                                                 data-id="{$log.lid}">
+                                            <summary class="log-card__summary">
+                                                {if $log.type == 'm'}
+                                                    <span class="pill pill--online"><i data-lucide="info" style="width:0.75rem;height:0.75rem"></i> Info</span>
+                                                {elseif $log.type == 'w'}
+                                                    <span class="pill pill--active"><i data-lucide="alert-triangle" style="width:0.75rem;height:0.75rem"></i> Warn</span>
+                                                {elseif $log.type == 'e'}
+                                                    <span class="pill pill--permanent"><i data-lucide="circle-x" style="width:0.75rem;height:0.75rem"></i> Error</span>
+                                                {else}
+                                                    <span class="pill pill--offline">{$log.type}</span>
+                                                {/if}
+                                                <span class="log-card__title">{$log.title}</span>
+                                                <i class="log-card__chevron" data-lucide="chevron-right" style="width:1rem;height:1rem" aria-hidden="true"></i>
+                                            </summary>
+                                            <div class="log-card__meta">
+                                                <span><span class="text-muted">User:</span> {$log.user}</span>
+                                                <span><span class="text-muted">Date:</span> {$log.date_str}</span>
+                                            </div>
+                                            <div class="log-card__body">
+                                                <dl class="grid gap-2 text-xs" style="grid-template-columns:6rem 1fr;margin:0">
+                                                    <dt class="text-muted">Details</dt>
+                                                    {* nofilter: $log.message is escaped via htmlentities() in admin.settings.php (same value as the desktop table above; the page handler stages each log row once and both surfaces consume the same dict). *}
+                                                    <dd style="margin:0">{$log.message nofilter}</dd>
+                                                    <dt class="text-muted">Function</dt>
+                                                    <dd class="font-mono" style="margin:0;word-break:break-all">{$log.function}</dd>
+                                                    <dt class="text-muted">Query</dt>
+                                                    <dd class="font-mono" style="margin:0;word-break:break-all">{$log.query}</dd>
+                                                    <dt class="text-muted">IP</dt>
+                                                    <dd class="font-mono tabular-nums" style="margin:0">{$log.host}</dd>
+                                                </dl>
+                                            </div>
+                                        </details>
+                                    </li>
+                                {/foreach}
+                            </ul>
                         {else}
                             <p class="text-muted text-sm m-0">No log entries.</p>
                         {/if}
@@ -175,6 +259,23 @@
         } else {
             detail.setAttribute('hidden', '');
             row.setAttribute('aria-expanded', 'false');
+        }
+    };
+
+    /**
+     * Keyboard dispatcher for the desktop summary row. #1462 lifted this out
+     * of an inline `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();...}"`
+     * attribute body because the inline shape compiles under a stale Smarty
+     * cache but fails fresh-compile: the `{event.preventDefault();...}`
+     * substring is parsed as a Smarty tag (no whitespace after `{` defeats
+     * `auto_literal`). Keeping the dispatcher here also makes the
+     * `role="button"` keyboard contract testable without parsing Smarty.
+     */
+    window.handleLogRowKey = function (event, row) {
+        if (!event || !row) return;
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            window.toggleLogRow(row);
         }
     };
 
