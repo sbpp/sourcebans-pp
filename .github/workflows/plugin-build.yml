@@ -38,6 +38,9 @@ jobs:
       # push-fix-push for each. The `::error file=…::` annotation surfaces
       # each failure inline on the PR's Files Changed view; `::group::`
       # collapses per-plugin spcomp output so the log stays scannable.
+      - name: Resolve plugin version (git describe / dev fallback)
+        run: bash game/addons/sourcemod/scripting/scripts/resolve-plugin-version.sh
+
       - name: Compile plugins
         working-directory: game/addons/sourcemod/scripting
         run: |

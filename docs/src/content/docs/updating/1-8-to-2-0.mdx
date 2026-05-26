@@ -253,9 +253,16 @@ hard-fail a panel page.
 ## Plugin authors
 
 SourceBans++ 2.0.0 aligns the public header with the 2.0 release
-(`SOURCEBANSPP_VERSION_MAJOR` = 2, plugin `SB_VERSION` 2.0.0). That is a
+(`SOURCEBANSPP_VERSION_MAJOR` = 2; `SB_VERSION` is stamped at compile time
+from the same version tiers as the panel — release tag, then
+`configs/version.json`, then `git describe`, then `dev`). That is a
 **version epoch marker**, not a signal that every third-party plugin must
 be recompiled.
+
+If you compile plugins from a git checkout, run
+`game/addons/sourcemod/scripting/scripts/resolve-plugin-version.sh`
+before `spcomp` so `sbpp_version.inc` matches your tree (the repo ships a
+`dev` fallback so a bare compile still works).
 
 **You do not need to rebuild** if your plugin only uses APIs that already
 existed on the 1.x line (for example `SBPP_BanPlayer`, `SBPP_OnBanPlayer`,

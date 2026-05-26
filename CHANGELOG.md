@@ -101,9 +101,14 @@ Legend:
         `AGENTS.md` (workflow / conventions) live alongside
         `README.md`; user-facing install / upgrade / configure
         guides moved to the Starlight site at sbpp.github.io
-36. • SourceMod native API epoch: `MAJOR_REVISION` 2 / `MINOR_REVISION` 0 in
-        `sourcebanspp.inc`; plugin `SB_VERSION` → 2.0.0 (panel 2.0 alignment).
-        New `SOURCEBANSPP_VERSION_MAJOR` for optional compile-time guards.
+36. • SourceMod native API epoch: `MAJOR_REVISION` / `MINOR_REVISION` and
+        `SB_VERSION` live in generated `include/sbpp_version.inc`
+        (`scripts/resolve-plugin-version.sh` — release tag →
+        `configs/version.json` → `git describe` → `dev`, same tiers as the
+        panel's `Sbpp\Version::resolve()`). Release CI passes
+        `SBPP_RELEASE_VERSION`; direct `spcomp` builds use the checked-in
+        `dev` fallback or run the script locally. New
+        `SOURCEBANSPP_VERSION_MAJOR` for optional compile-time guards.
         Third-party plugins need a rebuild only when they use checker library
         detection (`"sourcechecker++"`, not `"sourcebans++"` — #1034), new
         checker mute/gag natives (#1032), or hook

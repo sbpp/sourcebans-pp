@@ -30,6 +30,11 @@ jobs:
           version: '1.12.x'
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Resolve plugin version (release tag)
+        env:
+          SBPP_RELEASE_VERSION: ${{ github.ref_name }}
+        run: bash game/addons/sourcemod/scripting/scripts/resolve-plugin-version.sh
+
       - name: Compile plugins
         working-directory: game/addons/sourcemod/scripting
         run: |

@@ -59,19 +59,11 @@
 //   #error Rebuild against SourceBans++ 2.0 sourcebanspp.inc
 //   #endif
 //
-// -------------------------------------------------------------------------
-
-#define MAJOR_REVISION          2
-#define MINOR_REVISION          0
-
-#define SOURCEBANSPP_VERSION_MAJOR    MAJOR_REVISION
-#define SOURCEBANSPP_VERSION_MINOR    MINOR_REVISION
-
-#define SB_VERSION_MAJOR "2"
-#define SB_VERSION_MINOR "0"
-#define SB_VERSION_PATCH "0"
-
-#define SB_VERSION   SB_VERSION_MAJOR..."."...SB_VERSION_MINOR..."."...SB_VERSION_PATCH
+// Version constants — scripts/resolve-plugin-version.sh writes
+// include/sbpp_version.inc (release tag → configs/version.json →
+// git describe → "dev"; mirrors Sbpp\Version::resolve). Checked-in
+// fallback supports direct spcomp; release/plugin-build CI regenerates.
+#include <sbpp_version>
 
 public SharedPlugin __pl_sourcebanspp =
 {
