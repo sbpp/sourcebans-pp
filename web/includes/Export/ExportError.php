@@ -14,25 +14,36 @@ use Throwable;
  * Typed exception class for the export subsystem.
  *
  * Every error the pre-flight, bundle writer, or S3 uploader surfaces
- * lands here so the entry point ({@see \web/export.php}) can branch on
- * `$e->code` and emit the right operator-facing toast. Anything OTHER
- * than `ExportError` that escapes is a real bug and deliberately not
- * caught — let it propagate to the dispatcher's generic 500 so the
+ * lands here so the entry point (`web/export.php`) can branch on
+ * `$e->code()` and emit the right operator-facing toast. Anything
+ * OTHER than `ExportError` that escapes is a real bug and deliberately
+ * not caught — let it propagate to the dispatcher's generic 500 so the
  * stack trace lands in the audit log and the regression is visible.
  *
- * The `$code` strings are documented in
+ * The wire-facing error codes are documented in
  * `docs/src/content/docs/configuring/data-export.mdx` — pinning them
- * as class constants here keeps the wire-facing identifiers single-
- * source and lets call sites read `ExportError::CAP_EXCEEDED` instead
- * of stringly-typed `'cap_exceeded'` literals.
+ * as class constants here keeps the identifiers single-source and lets
+ * call sites read `ExportError::CAP_EXCEEDED` instead of stringly-typed
+ * `'cap_exceeded'` literals. Read the code off the exception via the
+ * `code()` accessor (the underlying property is `$errorCode`; the
+ * parent `\Exception::$code` is `int`-typed at the language level and
+ * can't be narrowed to a readonly `string`).
  */
 final class ExportError extends RuntimeException
 {
     /**
      * The pre-flight or running-byte gate tripped: the bundle would
-     * exceed the ZIP 2.0 4 GiB ceiling (minus the safety margin) if
-     * we kept going. The operator's mitigation is to clear stale
-     * demos / unrelated rows before retrying.
+     * exceed the S3 single-PUT object-size cap (5 GiB minus the
+     * safety margin) if we kept going. This cap is **s3-mode-only**
+     * — every S3-API-compatible provider (AWS S3, Cloudflare R2,
+     * MinIO, Backblaze B2, Wasabi) enforces a 5 GiB ceiling on a
+     * presigned PUT; above it the operator has to switch to
+     * multipart upload, a fundamentally different flow than
+     * presigned single-PUT.
+     *
+     * Operator mitigation: use direct ZIP download instead
+     * (uncapped — Zip64 enabled in {@see BundleWriter}), OR prune
+     * stale demos / unrelated rows before retrying.
      */
     public const CAP_EXCEEDED = 'cap_exceeded';
 

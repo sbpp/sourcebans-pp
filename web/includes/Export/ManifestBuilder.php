@@ -34,8 +34,14 @@ use Sbpp\Log;
  *     `manifest.json`'s `bundle_id` field AND the bundle's filename.
  *   - Compute the JSONL byte estimate (`row_count × 1024 byte
  *     heuristic`) + the demo bytes + the manifest overhead and
- *     compare against {@see Manifest::MAX_BUNDLE_BYTES} minus
- *     {@see Manifest::SAFETY_MARGIN_BYTES}.
+ *     compare against {@see Manifest::MAX_S3_PUT_BYTES} minus
+ *     {@see Manifest::SAFETY_MARGIN_BYTES}. The resulting
+ *     `exceeds_cap` flag is **s3-mode-specific**: it gates the S3
+ *     submit button on the admin export page and short-circuits the
+ *     s3-mode entry path before any bytes hit the upload socket.
+ *     Direct ZIP download is uncapped (Zip64 enabled in the
+ *     writer), so the page handler renders the flag informationally
+ *     there.
  *
  * The 1024-byte-per-row heuristic is deliberately generous: a typical
  * `:prefix_bans` row is well under 512 bytes (timestamps + ints + a
@@ -46,7 +52,8 @@ use Sbpp\Log;
  * structural overhead `{"field":...}\n`, the manifest itself,
  * the central directory the ZIP appends at the tail). The bundle
  * writer re-checks the running compressed-byte total per-entry and
- * aborts the same way if pre-flight underestimated.
+ * aborts the same way if pre-flight underestimated — but only when
+ * the writer is constructed with a non-null `$capBytes` (s3 mode).
  */
 final class ManifestBuilder
 {
@@ -115,6 +122,13 @@ final class ManifestBuilder
      * That's fine: minting a throwaway UUID per page render costs
      * one `random_bytes(16)` call and the resulting Manifest never
      * leaves the request scope.
+     *
+     * The cap math (`exceeds_cap` / `cap_bytes`) is s3-mode-specific
+     * by convention — the entry point's s3 arm short-circuits when
+     * `exceeds_cap` is true, while the zip arm ignores both fields
+     * (Zip64 + uncapped direct download). The fields stay on every
+     * manifest regardless of mode because the manifest is written
+     * BEFORE the entry point knows which mode the caller picked.
      */
     public function build(): Manifest
     {
@@ -123,8 +137,8 @@ final class ManifestBuilder
         $demoBytes   = array_sum(array_column($demoFiles, 'size_bytes'));
         $jsonlBytes  = array_sum($rowCounts) * self::BYTES_PER_ROW_ESTIMATE;
         $estimated   = $demoBytes + $jsonlBytes + self::MANIFEST_BYTES_ESTIMATE;
-        $capBytes    = Manifest::MAX_BUNDLE_BYTES - Manifest::SAFETY_MARGIN_BYTES;
-        $exceedsCap  = $estimated > $capBytes;
+        $capBytes    = Manifest::s3PutCapBytes();
+        $exceedsCap  = Manifest::computeExceedsCap($estimated);
 
         return new Manifest(
             bundle_id:              self::mintBundleId(),
@@ -138,32 +152,6 @@ final class ManifestBuilder
             cap_bytes:              $capBytes,
             pii_policy:             self::piiPolicy(),
         );
-    }
-
-    /**
-     * Build the manifest AND throw {@see ExportError::CAP_EXCEEDED}
-     * if the estimate trips the cap. The writer-side entry point
-     * calls this so a too-big bundle bails BEFORE any bytes hit the
-     * wire; the page handler calls {@see build} directly because the
-     * UI surfaces the cap-status as a disabled button instead of an
-     * exception.
-     */
-    public function buildOrThrow(): Manifest
-    {
-        $manifest = $this->build();
-        if ($manifest->exceeds_cap) {
-            throw new ExportError(
-                ExportError::CAP_EXCEEDED,
-                sprintf(
-                    'Bundle estimate %d bytes exceeds the %d-byte cap (4 GiB minus the %d-byte safety margin). '
-                    . 'Clear stale demos and rerun.',
-                    $manifest->estimated_bundle_bytes,
-                    $manifest->cap_bytes,
-                    Manifest::SAFETY_MARGIN_BYTES,
-                ),
-            );
-        }
-        return $manifest;
     }
 
     /**

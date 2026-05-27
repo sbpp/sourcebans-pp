@@ -16,12 +16,15 @@ namespace Sbpp\View;
  * lifecycle docblock for the wire contract.
  *
  * The pre-flight count + size totals come from
- * {@see \Sbpp\Export\ManifestBuilder}'s `build()` (NOT `buildOrThrow()`
- * — the admin surface deliberately renders even when the bundle would
- * exceed the cap, so the operator can see *why* an export is blocked
- * and act on it). When `$exceeds_cap` is true the template disables
- * both submit buttons and surfaces an `.empty-state` block explaining
- * the operator needs to prune demos / unrelated rows before retrying.
+ * {@see \Sbpp\Export\ManifestBuilder}'s `build()`. The `$exceeds_cap`
+ * flag is **s3-mode-specific** — it carries the S3 single-PUT
+ * object-size cap (5 GiB minus the safety margin) which is the
+ * hard structural limit on a presigned PUT across every S3-API
+ * compatible provider. Direct ZIP download is **uncapped** under
+ * Zip64, so the template gates ONLY the S3 submit on `$exceeds_cap`;
+ * the ZIP submit stays enabled regardless, and the `.empty-state`
+ * block tells the operator to use the ZIP form OR prune data when
+ * the S3 form is disabled.
  *
  * `$row_counts` is the full per-entity table the manifest carries; the
  * template renders it as a definition list so the operator gets the
@@ -49,7 +52,9 @@ final class AdminExportView extends View
     public const TEMPLATE = 'page_admin_export.tpl';
 
     /**
-     * @param array<string, int> $row_counts Entity name → row count, in deterministic name order.
+     * @param array<string, int> $row_counts             Entity name → row count, in deterministic name order.
+     * @param bool               $exceeds_cap            True iff the estimated bundle would exceed the S3 PUT cap (5 GiB minus the safety margin). S3-specific — the template gates only the S3 submit on this flag. ZIP download stays available.
+     * @param int                $cap_bytes              The S3 PUT cap (`MAX_S3_PUT_BYTES - SAFETY_MARGIN_BYTES`). Surfaced as the "Cap (S3 PUT)" row in the template's totals breakdown. Does not apply to ZIP direct download.
      */
     public function __construct(
         public readonly string $panel_version,

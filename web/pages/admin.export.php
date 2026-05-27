@@ -14,11 +14,13 @@
  *      the page-builder route already gates on `ADMIN_OWNER`, but
  *      direct page-include shapes (a future refactor, a misrouted
  *      request) hit this gate too. Belt-and-braces.
- *   2. Pre-flight pass via `ManifestBuilder::build()` (NOT
- *      `buildOrThrow()`) so a too-big bundle still renders the form
- *      — the operator MUST see the size totals + the `.empty-state`
- *      block explaining what to prune before they can act on the
- *      "exceeds cap" state.
+ *   2. Pre-flight pass via `ManifestBuilder::build()`. The returned
+ *      `exceeds_cap` flag is **s3-mode-specific** (the 5 GiB S3
+ *      single-PUT object-size ceiling minus the safety margin);
+ *      direct ZIP download is uncapped under Zip64. The template
+ *      gates only the S3 submit on `$exceeds_cap` — the ZIP submit
+ *      stays enabled regardless so the operator can always reach
+ *      the uncapped path.
  *   3. Mount the `AdminTabs` back-link partial via `new AdminTabs([], …)`
  *      (the back-link-only shape — same as `admin.email.php` /
  *      `admin.rcon.php`).
@@ -46,8 +48,10 @@ global $theme, $userbank;
 //    contract that survives a future routing refactor.
 CheckAdminAccess(ADMIN_OWNER);
 
-// 2. Pre-flight pass. Use `build()` not `buildOrThrow()` — we want
-//    the form rendered even when the bundle would exceed the cap.
+// 2. Pre-flight pass. `exceeds_cap` carries the S3 PUT cap signal —
+//    the template gates only the S3 submit on it; the ZIP submit
+//    stays enabled regardless because direct ZIP download is
+//    uncapped under Zip64.
 $manifest = (new \Sbpp\Export\ManifestBuilder(
     dbs:          $GLOBALS['PDO'],
     demosDir:     SB_DEMOS,
@@ -116,7 +120,7 @@ function sbpp_admin_export_describe_error(string $code): string
 {
     return match ($code) {
         \Sbpp\Export\ExportError::CAP_EXCEEDED =>
-            'Bundle exceeds the 4 GiB cap. Prune demos or rows and retry.',
+            'Bundle exceeds the 5 GiB S3 PUT limit. Use direct ZIP download (uncapped), or prune data and retry.',
         \Sbpp\Export\ExportError::PRESIGN_INVALID_SCHEME =>
             'Presigned URL must use HTTPS. Regenerate it and retry.',
         \Sbpp\Export\ExportError::PRESIGN_INVALID_URL =>

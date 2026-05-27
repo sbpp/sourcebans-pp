@@ -794,13 +794,26 @@ page:
   a `Manifest` DTO with `row_counts` per entity, `demo_total_bytes`
   (sum of on-disk demos referenced by `:prefix_demos`),
   `estimated_bundle_bytes`, the UUIDv4 `bundle_id`, the cap
-  thresholds, and the `pii_policy` block (operator attestation —
+  thresholds + the `exceeds_cap` flag (S3-mode semantics — see
+  below), and the `pii_policy` block (operator attestation —
   `password_hashes: "never"` is load-bearing and never reachable
   for relaxation; `includes_chat_messages: false` because the panel
-  schema doesn't carry chat messages anywhere). `buildOrThrow()`
-  raises `ExportError(CAP_EXCEEDED)` upfront if the estimated bundle
-  would exceed `MAX_BUNDLE_BYTES - SAFETY_MARGIN_BYTES` (4 GiB minus
-  64 MiB).
+  schema doesn't carry chat messages anywhere). The cap surface is
+  mode-conditional and lives in the entry point, not the builder:
+  s3 mode caps at `MAX_S3_PUT_BYTES - SAFETY_MARGIN_BYTES` (5 GiB
+  minus 64 MiB; structural to the S3 single-PUT object-size limit
+  shared by AWS S3, Cloudflare R2, MinIO, Backblaze B2, Wasabi —
+  multipart upload above 5 GiB is a fundamentally different flow
+  than presigned single-PUT), and the entry point short-circuits
+  with `ExportError(CAP_EXCEEDED)` BEFORE launching the build when
+  `$manifest->exceeds_cap` is true on the s3 arm. Zip mode is
+  uncapped — Zip64 is enabled by default in the v3.x `ZipStream`
+  constructor, and the consumer-compatibility argument that
+  motivated the previous "No ZIP64" stance no longer holds in
+  practice (every modern unzipper handles Zip64). The
+  `cap_bytes` / `exceeds_cap` field names are preserved on the
+  manifest wire format (no `FORMAT_VERSION` bump) but redefined
+  to refer specifically to the S3 PUT cap.
 - `Sbpp\Export\EntityExporter` — per-entity SELECT + JSONL emission.
   One public method per entity (`admins`, `bans`, `comms`, `log`,
   `notes`, …). Uses `Database::iterate()` so no entity is held in
@@ -822,20 +835,26 @@ page:
   truncation shape; without the flag the export 500s mid-stream on
   a hostile-historical row.
 - `Sbpp\Export\BundleWriter` — orchestrates. Takes
-  `ZipStream\ZipStream` + the `Manifest` + the `EntityExporter`.
-  Emits `manifest.json` FIRST via `addFile()` (the manifest-first
-  contract — downstream consumers can read just the manifest by
-  parsing the first central-directory entry), then iterates entity
-  exporters in deterministic name order via `addFileFromCallback()`,
-  then iterates demos via `addFileFromPath(..., compressionMethod:
-  CompressionMethod::STORE)` (demo files are already compressed by
-  the Source engine; re-deflating is a CPU tax for no gain). Tracks
-  running compressed-byte count; aborts with
-  `ExportError(CAP_EXCEEDED)` when the running total exceeds the
-  margin. After each entity / demo in zip-mode (`$flushAfterEntries
-  = true`), calls `flush() + @ob_flush()` to push bytes downstream
-  so the browser's download progress bar moves in real time. S3
-  mode (`$flushAfterEntries = false`) skips the flush because the
+  `ZipStream\ZipStream` + the `Manifest` + the `EntityExporter` +
+  a nullable `?int $capBytes` (the mode-conditional running
+  budget — `null` from the zip arm so the writer never throws,
+  non-null from the s3 arm so the writer enforces as the
+  compressed-byte total grows). Emits `manifest.json` FIRST via
+  `addFile()` (the manifest-first contract — downstream consumers
+  can read just the manifest by parsing the first central-directory
+  entry), then iterates entity exporters in deterministic name
+  order via `addFileFromCallback()`, then iterates demos via
+  `addFileFromPath(..., compressionMethod: CompressionMethod::STORE)`
+  (demo files are already compressed by the Source engine;
+  re-deflating is a CPU tax for no gain). Tracks running
+  compressed-byte count; when `$capBytes !== null`, aborts with
+  `ExportError(CAP_EXCEEDED)` if the running total exceeds the
+  budget (defence-in-depth against `ManifestBuilder`'s pre-flight
+  estimate undershooting on the s3-mode arm). After each entity /
+  demo in zip-mode (`$flushAfterEntries = true`), calls
+  `flush() + @ob_flush()` to push bytes downstream so the
+  browser's download progress bar moves in real time. S3 mode
+  (`$flushAfterEntries = false`) skips the flush because the
   output is a tempfile, not a socket.
 - `Sbpp\Export\S3PresignedUploader` — cURL `PUT` against the
   operator-supplied presigned URL. Scheme guard is unconditional:
@@ -855,8 +874,12 @@ page:
   the integration tests can pin the wire-layer contract without
   spinning up a real S3 endpoint.
 - `Sbpp\Export\ExportError` — `final class extends \RuntimeException`
-  with a `public readonly string $code`. The supported error codes
-  are class constants (`CAP_EXCEEDED`, `S3_PUT_FAILED`,
+  carrying the wire-facing code as a `public readonly string $errorCode`
+  (the property is renamed because the parent `\Exception::$code` is
+  `int`-typed at the language level and can't be narrowed to a
+  `readonly string`); the `code()` accessor is the fluent read shape
+  call sites consume. The supported error codes are class constants
+  (`CAP_EXCEEDED`, `S3_PUT_FAILED`,
   `PRESIGN_INVALID_SCHEME`, `PRESIGN_INVALID_URL`,
   `DISK_WRITE_FAILED`, `DISK_FULL`) so call sites can't typo a
   string literal. The entry point's redirect-failure helper maps
@@ -923,11 +946,14 @@ The admin page handler is `web/pages/admin.export.php` →
 the pre-flight pass (counts only) and renders the form chrome with
 two cards (ZIP download / S3 upload) plus a stats grid (admin / ban
 / comm / demo counts + estimated bundle size). When the pre-flight
-detects `exceeds_cap`, both submit buttons are server-rendered as
-`disabled` and an `.empty-state` block explains what to prune
-before retrying — the cap is re-enforced at the entry point's
-pre-flight pass too (a stale-tab POST hits the gate), but the form
-disabled state is the UX-first contract.
+detects `exceeds_cap`, only the S3 submit button is server-rendered
+as `disabled` and an `.empty-state` block explains the 5 GiB S3
+PUT limit + suggests the uncapped ZIP download as the alternative.
+The ZIP download submit button stays enabled regardless of
+`exceeds_cap` — direct ZIP download has no cap (Zip64 supports
+arbitrary bundle sizes). The S3-mode cap is re-enforced at the
+entry point's pre-flight pass too (a stale-tab POST hits the
+gate), but the form's disabled state is the UX-first contract.
 
 No schema change ships with this subsystem: there's no `:prefix_exports`
 table, no scheduled jobs, no persistent state. V1 is deliberately

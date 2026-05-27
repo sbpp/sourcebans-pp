@@ -48,6 +48,20 @@
  *      the operator can correlate the toast they saw with the audit
  *      row.
  *
+ * Cap semantics (per-mode): the underlying archive is Zip64 in both
+ * modes (no structural size ceiling), so the cap is mode-conditional.
+ * `zip` mode (direct browser download) is uncapped — the writer is
+ * constructed with `capBytes: null` and the running cap check
+ * no-ops. `s3` mode (presigned PUT) is capped at
+ * {@see Manifest::MAX_S3_PUT_BYTES} minus
+ * {@see Manifest::SAFETY_MARGIN_BYTES} because S3 single-PUT is
+ * structurally limited to 5 GiB across every S3-API-compatible
+ * provider (above that the operator has to switch to multipart
+ * upload, a fundamentally different flow). The s3 arm checks the
+ * pre-flight `exceeds_cap` flag BEFORE staging anything to disk so
+ * a too-big bundle bails up front; the writer's running check is
+ * defence-in-depth for JSONL byte-estimate undershoot.
+ *
  * Error handling: this entry point deliberately catches ONLY
  * `ExportError` — anything else (a real DB outage, a memory
  * exhaustion, a regression in the writer) propagates to the
@@ -146,30 +160,16 @@ if (!in_array($mode, ['zip', 's3'], true)) {
     sbpp_export_redirect_failure('mode_invalid', $mode);
 }
 
-// Build the manifest pre-flight. `buildOrThrow` raises CAP_EXCEEDED
-// upfront so a too-big bundle bails BEFORE any bytes hit the wire —
-// the operator's page handler also surfaces this state as a disabled
-// submit button, but the POST gate is the load-bearing one (a stale
-// page that's open from yesterday hits this guard).
-try {
-    $manifest = (new ManifestBuilder(
-        dbs:          $GLOBALS['PDO'],
-        demosDir:     SB_DEMOS,
-        panelVersion: SB_VERSION,
-    ))->buildOrThrow();
-} catch (ExportError $e) {
-    Log::add(
-        LogType::Error,
-        'Data Export',
-        sprintf(
-            'Pre-flight failed: aid=%d code=%s — %s',
-            $userbank->GetAid(),
-            $e->code(),
-            $e->getMessage(),
-        ),
-    );
-    sbpp_export_redirect_failure($e->code(), $e->getMessage());
-}
+// Build the manifest pre-flight. The cap is s3-mode-specific (S3
+// single-PUT is structurally limited to 5 GiB; ZIP direct download
+// is uncapped under Zip64), so cap enforcement moves into the s3
+// arm below — the manifest carries the `exceeds_cap` flag for the
+// arm to read and short-circuit on.
+$manifest = (new ManifestBuilder(
+    dbs:          $GLOBALS['PDO'],
+    demosDir:     SB_DEMOS,
+    panelVersion: SB_VERSION,
+))->build();
 
 $entities = new EntityExporter(
     dbs:      $GLOBALS['PDO'],
@@ -221,10 +221,12 @@ function sbpp_export_run_zip_mode(Manifest $manifest, EntityExporter $entities, 
         throw new RuntimeException('Failed to open php://output for writing.');
     }
 
+    // Zip64 (ZipStream v3.x default) — direct ZIP download is
+    // uncapped by design; the BundleWriter receives no `capBytes`
+    // so its running cap check no-ops.
     $zip = new ZipStream(
         outputStream:             $output,
         sendHttpHeaders:          false,
-        enableZip64:              false,
         defaultCompressionMethod: CompressionMethod::DEFLATE,
     );
 
@@ -234,6 +236,7 @@ function sbpp_export_run_zip_mode(Manifest $manifest, EntityExporter $entities, 
         entities:           $entities,
         demosDir:           SB_DEMOS,
         flushAfterEntries:  true,
+        // capBytes: null (default) — zip mode is uncapped.
     );
 
     try {
@@ -275,6 +278,41 @@ function sbpp_export_run_zip_mode(Manifest $manifest, EntityExporter $entities, 
  */
 function sbpp_export_run_s3_mode(Manifest $manifest, EntityExporter $entities, int $aid): never
 {
+    // ----- S3 single-PUT cap pre-flight ------------------------
+    // S3 single-PUT is structurally limited to 5 GiB across every
+    // S3-API-compatible provider (AWS S3, Cloudflare R2, MinIO,
+    // Backblaze B2, Wasabi). Above that requires multipart upload,
+    // a fundamentally different flow than presigned single-PUT.
+    // Short-circuit BEFORE staging anything to disk so a too-big
+    // bundle bails up front; the writer's running cap check is
+    // defence-in-depth for JSONL byte-estimate undershoot.
+    // The operator's escape hatch is the direct ZIP download form
+    // (uncapped under Zip64) or pruning data.
+    if ($manifest->exceeds_cap) {
+        Log::add(
+            LogType::Error,
+            'Data Export',
+            sprintf(
+                'S3 mode pre-flight failed: aid=%d bundle_id=%s code=%s — estimated %d bytes exceeds the %d-byte S3 PUT cap.',
+                $aid,
+                $manifest->bundle_id,
+                ExportError::CAP_EXCEEDED,
+                $manifest->estimated_bundle_bytes,
+                $manifest->cap_bytes,
+            ),
+        );
+        sbpp_export_redirect_failure(
+            ExportError::CAP_EXCEEDED,
+            sprintf(
+                'Bundle estimate %d bytes exceeds the S3 PUT cap of %d bytes (5 GiB minus a %d-byte safety margin). '
+                . 'Use direct ZIP download (uncapped) or prune data and retry.',
+                $manifest->estimated_bundle_bytes,
+                $manifest->cap_bytes,
+                Manifest::SAFETY_MARGIN_BYTES,
+            ),
+        );
+    }
+
     // ----- presigned URL validation (server-side; the form template's
     //       `pattern="^https://...$"` is the UX-first gate) -------
     $presignUrl = isset($_POST['presign_url']) ? trim((string) $_POST['presign_url']) : '';
@@ -355,10 +393,12 @@ function sbpp_export_run_s3_mode(Manifest $manifest, EntityExporter $entities, i
         );
     }
 
+    // Zip64 (ZipStream v3.x default). The cap below isn't a
+    // Zip64 limitation — it's the S3 single-PUT object-size
+    // ceiling, enforced by the BundleWriter's running cap check.
     $zip = new ZipStream(
         outputStream:             $output,
         sendHttpHeaders:          false,
-        enableZip64:              false,
         defaultCompressionMethod: CompressionMethod::DEFLATE,
     );
 
@@ -375,6 +415,12 @@ function sbpp_export_run_s3_mode(Manifest $manifest, EntityExporter $entities, i
         // the zip-mode path is stuck with. Documented on
         // BundleWriter::bytesWritten + BundleWriter::currentCompressedSize.
         outputHandle:       $output,
+        // S3 PUT cap: the writer enforces the 5 GiB single-PUT
+        // ceiling (minus the JSONL-estimate safety margin)
+        // mid-stream. Pre-flight above caught the obvious
+        // overshoot; this is defence-in-depth for the case
+        // where the row-byte estimate undershot reality.
+        capBytes:           Manifest::s3PutCapBytes(),
     );
 
     try {

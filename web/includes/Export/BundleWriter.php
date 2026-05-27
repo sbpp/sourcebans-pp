@@ -49,18 +49,24 @@ use ZipStream\ZipStream;
  *     means "wrap the raw bytes in a ZIP entry without compression"
  *     which is the right shape for a binary payload that's
  *     already entropy-maximal.
- *   - **Running compressed-byte budget.** After each entity / demo
- *     the writer checks the cumulative byte total against
- *     {@see Manifest::MAX_BUNDLE_BYTES} minus
- *     {@see Manifest::SAFETY_MARGIN_BYTES}; if exceeded, throws
+ *   - **Running compressed-byte budget (s3 mode only).** When the
+ *     writer is constructed with a non-null `$capBytes` (s3 mode),
+ *     after each entity / demo it checks the cumulative byte total
+ *     against the cap; if exceeded, throws
  *     {@see ExportError::CAP_EXCEEDED}. Pre-flight in
  *     {@see ManifestBuilder} should catch this earlier in 99% of
- *     cases — this is the safety net for the JSONL byte-estimate
- *     undershoot case.
- *   - **No ZIP64.** The {@see ZipStream} is constructed with
- *     `$enableZip64 = false` by the caller; the 4 GiB ceiling is
- *     the load-bearing reason — every mainstream unzipper handles
- *     ZIP 2.0 natively, ZIP64 support is patchy.
+ *     cases — the running check is the safety net for the JSONL
+ *     byte-estimate undershoot case. When constructed with
+ *     `$capBytes === null` (zip mode), the running check is a
+ *     no-op: Zip64 is enabled and direct ZIP download is uncapped
+ *     by design.
+ *   - **Zip64 enabled; per-mode caps.** The {@see ZipStream} is
+ *     constructed with `$enableZip64 = true` (the v3.x default) by
+ *     the caller, so the archive itself has no structural size
+ *     ceiling. The cap, when it applies, is the S3 single-PUT
+ *     object-size limit (5 GiB across every S3-API-compatible
+ *     provider) and is passed in via the constructor's
+ *     `$capBytes` argument — non-null in s3 mode, null in zip mode.
  */
 final class BundleWriter
 {
@@ -85,7 +91,9 @@ final class BundleWriter
 
     /**
      * Cumulative byte count tracking the bundle's progress against
-     * {@see Manifest::MAX_BUNDLE_BYTES}.
+     * the constructor's `$capBytes` argument (S3 PUT cap when
+     * non-null; ignored when null — zip-mode direct download is
+     * uncapped).
      *
      * The accuracy of this counter depends on which output sink the
      * caller wired the {@see ZipStream} to. See
@@ -97,16 +105,13 @@ final class BundleWriter
      *     handle and gets the EXACT compressed-byte count. The
      *     cap check is precise.
      *   - **`zip` mode** — the writer's output sink is
-     *     `php://output` (unseekable, unstattable), so the writer
+     *     `php://output` (unseekable, unstattable), so the counter
      *     falls back to a conservative uncompressed-byte estimate.
-     *     This OVER-counts (DEFLATE typically compresses JSONL
-     *     3-8x) but the over-count direction is the safe one — a
-     *     premature `CAP_EXCEEDED` surfaces a clear error message
-     *     pre-overflow, whereas an under-count would let the
-     *     bundle exceed ZIP 2.0's 4 GiB ceiling and corrupt
-     *     silently. The conservative estimate stays in place for
-     *     `zip` mode because there is no exact counter the
-     *     unseekable sink can offer.
+     *     The estimate isn't used for a cap check in zip mode (the
+     *     constructor's `$capBytes` is `null` and {@see checkCap}
+     *     returns early), but the running total stays maintained
+     *     so {@see bytesWritten} reports a consistent value to
+     *     callers regardless of mode.
      */
     private int $bytesWritten = 0;
 
@@ -123,12 +128,28 @@ final class BundleWriter
     private $outputHandle;
 
     /**
+     * Optional cap, in bytes, on the running compressed-byte total.
+     * Non-null in s3 mode (the S3 PUT cap, typically
+     * {@see Manifest::MAX_S3_PUT_BYTES} minus
+     * {@see Manifest::SAFETY_MARGIN_BYTES}); `null` in zip mode
+     * (direct ZIP download is uncapped — Zip64 enabled).
+     */
+    private readonly ?int $capBytes;
+
+    /**
      * @param resource|null $outputHandle  Pass the same file
      *   resource the caller handed to {@see ZipStream} when
      *   building the s3-mode build-to-disk tempfile. Pass `null`
      *   for the zip-mode `php://output` path (the writer falls
      *   back to a conservative uncompressed-byte cap estimate per
      *   the {@see bytesWritten} contract).
+     * @param int|null $capBytes  Cap on the running compressed-byte
+     *   total. Pass a non-null value (typically
+     *   {@see Manifest::MAX_S3_PUT_BYTES} minus
+     *   {@see Manifest::SAFETY_MARGIN_BYTES}) for s3 mode so the
+     *   writer enforces the S3 single-PUT object-size ceiling
+     *   mid-stream. Pass `null` for zip mode — direct ZIP
+     *   download is uncapped.
      */
     public function __construct(
         private readonly ZipStream $zip,
@@ -137,8 +158,10 @@ final class BundleWriter
         private readonly string $demosDir,
         private readonly bool $flushAfterEntries,
         $outputHandle = null,
+        ?int $capBytes = null,
     ) {
         $this->outputHandle = $outputHandle;
+        $this->capBytes     = $capBytes;
     }
 
     /**
@@ -361,21 +384,26 @@ final class BundleWriter
     }
 
     /**
-     * Compare the running cumulative byte total against the cap
-     * (minus safety margin). Throws {@see ExportError::CAP_EXCEEDED}
-     * with the offending entry's name so an operator can identify
-     * which slice tipped the budget over.
+     * Compare the running cumulative byte total against the
+     * constructor's `$capBytes`. No-op when `$capBytes` is null
+     * (zip mode — direct download is uncapped, Zip64 enabled).
+     * Throws {@see ExportError::CAP_EXCEEDED} with the offending
+     * entry's name so an operator can identify which slice tipped
+     * the S3 PUT budget over.
      */
     private function checkCap(string $lastEntry): void
     {
-        $cap = Manifest::MAX_BUNDLE_BYTES - Manifest::SAFETY_MARGIN_BYTES;
-        if ($this->bytesWritten > $cap) {
+        if ($this->capBytes === null) {
+            return;
+        }
+        if ($this->bytesWritten > $this->capBytes) {
             throw new ExportError(
                 ExportError::CAP_EXCEEDED,
                 sprintf(
-                    'Bundle exceeded the %d-byte cap (4 GiB minus the %d-byte safety margin) '
-                    . 'after writing %s (cumulative %d bytes). Clean up stale demos and rerun.',
-                    $cap,
+                    'Bundle exceeded the %d-byte S3 PUT cap (MAX_S3_PUT_BYTES minus the %d-byte safety margin) '
+                    . 'after writing %s (cumulative %d bytes). Use direct ZIP download (uncapped) '
+                    . 'or prune demos / rows and retry.',
+                    $this->capBytes,
                     Manifest::SAFETY_MARGIN_BYTES,
                     $lastEntry,
                     $this->bytesWritten,

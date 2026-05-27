@@ -255,7 +255,16 @@ final class ExportBundleWriterTest extends TestCase
      * Run the full pipeline + dump the resulting bundle to a temp
      * file on disk so the {@see ZipArchive} consumer can open it.
      * The s3-mode flush gate is `false` because the writer's output
-     * stream is a file handle, not the HTTP socket.
+     * stream is a file handle, not the HTTP socket. ZipStream uses
+     * its v3.x default `enableZip64: true` — Zip64 is enabled
+     * panel-wide; the per-mode cap is the only structural limit.
+     *
+     * The writer is constructed with `capBytes: MAX_S3_PUT_BYTES -
+     * SAFETY_MARGIN_BYTES` to mirror `web/export.php`'s s3-mode
+     * wiring (build-to-disk-then-PUT) — the integration test is
+     * shaped like the s3 path because it builds to a staging file.
+     * The zip-mode path is uncapped (`capBytes: null`) and is
+     * exercised separately by the e2e spec.
      */
     private function writeBundle(): void
     {
@@ -264,7 +273,7 @@ final class ExportBundleWriterTest extends TestCase
             demosDir:     SB_DEMOS,
             panelVersion: 'test',
         );
-        $manifest = $builder->buildOrThrow();
+        $manifest = $builder->build();
         $entities = new EntityExporter(
             dbs:      $GLOBALS['PDO'],
             demosDir: SB_DEMOS,
@@ -275,7 +284,6 @@ final class ExportBundleWriterTest extends TestCase
         $zip = new ZipStream(
             outputStream:             $handle,
             sendHttpHeaders:          false,
-            enableZip64:              false,
             defaultCompressionMethod: CompressionMethod::DEFLATE,
         );
         $writer = new BundleWriter(
@@ -290,6 +298,9 @@ final class ExportBundleWriterTest extends TestCase
             // s3-mode wiring so the integration test exercises
             // the same code path real operators hit.
             outputHandle:      $handle,
+            // s3-mode cap: 5 GiB minus the safety margin. Mirrors
+            // `web/export.php`'s s3-mode wiring.
+            capBytes:          Manifest::s3PutCapBytes(),
         );
         $writer->write();
         $this->lastWriter = $writer;

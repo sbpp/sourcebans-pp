@@ -39,7 +39,7 @@ Reach the surface from:
 
 ## What's in the bundle
 
-Every bundle is a ZIP 2.0 file with this layout:
+Every bundle is a Zip64 archive with this layout:
 
 ```
 sbpp-export-<uuid>.zip
@@ -84,8 +84,17 @@ consumers can read it without slurping the whole bundle. Fields:
   size-check before parsing.
 - `demo_total_bytes`: integer. Sum of every demo on disk in
   this bundle.
-- `estimated_bundle_bytes`: integer. The pre-flight estimate
-  the cap check ran against.
+- `estimated_bundle_bytes`: integer. The pre-flight bundle-size
+  estimate. Compared against `cap_bytes` to populate `exceeds_cap`
+  for S3 mode; informational on a direct ZIP download (which has
+  no cap).
+- `cap_bytes`: integer. The S3 PUT cap in bytes (5 GiB minus
+  the 64 MiB safety margin). Informational on a ZIP
+  direct-download bundle (ZIP download is uncapped under
+  Zip64); load-bearing on the S3 form's UX gate.
+- `exceeds_cap`: bool. True when `estimated_bundle_bytes`
+  exceeds `cap_bytes`. The S3 submit button is disabled when
+  true; the ZIP submit button is always available regardless.
 - `pii_policy`: dict declaring what's in scope:
   - `includes_admin_emails: true`
   - `includes_ip_addresses: true`
@@ -251,24 +260,34 @@ just the URL into the panel form.
 </TabItem>
 </Tabs>
 
-## Cap: 4 GiB minus 64 MiB safety margin
+## Cap (S3 mode only): 5 GiB minus 64 MiB safety margin
 
-The panel enforces a hard cap of 4 GiB minus 64 MiB on the
-estimated bundle. The cap comes from the ZIP 2.0 spec ceiling;
-ZIP64 is not enabled because consumer support is uneven. The
-margin gives the writer headroom.
+S3 single-PUT is structurally limited to 5 GiB across every
+S3-API-compatible provider (AWS S3, Cloudflare R2, MinIO,
+Backblaze B2, Wasabi). Above 5 GiB the spec requires multipart
+upload, a different flow than presigned single-PUT, so the panel
+enforces a hard cap of 5 GiB minus a 64 MiB safety margin on the
+estimated bundle when the S3 button is used. The margin gives the
+writer headroom against last-minute compression-ratio surprises.
+
+ZIP direct download is **uncapped**. The archive is Zip64 in both
+modes, so the format itself has no structural size ceiling, and
+the operator's browser can stream a multi-tens-of-GB bundle if it
+needs to.
 
 When the cap is exceeded:
 
-- The export page disables both submit buttons.
-- An empty-state block points at the typical fix: prune demos via
-  the bans list, or trim banlog / audit-log rows.
-- The cap is re-checked at the entry point, so a stale-tab POST
-  also bounces.
+- The S3 submit button is disabled.
+- The ZIP submit button stays available.
+- An empty-state block points at the ZIP path as the escape
+  hatch.
+- The cap is re-checked at the entry point on s3 mode, so a
+  stale-tab S3 POST also bounces; ZIP mode never enforces it.
 
-For a genuinely larger dataset, prune the demos directory of
-anything not under active appeal, run the export, then restore.
-A future version may add chunked / multipart S3 upload.
+For a genuinely larger dataset on S3, either prune the demos
+directory of anything not under active appeal before running, or
+use ZIP download instead. A future version may add chunked /
+multipart S3 upload.
 
 ## Audit log
 
@@ -301,8 +320,10 @@ as a PII-class data flow.
 
 ## Troubleshooting
 
-**"Bundle exceeds the 4 GiB cap"**
-:   See the cap section above. Prune demos or split the export.
+**"Bundle exceeds the 5 GiB S3 PUT limit"**
+:   The S3 mode is capped at 5 GiB per single PUT (provider
+    limit; not arbitrary). Switch to direct ZIP download (no
+    cap, Zip64 enabled) or prune demos before retrying.
 
 **"Presigned URL must use HTTPS"**
 :   You pasted an `http://` URL. Regenerate with HTTPS. Cleartext
@@ -315,10 +336,10 @@ as a PII-class data flow.
     denies PUT.
 
 **ZIP download stops partway through**
-:   Either you closed the tab (the audit log shows a truncated
-    bundle for that aid) or the panel hit `cap_exceeded`
-    mid-stream. The pre-flight pass blocks the latter in
-    practice; if it does happen, re-run.
+:   You closed the tab (the audit log shows a truncated bundle
+    for that aid). ZIP download is uncapped (Zip64), so
+    `cap_exceeded` never fires on this path. The connection has
+    to stay open for the full transfer.
 
 **Want a partial export (just bans, not demos)**
 :   Not supported by the form. V1 is one-shot full-dataset.

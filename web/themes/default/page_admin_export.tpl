@@ -3,8 +3,8 @@
     Bound to Sbpp\View\AdminExportView (validated by SmartyTemplateRule).
 
     "Full data export" admin surface. Two delivery modes:
-      - ZIP download (stream-to-output, no intermediate disk)
-      - S3 presigned PUT (build-to-disk-then-PUT)
+      - ZIP download (stream-to-output, no intermediate disk) — uncapped
+      - S3 presigned PUT (build-to-disk-then-PUT) — 5 GiB S3 single-PUT cap
 
     Both forms POST to web/export.php (top-level entry point — binary
     wire format → doesn't fit the JSON dispatcher; same shape as
@@ -16,12 +16,14 @@
     URL); the entry point reads `$_POST['mode']` and rejects anything
     other than `'zip'` / `'s3'`.
 
-    When `$exceeds_cap` is true (the bundle would blow the 4 GiB ZIP
-    2.0 spec ceiling minus our 64 MiB safety margin), both submit
-    buttons are disabled and the page shows an `.empty-state` block
-    explaining what to prune. The operator MUST clear the cap before
-    they can act — the same gate is re-enforced at the entry point so
-    a hand-edited form submission can't bypass it.
+    `$exceeds_cap` carries the S3 single-PUT cap signal (5 GiB minus
+    the 64 MiB safety margin — the hard structural limit on a
+    presigned PUT across every S3-API-compatible provider). When
+    true, the S3 submit is disabled and an `.empty-state` block
+    points the operator at the uncapped ZIP path. The ZIP submit
+    stays enabled regardless because direct ZIP download is uncapped
+    under Zip64. The s3 arm re-enforces the cap at the entry point
+    so a hand-edited form submission can't bypass it.
 *}
 <section class="p-6" data-testid="admin-export-section" style="max-width:56rem">
     <div class="mb-6">
@@ -72,8 +74,8 @@
                     <dd class="font-mono" data-testid="admin-export-estimate-bytes" style="margin:0">{($estimated_bundle_bytes / 1024 / 1024)|number_format:1} MiB</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-muted">Cap (ZIP 2.0)</dt>
-                    <dd class="font-mono" data-testid="admin-export-cap-bytes" style="margin:0">{($cap_bytes / 1024 / 1024 / 1024)|number_format:2} GiB</dd>
+                    <dt class="text-xs text-muted">Cap (S3 PUT)</dt>
+                    <dd class="font-mono" data-testid="admin-export-cap-bytes" style="margin:0">{($cap_bytes / 1024 / 1024)|number_format:1} MiB</dd>
                 </div>
             </dl>
 
@@ -94,23 +96,22 @@
     </div>
 
     {if $exceeds_cap}
-        {* First-run vs filtered shape per AGENTS.md "Empty states": this is
-           a structural block (no rows can be exported until the operator
-           shrinks the bundle), so we use the first-run shape with NO
-           Clear-filters CTA — the operator's only path forward is to
-           prune their data, which isn't a one-click action we can
-           surface. `data-filtered="false"` per the convention. *}
+        {* First-run vs filtered shape per AGENTS.md "Empty states": the
+           bundle is too big for S3's single-PUT cap, but the ZIP path
+           is still available so the operator isn't blocked outright.
+           Use the first-run shape with NO Clear-filters CTA — the
+           ZIP form above IS the path forward, no extra CTA needed.
+           `data-filtered="false"` per the convention. *}
         <div class="card" data-testid="admin-export-cap-empty" data-filtered="false">
             <div class="empty-state">
                 <span class="empty-state__icon" aria-hidden="true">
                     <i data-lucide="alert-triangle" style="width:18px;height:18px"></i>
                 </span>
-                <h2 class="empty-state__title">Bundle exceeds the 4 GiB cap</h2>
+                <h2 class="empty-state__title">Bundle exceeds the 5 GiB S3 PUT limit</h2>
                 <p class="empty-state__body">
                     Estimated bundle is {($estimated_bundle_bytes / 1024 / 1024)|number_format:1} MiB.
-                    Prune demos on the <a href="?p=banlist">public banlist</a> or
-                    trim banlog / audit-log rows, then reload.
-                    Submit is disabled until the bundle fits.
+                    Use the ZIP download form above (no cap),
+                    or prune demos / rows and reload to enable the S3 form.
                 </p>
             </div>
         </div>
@@ -138,8 +139,7 @@
             <div class="card__header" style="border-top:1px solid var(--border);border-bottom:0;justify-content:flex-end">
                 <button type="submit"
                         class="btn btn--primary"
-                        data-testid="admin-export-zip-submit"
-                        {if $exceeds_cap}disabled{/if}>
+                        data-testid="admin-export-zip-submit">
                     <i data-lucide="download" style="width:16px;height:16px"></i>
                     Export as ZIP
                 </button>

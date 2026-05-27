@@ -29,17 +29,20 @@ use Sbpp\Tests\Fixture;
 final class ManifestBuilderTest extends TestCase
 {
     /**
-     * Default cap is `4 * 1024^3` bytes minus a `64 * 1024^2`-byte
+     * S3 PUT cap is `5 * 1024^3` bytes minus a `64 * 1024^2`-byte
      * safety margin — the headroom protects against last-minute
      * compression-ratio surprises (deflate occasionally lands at
-     * 1.0x or worse on already-compressed payloads). The constants
-     * are public on Manifest because the cap is part of the bundle's
-     * wire contract; consumers ARE allowed to read them back, so
-     * silent drift would be a contract break.
+     * 1.0x or worse on already-compressed payloads). 5 GiB is the
+     * hard S3 single-PUT limit across every S3-API-compatible
+     * provider; the cap is structural, not arbitrary. ZIP direct
+     * download is uncapped (Zip64 enabled in {@see BundleWriter}).
+     * The constants are public on Manifest because the cap is part
+     * of the bundle's wire contract; consumers ARE allowed to read
+     * them back, so silent drift would be a contract break.
      */
     public function testManifestCapConstantsMatchSpec(): void
     {
-        $this->assertSame(4 * 1024 * 1024 * 1024, Manifest::MAX_BUNDLE_BYTES);
+        $this->assertSame(5 * 1024 * 1024 * 1024, Manifest::MAX_S3_PUT_BYTES);
         $this->assertSame(64 * 1024 * 1024, Manifest::SAFETY_MARGIN_BYTES);
         $this->assertSame(1, Manifest::FORMAT_VERSION);
     }
@@ -179,25 +182,26 @@ final class ManifestBuilderTest extends TestCase
     }
 
     /**
-     * Cap-exceeded gate: when the estimated bundle bytes overflow
-     * `MAX_BUNDLE_BYTES - SAFETY_MARGIN_BYTES`, `build()` populates
-     * `exceeds_cap=true` (non-throwing — the admin page renders the
-     * form with the stats so the operator can see WHY they're
-     * blocked). `buildOrThrow()` is the stricter sister that throws
-     * `ExportError(CAP_EXCEEDED)` for the same condition — used by
-     * the entry point right BEFORE bytes hit the wire.
+     * Cap-exceeded gate: the flag is informational on a ZIP
+     * direct-download bundle (uncapped under Zip64) and
+     * load-bearing on the S3 form's UX gate (the S3 submit is
+     * server-rendered `disabled` when true) AND on the s3-arm
+     * pre-flight in `web/export.php` (which short-circuits to a
+     * `CAP_EXCEEDED` redirect BEFORE bytes hit the wire). The
+     * non-throwing shape on `build()` lets the admin page render
+     * the form with the stats so the operator can see WHY they're
+     * gated out of S3.
      *
      * Test approach: directly construct a Manifest DTO with a
      * synthetic `estimated_bundle_bytes` value at the cap boundary.
-     * We don't try to populate the real DB to 4 GiB worth of rows —
-     * that would be brittle and slow. The cap predicate lives on the
-     * DTO itself (via the constructor flag set by ManifestBuilder),
-     * so we test the DTO contract directly.
+     * The pure boundary helpers (`Manifest::s3PutCapBytes()` /
+     * `Manifest::computeExceedsCap()`) are covered separately
+     * below — those are what ManifestBuilder calls, so the
+     * boundary semantics get pinned without a 5 GiB DB fixture.
      */
     public function testManifestExposesExceedsCapFlag(): void
     {
-        // At-cap-minus-margin: still under.
-        $cap = Manifest::MAX_BUNDLE_BYTES - Manifest::SAFETY_MARGIN_BYTES;
+        $cap = Manifest::s3PutCapBytes();
 
         $under = new Manifest(
             bundle_id:              'test-uuid',
@@ -219,13 +223,62 @@ final class ManifestBuilderTest extends TestCase
             panel_version:          'test',
             row_counts:             [],
             demo_files:             [],
-            demo_total_bytes:       Manifest::MAX_BUNDLE_BYTES,
+            demo_total_bytes:       Manifest::MAX_S3_PUT_BYTES,
             estimated_bundle_bytes: $cap + 1,
             exceeds_cap:            true,
             cap_bytes:              $cap,
             pii_policy:             ['includes_admin_emails' => true],
         );
         $this->assertTrue($over->exceeds_cap);
+    }
+
+    /**
+     * `Manifest::s3PutCapBytes()` is the single source for the
+     * S3-mode cap. ManifestBuilder::build() reads it for the
+     * `cap_bytes` field; web/export.php's s3 arm reads it to
+     * construct the BundleWriter's running-byte budget; the
+     * integration test reads it to mirror the production wiring.
+     * If a future provider drops the 5 GiB ceiling, ONLY this
+     * helper changes.
+     */
+    public function testS3PutCapBytesReturnsConstantMinusSafetyMargin(): void
+    {
+        $this->assertSame(
+            Manifest::MAX_S3_PUT_BYTES - Manifest::SAFETY_MARGIN_BYTES,
+            Manifest::s3PutCapBytes(),
+        );
+    }
+
+    /**
+     * `Manifest::computeExceedsCap()` is the boundary predicate
+     * ManifestBuilder::build() consumes. Strictly greater-than
+     * (NOT `>=`) — a bundle whose estimated size lands exactly
+     * AT the cap stays under. The matrix here pins the boundary
+     * behaviour at every transition without needing to push a DB
+     * fixture past 5 GiB.
+     *
+     * A regression that swapped `>` for `>=`, used raw
+     * `MAX_S3_PUT_BYTES` (forgetting the safety margin), or
+     * inverted the comparison would fail one of these assertions.
+     */
+    public function testComputeExceedsCapBoundaryMatrix(): void
+    {
+        $cap = Manifest::s3PutCapBytes();
+
+        // Far under the cap: the seeded-fixture case.
+        $this->assertFalse(Manifest::computeExceedsCap(0));
+        $this->assertFalse(Manifest::computeExceedsCap(1_000_000));
+
+        // Exactly at the cap: still under (strict `>` predicate).
+        $this->assertFalse(Manifest::computeExceedsCap($cap));
+
+        // One byte over the cap: over.
+        $this->assertTrue(Manifest::computeExceedsCap($cap + 1));
+
+        // Past the raw MAX_S3_PUT_BYTES (deep into the unreachable-
+        // for-S3 region): over.
+        $this->assertTrue(Manifest::computeExceedsCap(Manifest::MAX_S3_PUT_BYTES));
+        $this->assertTrue(Manifest::computeExceedsCap(Manifest::MAX_S3_PUT_BYTES * 2));
     }
 
     private function builder(): ManifestBuilder

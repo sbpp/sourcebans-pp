@@ -13,12 +13,23 @@ namespace Sbpp\Export;
  * instance; {@see BundleWriter} consumes it.
  *
  * The class is also the source of truth for the bundle-cap math:
- * {@see MAX_BUNDLE_BYTES} is the ZIP 2.0 spec ceiling (4 GiB), and
- * {@see SAFETY_MARGIN_BYTES} is the cushion against the central
- * directory + JSONL line endings + our own row-size heuristic
- * undershoot. Pre-flight subtracts the margin BEFORE comparing the
- * estimate; the bundle writer re-checks the running compressed-byte
- * total on each entity / demo and aborts the same way.
+ * {@see MAX_S3_PUT_BYTES} is the S3 single-PUT object-size ceiling
+ * (5 GiB) and {@see SAFETY_MARGIN_BYTES} is the cushion against the
+ * central directory + JSONL line endings + our own row-size heuristic
+ * undershoot. The cap is **mode-conditional**: it ONLY applies to
+ * `s3` mode (presigned PUT). `zip` mode (direct browser download)
+ * is uncapped — Zip64 is enabled in {@see BundleWriter}, so the
+ * archive itself has no structural size ceiling. Pre-flight on the
+ * s3 path subtracts the margin BEFORE comparing the estimate; the
+ * bundle writer re-checks the running compressed-byte total on each
+ * entity / demo when constructed with a non-null `$capBytes` (s3
+ * mode) and no-ops when constructed with `null` (zip mode).
+ *
+ * The `$exceeds_cap` / `$cap_bytes` fields on this DTO carry the
+ * **S3 PUT cap** — they're load-bearing for the S3 form's UX gate
+ * (the S3 submit button is server-rendered as `disabled` when
+ * `exceeds_cap` is true) and informational on the manifest of a
+ * direct-ZIP-download bundle (the ZIP download is uncapped).
  *
  * The PII policy block is part of the operator contract — the bundle
  * is intentionally honest about every category it carries (admin
@@ -44,26 +55,62 @@ final class Manifest
     public const FORMAT_VERSION = 1;
 
     /**
-     * ZIP 2.0 spec ceiling (4 GiB). We deliberately disable the
-     * ZIP64 extension in {@see BundleWriter} so an exported bundle
-     * opens in every mainstream consumer (Windows Explorer's built-in
-     * unzipper, macOS Archive Utility, BSD unzip, every cloud
-     * console preview) without operator intervention.
+     * S3 single-PUT object-size ceiling (5 GiB). Every S3-API
+     * compatible provider (AWS S3, Cloudflare R2, MinIO, Backblaze
+     * B2, Wasabi) enforces this hard limit on a presigned PUT;
+     * above it the operator has to switch to multipart upload, a
+     * fundamentally different flow than presigned single-PUT. The
+     * cap is structural, not arbitrary.
+     *
+     * Direct ZIP download is **uncapped** — Zip64 is enabled in
+     * {@see BundleWriter}, so the archive itself has no structural
+     * size ceiling, and the operator's browser can stream a
+     * multi-tens-of-GB bundle if they choose to.
      */
-    public const MAX_BUNDLE_BYTES = 4 * 1024 * 1024 * 1024;
+    public const MAX_S3_PUT_BYTES = 5 * 1024 * 1024 * 1024;
 
     /**
      * Cushion against the central directory + per-entry overhead +
      * our own JSONL row-size heuristic undershoot. Subtract from
-     * {@see MAX_BUNDLE_BYTES} before the pre-flight compare AND the
-     * running-byte gate inside the writer.
+     * {@see MAX_S3_PUT_BYTES} before the s3-mode pre-flight compare
+     * AND the running-byte gate inside the writer when it's
+     * constructed with a non-null `$capBytes`.
      */
     public const SAFETY_MARGIN_BYTES = 64 * 1024 * 1024;
 
     /**
-     * @param array<string, int>                                  $row_counts  Entity name → row count.
-     * @param list<array{name: string, size_bytes: int}>          $demo_files  Demo files we'd ship (in deterministic name order).
-     * @param array<string, bool|string>                          $pii_policy  See `pii_policy` shape below.
+     * The effective S3-mode cap: {@see MAX_S3_PUT_BYTES} minus
+     * {@see SAFETY_MARGIN_BYTES}. Single source for both the
+     * pre-flight `exceeds_cap` decision in {@see ManifestBuilder}
+     * AND the in-flight running-byte gate in {@see BundleWriter}
+     * when it's constructed s3-mode-shaped.
+     */
+    public static function s3PutCapBytes(): int
+    {
+        return self::MAX_S3_PUT_BYTES - self::SAFETY_MARGIN_BYTES;
+    }
+
+    /**
+     * Pre-flight cap predicate: does the estimated bundle size
+     * exceed the S3 PUT cap (minus safety margin)? Pure function —
+     * extracted so unit tests can pin the boundary behaviour
+     * without spinning up a 5 GiB DB fixture. ManifestBuilder
+     * calls this against its row-count + demo-bytes estimate; the
+     * result is preserved on every manifest regardless of mode
+     * (informational on a direct-ZIP-download bundle, load-bearing
+     * UX gate on the S3 form).
+     */
+    public static function computeExceedsCap(int $estimatedBundleBytes): bool
+    {
+        return $estimatedBundleBytes > self::s3PutCapBytes();
+    }
+
+    /**
+     * @param array<string, int>                                  $row_counts     Entity name → row count.
+     * @param list<array{name: string, size_bytes: int}>          $demo_files     Demo files we'd ship (in deterministic name order).
+     * @param array<string, bool|string>                          $pii_policy     See `pii_policy` shape below.
+     * @param bool                                                $exceeds_cap    True iff `$estimated_bundle_bytes > $cap_bytes`. Load-bearing for the S3 form's UX gate (S3 submit is server-rendered `disabled` when true). Informational on a direct-ZIP-download bundle's manifest — ZIP download is uncapped.
+     * @param int                                                 $cap_bytes      The S3 PUT cap (see {@see s3PutCapBytes()}). Applies only to s3 mode; ZIP direct download has no cap.
      */
     public function __construct(
         public readonly string $bundle_id,
