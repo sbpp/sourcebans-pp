@@ -47,6 +47,19 @@ services:
       # `web/../docker/...` resolves naturally there; this mount keeps
       # the local `./sbpp.sh test` runner symmetric with CI.
       - ./docker:/var/www/html/docker:ro
+      # Read-only mounts of the docs tree + the two root-level markdown
+      # files (AGENTS.md / CHANGELOG.md) for the same reason as the
+      # docker/ mount above: file-shape integration tests under
+      # web/tests/integration/ that gate sbpp.github.io deep-links
+      # (DocsUpgradeLinkRegressionTest, #1474) need to verify that the
+      # docs source file backing a panel-side URL still exists AND
+      # carries the expected heading, AND that no panel/docs source
+      # references the broken slug. CI's actions/checkout@v4 sees the
+      # full repo on the runner; these mounts keep local `./sbpp.sh
+      # test` symmetric.
+      - ./docs:/var/www/html/docs:ro
+      - ./AGENTS.md:/var/www/html/AGENTS.md:ro
+      - ./CHANGELOG.md:/var/www/html/CHANGELOG.md:ro
 
   db:
     image: mariadb:10.11

@@ -67,7 +67,11 @@ tests under `web/tests/integration/` can read production-only configs
 (`docker/apache/sbpp-prod.conf`, `docker/Dockerfile.prod`, etc.) the
 runtime panel never touches; CI's `actions/checkout@v4` pulls the full
 repo, so this mount keeps the local `./sbpp.sh test` runner symmetric
-with the CI gate.
+with the CI gate. The `./docs` tree, `AGENTS.md`, and `CHANGELOG.md`
+are mounted read-only at the same level for the same reason — gates
+like `DocsUpgradeLinkRegressionTest` (#1474) verify that
+panel-side deep-links to `sbpp.github.io` still resolve against the
+matching docs source file on disk.
 
 ## Common tasks
 

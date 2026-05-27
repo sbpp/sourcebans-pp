@@ -202,7 +202,7 @@
                                 </label>
                                 <p class="settings-fieldset__help" id="telemetry_enabled_help" data-testid="setting-help-telemetry.enabled">
                                     Sends one anonymous ping per day with panel version, PHP / DB / OS family, counts (admins, servers, bans, comms, 30-day submissions / protests), and which features are turned on. <strong>No</strong> hostnames, IPs, admin names, SteamIDs, or ban reasons are sent. A random install ID is included so pings can be deduplicated.
-                                    <a href="https://sbpp.github.io/updating/1.8-to-2.0/#telemetry" target="_blank" rel="noopener noreferrer">See the full payload</a>.
+                                    <a href="https://sbpp.github.io/updating/1-8-to-2-0/#anonymous-telemetry" target="_blank" rel="noopener noreferrer">See the full payload</a>.
                                     Disabling clears the random ID; turning it back on issues a fresh one.
                                 </p>
                             </div>
