@@ -119,7 +119,7 @@ use PHPUnit\Framework\TestCase;
 final class IframeChromeAntiFoucBootloaderTest extends TestCase
 {
     /**
-     * The four load-bearing fragments of the bootloader. We check each
+     * The five load-bearing fragments of the bootloader. We check each
      * separately so a regression message names the specific drift
      * (e.g. "lost the matchMedia branch" vs. "renamed THEME_KEY") rather
      * than a wholesale "your bootloader is wrong" diff.
@@ -145,6 +145,18 @@ final class IframeChromeAntiFoucBootloaderTest extends TestCase
                 "|| 'system'",
                 "must fall back to the same default ('system') as `theme.js` — a different "
                 . "default makes a first-time visitor see light/dark inconsistently across templates",
+            ],
+            [
+                "setAttribute('data-theme-pref', m)",
+                "must mirror the persisted preference (light / dark / system) to "
+                . "`<html data-theme-pref=...>` before first paint (#1185 follow-up). The "
+                . "theme toggle's tri-state icon CSS (theme.css `.theme-toggle__*`) gates on "
+                . "this attribute so the right sun / moon / monitor placeholder is visible "
+                . "BEFORE <body> parses. Dropping this write from any one bootloader copy "
+                . "regresses the surface to the pre-followup shape where 'system' mode was "
+                . "visually indistinguishable from whichever of light/dark the OS resolved to. "
+                . "theme.js's applyTheme() also writes the attribute on every click + "
+                . "matchMedia tick — the bootloader is the load-bearing path for first paint",
             ],
             [
                 "matchMedia('(prefers-color-scheme: dark)').matches",

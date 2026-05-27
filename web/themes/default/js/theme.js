@@ -12,13 +12,46 @@
   const THEME_KEY = 'sbpp-theme';
 
   /**
+   * Human-readable aria-label per preference (#1185 follow-up). The toggle
+   * button's accessible name updates on every applyTheme() so screen-reader
+   * users get the same "what mode am I in?" indicator sighted users get
+   * from the sun / moon / monitor icon swap. Falls back to the generic
+   * "Toggle color theme" if the mode is something unexpected so an
+   * upstream typo never strips the label entirely.
+   *
+   * @type {Record<string, string>}
+   */
+  const THEME_LABELS = {
+    light: 'Color theme: light. Click to switch to dark.',
+    dark: 'Color theme: dark. Click to switch to system (auto).',
+    system: 'Color theme: system (auto). Click to switch to light.',
+  };
+
+  /**
    * Apply one of 'light' | 'dark' | 'system' to <html>.
+   *
+   * Three writes per call:
+   *   - `<html class="dark">` mirrors the *resolved* theme (the chrome's
+   *     long-standing contract — :root carries light tokens, html.dark
+   *     overrides). Tests and CSS read this for what's actually painted.
+   *   - `<html data-theme-pref="...">` mirrors the *preference* (the
+   *     localStorage value verbatim — `light`, `dark`, or `system`). The
+   *     theme toggle's tri-state icon CSS gates on this; the bootloader
+   *     in core/header.tpl + the four chromeless `<head>` copies sets it
+   *     synchronously before first paint so the icon picks the right
+   *     placeholder before <body> parses.
+   *   - The toggle button's `aria-label` rewrite (above) so AT users
+   *     hear the current state instead of the static "Toggle color theme".
+   *
    * @param {string} mode
    * @returns {void}
    */
   function applyTheme(mode) {
     const dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.setAttribute('data-theme-pref', mode);
+    const toggle = document.querySelector('[data-theme-toggle]');
+    if (toggle) toggle.setAttribute('aria-label', THEME_LABELS[mode] || 'Toggle color theme');
     try { localStorage.setItem(THEME_KEY, mode); } catch (e) { /* localStorage unavailable; ignore */ }
   }
 

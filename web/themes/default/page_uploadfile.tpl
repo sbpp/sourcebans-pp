@@ -43,6 +43,7 @@
  (function () {
  try {
  var m = localStorage.getItem('sbpp-theme') || 'system';
+ document.documentElement.setAttribute('data-theme-pref', m);
  var d = m === 'dark' || (m === 'system' && window.matchMedia
  && matchMedia('(prefers-color-scheme: dark)').matches);
  if (d) document.documentElement.classList.add('dark');

@@ -82,13 +82,28 @@
             <kbd class="topbar__search-kbd">Ctrl K</kbd>
         </button>
 
+        {*
+            #1185 follow-up: tri-state icon (sun / moon / monitor). The click
+            handler in theme.js cycles light → dark → system → light, but
+            pre-fix the button rendered only sun + moon gated on the resolved
+            <html class="dark"> — so "system" was indistinguishable from
+            whichever of light/dark the OS resolved to, and users had no
+            way to tell at a glance which mode the toggle would jump to
+            next. The third <i data-lucide="monitor"> placeholder is gated
+            by CSS on <html data-theme-pref="..."> (the *preference*, NOT
+            the resolved theme), which theme.js's applyTheme() and the
+            anti-FOUC bootloader both write. aria-label is rewritten in
+            applyTheme() to mirror the current preference so screen-reader
+            users get the same indicator sighted users do.
+        *}
         <button type="button"
                 class="btn btn--ghost btn--icon"
                 data-theme-toggle
                 data-testid="theme-toggle"
                 aria-label="Toggle color theme">
-            <i data-lucide="sun"  class="theme-toggle__sun"></i>
-            <i data-lucide="moon" class="theme-toggle__moon"></i>
+            <i data-lucide="sun"     class="theme-toggle__sun"></i>
+            <i data-lucide="moon"    class="theme-toggle__moon"></i>
+            <i data-lucide="monitor" class="theme-toggle__system"></i>
         </button>
     </header>
 

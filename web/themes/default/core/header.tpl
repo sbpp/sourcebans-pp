@@ -84,6 +84,19 @@
         on an unset class — both no-ops), and it stays the load-bearing
         path for the click + matchMedia handlers below it.
 
+        Two attributes get written on <html>:
+          - `class="dark"` is added when the *resolved* theme is dark
+            (mode === 'dark', or mode === 'system' + OS-dark). :root
+            carries the light tokens; html.dark overrides to dark.
+          - `data-theme-pref="..."` mirrors the *preference* verbatim
+            (light / dark / system). The theme toggle's tri-state icon
+            CSS (theme.css `.theme-toggle__*`) gates on this so the
+            button shows the correct sun / moon / monitor placeholder
+            for the preference — NOT the resolved theme — before <body>
+            parses. Pre-#1185-followup the toggle only swapped sun/moon
+            on `html.dark`, so "system" mode was visually indistinguishable
+            from whichever of light/dark the OS resolved to.
+
         Wrapped in IIFE + try/catch because `localStorage` throws on
         private-mode iframes / SecurityError, and `matchMedia` is
         missing on very old browsers; in either failure mode we
@@ -105,6 +118,7 @@
     (function () {
         try {
             var m = localStorage.getItem('sbpp-theme') || 'system';
+            document.documentElement.setAttribute('data-theme-pref', m);
             var d = m === 'dark' || (m === 'system' && window.matchMedia
                 && matchMedia('(prefers-color-scheme: dark)').matches);
             if (d) document.documentElement.classList.add('dark');

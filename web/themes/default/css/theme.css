@@ -273,14 +273,27 @@ html.dark .topbar { background: rgb(9 9 11 / 0.8); }
 }
 
 /* ---- Theme toggle icon swap ----
-   The button renders both <i data-lucide="sun"> and <i data-lucide="moon">
-   placeholders; we show whichever matches the resolved theme. theme.js
-   only toggles `<html class="dark">` — no JS click work needed here.
-   "system" mode resolves to one of the two via applyTheme(); a third
-   `monitor` icon for system is a follow-up (#1185). */
-.theme-toggle__moon { display: none; }
-html.dark .theme-toggle__sun { display: none; }
-html.dark .theme-toggle__moon { display: inline-block; }
+   The button renders three placeholders (<i data-lucide="sun|moon|monitor">);
+   we show whichever matches the user's *preference* (light / dark / system),
+   NOT the resolved theme. The preference lives in localStorage['sbpp-theme']
+   and is mirrored to <html data-theme-pref="light|dark|system"> by the
+   anti-FOUC bootloader (core/header.tpl + four iframe / popup / updater
+   copies) AND by theme.js's applyTheme() on every click + matchMedia tick.
+   Pre-#1185-followup the rules gated on `html.dark` (the resolved theme),
+   so "system" was indistinguishable from light/dark — operators in system
+   mode saw the same icon they'd see if pinned, with no way to read
+   "click cycles to <next>" at a glance.
+
+   Fallback (no data-theme-pref attribute — localStorage SecurityError +
+   the bootloader's try/catch fired): sun stays visible by default, which
+   lines up with the :root light-default the cascade lands on when no
+   `dark` class is set. */
+.theme-toggle__moon,
+.theme-toggle__system { display: none; }
+html[data-theme-pref="dark"] .theme-toggle__sun { display: none; }
+html[data-theme-pref="dark"] .theme-toggle__moon { display: inline-block; }
+html[data-theme-pref="system"] .theme-toggle__sun { display: none; }
+html[data-theme-pref="system"] .theme-toggle__system { display: inline-block; }
 
 /* ---- Buttons ---- */
 /* Buttons resolve colour through --btn-bg / --btn-color / --btn-border /
