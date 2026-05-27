@@ -459,11 +459,30 @@ if ($section === 'themes') {
     $authMaxlifeRemember = (int) Config::get('auth.maxlife.remember');
     $authMaxlifeSteam    = (int) Config::get('auth.maxlife.steam');
 
+    /*
+     * #1480 review finding 5: surface a visible warning to the
+     * operator when `template.logo` is non-empty but the chrome is
+     * currently rendering the fallback shield (the configured file
+     * doesn't exist on disk, points at the v1.x default, etc.). The
+     * resolver silently falls back to {@see \Sbpp\View\BrandLogo::DEFAULT_PATH}
+     * to prevent the broken `<img>` regression; without this
+     * indicator the operator has no signal that their customisation
+     * is inactive (the input still shows the raw configured value).
+     * Deliberately not flagged on the empty / unset case — an empty
+     * input self-evidently isn't a customisation in flight.
+     */
+    $rawLogo = (string) Config::get('template.logo');
+    $resolvedLogo = \Sbpp\View\BrandLogo::resolve();
+    $logoUsingFallback = trim($rawLogo) !== ''
+        && trim($rawLogo) !== \Sbpp\View\BrandLogo::DEFAULT_PATH
+        && $resolvedLogo === \Sbpp\View\BrandLogo::DEFAULT_PATH;
+
     Renderer::render($theme, new AdminSettingsView(
         can_web_settings:            $perms['can_web_settings'],
         can_owner:                   $perms['can_owner'],
         config_title:                (string) Config::get('template.title'),
-        config_logo:                 (string) Config::get('template.logo'),
+        config_logo:                 $rawLogo,
+        config_logo_using_fallback:  $logoUsingFallback,
         config_min_password:         (int) MIN_PASS_LENGTH,
         config_dateformat:           (string) Config::get('config.dateformat'),
         config_dash_title:           (string) Config::get('dash.intro.title'),

@@ -42,7 +42,14 @@
        for the upgrade-path migration that converts the v1.x
        `logos/sb-large.png` default forward. *}
     <div class="sidebar__brand" data-testid="sidebar-brand">
-        <img class="sidebar__brand-mark" src="{$theme_url}/{$logo}" alt="">
+        {* #1480 — `data-testid="brand-mark"` lets the
+           `brand-mark-resolution.spec.ts` E2E spec anchor on the
+           rendered `<img>` element without relying on the
+           `sidebar__brand-mark` CSS class chain (per AGENTS.md
+           "selectors must use testability hooks"). Mirror on
+           `page_login.tpl`'s sign-in card so one selector covers
+           both render paths. *}
+        <img class="sidebar__brand-mark" data-testid="brand-mark" src="{$theme_url}/{$logo}" alt="">
         <div>
             <div class="font-semibold text-sm">SourceBans++</div>
         </div>

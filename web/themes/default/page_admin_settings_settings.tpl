@@ -107,6 +107,25 @@
                             <div data-testid="setting-row" data-key="template.logo">
                                 <label class="label" for="template_logo">Logo path</label>
                                 <input class="input" type="text" id="template_logo" name="template_logo" value="{$config_logo}" aria-describedby="template_logo_help">
+                                {if $config_logo_using_fallback}
+                                    {*
+                                        #1480 review finding 5: the resolver
+                                        (`Sbpp\View\BrandLogo::resolve()`)
+                                        silently falls back to the default
+                                        shield when the configured value is
+                                        broken (file deleted, traversal
+                                        indicator, v1.x default). Surface the
+                                        fallback state inline so the operator
+                                        knows their customisation is inactive
+                                        — without this the input shows the raw
+                                        saved value as if it were active.
+                                    *}
+                                    <p class="settings-fieldset__help"
+                                       style="color:#7f1d1d;background:rgba(220,38,38,0.10);border-left:3px solid #dc2626;padding:0.5rem 0.75rem;margin-top:0.25rem;border-radius:0.25rem;"
+                                       data-testid="setting-warning-template.logo">
+                                        <strong>Heads up:</strong> the chrome is currently rendering the default shield (<code class="font-mono">images/favicon.svg</code>) because the saved path doesn't resolve to a file on disk inside the active theme. Check that the file exists under <code class="font-mono">themes/&lt;theme&gt;/</code> or clear the input to remove the customisation.
+                                    </p>
+                                {/if}
                                 <p class="settings-fieldset__help"
                                    id="template_logo_help"
                                    data-testid="setting-help-template.logo">

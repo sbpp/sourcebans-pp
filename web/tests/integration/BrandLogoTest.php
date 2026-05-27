@@ -217,6 +217,117 @@ final class BrandLogoTest extends ApiTestCase
     }
 
     /**
+     * Null-byte injection: pre-fix `is_file()` on a path containing
+     * `\0` raised `\ValueError` on PHP 8.0+ (per the PHP 8.0
+     * null-byte filesystem-function RFC). The exception escaped
+     * `resolve()` and `core/header.php` into the chrome's top-level
+     * error handler, surfacing a 500 on every panel render until
+     * the row was rolled back — an admin-only chrome-DoS surface
+     * (anyone holding ADMIN_SETTINGS, NOT just ADMIN_OWNER, can
+     * write `template.logo`). The resolver rejects the input
+     * outright and falls back; this test asserts no exception
+     * leaks and the fallback fires.
+     */
+    public function testNullByteInPathFallsBackToShield(): void
+    {
+        $this->setSetting('template.logo', "images/favicon.svg\0extra");
+
+        $this->assertSame(BrandLogo::DEFAULT_PATH, BrandLogo::resolve());
+        $this->assertSame(
+            'themes/default/' . BrandLogo::DEFAULT_PATH,
+            BrandLogo::resolveUrl(),
+        );
+    }
+
+    /**
+     * Case-insensitive variants of the v1.x default path are also
+     * rejected. On a case-sensitive Linux filesystem the literal
+     * `LOGOS/SB-LARGE.PNG` would fail the `is_file()` check and
+     * fall back anyway, but on a case-insensitive filesystem
+     * (macOS HFS+, Windows NTFS, ext4 mounted with
+     * `case_insensitive`) where a fork ships the v1.x asset under
+     * any case, the literal compare would bypass the rejection
+     * and the chrome would render the v1.x asset — defeating the
+     * migration's "bury the v1.x default" intent.
+     */
+    public function testV1DefaultPathFallsBackRegardlessOfCase(): void
+    {
+        $this->setSetting('template.logo', 'LOGOS/SB-LARGE.PNG');
+        $this->assertSame(BrandLogo::DEFAULT_PATH, BrandLogo::resolve());
+
+        $this->setSetting('template.logo', 'Logos/Sb-Large.Png');
+        $this->assertSame(BrandLogo::DEFAULT_PATH, BrandLogo::resolve());
+    }
+
+    /**
+     * Pin the lockstep between `BrandLogo::V1_DEFAULT_PATH` /
+     * `BrandLogo::DEFAULT_PATH` and the migration script that
+     * forward-converts existing installs. If the constants change
+     * (e.g., adding another well-known broken default), the
+     * migration WHERE / SET literals must change in lockstep —
+     * otherwise upgrade installs silently keep the broken value
+     * AND no migration help, but the resolver's fallback would
+     * still fire so the chrome looks correct, hiding the drift
+     * from anyone reading the settings page. This test catches
+     * the drift at PR time.
+     */
+    public function testMigration809PinsV1AndDefaultLiterals(): void
+    {
+        $migrationPath = __DIR__ . '/../../updater/data/809.php';
+        $this->assertFileExists(
+            $migrationPath,
+            'Migration 809.php is the documented v1.x default forward-conversion path '
+            . 'and must continue to exist alongside BrandLogo.',
+        );
+        $migration = (string) file_get_contents($migrationPath);
+
+        $this->assertStringContainsString(
+            "'" . BrandLogo::V1_DEFAULT_PATH . "'",
+            $migration,
+            'Migration 809.php must continue gating on the V1_DEFAULT_PATH literal — '
+            . 'if BrandLogo::V1_DEFAULT_PATH changes, the migration\'s WHERE clause '
+            . 'must change too or the v1.x-default forward-conversion stops firing '
+            . 'on upgraded installs.',
+        );
+        $this->assertStringContainsString(
+            "'" . BrandLogo::DEFAULT_PATH . "'",
+            $migration,
+            'Migration 809.php must continue setting BrandLogo::DEFAULT_PATH as the '
+            . 'forward-conversion target — if BrandLogo::DEFAULT_PATH changes, the '
+            . 'migration\'s SET clause must change too or upgraded installs land on '
+            . 'a value the resolver no longer recognises as the canonical default.',
+        );
+    }
+
+    /**
+     * Pin the lockstep between `BrandLogo::DEFAULT_PATH` and the
+     * fresh-install seed. If the constant changes, `data.sql` has
+     * to carry the new value or fresh installs land on a broken
+     * row that the resolver then silently masks with the fallback
+     * (chrome reads correct, settings page reads wrong) — the
+     * exact "silent behaviour change" trap the PR set out to
+     * close. Documentation-only contracts that aren't pinned in
+     * code tend to drift; this test is the static gate.
+     */
+    public function testFreshInstallSeedPinsDefaultLiteral(): void
+    {
+        $seedPath = __DIR__ . '/../../install/includes/sql/data.sql';
+        $this->assertFileExists(
+            $seedPath,
+            'data.sql is the documented fresh-install seed and must continue to exist.',
+        );
+        $seed = (string) file_get_contents($seedPath);
+
+        $this->assertStringContainsString(
+            "'" . BrandLogo::DEFAULT_PATH . "'",
+            $seed,
+            'data.sql must continue seeding template.logo to BrandLogo::DEFAULT_PATH — '
+            . 'if the constant changes, the seed has to change too or fresh installs '
+            . 'land on a broken row that the resolver silently masks.',
+        );
+    }
+
+    /**
      * `resolveUrl()` joins the active theme name into the prefix.
      * Most surfaces in the panel hard-code the `default` theme name
      * via `config.theme` not actually being switchable in v2.0, but

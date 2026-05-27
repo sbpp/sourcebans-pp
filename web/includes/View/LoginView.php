@@ -35,13 +35,23 @@ namespace Sbpp\View;
  *     `redirect: ''` (post-login destination is the dashboard).
  *   - `$brand_logo_url`   — Pre-resolved URL for the brand mark image
  *     in the sign-in card header (`<img src="-{$brand_logo_url}-">`).
- *     The page handler joins `$theme_url` (`themes/<theme>`, set by
- *     init.php) with `Config::get('template.logo')` (the v1.x setting
- *     resurrected by #1235 — default `images/favicon.svg`, the new
- *     SourceBans++ shield mark; admins can repoint at any
- *     theme-relative path). Pre-resolving here keeps `theme_url` and
- *     `logo` out of the View property surface (`core/header.tpl`'s
- *     globally-assigned `$theme_url` doesn't bleed into page Views).
+ *     The page handler delegates to
+ *     {@see \Sbpp\View\BrandLogo::resolveUrl()}, which joins the
+ *     active theme name (`config.theme`) with the resolved
+ *     `template.logo` value — falling back to
+ *     {@see \Sbpp\View\BrandLogo::DEFAULT_PATH} (`images/favicon.svg`,
+ *     the SourceBans++ shield from the favicon set landed in #1235)
+ *     when the configured value is null / empty / points at the
+ *     v1.x default `logos/sb-large.png` / points at a deleted file
+ *     / contains a path-traversal indicator. Pre-resolving here
+ *     keeps `theme_url` and `logo` out of the View property
+ *     surface (`core/header.tpl`'s globally-assigned `$theme_url`
+ *     doesn't bleed into page Views). See `BrandLogo`'s class
+ *     docblock for the full resolution ladder; the navbar render
+ *     path (`web/pages/core/header.php`) consumes the theme-
+ *     relative shape via {@see \Sbpp\View\BrandLogo::resolve()}
+ *     because `core/navbar.tpl` already has `{$theme_url}` in
+ *     scope.
  */
 final class LoginView extends View
 {

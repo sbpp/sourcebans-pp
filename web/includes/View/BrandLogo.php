@@ -54,16 +54,24 @@ use Sbpp\Config;
  *
  *   1. If `template.logo` is null / empty / whitespace-only →
  *      {@see self::DEFAULT_PATH}.
- *   2. If the configured value contains `..` or `\` (path-traversal
- *      indicators) → {@see self::DEFAULT_PATH}. The current public
- *      ban-list export / single-demo download / theme-conf reader
- *      surfaces already sanitise admin-supplied paths against
- *      traversal; this resolver matches that posture so a custom
- *      `template.logo` can't smuggle the chrome into rendering
- *      arbitrary files outside the active theme tree.
- *   3. If the configured value equals the well-known v1.x default
- *      `logos/sb-large.png` (defense-in-depth against the migration
- *      not having run) → {@see self::DEFAULT_PATH}.
+ *   2. If the configured value contains `..` (path-traversal
+ *      indicator), `\` (Windows-style separator), or `\0` (null
+ *      byte — closes an admin-only chrome-DoS surface: PHP 8.0+
+ *      `is_file()` throws `\ValueError` on null-byte paths, which
+ *      pre-fix propagated past the resolver into the chrome's
+ *      top-level error handler and 500'd every panel render until
+ *      the row was rolled back) → {@see self::DEFAULT_PATH}. The
+ *      current public ban-list export / single-demo download /
+ *      theme-conf reader surfaces already sanitise admin-supplied
+ *      paths against traversal; this resolver matches that posture
+ *      so a custom `template.logo` can't smuggle the chrome into
+ *      rendering arbitrary files outside the active theme tree.
+ *   3. If the configured value matches the well-known v1.x default
+ *      `logos/sb-large.png` (case-insensitive via {@see strcasecmp()}
+ *      so a case-flipped variant `LOGOS/SB-LARGE.PNG` on a
+ *      case-insensitive filesystem still gets rejected; defense-
+ *      in-depth against the migration not having run) →
+ *      {@see self::DEFAULT_PATH}.
  *   4. If the resolved on-disk path doesn't exist via
  *      {@see is_file()} → {@see self::DEFAULT_PATH}.
  *   5. Otherwise → the configured value (theme-relative, leading
@@ -118,8 +126,18 @@ final class BrandLogo
      * the v1.x asset) can still see the chrome refuse to use it,
      * matching the operator-facing migration's intent to bury the
      * v1.x default.
+     *
+     * Public so the migration-pin regression test can reference it
+     * directly instead of duplicating the literal (and so the
+     * literal stays single-source between this constant and
+     * `web/updater/data/809.php`'s WHERE clause). Comparison via
+     * {@see strcasecmp()} so a case-flipped variant
+     * (`LOGOS/SB-LARGE.PNG`) on a case-insensitive filesystem
+     * still gets rejected — the migration's MariaDB-side
+     * `utf8mb4_unicode_ci` collation already does case-insensitive
+     * comparison on its own arm of the contract.
      */
-    private const V1_DEFAULT_PATH = 'logos/sb-large.png';
+    public const V1_DEFAULT_PATH = 'logos/sb-large.png';
 
     /**
      * Disallow instantiation — this class is a static helper namespace.
@@ -153,20 +171,41 @@ final class BrandLogo
             return self::DEFAULT_PATH;
         }
 
-        // Defense against `..` traversal + Windows-style backslashes.
-        // An admin could type `../../../etc/passwd` in the settings
+        // Defense against `..` traversal + Windows-style backslashes
+        // + null-byte injection. An admin (whose only required
+        // permission to write this setting is ADMIN_SETTINGS, NOT
+        // owner) could type `../../../etc/passwd` in the settings
         // input; pre-fix the chrome happily rendered
         // `<img src="themes/default/../../../etc/passwd">`. The
         // resolver rejects the input outright and falls back to the
         // default so a forged path cannot escape the theme tree.
-        if (str_contains($relative, '..') || str_contains($relative, '\\')) {
+        //
+        // The null-byte arm closes an admin-only chrome-DoS surface:
+        // PHP 8.0+ `is_file()` throws `\ValueError` on a path
+        // containing `\0` (per the PHP 8.0 null-byte filesystem-
+        // function RFC). Without this rejection a payload like
+        // `"images/foo.png\0extra"` propagates the exception past
+        // `resolve()` and `core/header.php` into the chrome's
+        // top-level error handler — surfacing a 500 on every
+        // panel page render for every user (including the owner)
+        // until the row is rolled back. Pinned by
+        // `BrandLogoTest::testNullByteInPathFallsBackToShield`.
+        if (
+            str_contains($relative, '..')
+            || str_contains($relative, '\\')
+            || str_contains($relative, "\0")
+        ) {
             return self::DEFAULT_PATH;
         }
 
         // Defense-in-depth: even if migration 809 didn't run for some
         // edge-case install, never render the v1.x default that
-        // doesn't exist in the v2.0 default theme.
-        if ($relative === self::V1_DEFAULT_PATH) {
+        // doesn't exist in the v2.0 default theme. `strcasecmp` so
+        // a case-flipped variant (`LOGOS/SB-LARGE.PNG`) on a
+        // case-insensitive filesystem (macOS HFS+, Windows NTFS,
+        // ext4-mounted with `case_insensitive`) where a fork ships
+        // the v1.x asset under any case can't slip past.
+        if (strcasecmp($relative, self::V1_DEFAULT_PATH) === 0) {
             return self::DEFAULT_PATH;
         }
 
@@ -217,9 +256,29 @@ final class BrandLogo
      * resolver against the test bootstrap's matching definition (the
      * PHPUnit bootstrap defines `SB_THEMES` to the same value
      * `init.php` does).
+     *
+     * Fail-closed when `SB_THEMES` is undefined: returning the empty
+     * string would silently turn `is_file($themeName . '/' . $relative)`
+     * into a CWD-relative check, which (a) could accidentally pass
+     * if the panel happens to be invoked from a directory with a
+     * matching layout (CLI tooling, custom entry points), and (b)
+     * weakens the path-rooting contract the resolver advertises.
+     * The constant is defined by `init.php` (and `tests/bootstrap.php`)
+     * before any chrome render runs; reaching this branch means the
+     * call site failed to bootstrap correctly, which is a programmer
+     * error worth surfacing loudly. Mirrors the project's
+     * "Fail closed" posture documented under "Public auth surfaces"
+     * in AGENTS.md.
      */
     private static function themesRoot(): string
     {
-        return defined('SB_THEMES') ? (string) constant('SB_THEMES') : '';
+        if (!defined('SB_THEMES')) {
+            throw new \LogicException(
+                'SB_THEMES must be defined before Sbpp\\View\\BrandLogo::resolve() is called. '
+                . 'This constant is defined by web/init.php and web/tests/bootstrap.php; '
+                . 'reaching this branch means the call site bypassed the panel bootstrap.'
+            );
+        }
+        return (string) constant('SB_THEMES');
     }
 }

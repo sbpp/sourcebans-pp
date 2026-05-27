@@ -77,8 +77,17 @@
                    `template.logo` setting, theme-resolved in the page
                    handler (page.login.php) and passed in as
                    `$brand_logo_url`. Default ships as the SourceBans++
-                   shield from the favicon set. *}-
-                <img class="sidebar__brand-mark" src="-{$brand_logo_url}-" alt="" aria-hidden="true">
+                   shield from the favicon set.
+
+                   #1480 — `data-testid="brand-mark"` lets the
+                   `brand-mark-resolution.spec.ts` E2E spec anchor on
+                   the rendered `<img>` element without relying on the
+                   `sidebar__brand-mark` CSS class chain (per
+                   AGENTS.md "selectors must use testability hooks").
+                   The same testid is mirrored on `core/navbar.tpl`'s
+                   sidebar brand mark so the spec walks both surfaces
+                   with one selector. *}-
+                <img class="sidebar__brand-mark" data-testid="brand-mark" src="-{$brand_logo_url}-" alt="" aria-hidden="true">
                 <div>
                     <div class="font-semibold text-sm">SourceBans++</div>
                     <div class="text-xs text-muted">Admin panel</div>

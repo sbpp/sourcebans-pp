@@ -34,6 +34,28 @@ final class AdminSettingsView extends View
     public function __construct(
         public readonly string $config_title,
         public readonly string $config_logo,
+        /**
+         * True when `template.logo` is non-empty but the chrome is
+         * currently rendering the fallback shield (i.e.
+         * {@see \Sbpp\View\BrandLogo::resolve()} returned
+         * {@see \Sbpp\View\BrandLogo::DEFAULT_PATH} for a non-default
+         * configured value — the file doesn't exist on disk, the
+         * value points at the v1.x default, or the value contains a
+         * traversal indicator). The template surfaces a warning chip
+         * next to the input so an operator who customised the path
+         * gets a visible signal that their customisation is
+         * inactive — without this the silent fallback would leave the
+         * operator believing their saved value is what the chrome
+         * renders (#1480 review finding 5).
+         *
+         * Stays false when the configured value EQUALS the resolved
+         * value (the happy path) AND when the configured value is
+         * empty / unset (no customisation in flight to flag as
+         * broken). The "configured is empty + fallback is being
+         * used" case isn't worth flagging because the empty input
+         * itself reads as "no customisation".
+         */
+        public readonly bool $config_logo_using_fallback,
         public readonly int $config_min_password,
         public readonly string $config_dateformat,
         public readonly string $config_dash_title,
