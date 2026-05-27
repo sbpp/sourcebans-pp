@@ -116,18 +116,18 @@ function sbpp_admin_export_describe_error(string $code): string
 {
     return match ($code) {
         \Sbpp\Export\ExportError::CAP_EXCEEDED =>
-            'The bundle would exceed the 4 GiB ZIP 2.0 cap. Prune old demos or unrelated rows and retry.',
+            'Bundle exceeds the 4 GiB cap. Prune demos or rows and retry.',
         \Sbpp\Export\ExportError::PRESIGN_INVALID_SCHEME =>
-            'Presigned URL must use HTTPS. Re-generate the URL with an https:// endpoint and retry.',
+            'Presigned URL must use HTTPS. Regenerate it and retry.',
         \Sbpp\Export\ExportError::PRESIGN_INVALID_URL =>
-            'Presigned URL was malformed. Paste the full URL from your S3 client exactly as given.',
+            'Presigned URL is malformed. Paste the full URL from your S3 client.',
         \Sbpp\Export\ExportError::DISK_WRITE_FAILED, \Sbpp\Export\ExportError::DISK_FULL =>
-            'Failed to stage the bundle on disk. Check that cache/ is writable and has free space.',
+            'Could not stage the bundle. Check that cache/ is writable and has free space.',
         \Sbpp\Export\ExportError::S3_PUT_FAILED =>
-            'The S3 endpoint rejected the upload. See the audit log for the HTTP status + response body.',
+            'S3 rejected the upload. See the audit log for the HTTP status and response.',
         'mode_invalid' =>
-            'Unknown export mode. Submit the form via the buttons below.',
+            'Unknown export mode. Use the form buttons.',
         default =>
-            'Export failed. See the audit log for diagnostic details.',
+            'Export failed. See the audit log.',
     };
 }

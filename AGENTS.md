@@ -1225,6 +1225,50 @@ The regression guards are paired:
  regression but not, say, a future `animation-play-state: paused`
  sneaking in via a parent rule.
 
+### User-facing text style (panel UI + docs)
+
+Every string the operator reads in the panel or on the docs site
+follows three rules:
+
+- **No emdash (`—`).** Use a comma, period, parentheses, or split
+ the sentence. The character is hard to type on most keyboards
+ and reads as AI-generated padding to many contributors. Hyphen
+ (`-`) is fine; en-dash (`–`) is fine in numeric ranges only.
+- **Terse.** One thought per sentence. Trim filler clauses
+ (`as you can see`, `please note that`, `it's worth mentioning`).
+ If a sentence can lose half its words and keep its meaning, lose
+ them.
+- **Don't over-explain.** Trust the operator. Say what they need
+ to do; skip the rationale unless it changes the action. The
+ docs page can carry one paragraph of context per section, not
+ three.
+
+Applies to:
+
+- Panel UI text in `web/themes/default/**/*.tpl` (toast titles +
+ bodies, button labels, form help text, empty-state copy, alert
+ banners, install-wizard chrome).
+- User-facing strings emitted from PHP page handlers
+ (`\Sbpp\View\Toast::emit(...)` titles + bodies, `echo` output,
+ inline `<div>` banners, error-page text).
+- Docs prose under `docs/src/content/docs/**/*.{md,mdx}` (any
+ page rendered to sbpp.github.io).
+
+Does NOT apply to:
+
+- `AGENTS.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`, `CLA.md`,
+ `docker/README.md`, `docs/README.md` (contributor-facing).
+- PHP / JS / Smarty code comments and docblocks.
+- Audit-log entries (`Log::add(...)` bodies are diagnostic, not
+ UX surface).
+- Test names, fixture data, snapshot bodies, and other
+ contributor-facing strings.
+
+Reach for the rewrite shape, not the strip-and-leave shape: an
+emdash usually marks a clause that's either a parenthetical
+(swap to parens), a continuation (period + new sentence), or
+filler (delete the clause).
+
 ### Server-side toast emission (`Sbpp\View\Toast::emit`)
 
 PHP page handlers that need to surface a toast (success / error
@@ -4309,10 +4353,22 @@ contributions without contacting every contributor individually.
   pane shape from `page_admin_settings_settings.tpl` (calls
   `system.preview_intro_text`, server-renders through `IntroRenderer`).
 - Ad-hoc per-page empty-state copy → use the shared `.empty-state`
-  layout + the first-run-vs-filtered split documented under
-  "Empty states" above. Inconsistent voice and missing CTAs are what
-  #1207's empty-state audit caught; future surfaces stay on the
-  unified pattern.
+ layout + the first-run-vs-filtered split documented under
+ "Empty states" above. Inconsistent voice and missing CTAs are what
+ #1207's empty-state audit caught; future surfaces stay on the
+ unified pattern.
+- Emdash (`—`) in user-facing text (panel `.tpl`, page-handler
+ `Toast::emit` strings, docs `.md` / `.mdx` prose) → split the
+ sentence, swap to parentheses, or delete the clause. Per
+ "User-facing text style" above. Hyphen / en-dash are fine; the
+ emdash specifically reads as filler and is hard to type. The rule
+ does NOT apply to contributor docs (`AGENTS.md`, `ARCHITECTURE.md`,
+ etc.) or code comments.
+- Verbose user-facing copy that explains the system to the operator
+ ("As you can see…", "Please note that…", "It's worth mentioning…",
+ multi-paragraph rationale before the action) → say what to do,
+ skip the why unless the why changes the action. One thought per
+ sentence. Per "User-facing text style" above.
 - Markdown-rendering admin display text client-side → use the
   server-side `system.preview_intro_text` action (same `IntroRenderer`
   the public dashboard uses). A bundled JS Markdown library would
@@ -4808,6 +4864,7 @@ contributions without contacting every contributor individually.
 | Sanitise a player display name received from an operator-controlled URL query parameter (the `?name=…` smart-default pre-fill arm on `?p=admin&c=bans&section=add-ban` + `?p=admin&c=comms`) | `Sbpp\Util\PlayerName::sanitisePrefill(string $raw): string` (`web/includes/Util/PlayerName.php`, #1440). Single source for the strip set + UTF-8 validation + codepoint cap; both page handlers (`web/pages/admin.bans.php` + `web/pages/admin.comms.php`) call it so the contract stays byte-identical across the two surfaces. Pipeline: `trim` → `preg_replace` against `PlayerName::SANITISE_STRIP_REGEX` (ASCII controls `\x00-\x1F` + `\x7F` + C1 controls `\x80-\x9F` + soft hyphen `U+00AD` + ZWSP `U+200B` + line/paragraph separators `U+2028`/`U+2029` + bidi format/override `U+202A-U+202E` + bidi isolate `U+2066-U+2069` + BOM `U+FEFF`) → `mb_check_encoding(..., 'UTF-8')` (drop entirely on malformed input) → `mb_substr(..., 0, PlayerName::MAX_CODEPOINTS=128, 'UTF-8')` to the `varchar(128)` schema width of `:prefix_bans.name` / `:prefix_comms.name`. The bidi-control strip is the load-bearing defence against right-to-left override (`U+202E`) name-spoofing attacks where a hostile in-game name visually renders as a different string in the form's `<input>` than what's actually stored. The codepoint-based truncation (NOT byte-based) handles 4-byte emoji without slicing mid-character. Use this helper for any future operator-controlled query-parameter that pre-fills a `varchar(128) player.name` form field; do not hand-roll a parallel strip regex (the pre-#1440 reviewer-feedback iteration was a duplicated inline `preg_replace` across both page handlers — centralisation is the contract). Regression guards: `web/tests/integration/AdminBansAddSmartDefaultTest.php` + `web/tests/integration/AdminCommsAddSmartDefaultTest.php` (`hostileNamePrefillProvider` covers every codepoint class in the strip regex + 4-byte emoji + invalid UTF-8 + 128-codepoint cap; `testNameWithoutSteamPrefillsNicknameOnly` + `testValidNameWithInvalidSteamPrefillsNicknameOnly` pin the `?name=` / `?steam=` orthogonality contract); `web/tests/e2e/specs/flows/server-player-context-menu.spec.ts` (`encodes special characters in the name parameter (#1440)` — end-to-end `encodeURIComponent` round-trip from the menu's `data-name` attribute through the form's rendered `value="…"`). |
 | Cache an A2S `GetInfo + GetPlayers` round-trip / add another public server-query handler | `web/includes/Servers/SourceQueryCache.php` (`Sbpp\Servers\SourceQueryCache::fetch($ip, $port, $ttl=30)` — per-`(ip, port)` on-disk cache under `SB_CACHE/srvquery/`, atomic tempfile + `rename()` writes mirroring `system.check_version`'s release cache; both success and failure cache so an unreachable server costs ONE A2S probe per ~30s window). The sibling `Sbpp\Servers\RconStatusCache` (`SB_CACHE/srvstatus/`) follows the same shape for RCON `status` round-trips — used by `api_servers_host_players` to surface per-player SteamIDs to admins (see the context-menu row above). Every public handler under `web/api/handlers/servers.php` (`api_servers_host_players` / `host_property` / `host_players_list` / `players`) goes through this — never call `new SourceQuery()` directly from a handler. The cache stamps user-agnostic data only; the handler stamps per-caller fields (`is_owner`, `can_ban`, the per-call `trunchostname`) on top. Per-tile JS debounce on the public servers page lives in `web/themes/default/page_servers.tpl` (`loadTile()` flips `tile.__sbppLoading` + the Re-query button's `disabled` attr while a probe is in flight, releases both in the success / error tails). The matching JS gate on the toggle button has been the precedent since v2.0.0; #1311 brought the refresh button onto the same shape. Tests: `web/tests/integration/SourceQueryCacheTest.php` (cache shape + coalescing + TTL + invalidation, drives `setProbeOverrideForTesting()` so the assertion is deterministic without UDP) + `testHostPlayersCoalescesRapidRepeatCallsViaCache` / `testHostPlayersNegativeCachesUnreachableServers` in `web/tests/api/ServersTest.php` (handler-shape coverage). E2E: `web/tests/e2e/specs/flows/server-refresh-debounce.spec.ts`. |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
+| Write or edit a user-facing string (panel UI text, toast body, docs page) | See "User-facing text style (panel UI + docs)" under Conventions. Three rules: no emdash (`—`), terse, don't over-explain. Applies to `web/themes/default/**/*.tpl`, `\Sbpp\View\Toast::emit` titles + bodies, `echo` output from page handlers, and every `docs/src/content/docs/**/*.{md,mdx}` page. Does NOT apply to `AGENTS.md` / `ARCHITECTURE.md` / contributor docs / code comments / audit-log entries / test fixtures. Anti-pattern entries paired under "Anti-patterns". |
 | Build / extend the anonymous opt-out daily telemetry payload (#1126) | `web/includes/Telemetry/Telemetry.php` (`Sbpp\Telemetry\Telemetry` — `tickIfDue`, `collect`, `send`) + `web/includes/Telemetry/Schema1.php` (`Sbpp\Telemetry\Schema1::payloadFieldNames()`, drives the extractor parity test) + `web/includes/Telemetry/schema-1.lock.json` (vendored from [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) — manual sync via `make sync-telemetry-schema`). Tick is registered at the tail of `init.php` via `register_shutdown_function`; on FPM, `fastcgi_finish_request()` flushes the response BEFORE the cURL POST so telemetry never delays a panel page. Slot reservation is atomic (`UPDATE :prefix_settings WHERE CAST(value AS UNSIGNED) <= :threshold`) at the START of the attempt, so a flapping endpoint costs one ping/day, not one ping/request. Audit-log only enable/disable transitions, never individual pings. The in-panel disclosure surface is the help-icon copy in `page_admin_settings_features.tpl`; the upgrade-time disclosure lives in `docs/src/content/docs/updating/1.8-to-2.0.mdx` (no first-login modal). |
 | Add or edit a project announcement (the admin-only banner on the home dashboard) | Edit `docs/public/announcements.json` (the source of truth — Astro publishes it as a static asset at `https://sbpp.github.io/announcements.json`). Each entry: `id` (≤64 chars, **required**), `title` (**required**), `body_md` (CommonMark, optional — rendered through `Sbpp\Markup\IntroRenderer` so raw HTML is escaped + `javascript:` / `data:` URLs are stripped), `url` (optional `http(s)://` only — non-http schemes rejected at the parser), `published_at` (optional ISO-8601 or unix int — drives the sort order; entries without it sort below dated entries), `expires_at` (optional — the parser drops entries past this timestamp). Sorted newest-first by the panel; convention is to also place the newest entry at the top of the array so reviewers see the most relevant change first. The deploy chain is automatic: a push to `main` that touches `docs/` fires `.github/workflows/docs-deploy-trigger.yml` which lands the file at `https://sbpp.github.io/announcements.json` within minutes. The starter file ships as `[]` (empty array). NEVER write to the cache file (`SB_CACHE/announcements.json`) directly — the panel's shutdown hook owns that path. |
 | Add or edit a project sponsor, funding platform, or sponsor tier | Edit `docs/src/data/sponsors.json` (the single source of truth). Three top-level keys: `platforms` (`{id, name, url, description?, icon?}` — the funding channels; GitHub Sponsors today, append Open Collective / Patreon / etc. as they're approved), `tiers` (`{id, name, monthlyMinUsd?, description?}` — ordered list driving the sponsor-roll display order), `sponsors` (`{name, url?, logo?, tier?, since?}` — `tier` matches a `tiers[].id`; missing/empty/unknown places the sponsor in the "Individual supporters" bucket). The component `docs/src/components/Sponsors.astro` renders the file on the canonical `/sponsor/` landing page (`docs/src/content/docs/sponsor.mdx`, `template: splash`, intentionally absent from the sidebar in `astro.config.mjs`); the topbar heart icon, the per-page footer link in `docs/src/components/Footer.astro`, and `.github/FUNDING.yml`'s `custom:` URL all route there. Adding a new platform / sponsor is a one-line append here — no component, config, or template edit needed. Companion issue #1417 will surface the same data on the panel footer; a future README-injector script will read the same file into the main `README.md`'s `<!-- sponsors:start --> ... <!-- sponsors:end -->` markers. The starter file ships with one `platforms` entry (GitHub Sponsors) and empty `tiers` + `sponsors` arrays. Issue #1416. |

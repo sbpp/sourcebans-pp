@@ -27,10 +27,10 @@
     <div class="mb-6">
         <h1 style="font-size:1.5rem;font-weight:600;margin:0">Full data export</h1>
         <p class="text-sm text-muted m-0 mt-2">
-            Stream a one-shot ZIP bundle of every panel row + uploaded demo
-            for backup, migration, or downstream analytics.
+            Download a ZIP bundle of every panel row and uploaded demo.
+            Use it for backups, migration, or analytics.
             See the <a href="https://sbpp.github.io/configuring/data-export/" target="_blank" rel="noopener noreferrer">data-export docs</a>
-            for the on-disk wire format and a worked example for each delivery mode.
+            for the wire format and per-mode setup.
         </p>
     </div>
 
@@ -38,8 +38,7 @@
         <div class="card__header">
             <h2 style="font-size:1.125rem;font-weight:600;margin:0">What's in the bundle</h2>
             <p class="text-xs text-muted m-0 mt-1">
-                A fresh UUIDv4 bundle ID is minted at submit time; the totals below
-                reflect the snapshot taken when this page loaded.
+                Each export gets a fresh bundle ID. Counts below are a snapshot from page load.
             </p>
         </div>
         <div class="card__body">
@@ -106,13 +105,12 @@
                 <span class="empty-state__icon" aria-hidden="true">
                     <i data-lucide="alert-triangle" style="width:18px;height:18px"></i>
                 </span>
-                <h2 class="empty-state__title">Bundle exceeds the 4 GiB ZIP cap</h2>
+                <h2 class="empty-state__title">Bundle exceeds the 4 GiB cap</h2>
                 <p class="empty-state__body">
-                    The estimated bundle ({($estimated_bundle_bytes / 1024 / 1024)|number_format:1} MiB)
-                    overflows the ZIP 2.0 spec ceiling minus the 64 MiB safety margin.
-                    Prune old demos via the per-row Demo affordance on the <a href="?p=banlist">public banlist</a>
-                    or trim unrelated rows (banlog, audit log) and re-load this page.
-                    The submit buttons below are disabled until the bundle fits.
+                    Estimated bundle is {($estimated_bundle_bytes / 1024 / 1024)|number_format:1} MiB.
+                    Prune demos on the <a href="?p=banlist">public banlist</a> or
+                    trim banlog / audit-log rows, then reload.
+                    Submit is disabled until the bundle fits.
                 </p>
             </div>
         </div>
@@ -130,15 +128,11 @@
             </div>
             <div class="card__body space-y-2">
                 <p class="text-sm text-muted m-0">
-                    The browser downloads the bundle directly. The connection
-                    must stay open for the full transfer — close the tab and the
-                    download aborts (cleanly; no on-disk state to clean up).
+                    The browser downloads the bundle directly.
+                    Keep the tab open until it finishes; closing it aborts the transfer.
                 </p>
                 <p class="text-xs text-muted m-0">
-                    No staging file is written; the bundle streams from
-                    <code>php://output</code> through the writer's
-                    <code>flush()</code> calls so the browser's progress bar
-                    moves in real time.
+                    No staging file. The progress bar moves in real time.
                 </p>
             </div>
             <div class="card__header" style="border-top:1px solid var(--border);border-bottom:0;justify-content:flex-end">
@@ -163,10 +157,8 @@
             </div>
             <div class="card__body space-y-2">
                 <p class="text-sm text-muted m-0">
-                    Bundle is staged on disk, then PUT to your presigned URL.
-                    The HTTPS connection holds for the full upload; close the
-                    tab mid-upload and the request aborts but the audit log
-                    captures the partial transfer.
+                    Panel stages the bundle on disk, then PUTs it to your URL.
+                    Closing the tab cancels the upload; the audit log records the attempt.
                 </p>
                 <label class="label mt-3" for="admin-export-s3-url">Presigned PUT URL</label>
                 <textarea class="textarea"
@@ -175,13 +167,12 @@
                           rows="3"
                           required
                           pattern="^https://[^\s]+$"
-                          title="Paste a presigned HTTPS PUT URL from your S3 client (e.g. aws s3 presign --http-method PUT …)"
-                          placeholder="https://bucket.s3.region.amazonaws.com/path/sbpp-export.zip?X-Amz-…"
+                          title="Paste a presigned HTTPS PUT URL from your S3 client (e.g. aws s3 presign --http-method PUT)"
+                          placeholder="https://bucket.s3.region.amazonaws.com/path/sbpp-export.zip?X-Amz-..."
                           data-testid="admin-export-s3-url"></textarea>
                 <p class="text-xs text-muted m-0 mt-1">
-                    HTTPS only (no http://). Use a short expiry (≤1 hour).
-                    Never paste this URL into chat or logs — it's a single-use
-                    write credential.
+                    HTTPS only. Use a short expiry (1 hour or less).
+                    The URL is a single-use write credential; don't paste it in chat or logs.
                 </p>
             </div>
             <div class="card__header" style="border-top:1px solid var(--border);border-bottom:0;justify-content:flex-end">
