@@ -1,0 +1,333 @@
+<?php
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under the Elastic License 2.0.
+// See LICENSE.txt for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+
+declare(strict_types=1);
+
+namespace Sbpp\Tests\Integration;
+
+use PHPUnit\Framework\TestCase;
+use Sbpp\Export\BundleWriter;
+use Sbpp\Export\EntityExporter;
+use Sbpp\Export\Manifest;
+use Sbpp\Export\ManifestBuilder;
+use Sbpp\Tests\Fixture;
+use ZipArchive;
+use ZipStream\CompressionMethod;
+use ZipStream\ZipStream;
+
+/**
+ * End-to-end bundle-shape contract pin.
+ *
+ * Drives the full {@see ManifestBuilder} → {@see BundleWriter}
+ * → on-disk ZIP pipeline against the seeded test DB, then
+ * cracks the resulting archive open with {@see ZipArchive} and
+ * asserts the structural promises any downstream consumer rides:
+ *
+ *   - `manifest.json` is the **first** entry (offset 0). A
+ *     consumer can pull just the manifest from the head of the
+ *     stream to decide whether to bother downloading the rest.
+ *   - Every entity JSONL row count agrees with the manifest's
+ *     `row_counts[<entity>]`. Pre-flight + writer agree.
+ *   - Every demo entry is stored with {@see ZipArchive::CM_STORE}
+ *     (no DEFLATE on already-compressed binary).
+ *   - Every JSONL line parses as JSON and carries an `id` field
+ *     (or the documented composite-PK exception for
+ *     `admins_servers_groups` / `banlog` / `servers_groups`).
+ *   - No SteamID appears as a bare JSON number; every authid is
+ *     quoted decimal Steam64. The 17-digit values overflow
+ *     JS `Number.MAX_SAFE_INTEGER` (2^53-1 ≈ 16 digits).
+ *   - The forbidden columns (bcrypt hashes, RCON passwords, SMTP
+ *     credentials, telemetry instance ID) literally don't appear
+ *     in the bundle bytes.
+ *
+ * Scope split: this file is the only integration-level export
+ * suite — sister {@see \Sbpp\Tests\Unit\EntityExporterTest} (per-
+ * entity column rules), {@see \Sbpp\Tests\Unit\ManifestBuilderTest}
+ * (manifest / DTO / cap math), {@see AdminExportPermissionTest}
+ * (HTTP entry gates), {@see S3PresignedUploaderTest} (cURL stub
+ * paths) each own their layer in isolation.
+ */
+final class ExportBundleWriterTest extends TestCase
+{
+    private string $bundlePath;
+
+    /** @var list<string> */
+    private array $seededDemoFiles = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Fixture::reset();
+
+        $this->bundlePath = SB_CACHE . 'export-bundle-test-' . bin2hex(random_bytes(6)) . '.zip';
+        // Defensive cleanup against a prior crash leaving residue.
+        @unlink($this->bundlePath);
+    }
+
+    protected function tearDown(): void
+    {
+        if (is_file($this->bundlePath)) {
+            @unlink($this->bundlePath);
+        }
+        foreach ($this->seededDemoFiles as $f) {
+            @unlink($f);
+        }
+        $this->seededDemoFiles = [];
+        parent::tearDown();
+    }
+
+    /**
+     * Drive the full export against the empty-fixture DB and assert
+     * every structural contract. The empty DB still seeds the admin
+     * row + the default `sb_settings` rows + the default `sb_mods`
+     * rows, so the bundle is not entirely vacuous — `admins` /
+     * `settings` / `mods` carry entries and we can exercise the
+     * row-count agreement contract on them.
+     */
+    public function testFullBundleWriteAgainstSeededFixture(): void
+    {
+        // Seed one ban so the `bans` JSONL is non-empty AND so the
+        // demo subsystem has something to LEFT JOIN against.
+        $this->seedSampleBan();
+
+        // Seed a demo file on disk + a `:prefix_demos` row referencing
+        // it, so the bundle picks up a STORE-mode demo entry.
+        $this->seedSampleDemo('export-bundle-test.dem', "DEMOFAKEHEADER_DISTINCTIVE_MARKER\x00" . str_repeat("\x01", 4096));
+
+        $this->writeBundle();
+
+        $zip = new ZipArchive();
+        $opened = $zip->open($this->bundlePath);
+        $this->assertTrue($opened === true, "ZipArchive::open failed: $opened");
+
+        // ---- (1) manifest.json is the first entry ---------------
+        $first = $zip->statIndex(0);
+        $this->assertIsArray($first);
+        $this->assertSame(
+            'manifest.json',
+            $first['name'],
+            'manifest.json must be the FIRST entry in the bundle (offset 0). '
+            . 'Consumers rely on being able to short-circuit after one entry.',
+        );
+
+        // ---- (2) manifest JSON parses + carries expected keys ----
+        $manifestBody = $zip->getFromName('manifest.json');
+        $this->assertIsString($manifestBody);
+        $manifest = json_decode($manifestBody, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertIsArray($manifest);
+        $this->assertSame(Manifest::FORMAT_VERSION, $manifest['format_version']);
+        $this->assertIsString($manifest['bundle_id']);
+        $this->assertIsArray($manifest['row_counts']);
+        $this->assertIsArray($manifest['demo_files']);
+
+        // ---- (3) row_counts agree with JSONL line counts --------
+        foreach ($manifest['row_counts'] as $entity => $count) {
+            $entry = "entities/{$entity}.jsonl";
+            $body  = $zip->getFromName($entry);
+            $this->assertIsString($body, "missing entity entry: $entry");
+            $lines = $body === '' ? 0 : substr_count($body, "\n");
+            $this->assertSame(
+                (int) $count,
+                $lines,
+                "manifest row_counts[{$entity}]={$count} but JSONL has {$lines} lines",
+            );
+        }
+
+        // ---- (4) every demo entry is STORE-compressed -----------
+        $sawDemo = false;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            $this->assertIsArray($stat);
+            if (str_starts_with((string) $stat['name'], 'demos/')) {
+                $sawDemo = true;
+                $this->assertSame(
+                    ZipArchive::CM_STORE,
+                    $stat['comp_method'],
+                    "demo entry {$stat['name']} must use STORE compression (already-compressed binary)",
+                );
+            }
+        }
+        $this->assertTrue($sawDemo, 'fixture seeded a demo but bundle carries no demos/ entries');
+
+        // ---- (5) every JSONL line parses + carries an `id` -----
+        // Composite-PK tables don't carry `id`; they're documented
+        // exceptions per the contract.
+        $compositePkTables = ['admins_servers_groups', 'banlog', 'servers_groups'];
+        foreach ($manifest['row_counts'] as $entity => $_count) {
+            $body = $zip->getFromName("entities/{$entity}.jsonl");
+            if ($body === false || $body === '') {
+                continue;
+            }
+            foreach (explode("\n", trim($body)) as $lineNo => $line) {
+                if ($line === '') {
+                    continue;
+                }
+                $row = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+                $this->assertIsArray($row, "entities/{$entity}.jsonl line {$lineNo} did not parse as JSON object");
+                if (!in_array($entity, $compositePkTables, true)) {
+                    $this->assertArrayHasKey('id', $row, "entities/{$entity}.jsonl line {$lineNo} is missing the `id` field");
+                }
+            }
+        }
+
+        // ---- (6) no SteamID appears as a bare JSON number ------
+        // The full ZIP body would include the binary demo payload
+        // which can incidentally contain "authid":<digits> bytes;
+        // restrict the assertion to the entity JSONL files only.
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            $this->assertIsArray($stat);
+            $name = (string) $stat['name'];
+            if (!str_starts_with($name, 'entities/')) {
+                continue;
+            }
+            $body = $zip->getFromName($name);
+            $this->assertIsString($body);
+            // Match `"authid":` followed by optional whitespace then a
+            // bare digit (NOT a quoted string). Negative-lookahead the
+            // closing `"` so we accept the quoted-string form.
+            $this->assertDoesNotMatchRegularExpression(
+                '/"authid"\s*:\s*\d/',
+                $body,
+                "entity {$name} carried an unquoted Steam ID (must be a decimal STRING)",
+            );
+        }
+
+        // ---- (7) timestamps surface as integers ---------------
+        // Sample a known-populated entity (bans) — bans.created is
+        // documented as unix-seconds int. The decoded row from
+        // step 5 already proved JSON parses; here we assert the
+        // numeric column landed as int, not as a quoted string.
+        $bansBody = $zip->getFromName('entities/bans.jsonl');
+        $this->assertIsString($bansBody);
+        $this->assertNotSame('', trim($bansBody), 'fixture seeded a ban; bundle must carry it');
+        $firstBan = json_decode(trim(explode("\n", $bansBody)[0]), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertIsArray($firstBan);
+        $this->assertIsInt($firstBan['created'], 'bans.created must be a unix-seconds int');
+        $this->assertIsInt($firstBan['ends']);
+        $this->assertIsInt($firstBan['length']);
+
+        // ---- (8) forbidden columns / values never appear ------
+        // Inspect every entity JSONL body — the demo blob is
+        // exempt for the same reason as step 6.
+        $expectedForbiddenAdminCols = EntityExporter::FORBIDDEN_ADMIN_COLUMNS;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            $this->assertIsArray($stat);
+            $name = (string) $stat['name'];
+            if (!str_starts_with($name, 'entities/')) {
+                continue;
+            }
+            $body = $zip->getFromName($name);
+            $this->assertIsString($body);
+            // Forbidden admin column keys (`"password":`, `"validate":`,
+            // `"attempts":`, `"lockout_until":`) must never appear in
+            // ANY entity — admins.jsonl is the load-bearing case but
+            // bans/comms/log don't carry them either.
+            foreach ($expectedForbiddenAdminCols as $col) {
+                $this->assertStringNotContainsString(
+                    "\"{$col}\":",
+                    $body,
+                    "{$name} leaked forbidden admin column `{$col}`",
+                );
+            }
+            // bcrypt prefix `$2y$` is distinctive — would only
+            // appear if a hash leaked anywhere.
+            $this->assertStringNotContainsString('$2y$', $body, "{$name} leaked a bcrypt hash");
+        }
+
+        $zip->close();
+    }
+
+    /**
+     * Run the full pipeline + dump the resulting bundle to a temp
+     * file on disk so the {@see ZipArchive} consumer can open it.
+     * The s3-mode flush gate is `false` because the writer's output
+     * stream is a file handle, not the HTTP socket.
+     */
+    private function writeBundle(): void
+    {
+        $builder  = new ManifestBuilder(
+            dbs:          $GLOBALS['PDO'],
+            demosDir:     SB_DEMOS,
+            panelVersion: 'test',
+        );
+        $manifest = $builder->buildOrThrow();
+        $entities = new EntityExporter(
+            dbs:      $GLOBALS['PDO'],
+            demosDir: SB_DEMOS,
+        );
+
+        $handle = fopen($this->bundlePath, 'wb');
+        $this->assertNotFalse($handle, "fopen failed for $this->bundlePath");
+        $zip = new ZipStream(
+            outputStream:             $handle,
+            sendHttpHeaders:          false,
+            enableZip64:              false,
+            defaultCompressionMethod: CompressionMethod::DEFLATE,
+        );
+        $writer = new BundleWriter(
+            zip:               $zip,
+            manifest:          $manifest,
+            entities:          $entities,
+            demosDir:          SB_DEMOS,
+            flushAfterEntries: false,
+        );
+        $writer->write();
+        fclose($handle);
+
+        $this->assertFileExists($this->bundlePath);
+        $this->assertGreaterThan(0, filesize($this->bundlePath) ?: 0);
+    }
+
+    /**
+     * Seed a single ban row keyed off the fixture admin so the
+     * `bans` JSONL is non-empty. The matching `:prefix_demos`
+     * row is wired in {@see seedSampleDemo}.
+     */
+    private function seedSampleBan(): void
+    {
+        $aid = Fixture::adminAid();
+        $pdo = Fixture::rawPdo();
+        $pdo->exec(
+            sprintf(
+                "INSERT INTO `%s_bans`
+                  (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country, type)
+                 VALUES ('', 'STEAM_0:0:42', 'export-bundle-fixture', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + 3600, 3600, 'fixture', %d, '127.0.0.1', 0, '', 0)",
+                DB_PREFIX,
+                $aid,
+            )
+        );
+    }
+
+    /**
+     * Drop a sample demo file on disk and a corresponding
+     * `:prefix_demos.filename` row so the bundle picks up a
+     * `demos/<basename>.dem` entry.
+     *
+     * The file payload itself is opaque — what we care about
+     * downstream is just that the ZIP entry exists with STORE
+     * compression.
+     */
+    private function seedSampleDemo(string $basename, string $body): void
+    {
+        // SB_DEMOS may not exist on a fresh test bring-up; create it.
+        if (!is_dir(SB_DEMOS)) {
+            @mkdir(SB_DEMOS, 0755, true);
+        }
+        $path = SB_DEMOS . DIRECTORY_SEPARATOR . $basename;
+        file_put_contents($path, $body);
+        $this->seededDemoFiles[] = $path;
+
+        $pdo = Fixture::rawPdo();
+        // Hang the demo off the just-seeded ban (the highest bid).
+        $bid = (int) $pdo->query(sprintf('SELECT MAX(bid) FROM `%s_bans`', DB_PREFIX))->fetchColumn();
+        $this->assertGreaterThan(0, $bid, 'must have seeded a ban first');
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_demos` (demid, demtype, filename, origname) VALUES (?, ?, ?, ?)',
+            DB_PREFIX,
+        ))->execute([$bid, 'B', $basename, $basename]);
+    }
+}

@@ -172,18 +172,53 @@ final class ManifestBuilder
      * non-`id`-keyed tables count the same way — the cardinality is
      * what we care about, not the key shape.
      *
+     * Settings is the exception: {@see EntityExporter::settings()}
+     * filters out {@see EntityExporter::FORBIDDEN_SETTING_KEYS} at
+     * the SQL WHERE level. The manifest's row count MUST match the
+     * actual JSONL line count, so the same filter rides this
+     * pre-flight count. Drift between the two surfaces is a
+     * wire-contract break — pinned by ExportBundleWriterTest's
+     * "row_counts agree with JSONL line counts" assertion.
+     *
      * @return array<string, int>
      */
     private function collectRowCounts(): array
     {
         $out = [];
         foreach (self::ENTITIES as $entity) {
+            if ($entity === 'settings') {
+                $out[$entity] = $this->countFilteredSettings();
+                continue;
+            }
             $table = '`:prefix_' . $entity . '`';
             $this->dbs->query("SELECT COUNT(*) AS n FROM $table");
             $row = $this->dbs->single();
             $out[$entity] = (int) ($row['n'] ?? 0);
         }
         return $out;
+    }
+
+    /**
+     * Settings-specific count: applies the same
+     * {@see EntityExporter::FORBIDDEN_SETTING_KEYS} filter the
+     * entity exporter uses so the manifest's claim agrees with the
+     * actual JSONL line count.
+     */
+    private function countFilteredSettings(): int
+    {
+        $forbidden    = EntityExporter::FORBIDDEN_SETTING_KEYS;
+        $placeholders = implode(',', array_fill(0, count($forbidden), '?'));
+        $this->dbs->query(
+            "SELECT COUNT(*) AS n
+             FROM `:prefix_settings`
+             WHERE `setting` NOT IN ($placeholders)"
+        );
+        $i = 1;
+        foreach ($forbidden as $key) {
+            $this->dbs->bind($i++, $key);
+        }
+        $row = $this->dbs->single();
+        return (int) ($row['n'] ?? 0);
     }
 
     /**
