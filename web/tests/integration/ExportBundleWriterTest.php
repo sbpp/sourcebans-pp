@@ -56,6 +56,16 @@ final class ExportBundleWriterTest extends TestCase
     /** @var list<string> */
     private array $seededDemoFiles = [];
 
+    /**
+     * The writer in M1 form gets a non-null `$outputHandle` arg so
+     * its cap counter can snap to the on-disk file size after each
+     * entry — exact compressed-byte tracking instead of the
+     * conservative uncompressed-byte estimate. Captured here so
+     * the M1 regression test can assert the same handle's
+     * post-finish size matches `bytesWritten()`.
+     */
+    private ?BundleWriter $lastWriter = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -274,12 +284,121 @@ final class ExportBundleWriterTest extends TestCase
             entities:          $entities,
             demosDir:          SB_DEMOS,
             flushAfterEntries: false,
+            // M1: hand the writer the staging-file handle so the
+            // running cap counter snaps to exact compressed bytes
+            // via post-write `fstat`. Mirrors `web/export.php`'s
+            // s3-mode wiring so the integration test exercises
+            // the same code path real operators hit.
+            outputHandle:      $handle,
         );
         $writer->write();
+        $this->lastWriter = $writer;
         fclose($handle);
 
         $this->assertFileExists($this->bundlePath);
         $this->assertGreaterThan(0, filesize($this->bundlePath) ?: 0);
+    }
+
+    /**
+     * M1 regression guard: when the writer is constructed with a
+     * non-null `$outputHandle` (the s3-mode build-to-disk path),
+     * `bytesWritten()` MUST match the on-disk file size byte-for-
+     * byte. Pre-M1 the running cap counter advanced by uncompressed
+     * deltas, which over-counted DEFLATE entities (the JSONL
+     * compresses 3-8x in practice) and could trip a premature
+     * `CAP_EXCEEDED` on bundles that actually fit. Post-M1 the
+     * counter snaps to the on-disk size after each entry, so the
+     * final value reported is exact.
+     *
+     * The zip-mode (php://output) path still uses the uncompressed
+     * estimate because it has no seekable handle to stat — that
+     * arm is documented on `BundleWriter::bytesWritten` and isn't
+     * exercised here (the integration test only covers s3-mode
+     * because we need a file to crack open with ZipArchive).
+     */
+    public function testWriterBytesWrittenMatchesOnDiskSizeInS3Mode(): void
+    {
+        $this->seedSampleBan();
+        $this->seedSampleDemo('m1-fstat-marker.dem', str_repeat("\x42", 8192));
+        $this->writeBundle();
+
+        $this->assertNotNull($this->lastWriter, 'writeBundle must populate lastWriter');
+        $diskSize = filesize($this->bundlePath);
+        $this->assertNotFalse($diskSize, 'filesize() failed on the staging file');
+        $this->assertSame(
+            (int) $diskSize,
+            $this->lastWriter->bytesWritten(),
+            'BundleWriter::bytesWritten() in s3 mode (non-null $outputHandle) must report the EXACT '
+            . 'on-disk compressed-byte size — pre-M1 it reported the uncompressed estimate and could '
+            . 'over-count by 3-8x for DEFLATE-compressed JSONL, prematurely tripping CAP_EXCEEDED.',
+        );
+    }
+
+    /**
+     * H1 regression guard: writing a large entity must NOT
+     * proportionally inflate PHP's peak memory. Pre-H1 the
+     * writer concatenated every yielded JSONL line into a single
+     * PHP string inside an `addFileFromCallback`, so a multi-
+     * hundred-MB audit log would push peak memory past the
+     * runtime hardening's 256 MiB ceiling — OOM on shared
+     * hosting where 128 MiB is the realistic floor. Post-H1
+     * the writer spills to `php://temp/maxmemory:8M`, so the
+     * working set stays bounded at the spill threshold
+     * regardless of total entity size.
+     *
+     * Seeds enough comments to push the comments entity well past
+     * the spill threshold AND records peak memory after the write
+     * completes. The assertion shape pins the spill behaviour by
+     * upper-bounding peak growth at ~64 MiB — enough headroom
+     * for Smarty / Composer / PDO overhead but well below the
+     * pre-H1 shape's "entity-size-proportional" growth.
+     */
+    public function testWriterDoesNotBufferLargeEntityIntoMemory(): void
+    {
+        $pdo = \Sbpp\Tests\Fixture::rawPdo();
+        $this->seedSampleBan();
+        $bid = (int) $pdo->query(sprintf('SELECT MAX(bid) FROM `%s_bans`', DB_PREFIX))->fetchColumn();
+        $this->assertGreaterThan(0, $bid, 'must have seeded a ban first');
+
+        // Seed a payload sized to exceed the spill threshold but
+        // not so large that the test runtime blows. Each comment
+        // row carries ~600 bytes of body text; 25k rows → ~15 MiB
+        // uncompressed JSONL, comfortably above the 8 MiB spill
+        // threshold but quick to write.
+        $payload = str_repeat('H1_LARGE_ENTITY_PAYLOAD_MARKER ', 18);
+        $stmt = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_comments` (type, bid, commenttxt, added, aid) VALUES ("B", ?, ?, UNIX_TIMESTAMP(), 1)',
+            DB_PREFIX,
+        ));
+        for ($i = 0; $i < 25_000; $i++) {
+            $stmt->execute([$bid, $payload]);
+        }
+
+        $before = memory_get_peak_usage(true);
+        $this->writeBundle();
+        $after = memory_get_peak_usage(true);
+
+        $delta = $after - $before;
+        $this->assertLessThan(
+            64 * 1024 * 1024,
+            $delta,
+            'Writing a >15 MiB entity grew PHP peak memory by ' . number_format($delta / 1024 / 1024, 2) . ' MiB. '
+            . 'Pre-H1 the writer concatenated the whole entity into a PHP string, so peak grew proportionally '
+            . 'to the entity size — OOM risk on shared hosting at scale. Post-H1 the writer spills to '
+            . 'php://temp/maxmemory:8M and peak should stay bounded.',
+        );
+
+        // Sanity: the comments entity actually landed in the bundle.
+        $zip = new ZipArchive();
+        $this->assertTrue($zip->open($this->bundlePath) === true);
+        $commentsBody = $zip->getFromName('entities/comments.jsonl');
+        $zip->close();
+        $this->assertIsString($commentsBody);
+        $this->assertGreaterThan(
+            8 * 1024 * 1024,
+            strlen($commentsBody),
+            'Comments JSONL should exceed the 8 MiB spill threshold so this test exercises the spill path',
+        );
     }
 
     /**

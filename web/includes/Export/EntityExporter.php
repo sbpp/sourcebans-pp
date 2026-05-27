@@ -98,6 +98,21 @@ final class EntityExporter
      *                      data the operator cares about exporting.
      *   - `lockout_until`  Same — lockout deadline driven by
      *                      `attempts`.
+     *   - `srv_password`   **Plaintext** SourceMod admin server-
+     *                      login password (the panel stores it
+     *                      cleartext — see `account.php`'s
+     *                      `api_account_check_srv_password` stringwise
+     *                      compare and `sbpp_main.sp`'s admin-cache
+     *                      hand-off). Exporting it is structurally
+     *                      worse than exporting the bcrypt
+     *                      `password` hash above: a recipient with
+     *                      this value can authenticate as the
+     *                      admin against every game server they
+     *                      manage. The `pii_policy.password_hashes
+     *                      = "never"` attestation in the manifest
+     *                      makes the omission load-bearing — the
+     *                      forbidden-list IS the contract that
+     *                      keeps the attestation truthful.
      *
      * The actual enforcement is the per-column SELECT projection in
      * {@see admins} (the forbidden columns are NOT projected, so
@@ -107,7 +122,7 @@ final class EntityExporter
      * {@see forbiddenColumns} to assert by grep that none of the
      * listed names appear in the actual export.
      */
-    public const FORBIDDEN_ADMIN_COLUMNS = ['password', 'validate', 'attempts', 'lockout_until'];
+    public const FORBIDDEN_ADMIN_COLUMNS = ['password', 'validate', 'attempts', 'lockout_until', 'srv_password'];
 
     /**
      * Columns we MUST NEVER include in the `servers` JSONL stream.
@@ -217,9 +232,18 @@ final class EntityExporter
      */
     public function admins(): iterable
     {
+        // SECURITY-REVIEW: the SELECT deliberately omits every entry in
+        // FORBIDDEN_ADMIN_COLUMNS — `password` (bcrypt hash), `validate`
+        // (live reset token), `attempts` / `lockout_until` (lockout state),
+        // and `srv_password` (plaintext SM admin server-login password —
+        // the panel stores this cleartext; exporting it would let a
+        // bundle recipient authenticate as the admin against every game
+        // server they manage). Keeping the projection narrow IS the
+        // contract that keeps the manifest's `pii_policy.password_hashes
+        // = "never"` attestation truthful.
         $this->dbs->query(
             "SELECT `aid`, `user`, `authid`, `gid`, `email`, `extraflags`, `immunity`,
-                    `srv_group`, `srv_flags`, `srv_password`, `lastvisit`
+                    `srv_group`, `srv_flags`, `lastvisit`
              FROM `:prefix_admins`
              ORDER BY `aid`"
         );
@@ -236,7 +260,6 @@ final class EntityExporter
                 'immunity'       => (int) ($row['immunity'] ?? 0),
                 'srv_group'      => $this->asString($row['srv_group'] ?? null),
                 'srv_flags'      => $this->asString($row['srv_flags'] ?? null),
-                'srv_password'   => $this->asString($row['srv_password'] ?? null),
                 'lastvisit'      => $row['lastvisit'] !== null ? (int) $row['lastvisit'] : null,
             ]);
         }

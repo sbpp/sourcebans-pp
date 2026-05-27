@@ -65,18 +65,80 @@ use ZipStream\ZipStream;
 final class BundleWriter
 {
     /**
-     * Cumulative compressed-byte count, including ZIP headers /
-     * central directory bytes the {@see ZipStream} tracks.
+     * Threshold (bytes) above which entity / manifest bodies spill
+     * from the in-memory `php://temp` buffer onto disk. Below this,
+     * the stream stays in PHP's heap — the typical settings /
+     * groups / mods bundle entity is a few KiB and never touches
+     * the filesystem; the spill is the safety net for the long
+     * tail (large `:prefix_log` audit-log streams on long-lived
+     * installs, banlog history, large banlists with thousands of
+     * appeals).
+     *
+     * 8 MiB matches the OOM ceiling the runtime hardening in
+     * `web/export.php` sets via `@ini_set('memory_limit', '256M')`
+     * minus the headroom needed for PDO row buffers + Smarty +
+     * Composer autoload — pushing the spill threshold higher would
+     * eat into that headroom and risk OOM on shared hosting where
+     * 128 MiB is the realistic floor.
+     */
+    private const SPILL_THRESHOLD_BYTES = 8 * 1024 * 1024;
+
+    /**
+     * Cumulative byte count tracking the bundle's progress against
+     * {@see Manifest::MAX_BUNDLE_BYTES}.
+     *
+     * The accuracy of this counter depends on which output sink the
+     * caller wired the {@see ZipStream} to. See
+     * {@see currentCompressedSize} for the per-mode details:
+     *
+     *   - **`s3` mode** — the writer holds a non-null
+     *     {@see outputHandle} pointing at the build-to-disk
+     *     tempfile; after each entry the writer `fstat`s the
+     *     handle and gets the EXACT compressed-byte count. The
+     *     cap check is precise.
+     *   - **`zip` mode** — the writer's output sink is
+     *     `php://output` (unseekable, unstattable), so the writer
+     *     falls back to a conservative uncompressed-byte estimate.
+     *     This OVER-counts (DEFLATE typically compresses JSONL
+     *     3-8x) but the over-count direction is the safe one — a
+     *     premature `CAP_EXCEEDED` surfaces a clear error message
+     *     pre-overflow, whereas an under-count would let the
+     *     bundle exceed ZIP 2.0's 4 GiB ceiling and corrupt
+     *     silently. The conservative estimate stays in place for
+     *     `zip` mode because there is no exact counter the
+     *     unseekable sink can offer.
      */
     private int $bytesWritten = 0;
 
+    /**
+     * Optional file resource the {@see ZipStream} is writing to.
+     * Non-null in `s3` mode (build-to-disk path); null in `zip`
+     * mode (output is `php://output`). When non-null, post-entry
+     * `fstat`s give the exact compressed-byte count and the cap
+     * check is precise; when null, the writer falls back to the
+     * uncompressed estimate documented on {@see bytesWritten}.
+     *
+     * @var resource|null
+     */
+    private $outputHandle;
+
+    /**
+     * @param resource|null $outputHandle  Pass the same file
+     *   resource the caller handed to {@see ZipStream} when
+     *   building the s3-mode build-to-disk tempfile. Pass `null`
+     *   for the zip-mode `php://output` path (the writer falls
+     *   back to a conservative uncompressed-byte cap estimate per
+     *   the {@see bytesWritten} contract).
+     */
     public function __construct(
         private readonly ZipStream $zip,
         private readonly Manifest $manifest,
         private readonly EntityExporter $entities,
         private readonly string $demosDir,
         private readonly bool $flushAfterEntries,
+        $outputHandle = null,
     ) {
+        $this->outputHandle = $outputHandle;
     }
 
     /**
@@ -101,11 +163,17 @@ final class BundleWriter
             $this->writeDemo($demo);
         }
 
-        // Finalize the ZIP — emits the central directory. ZipStream
-        // tracks an estimated cumulative size internally; the
-        // returned value is authoritative for the cap-check sanity
-        // assertion in tests.
-        $this->bytesWritten = (int) $this->zip->finish();
+        // Finalize the ZIP — emits the central directory. ZipStream's
+        // return value tracks the bytes IT pushed to the output
+        // sink (independent of any compression layer the sink might
+        // apply). For s3 mode we re-snap from the on-disk tempfile
+        // post-finish so the reported count includes the central
+        // directory bytes and matches what the S3 PUT will see. For
+        // zip mode the ZipStream-reported count is authoritative
+        // since we have no on-disk file to stat.
+        $reported = (int) $this->zip->finish();
+        $exact    = $this->currentCompressedSize();
+        $this->bytesWritten = $exact ?? $reported;
     }
 
     /**
@@ -121,8 +189,12 @@ final class BundleWriter
     }
 
     /**
-     * Manifest goes in first by contract. `addFile` is the simplest
-     * shape since we already have the encoded body in memory.
+     * Manifest goes in first by contract. The body is bounded
+     * (per-entity row counts + the demo manifest entries — a few
+     * KiB to a few hundred KiB on a busy install), so addFile
+     * with the in-memory body is the right shape; spilling to a
+     * tempfile here would only add filesystem overhead with no
+     * memory benefit.
      */
     private function writeManifest(): void
     {
@@ -132,36 +204,78 @@ final class BundleWriter
             data:              $body,
             compressionMethod: CompressionMethod::DEFLATE,
         );
-        $this->bytesWritten += strlen($body);
-        $this->checkCap('manifest.json');
+        $this->advanceCounter(strlen($body), 'manifest.json');
         $this->maybeFlush();
     }
 
     /**
-     * Stream one entity's JSONL output through `addFileFromCallback`
-     * so the bytes flow straight from the SELECT iterator into the
-     * ZIP without buffering the whole entity in PHP memory.
+     * Stream one entity's JSONL output through a `php://temp`
+     * spill stream so each row flows from the SELECT iterator into
+     * the spill stream and only the bounded
+     * {@see SPILL_THRESHOLD_BYTES} working set ever lives in PHP's
+     * heap. Larger entities (audit log on long-lived installs,
+     * banlog history, banlists with thousands of rows) spill to a
+     * tempfile that the OS cleans up automatically when the
+     * resource handle is closed at the end of the call.
+     *
+     * The pre-#H1 shape concatenated the entire entity into a
+     * single PHP string inside an `addFileFromCallback`, which
+     * defeated the streaming contract documented on the writer
+     * AND risked OOM on installs with multi-hundred-MB audit
+     * logs.
      *
      * @param callable(): iterable<string> $factory
      */
     private function writeEntity(string $name, callable $factory): void
     {
-        $estimatedBytes = 0;
-        $this->zip->addFileFromCallback(
-            fileName:          'entities/' . $name . '.jsonl',
-            exactSize:         null,
-            compressionMethod: CompressionMethod::DEFLATE,
-            callback:          function () use ($factory, &$estimatedBytes): string {
-                $out = '';
-                foreach ($factory() as $line) {
-                    $out .= $line;
+        $spill = fopen('php://temp/maxmemory:' . self::SPILL_THRESHOLD_BYTES, 'w+b');
+        if ($spill === false) {
+            // SECURITY-REVIEW: fopen of php://temp should never
+            // fail on a healthy install — the only realistic
+            // cause is a pathological tmpfs / open_basedir
+            // configuration. Surface as a structured DISK_WRITE
+            // failure rather than silently dropping the entity.
+            throw new ExportError(
+                ExportError::DISK_WRITE_FAILED,
+                sprintf(
+                    'fopen(php://temp/maxmemory:%d) failed while preparing entity %s.',
+                    self::SPILL_THRESHOLD_BYTES,
+                    $name,
+                ),
+            );
+        }
+        try {
+            $uncompressed = 0;
+            foreach ($factory() as $line) {
+                $written = fwrite($spill, $line);
+                if ($written === false || $written !== strlen($line)) {
+                    throw new ExportError(
+                        ExportError::DISK_WRITE_FAILED,
+                        sprintf(
+                            'Short write to php://temp spill while staging entity %s.',
+                            $name,
+                        ),
+                    );
                 }
-                $estimatedBytes = strlen($out);
-                return $out;
-            },
-        );
-        $this->bytesWritten += $estimatedBytes;
-        $this->checkCap('entities/' . $name . '.jsonl');
+                $uncompressed += $written;
+            }
+            rewind($spill);
+            $this->zip->addFileFromStream(
+                fileName:          'entities/' . $name . '.jsonl',
+                stream:            $spill,
+                compressionMethod: CompressionMethod::DEFLATE,
+            );
+            // Counter advance comes AFTER addFileFromStream
+            // returns — at that point the zip has finished
+            // writing the entry to the underlying output handle.
+            // For s3 mode the post-write fstat sees the exact
+            // compressed size; for zip mode the fallback uses the
+            // uncompressed total (conservative — see the
+            // bytesWritten docblock).
+            $this->advanceCounter($uncompressed, 'entities/' . $name . '.jsonl');
+        } finally {
+            fclose($spill);
+        }
         $this->maybeFlush();
     }
 
@@ -193,9 +307,57 @@ final class BundleWriter
             path:              $path,
             compressionMethod: CompressionMethod::STORE,
         );
-        $this->bytesWritten += $demo['size_bytes'];
-        $this->checkCap('demos/' . $demo['name']);
+        // STORE-mode demos: compressed size ≈ uncompressed size
+        // (the ZIP entry adds ~46 bytes of local header overhead,
+        // negligible against multi-MB demo payloads). Track the
+        // file's on-disk size as the increment.
+        $this->advanceCounter($demo['size_bytes'], 'demos/' . $demo['name']);
         $this->maybeFlush();
+    }
+
+    /**
+     * Advance the running cap-check counter by `$uncompressedDelta`
+     * — the uncompressed-byte size of the entry just handed off to
+     * {@see ZipStream}. When the writer has access to the output
+     * handle (s3 mode), the counter snaps to the handle's `fstat`
+     * size INSTEAD, giving the exact compressed-byte total. When
+     * the output handle isn't seekable (zip mode), the counter
+     * adds the uncompressed delta as the conservative fallback
+     * documented on {@see bytesWritten}.
+     */
+    private function advanceCounter(int $uncompressedDelta, string $lastEntry): void
+    {
+        $exact = $this->currentCompressedSize();
+        if ($exact !== null) {
+            $this->bytesWritten = $exact;
+        } else {
+            $this->bytesWritten += $uncompressedDelta;
+        }
+        $this->checkCap($lastEntry);
+    }
+
+    /**
+     * Return the EXACT compressed-byte count when the writer's
+     * output handle is seekable (s3 mode's build-to-disk
+     * tempfile), or `null` when it isn't (zip mode's
+     * `php://output`). The exact count includes ZipStream's
+     * per-entry local-file-header bytes the in-flight central
+     * directory tracker can't see, so it's the authoritative
+     * value for cap-check purposes.
+     */
+    private function currentCompressedSize(): ?int
+    {
+        if ($this->outputHandle === null) {
+            return null;
+        }
+        if (!is_resource($this->outputHandle)) {
+            return null;
+        }
+        $stat = @fstat($this->outputHandle);
+        if ($stat === false) {
+            return null;
+        }
+        return (int) $stat['size'];
     }
 
     /**

@@ -85,12 +85,18 @@ final class EntityExporterTest extends TestCase
     {
         // Seed a row whose forbidden columns carry distinctive values
         // we can grep for — the bcrypt prefix `$2y$` is distinctive,
-        // and the validate token is a hex hash we can pattern-match.
+        // the validate token is a hex hash we can pattern-match, and
+        // the srv_password carries a hostile marker that proves the
+        // plaintext SM admin server-login credential doesn't leak
+        // (the panel stores `:prefix_admins.srv_password` cleartext —
+        // see `web/api/handlers/account.php`'s stringwise comparison
+        // and the table column type in `web/install/includes/sql/struc.sql`
+        // both confirming `varchar(128) default NULL` with no hash).
         $pdo = Fixture::rawPdo();
         $pdo->exec(
             sprintf(
-                "INSERT INTO `%s_admins` (user, authid, password, gid, email, validate, extraflags, immunity, attempts, lockout_until) VALUES
-                ('forbidcheck', 'STEAM_0:0:1', '\$2y\$12\$DUMMYHASHDUMMYHASHDUMMYHASHDUMMYHASHDUMMYHASHDUMMYHASHDU', -1, 'fc@example.test', '5ed533c0ffeec0deDUMMY99887766aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 1, 1, 9, NOW() + INTERVAL 1 HOUR)",
+                "INSERT INTO `%s_admins` (user, authid, password, gid, email, validate, srv_password, extraflags, immunity, attempts, lockout_until) VALUES
+                ('forbidcheck', 'STEAM_0:0:1', '\$2y\$12\$DUMMYHASHDUMMYHASHDUMMYHASHDUMMYHASHDUMMYHASHDUMMYHASHDU', -1, 'fc@example.test', '5ed533c0ffeec0deDUMMY99887766aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'SRVPLAIN_CLEARTEXT_LEAK_MARKER_DUMMY', 1, 1, 9, NOW() + INTERVAL 1 HOUR)",
                 DB_PREFIX,
             )
         );
@@ -110,6 +116,22 @@ final class EntityExporterTest extends TestCase
         // Per-value distinctive marker absence.
         $this->assertStringNotContainsString('$2y$', $output, 'bcrypt hash leaked into admins output');
         $this->assertStringNotContainsString('5ed533c0ffeec0de', $output, 'validate token leaked into admins output');
+        $this->assertStringNotContainsString(
+            'SRVPLAIN_CLEARTEXT_LEAK_MARKER_DUMMY',
+            $output,
+            'plaintext srv_password leaked into admins output — the manifest pii_policy.password_hashes="never" '
+            . 'attestation is broken if this fires (srv_password is a cleartext SM admin credential, '
+            . 'structurally worse than the bcrypt password hash above)'
+        );
+
+        // Defence-in-depth: assert FORBIDDEN_ADMIN_COLUMNS itself
+        // carries every credential-class field a future contributor
+        // might be tempted to re-add to the SELECT. The list is the
+        // load-bearing contract that keeps the manifest's
+        // pii_policy.password_hashes="never" attestation truthful.
+        $this->assertContains('password', EntityExporter::FORBIDDEN_ADMIN_COLUMNS);
+        $this->assertContains('srv_password', EntityExporter::FORBIDDEN_ADMIN_COLUMNS);
+        $this->assertContains('validate', EntityExporter::FORBIDDEN_ADMIN_COLUMNS);
     }
 
     /**

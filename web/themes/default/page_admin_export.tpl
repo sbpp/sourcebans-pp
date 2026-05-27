@@ -110,7 +110,7 @@
                 <p class="empty-state__body">
                     The estimated bundle ({($estimated_bundle_bytes / 1024 / 1024)|number_format:1} MiB)
                     overflows the ZIP 2.0 spec ceiling minus the 64 MiB safety margin.
-                    Prune old demos from the <a href="?p=admin&c=bans&section=add-ban">Bans → Add ban</a> Demo column
+                    Prune old demos via the per-row Demo affordance on the <a href="?p=banlist">public banlist</a>
                     or trim unrelated rows (banlog, audit log) and re-load this page.
                     The submit buttons below are disabled until the bundle fits.
                 </p>

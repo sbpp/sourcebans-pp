@@ -128,6 +128,21 @@ if (function_exists('apache_setenv')) {
 // ---------------------------------------------------------------------
 $mode = isset($_POST['mode']) ? (string) $_POST['mode'] : '';
 if (!in_array($mode, ['zip', 's3'], true)) {
+    // L1: log the attempt so an operator triaging "the form posted
+    // but I got an error toast" can correlate the rejected mode
+    // value with the painted toast. The mode value is operator-
+    // typed indirectly (the form template hardcodes `zip` / `s3`),
+    // so anything else is either a stale tab or a curl-driven
+    // probe; either way the audit log is the source of truth.
+    Log::add(
+        LogType::Warning,
+        'Data Export',
+        sprintf(
+            'Rejected POST: aid=%d invalid mode=%s',
+            $userbank->GetAid(),
+            substr($mode, 0, 32),
+        ),
+    );
     sbpp_export_redirect_failure('mode_invalid', $mode);
 }
 
@@ -264,6 +279,22 @@ function sbpp_export_run_s3_mode(Manifest $manifest, EntityExporter $entities, i
     //       `pattern="^https://...$"` is the UX-first gate) -------
     $presignUrl = isset($_POST['presign_url']) ? trim((string) $_POST['presign_url']) : '';
     if ($presignUrl === '' || strlen($presignUrl) > 2048) {
+        // L1: log the malformed-URL rejection so audit-trail
+        // visibility matches the painted toast. Do NOT log the
+        // raw URL (operator-typed; could carry sensitive presign
+        // signature parameters even on the failure branch) —
+        // log a length signature instead. The audit log is for
+        // operator triage, not credential capture.
+        Log::add(
+            LogType::Warning,
+            'Data Export',
+            sprintf(
+                'Rejected POST: aid=%d bundle_id=%s S3 presign URL length=%d (must be 1-2048).',
+                $aid,
+                $manifest->bundle_id,
+                strlen($presignUrl),
+            ),
+        );
         sbpp_export_redirect_failure(
             ExportError::PRESIGN_INVALID_URL,
             'Presigned URL must be 1-2048 characters.',
@@ -273,10 +304,17 @@ function sbpp_export_run_s3_mode(Manifest $manifest, EntityExporter $entities, i
     // ----- staging file under SB_CACHE/exports/ -----------------
     $stagingDir = SB_CACHE . 'exports' . DIRECTORY_SEPARATOR;
     if (!is_dir($stagingDir) && !@mkdir($stagingDir, 0755, true) && !is_dir($stagingDir)) {
+        // L2: include bundle_id so the audit row can be correlated
+        // with the manifest-build event upstream of this branch.
         Log::add(
             LogType::Error,
             'Data Export',
-            sprintf('S3 mode failed: aid=%d — cache dir not writable: %s', $aid, $stagingDir),
+            sprintf(
+                'S3 mode failed: aid=%d bundle_id=%s — cache dir not writable: %s',
+                $aid,
+                $manifest->bundle_id,
+                $stagingDir,
+            ),
         );
         sbpp_export_redirect_failure(
             ExportError::DISK_WRITE_FAILED,
@@ -298,10 +336,18 @@ function sbpp_export_run_s3_mode(Manifest $manifest, EntityExporter $entities, i
 
     $output = @fopen($tmpFile, 'wb');
     if ($output === false) {
+        // L2: include bundle_id for cross-reference with the
+        // manifest-build event upstream + the cleanup register
+        // call below.
         Log::add(
             LogType::Error,
             'Data Export',
-            sprintf('S3 mode failed: aid=%d — could not open staging file: %s', $aid, $tmpFile),
+            sprintf(
+                'S3 mode failed: aid=%d bundle_id=%s — could not open staging file: %s',
+                $aid,
+                $manifest->bundle_id,
+                $tmpFile,
+            ),
         );
         sbpp_export_redirect_failure(
             ExportError::DISK_WRITE_FAILED,
@@ -322,6 +368,13 @@ function sbpp_export_run_s3_mode(Manifest $manifest, EntityExporter $entities, i
         entities:           $entities,
         demosDir:           SB_DEMOS,
         flushAfterEntries:  false,
+        // M1: hand the writer the staging-file handle so its
+        // running cap counter snaps to the on-disk `fstat` size
+        // after each entry — exact compressed-byte tracking
+        // instead of the conservative uncompressed-byte estimate
+        // the zip-mode path is stuck with. Documented on
+        // BundleWriter::bytesWritten + BundleWriter::currentCompressedSize.
+        outputHandle:       $output,
     );
 
     try {
