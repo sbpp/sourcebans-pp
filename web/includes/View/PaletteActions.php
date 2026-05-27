@@ -232,6 +232,18 @@ final class PaletteActions
                 'href'       => '?p=admin&c=bans&section=add-ban',
                 'permission' => $addBan,
             ],
+            // Data export — owner-only (every PII category in scope).
+            // The `for()` filter ORs ADMIN_OWNER into every admin
+            // entry's mask, so passing 0 here is equivalent to passing
+            // ADMIN_OWNER — but writing the explicit constant
+            // documents the gate at the call site, matching the
+            // pattern the rest of the catalog uses.
+            [
+                'icon'       => 'package',
+                'label'      => 'Data export',
+                'href'       => '?p=admin&c=export',
+                'permission' => defined('ADMIN_OWNER') ? (int) constant('ADMIN_OWNER') : 0,
+            ],
         ];
     }
 }

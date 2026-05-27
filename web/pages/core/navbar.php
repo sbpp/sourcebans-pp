@@ -81,6 +81,15 @@ $admin = [
         'title' => 'Mods',
         'endpoint' => 'mods',
         'permission' => ADMIN_OWNER|ADMIN_LIST_MODS|ADMIN_ADD_MODS|ADMIN_EDIT_MODS|ADMIN_DELETE_MODS
+    ],
+    [
+        // Full data export — owner-only (every PII category in scope).
+        // Same gate as page-builder.php's `$adminRoutes['export']`
+        // entry, the page handler's `CheckAdminAccess(ADMIN_OWNER)`,
+        // and the entry point at `web/export.php`.
+        'title' => 'Export',
+        'endpoint' => 'export',
+        'permission' => ADMIN_OWNER
     ]
 ];
 

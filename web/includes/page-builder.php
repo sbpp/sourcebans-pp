@@ -115,6 +115,22 @@ function route(int|string $fallback): array
                 'options'    => [],
                 'default'    => ['Audit Log', '/admin.audit.php'],
             ],
+            'export' => [
+                // Full panel data export is owner-only by design. The
+                // bundle carries every PII category the panel stores
+                // (admin emails, IPs, Steam IDs, unban reasons), so
+                // a granular per-permission gate would only paper
+                // over the structural "this is a custodial action"
+                // semantic — there's no flag short of Owner whose
+                // bearer should reasonably be exporting the lot. The
+                // same gate is re-enforced by the page handler's
+                // `CheckAdminAccess(ADMIN_OWNER)` AND by the
+                // streaming entry point at `web/export.php` (the
+                // load-bearing security check the form POSTs into).
+                'permission' => ADMIN_OWNER,
+                'options'    => [],
+                'default'    => ['Data Export', '/admin.export.php'],
+            ],
         ];
 
         if (is_string($categorie) && isset($adminRoutes[$categorie])) {
