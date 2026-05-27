@@ -64,6 +64,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Publish or amend a project announcement (the admin-only home-dashboard banner) | `docs/public/announcements.json` (Astro publishes it as a static asset at `https://sbpp.github.io/announcements.json`). One-file source of truth — don't reach for an admin endpoint, an in-panel composer, or a separate git repo. Schema + sort + expiry rules are in `docs/src/content/docs/configuring/announcements.mdx` (operator-facing) and the "Project announcements feed" Conventions block in `AGENTS.md` (agent-facing). The starter file is `[]` (empty array); the deploy chain (`docs-deploy-trigger.yml`) ships the updated file within minutes of merge to `main`. |
 | Add or edit a project sponsor / funding platform / sponsor tier | `docs/src/data/sponsors.json` is the single source of truth. Three top-level keys: `platforms` (`{id, name, url, description?, icon?}` — funding channels), `tiers` (`{id, name, monthlyMinUsd?, description?}` — ordered display tiers), `sponsors` (`{name, url?, logo?, tier?, since?}` — `tier` matches a tier `id`, missing/empty places the sponsor in the "Individual supporters" bucket). The docs `/sponsor/` landing page (`docs/src/content/docs/sponsor.mdx`) renders the file via `docs/src/components/Sponsors.astro`; the topbar heart icon, the per-page footer link, the panel-side footer link (`web/themes/default/core/footer.tpl` — #1417 added a `data-testid="app-footer-sponsor"` anchor pointing at the same `/sponsor/` landing page), and `.github/FUNDING.yml`'s `custom:` URL all point at `/sponsor/`. A future README-injector script will read the same file. Adding a new platform (Open Collective, Patreon, …) is a one-line append to `platforms`; no component / config / template edit required, and no panel release needed (the panel link points at the docs anchor, not at any single platform URL). The docs page is intentionally absent from `astro.config.mjs`'s `sidebar` (reached only via the heart icon + footer + FUNDING.yml). Issues #1416 / #1417. |
 | Touch any UI under `web/install/` or the panel chrome that's screenshotted in docs | Run `npm run capture` in `docs/` locally and commit the PNG diff. Maintainers can alternatively apply the `safe-to-screenshot` label after reviewing the PR diff so `docs-screenshots-capture.yml` regenerates the captures (see `docs/README.md` for the security model + label-strip-on-push contract) |
+| Touch `web/includes/Export/**`, `web/export.php`, `web/pages/admin.export.php`, `web/includes/View/AdminExportView.php`, or `web/themes/default/page_admin_export.tpl` (the "Full data export" feature) | `AGENTS.md` (the "Full data export" Conventions block + the "Build / extend the owner-only full data export feature" row in "Where to find what" + the "Generate a presigned S3 PUT URL for the panel's Full data export S3 mode" row when the operator workflow changes) + `ARCHITECTURE.md` (the "Data export" subsystem section + the `web/includes/Export/` line in the Directory layout + the `web/export.php` line in the panel-root scripts list) + `docs/src/content/docs/configuring/data-export.mdx` (operator-facing — what's in the bundle, delivery modes, presigned-URL workflows per provider, the security model summary, troubleshooting). The wire-format contract (`null`-for-absent, Steam64-as-decimal-string, unix-seconds, manifest-first) is the load-bearing piece downstream consumers rely on — any change to the JSONL shape or manifest schema bumps `Manifest::FORMAT_VERSION` AND lands a paired downstream-migration note in the operator-facing docs. The forbidden-columns list (`admins.password` / `validate` / `attempts` / `lockout_until` / `servers.rcon` / `settings.smtp.pass` / `settings.telemetry.instance_id`) is hard-coded in `EntityExporter` — relaxing it silently invalidates the manifest's `pii_policy.password_hashes: "never"` attestation; never reach for "let me read the schema and deny dynamically" because a future column addition would slip through that gate. |
 | Change panel theme tokens — palette, geometry, semantic colors — in `web/themes/default/css/theme.css` (the `:root` block or `html.dark` overrides) | Mirror the change in `docs/src/styles/sbpp.css` so the docs site stays visually consistent with the panel. Same PR. (Fonts intentionally not mirrored — see #2.) |
 
 Quick rules:
@@ -2311,6 +2312,272 @@ any real content goes out — same shape `Sbpp\Telemetry\Schema1`'s
 lock file uses (file shape pinned by tests, content can change
 freely).
 
+### Full data export (`Sbpp\Export\*`)
+
+Owner-only, synchronous, one-shot streamed ZIP bundle of every row
+in the database plus every uploaded demo. Reachable at
+`?p=admin&c=export`; the actual streaming work lives at panel-root
+in `web/export.php` because the wire format is binary
+(`Content-Type: application/zip`) and doesn't fit the JSON API
+dispatcher's `Content-Type: application/json` contract — same shape
+as the long-standing `web/exportbans.php` (public ban-list export)
+and `web/getdemo.php` (single demo download).
+
+Subsystem shape: five classes under `Sbpp\Export\*`
+(`ManifestBuilder` / `EntityExporter` / `BundleWriter` /
+`S3PresignedUploader` / `ExportError`) plus the `Manifest` DTO, the
+`web/export.php` entry point, the `web/pages/admin.export.php` page
+handler, the `Sbpp\View\AdminExportView` DTO, and the
+`web/themes/default/page_admin_export.tpl` form template.
+
+The contract:
+
+- **Synchronous, in-request execution.** No queue, no background
+  worker, no FPM-only `fastcgi_finish_request()` trickery — the
+  request stays open for the full duration of the export. The
+  panel is shared-host-friendly first; reaching for a worker
+  daemon would close that door for the majority of self-hosters.
+  Shared-host hardening on the entry point is the three-pronged
+  triplet: `@set_time_limit(0)` (no max-execution-time abort),
+  `@ini_set('memory_limit', '256M')` (the writer streams, so the
+  resident set stays bounded; the bump is for the SELECT cursors
+  + the ZIP-mode in-flight encryption buffers), and
+  `ignore_user_abort(true)` (a client disconnect mid-stream must
+  NOT tear down the script — the audit-log entry needs to land
+  even on the abort path). The `@` guards a host with
+  `disable_functions = set_time_limit,ini_set` from injecting
+  warning text into the streamed response body.
+- **Two delivery modes (deliberately asymmetric).** The asymmetry
+  is structural — `zip` mode streams straight to `php://output`
+  with `flushAfterEntries=true` so the browser's download progress
+  bar moves in real time, while `s3` mode builds to a tempfile
+  under `SB_CACHE/exports/<bundle_id>.zip` and then PUTs the
+  finished file in a second cURL call. The reason for the
+  asymmetry: presigned S3 PUT signatures bind a specific
+  `Content-Length` value (and the spec rejects chunked-transfer-
+  encoded PUTs), so the bundle has to fully materialise before the
+  upload knows its size. The shutdown function registered BEFORE
+  the build wipes the tempfile even when a mid-build fatal
+  escapes — `if (is_file($tmp)) @unlink($tmp);` covers the
+  normal-exit + uncaught-Throwable + client-abort cases uniformly.
+- **Manifest-first contract.** `BundleWriter::write()` emits
+  `manifest.json` as the FIRST ZIP entry via `addFile()` BEFORE
+  any entity stream or demo file lands. A downstream consumer
+  can short-circuit the bundle to read just the PII policy / row
+  counts by parsing one central-directory entry. The contract is
+  pinned by `ExportBundleWriterTest`'s `statIndex(0)['name'] ===
+  'manifest.json'` assertion; the writer's structure is what makes
+  the assertion stable, NOT alphabetical ordering of the entity
+  list (which would land `admins.jsonl` first if you trusted
+  ordering alone).
+- **No ZIP64.** The `ZipStream` is constructed with `$enableZip64
+  = false`. ZIP64 support across consumer tools is patchy (Windows
+  Explorer's built-in unzipper, macOS Archive Utility, cloud
+  console previewers all handle ZIP 2.0 reliably; ZIP64 is the
+  hit-or-miss arm). The 4 GiB ceiling is the cap consequence; the
+  manifest's `MAX_BUNDLE_BYTES = 4 * 1024**3` constant carries
+  the spec ceiling, `SAFETY_MARGIN_BYTES = 64 * 1024**2` is the
+  cushion against the central directory / per-entry overhead /
+  JSONL byte-estimate undershoot. Pre-flight in `ManifestBuilder`
+  subtracts the margin before comparing the estimate against
+  the ceiling AND the writer re-checks the running compressed-byte
+  total per-entity (defence-in-depth against pre-flight
+  undershooting).
+- **JSONL wire contracts (uniform across every entity).** The
+  contracts are: `null` for absent values (never `""`, never an
+  omitted field — consumers can iterate `Object.keys()` confident
+  the set is stable per entity); timestamps as unix-seconds
+  integers (every `int(11) created` column gets `(int)`-cast,
+  every `datetime` column routes through `strtotime`); Steam64 IDs
+  as decimal STRINGS, not JSON numbers (Steam64 exceeds
+  `Number.MAX_SAFE_INTEGER` and silently round-trips wrong through
+  any consumer using double-precision floats; `authid_steam2`
+  preserves the legacy `STEAM_X:Y:Z` shape alongside); source PKs
+  renamed to `id` (`admins.aid` → `id`, `bans.bid` → `id`, etc.);
+  JSON encoder flags ALWAYS include `JSON_INVALID_UTF8_SUBSTITUTE`
+  (player names on `:prefix_bans.name` / `:prefix_comms.name` can
+  carry malformed UTF-8 from the pre-#1108 / #765 Latin-1-on-utf8
+  truncation shape — without the flag the export 500s mid-stream
+  on a hostile-historical row, same load-bearing reason `Toast::emit`
+  carries the flag). The contracts are wholesale documented in
+  `EntityExporter`'s class docblock; new entity additions inherit
+  the entire set.
+- **Forbidden columns are hard-coded.** `EntityExporter`'s class
+  constants `FORBIDDEN_ADMIN_COLUMNS`, `FORBIDDEN_SERVER_COLUMNS`,
+  and `FORBIDDEN_SETTING_KEYS` enumerate every value the bundle
+  MUST NEVER carry: `admins.password` (bcrypt hash),
+  `admins.validate` / `admins.attempts` / `admins.lockout_until`
+  (live session credentials), `servers.rcon` (RCON password), and
+  the `settings` rows with key `smtp.pass` (SMTP credential) or
+  `telemetry.instance_id` (deliberately panel-local). The filter
+  applies at the SQL `SELECT` / `WHERE` layer so the values never
+  reach PHP memory; the unit tests assert by grep that the values
+  literally don't appear in the JSONL output. The list is
+  intentionally pre-encoded — NEVER reach for "let me read the
+  schema and deny dynamically", because a future column addition
+  would silently slip through that gate. The manifest's
+  `password_hashes: "never"` PII attestation is operator-facing
+  and load-bearing on this contract.
+- **Owner-only.** Every PII category the panel knows about is in
+  scope (admin emails, IP addresses, every Steam ID, every unban
+  reason, every admin-authored comment, every note). A partial-
+  permission admin who could export everything is functionally an
+  owner, so granular delegation isn't meaningful. Deliberately
+  deferred to a future version when downstream consumers have
+  asked for a use case the current shape doesn't cover. The
+  gate's defence-in-depth shape is THREE layers: (1) page-builder
+  routes `?p=admin&c=export` to `admin.export.php` ONLY for
+  callers holding `ADMIN_OWNER`; (2) `admin.export.php` re-checks
+  via `CheckAdminAccess(ADMIN_OWNER)`; (3) `web/export.php`'s
+  entry-point checks `$userbank->HasAccess(WebPermission::Owner)`
+  BEFORE the CSRF gate even runs and lands a `LogType::Warning`
+  row in the audit log on the deny branch so a triage flow can
+  find the attempt. The chrome-side filtering on navbar +
+  PaletteActions hides the entry from non-owners but is UX gating
+  only — the load-bearing security gate is the entry point.
+- **No new permission flag.** `ADMIN_OWNER` only.
+  `web/configs/permissions/web.json` is UNTOUCHED; no new
+  `Perms.*` member, no `api-contract.js` regen, no new
+  `WebPermission` enum case. The reasoning matches "Owner-only"
+  above — the feature's PII surface is the full panel dataset,
+  and a granular flag whose holder can export everything is
+  indistinguishable from `ADMIN_OWNER` itself.
+- **No schema change.** V1 is one-shot — every export starts from
+  a fresh pre-flight pass. No `:prefix_exports` table, no
+  scheduled-job state, no persistent in-DB tracking. The audit
+  log (`Log::add(LogType::Message, 'Data Export', ...)` on
+  success, `LogType::Error` on failure) carries the durable
+  record per attempt: acting admin's `aid`, the mode (`zip` vs
+  `s3`), the bundle's UUIDv4, the estimated + actual byte counts,
+  and the `ExportError::code()` on the failure branch. No paired
+  updater migration ships with this subsystem.
+- **No JSON API handler.** The entry point at `web/export.php` is
+  a top-level streaming script with a binary wire format (`Content-Type:
+  application/zip`); the JSON API dispatcher's contract is JSON
+  envelopes, with no extension point for streaming binary. Reaching
+  for a JSON handler that returns a download URL was considered
+  and rejected because the download URL would itself need to land
+  on a panel-root streaming script (the same problem one indirection
+  removed). The pattern is symmetric to `exportbans.php` and
+  `getdemo.php`; future binary-wire features land at panel-root
+  too.
+- **Error handling.** The entry point catches ONLY `ExportError`
+  — anything else (a real DB outage, a memory exhaustion, a
+  regression in the writer) propagates to the dispatcher's generic
+  500 so the stack trace lands in the audit log via the project's
+  error handler. Catching `\Throwable` blanket would mask real
+  bugs behind a generic "export failed" toast. The supported
+  `ExportError` codes are class constants (`CAP_EXCEEDED`,
+  `S3_PUT_FAILED`, `PRESIGN_INVALID_SCHEME`,
+  `PRESIGN_INVALID_URL`, `DISK_WRITE_FAILED`, `DISK_FULL`) so
+  call sites can't typo a string literal; `web/pages/admin.export.php`'s
+  `sbpp_admin_export_describe_error()` `match` table maps each
+  code to an operator-readable toast body.
+- **Persistent error toast on the redirect-back branch.** The
+  page handler's `?result=error&code=<code>` arm emits via
+  `\Sbpp\View\Toast::emit('error', 'Export failed', ..., null, 0)`
+  — `duration_ms: 0` (persistent) with `$redirect: null` per the
+  Toast contract. Destructive operations that failed mid-flight
+  carry potential cleanup work for the operator (a stale tempfile,
+  an upstream charge), and the operator MUST acknowledge before
+  moving on. The success arm emits a non-persistent confirmation
+  via the default chrome timing — routine success doesn't need
+  the X-click acknowledgement. See "Server-side toast emission"
+  earlier in this file for the full contract.
+- **S3 scheme guard is unconditional.** `S3PresignedUploader`
+  refuses `http://` URLs server-side regardless of caller — the
+  bundle carries the full panel PII dataset; cleartext transit
+  for that workload is unsupported. The form template's
+  `pattern="^https://[^\s]+$"` HTML5 attribute is the UX-first
+  gate; the server-side `parse_url` + scheme check is the
+  load-bearing security gate. URL parse failures raise
+  `PRESIGN_INVALID_URL` BEFORE any network call fires.
+- **No `try/catch (\Throwable)` around the entry point body.**
+  Per the "Error handling" entry above. The only legitimate
+  catches in the entry point are the two specific `ExportError`
+  catches (pre-flight, mid-build) — both surface the error code
+  to the redirect URL and the audit log. Anything else
+  intentionally falls through to the dispatcher's 500.
+
+Test override: `S3PresignedUploader::_setHttpTransportForTests(?callable
+$transport)` swaps the cURL call with a closure that receives
+`(string $url, string $localPath, int $size): array{http_code: int,
+body: string}` and returns the shape the production path produces.
+Mirrors `Sbpp\Announce\AnnouncementFetcher::_setHttpFetcherForTests`
++ `Sbpp\Servers\SourceQueryCache::setProbeOverrideForTesting`.
+Production code never sets it; integration tests use it to pin the
+wire-layer contract without spinning up a real S3 endpoint.
+
+Regression guards:
+
+- `web/tests/unit/EntityExporterTest.php` — per-entity contract:
+  `FORBIDDEN_*` columns never appear in the JSONL, SteamID
+  conversion produces decimal strings, `comms.mute_kind` enum,
+  partial-removal `state` derivation across the
+  `BanType × BanRemoval` matrix, empty-entity yields no lines,
+  the `null`-for-absent contract, the `log.level` derivation,
+  the unix-seconds timestamp contract.
+- `web/tests/unit/ManifestBuilderTest.php` — cap math constants
+  (`MAX_BUNDLE_BYTES`, `SAFETY_MARGIN_BYTES`), UUIDv4 shape
+  (regex + version + variant nibbles), bundle ID uniqueness
+  across builds, `created_at` is integer unix seconds,
+  `pii_policy` block presence + every required field,
+  `format_version = 1`, `toJson()` output shape.
+- `web/tests/integration/ExportBundleWriterTest.php` — full
+  export against the test fixture. Asserts the manifest-first
+  contract (`statIndex(0)['name'] === 'manifest.json'`),
+  manifest's `row_counts.<entity>` equals the literal
+  newline-separated line count in `entities/<entity>.jsonl`,
+  every demo entry's compression method is `ZipArchive::CM_STORE`,
+  every JSONL line parses as a JSON object with an `id` field,
+  no SteamID appears as a JSON number (grep for
+  `"authid":\s*\d+`), every timestamp field is integer,
+  forbidden column values never appear in the bundle (grep for
+  bcrypt hash patterns / `rcon` password values / `smtp.pass`
+  values / `telemetry.instance_id` values).
+- `web/tests/integration/AdminExportPermissionTest.php` — the
+  static-shape permission gate: the navbar entry, the
+  PaletteActions entry, the page-builder route, the page
+  handler's `CheckAdminAccess` call, and the entry-point's
+  `HasAccess(WebPermission::Owner)` check all key on
+  `ADMIN_OWNER`. Catches a future "let me sneak this through
+  on a partial flag" refactor at PR time.
+- `web/tests/integration/AdminExportRuntimePermissionTest.php`
+  — the runtime-primitive gate: `CSRF::validate()` returns the
+  expected verdict on the canonical valid + invalid + empty
+  token cases; `CUserManager::HasAccess(WebPermission::Owner)`
+  returns the expected verdict for an owner / non-owner / no-
+  session caller; the `SourceMod root char alone` case doesn't
+  grant `WebPermission::Owner` (defence against a future SM-char
+  delegation that would otherwise sneak through). Page-handler
+  `require` tests were tried and dropped because PHP's `exit`
+  (called by `CheckAdminAccess`) is uncatchable and terminates
+  the child process before PHPUnit can serialize results; the
+  Playwright spec covers the end-to-end runtime contract
+  instead.
+- `web/tests/integration/S3PresignedUploaderTest.php` — the
+  wire-layer contract via `_setHttpTransportForTests`. Asserts:
+  `http://` URL rejected with `PRESIGN_INVALID_SCHEME` (no
+  transport call fires), non-URL string rejected with
+  `PRESIGN_INVALID_URL`, happy path passes the correct
+  `(url, localPath, size)` triple to the transport, success
+  codes 200/201/204 don't throw, 403 throws `S3_PUT_FAILED`
+  with the response body truncated to 2 KiB in the exception
+  message, the byte-stable error code constants stay byte-stable.
+- `web/tests/e2e/specs/flows/data-export.spec.ts` — end-to-end:
+  log in as the seeded `admin/admin` (owner storage state),
+  navigate to `?p=admin&c=export`, click the "Export as ZIP"
+  submit button (anchored on `[data-testid="admin-export-zip-submit"]`),
+  capture the streamed download via `page.waitForEvent('download')`,
+  parse the resulting ZIP with `jszip`, assert: zip parses,
+  first entry is `manifest.json`, manifest carries
+  `format_version: 1` + valid UUIDv4 `bundle_id` + integer
+  `created_at` + `row_counts` dict (with `admins >= 1`) + the
+  `pii_policy.password_hashes: "never"` attestation. Also
+  asserts `GET /export.php` returns HTTP 405 (POST-only
+  enforcement). The spec covers the marquee end-to-end shape
+  the static + primitive tests can't reach.
+
 ### Admin-authored display text (`Sbpp\Markup\IntroRenderer`)
 
 - Anything an admin types in the panel that we render to other users
@@ -4547,6 +4814,8 @@ contributions without contacting every contributor individually.
 | Embed the sponsor roll on a docs page other than `/sponsor/` (e.g. a future docs index hero) | Import `docs/src/components/Sponsors.astro` and render `<Sponsors showPlatforms={false} />` — the component reads `docs/src/data/sponsors.json` and renders just the tier-grouped roll (with the "Individual supporters" bucket) when `showPlatforms` is false. `showEmptyHint={false}` additionally suppresses the "be the first" line when the roll is empty. The component renders its own `<h2>` headings; the embedding page should not add a parallel `## Our sponsors` heading or the chrome doubles. Issue #1416. |
 | Build / extend the daily project-announcements feed (banner-side wiring; mirror of telemetry) | `web/includes/Announce/AnnouncementFetcher.php` (`Sbpp\Announce\AnnouncementFetcher` — `latest()`, `tickIfDue()`, `_setHttpFetcherForTests()`) + `web/includes/Announce/Announcement.php` (the readonly DTO). Tick is registered at the tail of `init.php` via `register_shutdown_function`, gated on a non-empty `SB_ANNOUNCEMENTS_URL` constant (with the `if (!defined(...))` shape so `config.php` can override — empty string is the documented air-gap escape hatch; non-`http(s)://` schemes are also treated as air-gap by `resolveUpstreamUrl`'s scheme guard so a `file://` / `php://` / `phar://` / `data://` typo can't pull arbitrary local files into the cache). Cache shape mirrors `system.check_version`'s `_api_system_release_save_cache` (atomic tempfile + rename under `SB_CACHE/announcements.json`, persisted as the upstream body verbatim; the cache load path also caps the read at 256 KiB so a hostile / hand-edited cache file can't OOM the worker before the post-read size check fires). Wire layer mirrors `system.check_version`'s fetch helper: 5s combined connect+read timeout (PHP's stream wrapper exposes a single knob — split into connect + total only if a future cURL reshape lands), `User-Agent: SourceBans++/<ver> (announcements)`, 256 KiB body cap. The page handler in `web/pages/page.home.php` short-circuits to `null` for anonymous + non-admin viewers; the View DTO `HomeDashboardView` carries `?array $announcement`; the template (`page_dashboard.tpl`) gates the entire `<aside>` block on truthy. Markdown rendering goes through `Sbpp\Markup\IntroRenderer::renderIntroText()` and lands as `body_html` on the DTO — the template emits it with `{nofilter}` per the documented contract. Test override: `_setHttpFetcherForTests(?callable)` mirrors `Sbpp\Servers\SourceQueryCache::setProbeOverrideForTesting`. Regression guards: `web/tests/integration/AnnouncementFetcherTest.php` (cache shape, atomic write, stale-while-error, body-cap, expired-entry filter, malformed JSON, IntroRenderer integration, URL-scheme rejection, dedup, sort), `web/tests/integration/HomeDashboardAnnouncementTest.php` (admin sees / anonymous doesn't / cold cache yields null — process-isolated render with stub Smarty), `web/tests/e2e/specs/flows/dashboard-announcement.spec.ts` (end-to-end mount + disclosure expand + `rel="noopener noreferrer"` + axe-clean + anonymous-storage-state arm). E2E cache seeding shim: `web/tests/e2e/scripts/seed-announcements-e2e.php` + `seedAnnouncementsE2e` / `clearAnnouncementsCacheE2e` in `fixtures/db.ts`. See "Project announcements feed" under Conventions. |
 | Flip a `:prefix_settings` row (feature toggle) from an E2E spec so the surface under test renders | `setSettingE2e(setting, value)` from `web/tests/e2e/fixtures/db.ts` (#1402). Shells out to `web/tests/e2e/scripts/set-setting-e2e.php` which `REPLACE INTO`s the row — mirror of the `REPLACE INTO sb_settings` shape `BansTest.php` uses to enable `config.enablegroupbanning` for the same reason. Pair with `afterAll(async () => { await setSettingE2e(key, defaultValue); })` because the e2e DB is shared between specs (`Fixture::truncateAndReseed` does NOT reset `sb_settings`). Reference: the group-ban dispatcher spec (`web/tests/e2e/specs/flows/groupban-dispatcher.spec.ts`) flips `config.enablegroupbanning` on in `beforeAll` and reverts in `afterAll`. Don't drive the change through `Actions.SettingsSave` from the spec — that requires CSRF + an Owner-permission + would fan out through `Config::init()` + audit-log writes on every flip, way more moving pieces than the spec needs. |
+| Build / extend the owner-only full data export feature (the panel-wide JSONL+demos ZIP bundle download / S3 upload) | Five classes under `web/includes/Export/` + entry point + admin page. `Sbpp\Export\ManifestBuilder` (`web/includes/Export/ManifestBuilder.php`) — pre-flight pass. `build()` produces a `Manifest` DTO carrying row counts + demo byte totals + UUIDv4 `bundle_id` + the `pii_policy` block; `buildOrThrow()` raises `ExportError::CAP_EXCEEDED` upfront if the estimated bundle would exceed `Manifest::MAX_BUNDLE_BYTES - Manifest::SAFETY_MARGIN_BYTES` (4 GiB minus 64 MiB). `Sbpp\Export\EntityExporter` (`web/includes/Export/EntityExporter.php`) — per-entity SELECT + JSONL emission via `Database::iterate()` (no entity in PHP memory). One public method per entity (`admins`, `bans`, `comms`, `log`, `notes`, …). Hard-coded `FORBIDDEN_ADMIN_COLUMNS` / `FORBIDDEN_SERVER_COLUMNS` / `FORBIDDEN_SETTING_KEYS` filter at the SQL `SELECT`/`WHERE` layer — `admins.password` / `validate` / `attempts` / `lockout_until`, `servers.rcon`, `settings` rows keyed `smtp.pass` / `telemetry.instance_id` never reach JSONL regardless of caller. Per-row contracts (uniform across every entity): `null` for absent values (never `""`), timestamps as unix-seconds integers, Steam64 as decimal STRINGS (Steam64 exceeds `Number.MAX_SAFE_INTEGER` and silently round-trips wrong through any consumer using double-precision floats — `authid_steam2` preserves the legacy `STEAM_X:Y:Z` shape alongside), source PKs renamed to `id` where the source's PK is a single column. Per-entity derivations: `comms.mute_kind` (`mute|gag|silence|unknown` from `:prefix_comms.type`), `bans.state` (mirrors `page.banlist.php`'s `BanType×BanRemoval` classifier), `bans.demo_filename` + `bans.demo_size_bytes` (LEFT JOIN against `:prefix_demos`; both `null` when no demo file exists), `log.level` (`message|warning|error` from `LogType`). JSON encoder flags ALWAYS include `JSON_INVALID_UTF8_SUBSTITUTE` — player names on `:prefix_bans.name` / `:prefix_comms.name` can carry malformed UTF-8 from the pre-#1108 / #765 Latin-1-on-utf8 truncation shape; without the flag the export 500s mid-stream on a hostile-historical row (same load-bearing reason `Toast::emit` carries the flag). `Sbpp\Export\BundleWriter` (`web/includes/Export/BundleWriter.php`) — orchestrates. Takes `ZipStream\ZipStream` + `Manifest` + `EntityExporter`. Emits `manifest.json` FIRST via `addFile()` (the manifest-first contract — downstream consumers can read the manifest by parsing one central-directory entry; pinned by `ExportBundleWriterTest::statIndex(0)['name'] === 'manifest.json'`), then iterates entity exporters via `addFileFromCallback()` in deterministic name order, then iterates demos via `addFileFromPath(..., compressionMethod: CompressionMethod::STORE)` (demos are already DEFLATE'd by the Source engine; re-compressing is a CPU tax for no gain). Tracks running compressed-byte total and aborts with `ExportError::CAP_EXCEEDED` if it exceeds the margin (defence-in-depth against `ManifestBuilder`'s pre-flight estimate undershooting). zip-mode runs with `flushAfterEntries=true` (each `flush() + @ob_flush()` after every entry keeps the browser progress bar moving); s3-mode runs with `flushAfterEntries=false` (output is a tempfile, no socket to flush to). `Sbpp\Export\S3PresignedUploader` (`web/includes/Export/S3PresignedUploader.php`) — cURL `PUT` against the operator-supplied presigned URL. Scheme guard is unconditional: `https://` only, `http://` raises `ExportError::PRESIGN_INVALID_SCHEME` before any network call (panel-full PII dataset in flight, cleartext transit unsupported). URL parse failures raise `PRESIGN_INVALID_URL`. cURL uses `CURLOPT_CUSTOMREQUEST='PUT'` + `CURLOPT_INFILE` + `CURLOPT_INFILESIZE` + explicit `Content-Length` header (presigned PUT signatures bind the Content-Length value); `CURLOPT_CONNECTTIMEOUT=60`, `CURLOPT_TIMEOUT=0` (no overall ceiling — uploads can be slow). HTTP 200/201/204 success; anything else raises `S3_PUT_FAILED` with the response body truncated to 2 KiB for diagnostics. Test override: `_setHttpTransportForTests(?callable)` mirrors `Sbpp\Announce\AnnouncementFetcher::_setHttpFetcherForTests`. `Sbpp\Export\ExportError` (`web/includes/Export/ExportError.php`) — `final class extends \RuntimeException` with `public readonly string $code`. Error codes as class constants (`CAP_EXCEEDED`, `S3_PUT_FAILED`, `PRESIGN_INVALID_SCHEME`, `PRESIGN_INVALID_URL`, `DISK_WRITE_FAILED`, `DISK_FULL`) so call sites can't typo a string literal. Entry point: `web/export.php` (panel-root because binary wire format doesn't fit the JSON API dispatcher's contract — same shape as `web/exportbans.php` / `web/getdemo.php`). POST-only (GET returns HTTP 405 with `Allow: POST`), CSRF-gated, owner-only via `WebPermission::Owner` (deny branch lands `LogType::Warning` in audit log), shared-host hardening (`@set_time_limit(0)` + `@ini_set('memory_limit', '256M')` + `ignore_user_abort(true)`), output-buffer drain + `X-Accel-Buffering: no` + `apache_setenv('no-gzip', '1')`. Mode dispatch via `$_POST['mode']` (`'zip'` streams to `php://output`; `'s3'` builds to `SB_CACHE/exports/<bundle_id>.zip` tempfile + `register_shutdown_function` cleanup hook + `S3PresignedUploader::upload()` + 302 to `?p=admin&c=export&result={success\|error}&...`). Catches ONLY `ExportError` — anything else propagates to the dispatcher's generic 500 so real bugs surface in the audit log via the project's error handler. Page handler: `web/pages/admin.export.php` re-checks `CheckAdminAccess(ADMIN_OWNER)` (defence-in-depth — page-builder route also gates), runs `ManifestBuilder::build()` for counts-only, mounts `new AdminTabs([], $userbank, $theme)` (back-link-only partial, same shape as `admin.email.php`), reads `?result=…&code=…` and emits `\Sbpp\View\Toast::emit` accordingly (success uses default chrome timing; failure uses persistent `duration_ms: 0` + `$redirect: null` so the operator MUST acknowledge before moving on), renders via `Sbpp\View\AdminExportView` + `web/themes/default/page_admin_export.tpl`. Owner-only by design: every PII category in scope (admin emails, IPs, every Steam ID, every unban reason, every comment) means a partial-permission admin who could export everything is functionally an owner; granular delegation deliberately deferred. No new permission flag (`ADMIN_OWNER` only); no schema change (V1 is one-shot per request; the audit log carries the durable record); no JSON API handler (the entry point's binary wire format doesn't fit). Routing wired into `web/includes/page-builder.php` (`'export' => [..., 'permission' => ADMIN_OWNER]`), `web/pages/core/navbar.php` (`'permission' => ADMIN_OWNER`), and `web/includes/View/PaletteActions.php` (`'permission' => \WebPermission::Owner->value`). See "Full data export" under Conventions for the full contract (the per-entity wire-format contracts subsection covers the `null`-for-absent + Steam64-as-string + unix-seconds rules; the lifecycle subsection covers the entry-point + page-handler + toast emission chain). Operator-facing docs at `docs/src/content/docs/configuring/data-export.mdx`. Regression guards: `web/tests/unit/EntityExporterTest.php` (per-entity contracts), `web/tests/unit/ManifestBuilderTest.php` (cap math + UUIDv4 + PII policy + format version), `web/tests/integration/ExportBundleWriterTest.php` (end-to-end bundle against the test fixture — manifest-first, row-count parity, demo entries are STORE-compressed, Steam64 is string not number, forbidden values absent), `web/tests/integration/AdminExportPermissionTest.php` (static-shape permission gate across navbar / palette / page-builder / page-handler / entry-point), `web/tests/integration/AdminExportRuntimePermissionTest.php` (runtime-primitive gate for CSRF + `HasAccess(WebPermission::Owner)` — SourceMod root char alone does NOT grant `WebPermission::Owner`), `web/tests/integration/S3PresignedUploaderTest.php` (wire-layer via `_setHttpTransportForTests` — scheme rejection / URL parse rejection / happy path / 403 → `S3_PUT_FAILED`), `web/tests/e2e/specs/flows/data-export.spec.ts` (Playwright end-to-end — admin clicks "Export as ZIP", downloads stream, `jszip` parses, manifest carries `format_version: 1` + valid UUIDv4 + `pii_policy.password_hashes: "never"`; `GET /export.php` returns HTTP 405). |
+| Generate a presigned S3 PUT URL for the panel's "Full data export" S3 mode | Operator-side workflow — the panel never generates the URL itself, only consumes it. AWS: `aws s3 presign s3://bucket/key --http-method PUT --expires-in 3600` (the `--http-method PUT` flag is load-bearing — defaults to GET). Cloudflare R2: same `aws` CLI configured against an R2 token + `--endpoint-url https://<account-id>.r2.cloudflarestorage.com`; or `wrangler r2 object put` with `--presign`; or the R2 dashboard's "Generate URL" tool. MinIO: `mc share upload --expire 1h myminio/bucket/key` (note `share upload`, NOT `share download` — distinct presign flavours). The presigned URL is a single-use write credential; use a short expiry (≤1 hour) and never paste the URL into chat / public logs / issue trackers (anyone who sees it can PUT arbitrary content to your bucket until it expires). Operator-facing docs at `docs/src/content/docs/configuring/data-export.mdx` carry the worked examples per provider. |
 | Add a cross-repo JSON contract (vendored schema lock + reader + extractor parity test) | `web/includes/Telemetry/Schema1.php` is the reference shape (`payloadFieldNames(): list<string>` over a Draft-7 JSON Schema lock file). Pair with one PHPUnit extractor parity test (collect() vs. lock file in both directions). The schema lock file is the single source of truth — don't mirror the field list into a markdown doc paired with a separate parity test, that pattern was tried for telemetry and removed because the duplication paid for the drift risk it created. Sync via a manual `make sync-<subsystem>-schema` target — no scheduled auto-PR. See "Cross-repo JSON contracts" under Conventions. |
 | Display a user's own permission flags grouped by category | `Sbpp\View\PermissionCatalog::groupedDisplayFromMask($mask)` (`web/includes/View/PermissionCatalog.php`). Adding a new flag to `web/configs/permissions/web.json` requires a paired entry in `WEB_CATEGORIES`; `PermissionCatalogTest` enforces it. |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |

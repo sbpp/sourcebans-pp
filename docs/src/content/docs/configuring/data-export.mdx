@@ -1,0 +1,383 @@
+---
+title: Full data export
+description: How to stream a one-shot ZIP bundle of every panel row plus uploaded demos, either as a browser download or via a presigned S3 PUT URL.
+sidebar:
+  order: 2
+  label: Full data export
+---
+
+import { Aside, Code, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The panel ships a built-in "Full data export" surface that streams a
+one-shot ZIP bundle of every row in the database plus every uploaded
+demo. The bundle is suitable for:
+
+- Backups — the bundle is self-contained; restore by feeding the
+  JSONL streams into a downstream importer.
+- Migration to a different host — same shape as backup, but typically
+  paired with a fresh install on the target.
+- Downstream analytics — the JSONL is JSON-line per row with stable
+  schema, easy to feed into BigQuery / DuckDB / pandas / etc.
+
+<Aside type="caution">
+The bundle contains the **full panel dataset**, including admin
+email addresses, IP addresses, every Steam ID the panel knows about,
+admin-authored unban reasons, comments, and notes. **Password
+hashes are NEVER exported** (panel rule), but the bundle is still
+high-sensitivity PII. Treat it accordingly: encrypted storage,
+short-lived presigned URLs, no posting the URL in chat or public
+logs.
+</Aside>
+
+## Permission
+
+Access is gated on the `OWNER` permission flag — the same flag that
+gates Settings, the in-panel admin/group/server editors, and every
+other "this changes how the panel works" surface. There is **no
+delegated "data export" flag** by design: every row in the panel is
+in scope (admin emails, ban authids, comment text), so a partial-
+permission admin who can export everything is functionally an owner
+anyway. If you need to share read-only data with a non-owner (e.g.
+an audit pipeline), generate the bundle yourself and hand the
+recipient just the rows they need.
+
+You reach the surface from:
+
+- The sidebar's **Admin → Export** entry (owner-only — non-owners
+  don't see it).
+- The command palette (Ctrl/Cmd+K → "Data export").
+- Direct URL: `?p=admin&c=export`.
+
+## What's in the bundle
+
+Every bundle is a ZIP 2.0 file with the same overall shape:
+
+```
+sbpp-export-<uuid>.zip
+├── manifest.json
+├── entities/
+│   ├── admins.jsonl
+│   ├── admins_servers_groups.jsonl
+│   ├── banlog.jsonl
+│   ├── bans.jsonl
+│   ├── comms.jsonl
+│   ├── comments.jsonl
+│   ├── demos.jsonl
+│   ├── groups.jsonl
+│   ├── log.jsonl
+│   ├── mods.jsonl
+│   ├── notes.jsonl
+│   ├── overrides.jsonl
+│   ├── protests.jsonl
+│   ├── server_groups.jsonl
+│   ├── servers.jsonl
+│   ├── servers_groups.jsonl
+│   ├── settings.jsonl
+│   ├── srvgroups.jsonl
+│   ├── srvgroups_overrides.jsonl
+│   └── submissions.jsonl
+└── demos/
+    ├── <filename>.dem
+    └── …
+```
+
+**`manifest.json` is always the first entry in the central
+directory.** Downstream consumers can read just the manifest by
+parsing the first central-directory entry without slurping the
+whole bundle into memory. The manifest carries:
+
+- `format_version`: integer (currently `1`). Bump triggers a
+  documented migration on the consumer side.
+- `bundle_id`: UUIDv4 string. Unique per export attempt; persisted
+  in the panel's audit log so an operator can correlate a downstream
+  bundle with the source export.
+- `created_at`: integer unix seconds (UTC).
+- `panel_version`: string (matches the `data-version` footer hook in
+  the panel chrome).
+- `row_counts`: dict of `<entity>: <int>`. The byte-for-byte count
+  of JSONL lines in each `entities/<entity>.jsonl`. Lets a consumer
+  size-check the import before parsing.
+- `demo_total_bytes`: integer. Sum of every demo file on disk that
+  the bundle includes.
+- `estimated_bundle_bytes`: integer. The pre-flight estimate the
+  cap check ran against (sum of demos + JSONL byte estimate).
+- `pii_policy`: dict documenting what's in scope:
+  - `includes_admin_emails: true`
+  - `includes_ip_addresses: true`
+  - `includes_chat_messages: false` — the panel doesn't store chat
+    messages anywhere in its schema; this field declares the
+    category as out-of-scope so a downstream consumer doesn't have
+    to guess.
+  - `includes_steam_ids: true`
+  - `includes_unban_reasons: true`
+  - `password_hashes: "never"` — load-bearing operator
+    attestation. Always literally `"never"`; the panel will never
+    emit `admins.password` regardless of caller permission.
+
+### JSONL wire format
+
+Each `entities/<entity>.jsonl` file is one JSON object per line,
+trailing newline:
+
+```jsonl
+{"id":42,"user":"alice","authid":"76561197960265728","authid_steam2":"STEAM_0:0:1","created":1717000000,"email":null,"immunity":99}
+{"id":43,"user":"bob","authid":"76561197960265729","authid_steam2":"STEAM_0:1:1","created":1717000100,"email":"bob@example.test","immunity":50}
+```
+
+Wire-format contracts:
+
+- **`null` for absent values** — never an empty string, never an
+  omitted field. A consumer iterates `Object.keys()` confident the
+  set is stable per entity.
+- **Timestamps are unix-seconds integers (UTC)** — `created`,
+  `ends`, `RemovedOn`, etc. all share this shape regardless of
+  whether the source column was `int` or `datetime`.
+- **Steam64 IDs are decimal strings** (`"76561197960265728"`), not
+  JSON numbers — Steam64 values exceed the JavaScript `Number.MAX_SAFE_INTEGER`
+  and would silently round-trip wrong through JSON parsers that
+  use double-precision floats. The `authid_steam2` sister field
+  preserves the legacy `STEAM_X:Y:Z` shape for consumers that
+  prefer it.
+- **Source primary keys are renamed to `id`** — `admins.aid` →
+  `id`, `bans.bid` → `id`, etc. Cross-entity foreign keys keep
+  their original names (`bans.aid`, `comments.bid`, …) so the
+  graph is recoverable.
+
+### Per-entity derivations
+
+A few entities carry derived fields the underlying DB columns
+don't:
+
+- `comms.mute_kind`: one of `"mute"`, `"gag"`, `"silence"`, or
+  `"unknown"`. Maps from `:prefix_comms.type` (1/2/3 respectively);
+  `type_raw` is the source int for consumers that prefer the raw
+  shape.
+- `bans.state`: one of `"active"`, `"expired"`, `"unbanned"`,
+  `"deleted"`, `"permanent"`. Derived from `length` + `ends` +
+  `RemoveType` + `RemovedBy` using the same classifier the panel's
+  banlist page uses. `RemoveType` / `removed_by` / `removed_on` /
+  `ureason` are preserved verbatim too.
+- `bans.demo_filename` / `bans.demo_size_bytes` (and the matching
+  pair on `submissions`): present (`"demos/<basename>.dem"` +
+  size in bytes) when a `:prefix_demos` row references the ban;
+  `null` otherwise. Lets a consumer cross-reference the `demos/`
+  directory without re-running the JOIN.
+- `log.level`: one of `"message"`, `"warning"`, `"error"`. Maps
+  from `:prefix_log.type` (`m`/`w`/`e`). `actor_user` and
+  `actor_steam` are joined from `:prefix_admins` when `aid` is
+  non-null.
+
+### What's NEVER in the bundle
+
+The following fields are stripped at the SQL layer (`SELECT`
+omits them or `WHERE` filters them out) so they never reach the
+JSONL even when the requesting admin is an owner. Operator
+attestation matches what the manifest's `pii_policy` block
+declares:
+
+- `admins.password` — bcrypt hash. Stripped.
+- `admins.validate` / `admins.attempts` / `admins.lockout_until` —
+  password-reset token + lockout state. Stripped.
+- `servers.rcon` — RCON password. Stripped.
+- `settings` rows whose key is `smtp.pass` (SMTP credential) or
+  `telemetry.instance_id` (random identifier; deliberately
+  panel-local).
+
+The forbidden list is hard-coded in
+`web/includes/Export/EntityExporter.php`. Reaching into the code
+to relax the filter (e.g. for a "full backup including bcrypt
+hashes" workflow) is unsupported and will silently invalidate the
+manifest's `password_hashes: "never"` attestation that downstream
+consumers rely on.
+
+## Two delivery modes
+
+The form ships two submit buttons. They differ in how the bundle
+reaches its destination:
+
+<Tabs>
+<TabItem label="ZIP download">
+
+The browser downloads the bundle directly. Apache streams from
+`php://output` through the writer's `flush()` calls so the
+browser's progress bar moves in real time as each entity / demo
+lands. No on-disk staging file — close the tab mid-download and
+the panel cleans up immediately (no orphaned state).
+
+**When to use**: ad-hoc backups, one-off audits, debugging a
+particular row's wire shape, anything where a human is sitting in
+front of the panel waiting.
+
+**When not to use**: when the bundle is multi-GiB and your laptop
+is on a flaky hotel wifi (the connection has to stay open for the
+full transfer; abort and you start over). Switch to S3 mode for
+unattended uploads.
+
+</TabItem>
+<TabItem label="S3 presigned PUT">
+
+The panel builds the bundle to a temp file under
+`cache/exports/`, then HTTPS-PUTs it to your operator-supplied
+presigned URL. The PUT travels server-to-server (no operator
+browser in the loop); you get a redirect-back toast when the upload
+finishes (success or failure). The staging file is unlinked
+immediately after the upload acknowledges.
+
+**When to use**: scheduled backups, multi-GiB bundles where the
+browser-to-panel hop is the bottleneck, hand-off to cloud
+analytics pipelines.
+
+**When not to use**: when you don't have an S3-compatible
+destination — AWS S3, Cloudflare R2, MinIO, Wasabi, Backblaze
+B2 (with `--check-eligible-for-batch-api` style auth), etc. all
+work; raw FTP / SCP / Dropbox do not.
+
+<Aside type="caution">
+The presigned URL is a **single-use write credential**. Anyone
+who sees it can PUT arbitrary content to your bucket until the
+URL expires. Use a short expiry (≤1 hour), generate the URL
+fresh per export, and never paste it into chat / public logs /
+issue trackers.
+</Aside>
+
+</TabItem>
+</Tabs>
+
+## Generating a presigned PUT URL
+
+Pick the workflow that matches your S3-compatible destination:
+
+<Tabs>
+<TabItem label="AWS S3">
+
+```bash
+aws s3 presign \
+    s3://your-bucket/path/sbpp-export.zip \
+    --http-method PUT \
+    --expires-in 3600
+```
+
+Output is the presigned URL — paste it directly into the panel
+form. The URL is valid for one hour (3600 seconds) from generation.
+
+</TabItem>
+<TabItem label="Cloudflare R2">
+
+R2 uses the same SigV4 signing scheme as AWS S3. With the `aws`
+CLI configured against an R2 token:
+
+```bash
+aws s3 presign \
+    s3://your-r2-bucket/path/sbpp-export.zip \
+    --http-method PUT \
+    --expires-in 3600 \
+    --endpoint-url https://<account-id>.r2.cloudflarestorage.com
+```
+
+Alternatively use the R2 dashboard's "Generate URL" tool or
+`wrangler r2 object put` with the `--presign` flag.
+
+</TabItem>
+<TabItem label="MinIO">
+
+MinIO ships its own `mc` client:
+
+```bash
+mc alias set myminio https://minio.example.com ACCESS_KEY SECRET_KEY
+mc share upload --expire 1h myminio/your-bucket/path/sbpp-export.zip
+```
+
+The `share upload` output prints both a `curl` command and the
+raw presigned URL. Copy just the URL into the panel form.
+
+</TabItem>
+</Tabs>
+
+## Cap: 4 GiB minus 64 MiB safety margin
+
+The panel enforces a hard cap of **4 GiB minus 64 MiB** on the
+estimated bundle size. The cap comes from the ZIP 2.0 spec ceiling
+(4 GiB per archive / per-entry) — we deliberately don't enable
+ZIP64 because not every downstream tool supports it cleanly, and
+the safety margin gives the in-stream writer headroom to land
+without tripping the cap mid-stream.
+
+When the cap is exceeded:
+
+- The admin export page renders the form with **both submit
+  buttons disabled**.
+- An `.empty-state` block appears explaining the situation and
+  pointing at the typical remediation: prune old demos via the
+  bans list, or trim unrelated rows (banlog, audit log).
+- The cap is re-enforced at the entry point's pre-flight pass, so
+  a hand-edited stale-tab POST also bounces.
+
+If you genuinely need to export a >4 GiB dataset, the right move
+is to split: prune the demos directory of anything not currently
+under active appeal, run the export, then restore the demos
+afterward. Future versions may add a chunked / multipart S3
+upload mode for very large bundles; the current architecture
+explicitly chooses one-shot simplicity.
+
+## Audit log
+
+Every export attempt — success or failure — lands an entry in the
+panel's audit log (`?p=admin&c=audit`). The entry carries:
+
+- The acting admin's `aid` and Steam ID.
+- The mode (`zip` or `s3`).
+- The bundle's UUIDv4 (so a downstream "where did this file come
+  from?" question is answerable from the audit row).
+- On success: the estimated and actual bundle byte count.
+- On failure: the `ExportError` code (e.g. `cap_exceeded`,
+  `s3_put_failed`, `presign_invalid_url`) and a truncated copy of
+  the underlying error message for diagnostics.
+
+If your panel sits behind a SIEM or audit-forwarder, the bundle
+export is a load-bearing event to monitor — every successful
+export is a PII-class data flow off the panel.
+
+## Security model summary
+
+| Aspect | Contract |
+| ------ | -------- |
+| Permission | `OWNER` only. No delegated flag; not configurable. |
+| CSRF | Every POST is gated through `Sbpp\Security\CSRF`. A stale tab cannot trigger an export. |
+| Transport (ZIP) | TLS where the panel is reachable via TLS (operator concern). |
+| Transport (S3) | `https://` only. The panel refuses `http://` URLs server-side regardless of caller. |
+| Password hashes | Never emitted. Hard-coded SQL filter. |
+| Audit | Every attempt logged with acting admin + bundle ID + outcome. |
+| Staging file | Removed immediately on upload completion or process exit (shutdown hook). |
+| Presigned URL | Single-use. Operator generates, panel uses once. The panel does not store the URL anywhere persistent. |
+
+## Troubleshooting
+
+**"Export failed — The bundle would exceed the 4 GiB ZIP 2.0 cap"**
+:   See the cap section above. Prune demos or split the export.
+
+**"Export failed — Presigned URL must use HTTPS"**
+:   You pasted an `http://` URL. Re-generate with HTTPS.
+    The panel refuses cleartext transit for a PII-class dataset
+    server-side; flipping it to permit `http://` is unsupported.
+
+**"Export failed — The S3 endpoint rejected the upload"**
+:   The audit log carries the HTTP status + response body. Common
+    causes: presigned URL expired (regenerate with a longer expiry),
+    SigV4 signature mismatch (clock skew between the panel and
+    your S3 client — sync via NTP), bucket policy denies PUT
+    (check the bucket's IAM policy).
+
+**ZIP download stops partway through**
+:   Either the operator closed the tab (audit log shows a
+    truncated bundle for that aid) or the panel hit the
+    `cap_exceeded` gate mid-stream. The latter shouldn't happen
+    in production because the pre-flight pass gates first, but a
+    pathological "the on-disk demo file grew between pre-flight
+    and stream" race is possible. Re-run; the second pass picks
+    up the larger size.
+
+**Want a partial export (just bans, not demos)**
+:   Not currently supported by the chrome — V1 is one-shot
+    full-dataset. The wire format makes a manual partial-extract
+    trivial (`unzip sbpp-export-*.zip entities/bans.jsonl`) so a
+    consumer-side filter is the supported workflow.

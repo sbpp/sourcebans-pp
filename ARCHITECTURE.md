@@ -74,6 +74,7 @@ web/
 ├── config.php            DB credentials etc. (generated; ignored by git)
 ├── config.php.template   Template the installer + dev entrypoint render
 ├── exportbans.php        Public ban-list export (CSV/XML)
+├── export.php            Full data export (owner-only ZIP bundle; see includes/Export/)
 ├── getdemo.php           Demo file download
 │
 ├── api/handlers/         JSON API: one file per topic, _register.php wires them
@@ -103,6 +104,7 @@ web/
 │   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum
 │   ├── Telemetry/            Sbpp\Telemetry\{Telemetry,Schema1} — anonymous opt-out daily ping (#1126); schema-1.lock.json is the vendored cross-repo contract
 │   ├── Announce/             Sbpp\Announce\{AnnouncementFetcher,Announcement} — anonymous opt-out daily fetch of project news / security advisories from https://sbpp.github.io/announcements.json (source of truth: docs/public/announcements.json); admin-only banner on the home dashboard
+│   ├── Export/               Sbpp\Export\{ManifestBuilder,EntityExporter,BundleWriter,S3PresignedUploader,ExportError,Manifest} — owner-only full data export feature; streamed one-shot ZIP bundle of every row + every uploaded demo; entry point web/export.php (binary wire format, sits at panel-root next to exportbans.php / getdemo.php)
 │   ├── SteamID/              SteamID parsing / vanity-URL resolution
 │   ├── PHPStan/              Sbpp\PHPStan\* — custom PHPStan rules (Smarty + SQL prefix)
 │   ├── page-builder.php      route() + build() (the page router; procedural)
@@ -772,6 +774,171 @@ lock file from
 and overwrites the vendored copy. No scheduled auto-PR workflow in
 v1 — the parity tests gate the result and the maintainer invokes
 the make target when picking up cf-analytics changes.
+
+### Data export (`includes/Export/`)
+
+`Sbpp\Export\*` packages the panel's "full data export" feature — a
+synchronous, one-shot streamed ZIP bundle of every row in the
+database plus every uploaded demo. Reachable to logged-in owners at
+`?p=admin&c=export`; the actual streaming work lives at panel-root
+in `web/export.php` because the wire format is binary
+(`Content-Type: application/zip`) and doesn't fit the JSON API
+dispatcher's `Content-Type: application/json` contract. Same shape
+as the long-standing `web/exportbans.php` (public ban-list export)
+and `web/getdemo.php` (single demo download).
+
+The subsystem is five classes plus an entry point plus an admin
+page:
+
+- `Sbpp\Export\ManifestBuilder` — pre-flight pass. `build()` returns
+  a `Manifest` DTO with `row_counts` per entity, `demo_total_bytes`
+  (sum of on-disk demos referenced by `:prefix_demos`),
+  `estimated_bundle_bytes`, the UUIDv4 `bundle_id`, the cap
+  thresholds, and the `pii_policy` block (operator attestation —
+  `password_hashes: "never"` is load-bearing and never reachable
+  for relaxation; `includes_chat_messages: false` because the panel
+  schema doesn't carry chat messages anywhere). `buildOrThrow()`
+  raises `ExportError(CAP_EXCEEDED)` upfront if the estimated bundle
+  would exceed `MAX_BUNDLE_BYTES - SAFETY_MARGIN_BYTES` (4 GiB minus
+  64 MiB).
+- `Sbpp\Export\EntityExporter` — per-entity SELECT + JSONL emission.
+  One public method per entity (`admins`, `bans`, `comms`, `log`,
+  `notes`, …). Uses `Database::iterate()` so no entity is held in
+  memory. Hard-coded `FORBIDDEN_COLUMNS` filter at the SQL `SELECT`
+  / `WHERE` layer: `admins.password`, `admins.validate`,
+  `admins.attempts`, `admins.lockout_until`, `servers.rcon`, and
+  `settings` rows with key `smtp.pass` / `telemetry.instance_id`
+  never reach the JSONL regardless of caller. Per-row contracts:
+  `null` for absent (never `""`), timestamps as unix-seconds ints,
+  Steam64 as decimal strings (NOT JSON numbers — Steam64 exceeds
+  `Number.MAX_SAFE_INTEGER`), source PKs renamed to `id`. Per-entity
+  derivations: `comms.mute_kind` (`mute|gag|silence|unknown` from
+  `:prefix_comms.type`), `bans.state` (mirrors `BanListView`'s
+  classifier), `bans.demo_filename` + `demo_size_bytes` via LEFT
+  JOIN against `:prefix_demos`, `log.level` from `LogType`. JSON
+  encoder flags MUST include `JSON_INVALID_UTF8_SUBSTITUTE` — player
+  names on `:prefix_bans.name` / `:prefix_comms.name` can carry
+  malformed UTF-8 from the pre-#1108 / #765 Latin-1-on-utf8
+  truncation shape; without the flag the export 500s mid-stream on
+  a hostile-historical row.
+- `Sbpp\Export\BundleWriter` — orchestrates. Takes
+  `ZipStream\ZipStream` + the `Manifest` + the `EntityExporter`.
+  Emits `manifest.json` FIRST via `addFile()` (the manifest-first
+  contract — downstream consumers can read just the manifest by
+  parsing the first central-directory entry), then iterates entity
+  exporters in deterministic name order via `addFileFromCallback()`,
+  then iterates demos via `addFileFromPath(..., compressionMethod:
+  CompressionMethod::STORE)` (demo files are already compressed by
+  the Source engine; re-deflating is a CPU tax for no gain). Tracks
+  running compressed-byte count; aborts with
+  `ExportError(CAP_EXCEEDED)` when the running total exceeds the
+  margin. After each entity / demo in zip-mode (`$flushAfterEntries
+  = true`), calls `flush() + @ob_flush()` to push bytes downstream
+  so the browser's download progress bar moves in real time. S3
+  mode (`$flushAfterEntries = false`) skips the flush because the
+  output is a tempfile, not a socket.
+- `Sbpp\Export\S3PresignedUploader` — cURL `PUT` against the
+  operator-supplied presigned URL. Scheme guard is unconditional:
+  `https://` only, `http://` raises `ExportError(PRESIGN_INVALID_SCHEME)`
+  before any network call — a panel-full dataset is in flight and
+  cleartext transit is unsupported. URL parse failures raise
+  `PRESIGN_INVALID_URL`. The cURL call uses `CURLOPT_CUSTOMREQUEST
+  = 'PUT'` + `CURLOPT_INFILE` + `CURLOPT_INFILESIZE` + explicit
+  `Content-Length` header (presigned PUT signatures bind the
+  Content-Length value); `CURLOPT_CONNECTTIMEOUT = 60`,
+  `CURLOPT_TIMEOUT = 0` (no overall ceiling — uploads can be slow).
+  HTTP 200/201/204 are success; anything else raises
+  `ExportError(S3_PUT_FAILED)` with the response body truncated to
+  2 KiB for diagnostics. Test override:
+  `_setHttpTransportForTests(?callable $transport)` mirroring
+  `Sbpp\Announce\AnnouncementFetcher::_setHttpFetcherForTests` so
+  the integration tests can pin the wire-layer contract without
+  spinning up a real S3 endpoint.
+- `Sbpp\Export\ExportError` — `final class extends \RuntimeException`
+  with a `public readonly string $code`. The supported error codes
+  are class constants (`CAP_EXCEEDED`, `S3_PUT_FAILED`,
+  `PRESIGN_INVALID_SCHEME`, `PRESIGN_INVALID_URL`,
+  `DISK_WRITE_FAILED`, `DISK_FULL`) so call sites can't typo a
+  string literal. The entry point's redirect-failure helper maps
+  each code to an operator-readable toast body via a `match`
+  table in `web/pages/admin.export.php`.
+
+`web/export.php` is the top-level streaming entry point. Lifecycle:
+
+1. `REQUEST_METHOD === 'POST'` gate — GET / HEAD return HTTP 405
+   with a plain-text `Allow: POST` body. The form posts; a direct
+   GET is either a hostile probe or operator URL typing.
+2. `init.php` bootstraps `$userbank` / `CSRF` / `$GLOBALS['PDO']` /
+   `SB_VERSION` / `SB_DEMOS` / `SB_CACHE`.
+3. `CSRF::rejectIfInvalid()` — state-changing PII-class surface; a
+   stale tab MUST NOT trigger an export.
+4. `$userbank->HasAccess(WebPermission::Owner)` re-check (the
+   navbar / palette filter is UX gating; this is the load-bearing
+   security gate that catches direct-curl POSTs by partial-permission
+   admins). Failures land a `LogType::Warning` row in the audit log
+   so a triage flow can find them.
+5. Shared-host hardening: `@set_time_limit(0)`, `@ini_set('memory_limit',
+   '256M')`, `ignore_user_abort(true)`. The `@` guards a host with
+   `disable_functions = set_time_limit,ini_set` from injecting warning
+   text into the streamed response body.
+6. Output buffer drain: walk every `ob_get_level()` and end each so
+   `BundleWriter::write()`'s `flush() + @ob_flush()` calls actually
+   reach the wire.
+7. `X-Accel-Buffering: no` + Apache's `apache_setenv('no-gzip', '1')`
+   so reverse proxies and Apache don't re-buffer the stream.
+8. Mode dispatch:
+   - `zip` → `Content-Type: application/zip` +
+     `Content-Disposition: attachment; filename="sbpp-export-<uuid>.zip"`
+     + cache-defeat headers; ZipStream writes to `php://output`;
+     `BundleWriter::write()` runs with `flushAfterEntries=true`.
+   - `s3` → build to `SB_CACHE/exports/<uuid>.zip` (tempfile);
+     `register_shutdown_function` registers an `@unlink()` cleanup
+     BEFORE the build so a mid-build fatal still wipes the
+     staging file; `BundleWriter::write()` runs with
+     `flushAfterEntries=false`; then `S3PresignedUploader::upload()`
+     PUTs to the operator's URL; on success 302 to
+     `?p=admin&c=export&result=success&bid=<uuid>`; on
+     `ExportError` 302 to `?result=error&code=<code>` (the
+     page handler reads the arm and emits a persistent error toast
+     via `\Sbpp\View\Toast::emit` so the operator MUST acknowledge
+     the destructive-operation failure before moving on).
+9. Every reachable terminal branch lands an audit-log entry —
+   `LogType::Message` for success (carries `aid`, `bundle_id`,
+   estimated + actual byte counts); `LogType::Error` for failure
+   (carries `aid`, `bundle_id`, `ExportError::code()` value plus
+   the underlying message). The operator's "what happened to my
+   export attempt" question is answerable from a single audit-log
+   query.
+
+The entry point catches only `ExportError` — anything else (a real
+DB outage, a memory exhaustion, a regression in the writer)
+propagates to the dispatcher's generic 500 so the stack trace lands
+in the audit log via the project's error handler. Catching
+`\Throwable` blanket would mask real bugs behind a generic "export
+failed" toast.
+
+The admin page handler is `web/pages/admin.export.php` →
+`Sbpp\View\AdminExportView` →
+`web/themes/default/page_admin_export.tpl`. The page handler runs
+the pre-flight pass (counts only) and renders the form chrome with
+two cards (ZIP download / S3 upload) plus a stats grid (admin / ban
+/ comm / demo counts + estimated bundle size). When the pre-flight
+detects `exceeds_cap`, both submit buttons are server-rendered as
+`disabled` and an `.empty-state` block explains what to prune
+before retrying — the cap is re-enforced at the entry point's
+pre-flight pass too (a stale-tab POST hits the gate), but the form
+disabled state is the UX-first contract.
+
+No schema change ships with this subsystem: there's no `:prefix_exports`
+table, no scheduled jobs, no persistent state. V1 is deliberately
+one-shot — every export starts from a fresh pre-flight pass. The
+audit log carries the durable record per operator request.
+
+Owner-only by design: every PII category in scope (admin emails, IP
+addresses, every Steam ID, every unban reason, every comment) means
+a partial-permission admin who can export everything is functionally
+an owner regardless. Granular delegation is deliberately deferred
+to a future version where downstream consumers have asked for it.
 
 ## Database schema
 

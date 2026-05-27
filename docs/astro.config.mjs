@@ -138,6 +138,7 @@ export default defineConfig({
           label: 'Configuring',
           items: [
             { label: 'Project announcements', slug: 'configuring/announcements' },
+            { label: 'Full data export', slug: 'configuring/data-export' },
           ],
         },
         {
