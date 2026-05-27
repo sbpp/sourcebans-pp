@@ -103,17 +103,18 @@ HTML;
 // (post-login destination is the dashboard). Any third-party theme
 // that forked the pre-v2.0.0 default and still calls `DoLogin(...)`
 // from removed legacy bulk JS would no-op there.
-// `template.logo` is the operator-configurable brand mark path,
-// resolved relative to the active theme directory. Default ships as
-// `images/favicon.svg` (the SourceBans++ shield from the favicon set);
-// admins can override via Admin → Settings → General → Logo path. The
-// theme-relative join mirrors what `core/navbar.tpl` does at runtime
-// for the in-panel sidebar; pre-resolving here keeps `$theme_url` /
-// `$logo` out of `LoginView`'s property surface (the chrome's globally-
-// assigned `$theme_url` doesn't bleed into page Views).
-$themeName = (string) (Config::get('config.theme') ?: 'default');
-$brandLogoPath = (string) Config::get('template.logo');
-$brandLogoUrl = 'themes/' . $themeName . '/' . ltrim($brandLogoPath, '/');
+// `template.logo` is the operator-configurable brand mark path. The
+// `BrandLogo::resolveUrl()` helper handles the theme-relative join
+// AND falls back to `images/favicon.svg` (the SourceBans++ shield
+// from the favicon set) when the configured value is empty, points
+// at the v1.x default `logos/sb-large.png` (which the v2.0 default
+// theme never shipped), or points at a file that's been deleted
+// from disk. Pre-fix this handler concatenated the raw
+// `Config::get('template.logo')` value into a URL with no
+// existence check, so any of the three broken-input shapes
+// rendered a broken `<img>` on the sign-in card; the fallback now
+// matches what the sidebar mark does via `core/header.php`.
+$brandLogoUrl = \Sbpp\View\BrandLogo::resolveUrl();
 
 $loginView = new \Sbpp\View\LoginView(
     normallogin_show: Config::getBool('config.enablenormallogin'),
