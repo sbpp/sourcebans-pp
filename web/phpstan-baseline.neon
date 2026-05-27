@@ -25,6 +25,12 @@ parameters:
 			path: exportbans.php
 
 		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: export.php
+
+		-
 			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
 			identifier: method.notFound
 			count: 1
