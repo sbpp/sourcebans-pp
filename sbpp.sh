@@ -33,7 +33,8 @@ Run things inside containers:
 Database:
   db-dump [file]  Dump the DB to file (default: dump-YYYYMMDD-HHMMSS.sql).
   db-load <file>  Load a SQL dump into the dev DB.
-  db-reset        Drop the DB volume and re-seed (faster than full reset).
+  db-reset        Drop the DB volume + wipe MD5-named files from web/demos/
+                  (orphans after the DB drop). Faster than full reset.
   db-seed [args]  Populate the dev DB with realistic synthetic data.
                   Accepts --scale=small|medium|large (default medium) and
                   --seed=<int> (default pinned in code). Idempotent: every
@@ -228,6 +229,22 @@ case "$cmd" in
     db-reset)
         dc rm -fsv db
         docker volume rm "$(basename "$PWD")_dbdata" 2>/dev/null || true
+        # `db-reset` wipes the DB but `web/demos/` is bind-mounted from
+        # the host worktree (not a named volume) so demo files written
+        # by a previous `db-seed` (or by any panel-side upload that
+        # happened against the dev stack) would otherwise survive as
+        # permanent orphans — the `_demos` rows that pointed at them
+        # vanish with the DB volume, and the next `db-seed`'s
+        # referenced-only wipe reads zero rows from the fresh DB and
+        # skips them. Strict MD5-name regex matches both shapes the
+        # demo write path produces (`Sbpp\Tests\Synthesizer::deterministicDemoFilename`
+        # for synth files, `Sbpp\Upload\UploadHandler::handle()` with
+        # `renameToHash: true` for panel uploads) while leaving the
+        # `.gitkeep` structural marker in place. Demos are dev-only
+        # ban evidence here; production installs never run `sbpp.sh`.
+        if [[ -d web/demos ]]; then
+            find web/demos -maxdepth 1 -type f -regextype posix-extended -regex '.*/[0-9a-f]{32}$' -delete 2>/dev/null || true
+        fi
         dc up -d db
         ;;
     db-seed)

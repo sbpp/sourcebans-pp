@@ -6,7 +6,8 @@ namespace Sbpp\Tests;
  * Dev-only synthetic data generator. Populates a freshly-installed `sourcebans`
  * dev DB with a deterministic, realistic dataset across the panel's full
  * surface: bans, comms, servers, admins, groups, submissions, protests,
- * comments, notes, banlog, and the audit log.
+ * comments (B/C/S/P — one per parent surface), notes, banlog, the audit log,
+ * and demo files (rows + on-disk evidence files under `SB_DEMOS`).
  *
  * Lives under `Sbpp\Tests` (next to {@see Fixture}) because it shares the
  * same bootstrap (`web/tests/bootstrap.php`), the same raw-PDO + DB_PREFIX
@@ -79,6 +80,7 @@ final class Synthesizer
             'submissions' => 10,
             'protests'    => 5,
             'comments'    => 30,
+            'demos'       => 15,
             'notes'       => 15,
             'audit'       => 80,
         ],
@@ -93,6 +95,7 @@ final class Synthesizer
             'submissions' => 60,
             'protests'    => 25,
             'comments'    => 200,
+            'demos'       => 80,
             'notes'       => 120,
             'audit'       => 600,
         ],
@@ -107,6 +110,7 @@ final class Synthesizer
             'submissions' => 400,
             'protests'    => 150,
             'comments'    => 1500,
+            'demos'       => 800,
             'notes'       => 800,
             'audit'       => 5000,
         ],
@@ -157,6 +161,12 @@ final class Synthesizer
     private array $modIds = [];
     /** @var list<int> */
     private array $banBids = [];
+    /** @var list<int> */
+    private array $commsCids = [];
+    /** @var list<int> */
+    private array $submissionSubids = [];
+    /** @var list<int> */
+    private array $protestPids = [];
 
     /**
      * Pool of synthetic players. Keyed by index; each entry carries a
@@ -247,9 +257,14 @@ final class Synthesizer
         $counts['bans']                  = $this->insertBans();
         $counts['banlog']                = $this->insertBanlog();
         $counts['comms']                 = $this->insertComms();
-        $counts['comments']              = $this->insertComments();
         $counts['submissions']           = $this->insertSubmissions();
         $counts['protests']              = $this->insertProtests();
+        // Comments runs AFTER protests/submissions/comms so it can fan
+        // out across all four parent ID arrays (B/C/S/P). Demos runs
+        // after submissions so the (demid, demtype) tuples cover both
+        // ban-attached + submission-attached evidence files.
+        $counts['demos']                 = $this->insertDemos();
+        $counts['comments']              = $this->insertComments();
         $counts['notes']                 = $this->insertNotes();
         $counts['audit']                 = $this->insertAuditLog();
 
@@ -263,6 +278,24 @@ final class Synthesizer
      */
     private function truncateAndReseedBaseline(): void
     {
+        // Snapshot the filenames the existing `:prefix_demos` rows
+        // reference BEFORE the TRUNCATE wipes the table — we need the
+        // row data to know what to unlink. Doing the unlinks AFTER the
+        // TRUNCATE (rather than before) closes a transient inconsistency
+        // window: pre-fix `getdemo.php?type=B&id=<bid>` requests landing
+        // during the wipe → truncate gap saw rows pointing at files
+        // that had just been unlinked, returning "Demo file is no
+        // longer on disk" while the row claimed the file should exist.
+        // Post-fix the TRUNCATE drops rows + files visibly together
+        // from the panel's POV (any post-TRUNCATE pre-unlink request
+        // gets the row-missing 404, which is the same surface a real
+        // production delete would produce). Only files referenced by
+        // the snapshot are removed; anything in `SB_DEMOS` the
+        // synthesizer didn't put there (the `.gitkeep` marker, manual
+        // panel uploads that got orphaned earlier, the SDK demoviewer
+        // working copy a dev might be poking at) stays untouched.
+        $demoVictims = $this->snapshotReferencedDemoFilenames();
+
         $this->pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
         try {
             foreach (self::SYNTH_TABLES as $t) {
@@ -271,6 +304,8 @@ final class Synthesizer
         } finally {
             $this->pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
         }
+
+        $this->unlinkDemoFiles($demoVictims);
 
         // CONSOLE row (aid=0) — every Log::add(aid=0) call needs this
         // FK target. data.sql inserts it with NO_AUTO_VALUE_ON_ZERO; we
@@ -300,7 +335,7 @@ final class Synthesizer
         $rows = $this->pdo->query(
             sprintf('SELECT `mid` FROM `%s_mods` WHERE `mid` > 0 ORDER BY `mid`', DB_PREFIX)
         )->fetchAll(\PDO::FETCH_COLUMN);
-        $this->modIds = array_map('intval', $rows);
+        $this->modIds = array_map(static fn ($v): int => (int) $v, $rows);
         if ($this->modIds === []) {
             throw new \RuntimeException(
                 'Synthesizer expected sb_mods seed rows from data.sql; none found. Has the dev DB been initialised?'
@@ -930,24 +965,88 @@ final class Synthesizer
                 $commType,
                 $ureason,
             ]);
+            $this->commsCids[] = (int) $this->pdo->lastInsertId();
         }
         return count($targets);
     }
 
     private function insertComments(): int
     {
-        if ($this->banBids === []) {
+        $total = $this->scale['comments'];
+        if ($total <= 0) {
             return 0;
         }
-        $count = $this->scale['comments'];
-        $stmt  = $this->pdo->prepare(sprintf(
+
+        // Split the per-scale comment budget across the four
+        // `:prefix_comments.type` letters. The `bid` column on the
+        // comments table is overloaded (it stores the bans.bid for B,
+        // comms.bid for C, submissions.subid for S, protests.pid for
+        // P — sister to `api_bans_add_comment`'s match arm), so each
+        // type only inserts rows when its parent ID array is non-empty.
+        // Distribution: bans get the largest share because the public
+        // banlist + drawer surface is the most visited comment view;
+        // comms ride the secondary commslist drawer; submissions and
+        // protests round out the moderation-queue display surfaces.
+        $banShare = (int) round($total * 0.60);
+        $commShare = (int) round($total * 0.20);
+        $subShare = (int) round($total * 0.10);
+        $protestShare = max(0, $total - $banShare - $commShare - $subShare);
+
+        $stmt = $this->pdo->prepare(sprintf(
             'INSERT INTO `%s_comments` (`bid`, `type`, `aid`, `commenttxt`, `added`) VALUES (?, ?, ?, ?, ?)',
             DB_PREFIX
         ));
-        // Long-form Markdown bodies live alongside the short pool so the
-        // drawer's Comments pane exercises its truncation/wrap chrome on
-        // a deterministic subset of comments, not just the one-liners.
-        // Shape mirrors the long-reason entry in buildReasonPool().
+
+        $bodies = $this->buildCommentBodyPool();
+
+        $written = 0;
+        $written += $this->insertCommentsForType($stmt, $bodies, 'B', $banShare, $this->banBids);
+        $written += $this->insertCommentsForType($stmt, $bodies, 'C', $commShare, $this->commsCids);
+        $written += $this->insertCommentsForType($stmt, $bodies, 'S', $subShare, $this->submissionSubids);
+        $written += $this->insertCommentsForType($stmt, $bodies, 'P', $protestShare, $this->protestPids);
+
+        return $written;
+    }
+
+    /**
+     * Insert `$want` comment rows of a single type against a parent ID
+     * array. No-ops cleanly when the parent array is empty (e.g. a
+     * scale tier configured zero protests still wouldn't seed P
+     * comments). Returns the actual row count written.
+     *
+     * @param list<int>    $parentIds
+     * @param list<string> $bodies
+     */
+    private function insertCommentsForType(\PDOStatement $stmt, array $bodies, string $type, int $want, array $parentIds): int
+    {
+        if ($want <= 0 || $parentIds === [] || $bodies === []) {
+            return 0;
+        }
+        $n = 0;
+        for ($i = 0; $i < $want; $i++) {
+            $parent = $parentIds[mt_rand(0, count($parentIds) - 1)];
+            $aid    = $this->randomAdminAid();
+            $body   = $bodies[mt_rand(0, count($bodies) - 1)];
+            $stmt->execute([$parent, $type, $aid, $body, $this->now - mt_rand(60, 60 * 60 * 24 * 60)]);
+            $n++;
+        }
+        return $n;
+    }
+
+    /**
+     * Long-form Markdown bodies live alongside the short pool so the
+     * drawer's Comments pane (and the moderation-queue cards) exercise
+     * truncation/wrap chrome on a deterministic subset of rows, not
+     * just one-liners. Shape mirrors the long-reason entry in
+     * {@see buildReasonPool}. Voice is shared across B/C/S/P because
+     * admin-authored comments on every surface read as "admin-side
+     * notes / reasoning", so a body that fits a ban also fits a comm
+     * block / submission triage / protest review.
+     *
+     * @return list<string>
+     */
+    private function buildCommentBodyPool(): array
+    {
         $longInvestigation = "**Investigation summary** — three sessions of demo review:\n\n"
             . "1. Round 1 (`de_inferno`): clean prefires through smoke at A-site, but only on enemies. "
             . "Suspicious; not conclusive.\n"
@@ -968,7 +1067,7 @@ final class Synthesizer
             . "pattern (`STEAM_0:1:88421`). Confirmed via Discord DM with their head admin.\n\n"
             . "**Action**: matching our ban length to theirs (30d), updating ureason to reflect the "
             . "cross-server enforcement. Adding linked-accounts note for future moderators.";
-        $bodies = [
+        return [
             'Demo confirms aimbot — see frame 14:32.',
             'Player apologised in DMs, recommend leaving ban.',
             "Multi-account abuse. Linked to ban #1042 by IP overlap.\nNo prior history but pattern is clear.",
@@ -984,18 +1083,15 @@ final class Synthesizer
             "Discord screenshot shows them admitting to cheats.\nLeaving ban as is.",
             'Reduced to 24h — first offence.',
             "Long-time community member, out-of-character behaviour.\n7d cooldown then revisit.",
+            'Voice changer use confirmed; gag stays at 7d.',
+            'Submission accepted — ban issued per linked ticket.',
+            'Submission rejected; insufficient evidence in attached demo.',
+            'Protest declined — full demo review confirms the original ban call.',
+            'Protest accepted — reducing length to time served.',
             $longInvestigation,
             $longContext,
             $longCrossLink,
         ];
-        for ($i = 0; $i < $count; $i++) {
-            $bid     = $this->banBids[mt_rand(0, count($this->banBids) - 1)];
-            $aid     = $this->randomAdminAid();
-            $body    = $bodies[mt_rand(0, count($bodies) - 1)];
-            // type='B' is the ban-comment type the public ban page renders.
-            $stmt->execute([$bid, 'B', $aid, $body, $this->now - mt_rand(60, 60 * 60 * 24 * 60)]);
-        }
-        return $count;
     }
 
     private function insertSubmissions(): int
@@ -1040,6 +1136,7 @@ final class Synthesizer
                 $archivedBy,
                 mt_rand(0, max(1, count($this->serverSids))),
             ]);
+            $this->submissionSubids[] = (int) $this->pdo->lastInsertId();
         }
         return $count;
     }
@@ -1078,6 +1175,7 @@ final class Synthesizer
                 $archivedBy,
                 sprintf('192.0.2.%d', mt_rand(1, 250)),
             ]);
+            $this->protestPids[] = (int) $this->pdo->lastInsertId();
             $n++;
         }
         return $n;
@@ -1157,6 +1255,252 @@ final class Synthesizer
             $stmt->execute([$ev[0], $ev[1], $ev[2] . ' #' . mt_rand(1, 9999), $aid, $host, $created]);
         }
         return $count;
+    }
+
+    /**
+     * Insert `:prefix_demos` rows + write the matching opaque demo
+     * files on disk under `SB_DEMOS`. Two demtypes ride this:
+     *
+     *   - `B` rows reference `bans.bid` (the ban-attached evidence
+     *     demo the admin uploaded via `admin.uploaddemo.php`; surfaced
+     *     on the banlist row as the "Review Demo" link, served by
+     *     `web/getdemo.php?type=B&id=<bid>`).
+     *   - `S` rows reference `submissions.subid` (the reporter-attached
+     *     evidence demo the public submission form takes; same
+     *     `web/getdemo.php?type=S&id=<subid>` retrieval surface).
+     *
+     * Filenames mirror the production shape — 32-char lowercase hex
+     * from `md5(...)` with no extension — because `UploadHandler::handle()`
+     * runs every demo upload through `renameToHash: true`. Indistinguishable
+     * from a real upload on disk. The hash input is deterministic per
+     * `(seed, demid, demtype)` so re-runs with the same seed produce
+     * stable filenames (which is what the truncate-time
+     * `wipeReferencedDemoFiles()` relies on for clean cleanup).
+     *
+     * `origname` is the operator-facing display label, which is what
+     * the panel shows in the row metadata and serves to the browser
+     * via the Content-Disposition header. We pick a plausible map-name
+     * pattern (`cs2_de_dust2_2026-01-15.dem`, etc.) so the admin Edit
+     * Ban page reads as believable.
+     *
+     * File payload is a small opaque text blob (~1 KiB) carrying the
+     * synth marker + the parent ID. `getdemo.php` streams the bytes
+     * verbatim with `Content-Type: application/octet-stream` so the
+     * Source engine demo binary format is not required for the UI's
+     * "download a demo" flow to work end-to-end. A real engine demo
+     * would still play back through the SDK demoviewer; the synthetic
+     * payload won't, which is the documented dev-stack limitation.
+     */
+    private function insertDemos(): int
+    {
+        $budget = $this->scale['demos'];
+        if ($budget <= 0) {
+            return 0;
+        }
+        if ($this->banBids === [] && $this->submissionSubids === []) {
+            return 0;
+        }
+
+        // Ensure SB_DEMOS exists even on a freshly-rebuilt container
+        // where the bind-mount might not have re-created the directory
+        // (or a future docker image change removes the `.gitkeep`
+        // marker). Same defensive shape `ExportBundleWriterTest::seedSampleDemo`
+        // uses. Mode mirrors the panel's expected 0775.
+        if (!is_dir(SB_DEMOS)) {
+            @mkdir(SB_DEMOS, 0775, true);
+        }
+        if (!is_dir(SB_DEMOS) || !is_writable(SB_DEMOS)) {
+            // Don't fatal — the seeder should still leave the DB in a
+            // coherent state even if the on-disk side is read-only.
+            // Skip demos entirely; the panel renders the rows fine
+            // without the file (the "Review Demo" link 404s, which is
+            // the same surface as a real production install whose
+            // demos were rotated away).
+            return 0;
+        }
+
+        // Demos are skewed towards bans (admins upload most evidence)
+        // and a smaller slice towards submissions (public reporters
+        // attach video less often). Numbers land EXACTLY at:
+        //   small  → 12 B / 3 S
+        //   medium → 64 B / 16 S
+        //   large  → 640 B / 160 S
+        // (clamped down per type when the budget exceeds the parent
+        // pool — at medium, 64 ≤ banBids=200 always holds, but a
+        // hypothetical scale tier with banDemos > banBids would cap
+        // at the pool size rather than over-spin trying to write more
+        // demos than there are bans).
+        $banDemos = (int) round($budget * 0.80);
+        $subDemos = max(0, $budget - $banDemos);
+        $banDemos = min($banDemos, count($this->banBids));
+        $subDemos = min($subDemos, count($this->submissionSubids));
+
+        $stmt = $this->pdo->prepare(sprintf(
+            'INSERT INTO `%s_demos` (`demid`, `demtype`, `filename`, `origname`) VALUES (?, ?, ?, ?)',
+            DB_PREFIX
+        ));
+
+        $n = 0;
+
+        // PK is (demid, demtype), so we deduplicate per type by picking
+        // a random SUBSET of the parent IDs upfront. Pre-fix this used
+        // rejection-sampling (pick random IDs, skip on collision) which
+        // by birthday math systematically undershot the budget by
+        // ~14% at medium (200 bids, 64 attempts → ~55 unique). The
+        // shuffle-and-take shape lands exactly `$banDemos` rows every
+        // time without surprise. Random selection still keeps the
+        // determinism contract — `mt_srand($seed)` at execute() entry
+        // pins `array_rand`'s output too.
+        if ($banDemos > 0) {
+            $pickedBidKeys = (array) array_rand($this->banBids, $banDemos);
+            foreach ($pickedBidKeys as $key) {
+                $bid = $this->banBids[$key];
+                $origname = $this->randomDemoOrigName('B');
+                if ($this->writeDemoRow($stmt, $bid, 'B', $origname)) {
+                    $n++;
+                }
+            }
+        }
+
+        if ($subDemos > 0) {
+            $pickedSubidKeys = (array) array_rand($this->submissionSubids, $subDemos);
+            foreach ($pickedSubidKeys as $key) {
+                $subid = $this->submissionSubids[$key];
+                $origname = $this->randomDemoOrigName('S');
+                if ($this->writeDemoRow($stmt, $subid, 'S', $origname)) {
+                    $n++;
+                }
+            }
+        }
+
+        return $n;
+    }
+
+    /**
+     * Insert one demo row + write the matching file. Returns true on
+     * success, false if the on-disk write failed (the DB row is rolled
+     * back so the panel never serves a `:prefix_demos` row that points
+     * at a missing file — `EntityExporter::demoMetadata()` already
+     * defends against this shape, but keeping the table internally
+     * consistent is easier to reason about).
+     */
+    private function writeDemoRow(\PDOStatement $stmt, int $demid, string $demtype, string $origname): bool
+    {
+        $filename = $this->deterministicDemoFilename($demid, $demtype);
+        $path     = SB_DEMOS . DIRECTORY_SEPARATOR . $filename;
+
+        $body = "SBPP-SYNTH-DEMO\n"
+            . sprintf("demid=%d\n", $demid)
+            . sprintf("demtype=%s\n", $demtype)
+            . sprintf("origname=%s\n", $origname)
+            . sprintf("seed=%d\n", $this->seed)
+            . str_repeat("opaque payload bytes for dev-stack download chrome smoke-test\n", 12);
+
+        $ok = @file_put_contents($path, $body);
+        if ($ok === false) {
+            return false;
+        }
+
+        try {
+            $stmt->execute([$demid, $demtype, $filename, $origname]);
+        } catch (\PDOException $e) {
+            @unlink($path);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * MD5 hash of (seed, demid, demtype). Indistinguishable from a
+     * real production upload (`md5(time().rand())` from
+     * `UploadHandler::handle()`) but reproducible across runs so the
+     * `wipeReferencedDemoFiles()` cleanup at the start of the next
+     * run can find + unlink the prior set cleanly.
+     */
+    private function deterministicDemoFilename(int $demid, string $demtype): string
+    {
+        return md5($this->seed . '|' . $demtype . '|' . $demid);
+    }
+
+    /**
+     * @return list<string> realistic display names for the operator-facing
+     *                      `origname` column. Mixes the panel's two big
+     *                      engine families (Source / Source 2) and the
+     *                      panel-supported archive extensions from the
+     *                      `admin.uploaddemo.php` allowlist.
+     */
+    private function randomDemoOrigName(string $demtype): string
+    {
+        $maps = ['de_dust2', 'de_mirage', 'de_inferno', 'cp_dustbowl', 'pl_badwater', 'koth_harvest', 'de_anubis', 'de_nuke'];
+        $ext  = mt_rand(0, 5) === 0 ? 'zip' : 'dem';
+        $map  = $maps[mt_rand(0, count($maps) - 1)];
+        $prefix = $demtype === 'S' ? 'submission' : 'evidence';
+        $year   = 2024 + mt_rand(0, 2);
+        $month  = mt_rand(1, 12);
+        $day    = mt_rand(1, 28);
+        return sprintf('%s_%s_%04d-%02d-%02d.%s', $prefix, $map, $year, $month, $day, $ext);
+    }
+
+    /**
+     * Snapshot every filename `:prefix_demos` references so a subsequent
+     * `unlinkDemoFiles()` call can clean them up after the TRUNCATE has
+     * run. Returns sanitised basenames only — `..` segments / empty
+     * strings are dropped at the boundary so the unlink half can stay
+     * uniform on the inputs. The panel's `UploadHandler` sanitises on
+     * write, but a manually-edited DB or a row surviving from a
+     * less-strict era of the codebase shouldn't be able to make us
+     * unlink anything outside `SB_DEMOS`.
+     *
+     * Defensive: silently returns an empty list on a missing
+     * `:prefix_demos` table (fresh install before `struc.sql` lands).
+     * The synthesizer requires the table to exist downstream anyway,
+     * so a missing table here just means there's nothing to clean up.
+     *
+     * @return list<string>
+     */
+    private function snapshotReferencedDemoFilenames(): array
+    {
+        if (!is_dir(SB_DEMOS)) {
+            return [];
+        }
+        try {
+            $stmt = $this->pdo->query(sprintf('SELECT `filename` FROM `%s_demos`', DB_PREFIX));
+        } catch (\PDOException $e) {
+            return [];
+        }
+        if ($stmt === false) {
+            return [];
+        }
+        $victims = [];
+        foreach ($stmt->fetchAll(\PDO::FETCH_COLUMN) as $filename) {
+            $safe = basename((string) $filename);
+            if ($safe === '' || $safe === '.' || $safe === '..') {
+                continue;
+            }
+            $victims[] = $safe;
+        }
+        return $victims;
+    }
+
+    /**
+     * Unlink each file under `SB_DEMOS`. Mirrors the panel's own
+     * "Delete demo" flow in `admin.edit.ban.php` (`@unlink(SB_DEMOS .
+     * "/" . $demoid['filename'])`). Called AFTER the TRUNCATE so the
+     * row + file pair drops visibly together from the panel's POV.
+     *
+     * @param list<string> $basenames sanitised by `snapshotReferencedDemoFilenames()`
+     */
+    private function unlinkDemoFiles(array $basenames): void
+    {
+        if ($basenames === [] || !is_dir(SB_DEMOS)) {
+            return;
+        }
+        foreach ($basenames as $safe) {
+            $path = SB_DEMOS . DIRECTORY_SEPARATOR . $safe;
+            if (is_file($path)) {
+                @unlink($path);
+            }
+        }
     }
 
     /**

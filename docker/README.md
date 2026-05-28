@@ -86,26 +86,47 @@ matching docs source file on disk.
 ./sbpp.sh e2e                     # Playwright E2E gate (lazy chromium install) against the running stack
 ./sbpp.sh db-dump backup.sql      # mysqldump to host file
 ./sbpp.sh db-load fixtures.sql    # pipe a SQL file into the DB
-./sbpp.sh db-reset                # drop just the DB volume and re-seed
-./sbpp.sh db-seed                 # populate the dev DB with realistic synthetic data
+./sbpp.sh db-reset                # drop the DB volume + wipe MD5-named demo files from web/demos/
+./sbpp.sh db-seed                 # populate the dev DB with realistic synthetic data + write demo files to web/demos/
 ./sbpp.sh rebuild                 # `--no-cache` rebuild of the web image
 ```
 
 `db-seed` lights up every data-driven panel surface — banlist + commslist
 beyond a single page, dashboard "Latest …" cards, the drawer's history /
-comments / notes panes, admin moderation queues (submissions and
-protests), admin audit log, multiple groups/admins/servers — without
-touching `data.sql` / `struc.sql` (the install path stays minimal).
-Idempotent: every run truncates the synthesizer-owned tables first and
-re-seeds. Deterministic given `--seed=<int>` so two devs see the same
-data; pinned default seed in code. Three scale tiers:
+comments / notes panes (B/C/S/P comment types covered, so the moderation
+queues and protest threads paint with real text), admin moderation
+queues, admin audit log, multiple groups/admins/servers, and demo files
+on disk under `web/demos/` (so the banlist's "Review Demo" link returns
+an actual download body) — without touching `data.sql` / `struc.sql`
+(the install path stays minimal). Idempotent: every run truncates the
+synthesizer-owned tables first and re-seeds. Deterministic given
+`--seed=<int>` so two devs see the same data; pinned default seed in
+code. Three scale tiers:
 
 ```sh
-./sbpp.sh db-seed                 # default scale (~200 bans, ~100 comms)
-./sbpp.sh db-seed --scale=small   # ~30 bans, fast iteration
-./sbpp.sh db-seed --scale=large   # ~2000 bans, pagination / perf
+./sbpp.sh db-seed                 # default scale (~200 bans, ~100 comms, ~80 demos)
+./sbpp.sh db-seed --scale=small   # ~30 bans, ~15 demos, fast iteration
+./sbpp.sh db-seed --scale=large   # ~2000 bans, ~800 demos, pagination / perf
 ./sbpp.sh db-seed --seed=42       # alternate RNG seed
 ```
+
+Demo files: each `:prefix_demos` row lands a paired ~1 KiB opaque file
+in `web/demos/` (host bind-mount; gitignored alongside production
+upload evidence). Filenames are MD5(seed|demtype|demid) so re-runs with
+the same seed produce stable basenames and the truncate-time wipe can
+clean them up by re-reading the table. The synth payload is text, not a
+playable Source-engine demo — the panel chrome and `getdemo.php` stream
+the bytes verbatim with `Content-Type: application/octet-stream`, which
+is enough for the download affordance to work end-to-end, but the SDK
+demoviewer won't replay them. Manual uploads (panel-side or anything
+else not referenced by `:prefix_demos`) are never touched by the wipe.
+
+`db-reset` drops the entire DB volume AND wipes MD5-named files from
+`web/demos/` (orphans after the DB drop — the `_demos` rows that
+pointed at them vanished with the volume). The wipe is scoped to
+`[0-9a-f]{32}` basenames so `.gitkeep` stays put; non-MD5 manual
+uploads (the icon / mapimg flows preserve original filenames) survive
+too, though those don't normally land in `web/demos/`.
 
 Refusal guard: the seeder strictly refuses any `DB_NAME` other than
 `sourcebans`, so the PHPUnit DB (`sourcebans_test`) and Playwright DB

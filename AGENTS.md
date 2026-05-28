@@ -618,24 +618,61 @@ two idiomatic shapes (#1273):
 
 `./sbpp.sh db-seed` populates the dev DB (`sourcebans`) with a deterministic,
 realistic synthetic dataset across bans, comms, servers, admins, groups,
-submissions, protests, comments, notes, banlog, and the audit log. Use it
-when you need the panel surfaces (banlist, dashboard, drawer, moderation
-queues, audit log) to render with real-looking data instead of empty
-states. Acceptance audits and screenshot work both depend on it.
+submissions, protests, comments (per-type: B / C / S / P), notes, banlog,
+the audit log, AND demo evidence files (rows + on-disk files under
+`SB_DEMOS`). Use it when you need the panel surfaces (banlist, dashboard,
+drawer, moderation queues, audit log, "Review Demo" download flow) to
+render with real-looking data instead of empty states. Acceptance audits
+and screenshot work both depend on it.
 
 - Lives at `web/tests/Synthesizer.php` (`Sbpp\Tests\Synthesizer`); CLI
   driver at `web/tests/scripts/seed-dev-db.php`. Both are dev-only —
   the synthesizer refuses any `DB_NAME` other than `sourcebans`, so
   `sourcebans_test` / `sourcebans_e2e` stay untouched and the E2E
   suite (which builds its own rows per spec) is unaffected.
-- Idempotent: every run truncates the synth-owned tables first
-  (preserving `sb_settings` / `sb_mods` from `data.sql`), re-seeds the
-  CONSOLE + `admin/admin` rows, then inserts the synthetic dataset.
+- Idempotent: every run snapshots the filenames currently referenced
+  by `:prefix_demos` BEFORE the TRUNCATE wipes the table, executes
+  the truncates (preserving `sb_settings` / `sb_mods` from `data.sql`),
+  unlinks the snapshotted files AFTER (so rows + files drop visibly
+  together from the panel's POV — closes a transient pre-fix window
+  where rows pointed at files that had just been removed), re-seeds
+  the CONSOLE + `admin/admin` rows, then inserts the new synthetic
+  dataset (rows AND on-disk demo payloads). The wipe scope is the
+  set of filenames currently in `:prefix_demos`; anything else in
+  `SB_DEMOS` (the tracked `.gitkeep`, manual panel uploads, a dev's
+  SDK demoviewer working copy) survives untouched. `./sbpp.sh
+  db-reset` carries a sibling cleanup that strips MD5-named
+  basenames from `web/demos/` (those rows vanished with the DB
+  volume so they'd otherwise be permanent orphans).
 - Deterministic given a fixed `--seed` — `mt_srand($seed)` pins PHP's
-  RNG so two devs hit the same names/reasons/timestamps. Default seed
-  is `Synthesizer::DEFAULT_SEED` (pinned in code).
-- Three tiers: `--scale=small` (~30 bans, fast iteration), `medium`
-  (default, ~200 bans), `large` (~2000 bans for pagination / perf).
+  RNG so two devs hit the same names/reasons/timestamps AND so
+  `array_rand` picks the same parent IDs for demo attachment across
+  runs. Demo filenames ride `md5(seed|demtype|demid)` so re-seeds
+  round-trip identically and the next run's cleanup pass finds +
+  unlinks the prior set cleanly (filenames stay 32-char lowercase
+  hex, indistinguishable from `UploadHandler::handle()`'s
+  `renameToHash` output). Default seed is `Synthesizer::DEFAULT_SEED`
+  (pinned in code).
+- Three tiers: `--scale=small` (30 bans + 15 demos, fast iteration),
+  `medium` (default, 200 bans + 80 demos), `large` (2000 bans + 800
+  demos for pagination / perf). Comment budget per scale fans
+  exactly 60% Ban (`B`) / 20% Comm (`C`) / 10% Submission (`S`) /
+  10% Protest (`P`) (medium → 120/40/20/20); demo budget fans
+  exactly 80% ban-attached (`B`) / 20% submission-attached (`S`)
+  (medium → 64/16). Counts are exact (no rejection-sampling
+  shortfall) — `insertDemos()` uses `array_rand` for unique picks
+  upfront. The splits give each surface enough rows to render
+  without leaving the moderation-queue detail cards empty.
+- Demo payloads are opaque ~1 KiB text blobs carrying the synth
+  marker + parent ID, served verbatim by `getdemo.php` with
+  `Content-Type: application/octet-stream`. They won't replay in the
+  SDK demoviewer (would need a real Source-engine demo binary);
+  they DO exercise the panel's "Review Demo" download chrome end-to-end
+  (link → 200 → file download with `Content-Disposition`). On-disk
+  files land in `web/demos/`, which is gitignored alongside the
+  production demo-upload directory (the panel's `UploadHandler` writes
+  there too with `renameToHash: true`) so synthetic and real-production
+  uploads share one storage shape.
 - Do NOT reach for this from `Fixture::truncateAndReseed()` (the e2e
   hot path) — those two diverge by design. The synthesizer is for
   manual dev / screenshot work; the e2e fixture stays minimal so each

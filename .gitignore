@@ -53,6 +53,16 @@ Temporary Items
 /web/cache/sessions/sess_*
 *.smx
 
+# Uploaded demo evidence (production) + synthetic demo files written by
+# `./sbpp.sh db-seed` (dev). `.gitkeep` is the structural marker so the
+# directory exists for fresh tarball installs and tests that probe
+# `is_dir(SB_DEMOS)`. Both upload paths land MD5-hash basenames here;
+# checking them in would (a) blow up the working tree on every db-seed
+# and (b) leak real ban evidence into the source tree on a self-hoster
+# install.
+/web/demos/*
+!/web/demos/.gitkeep
+
 # Local stash file used by the install-screenshot capture flow
 # (`docs/README.md` → "Capturing screenshots"). Gitignored so an
 # interrupted run never leaks the panel's DB credentials into a
