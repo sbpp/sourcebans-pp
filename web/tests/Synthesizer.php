@@ -824,7 +824,9 @@ final class Synthesizer
                 }
             } else {
                 // Admin-removed (~15%).
-                $removeType = mt_rand(0, 1) === 0 ? 'U' : 'D';
+                $removeType = mt_rand(0, 1) === 0
+                    ? \BanRemoval::Unbanned->value
+                    : \BanRemoval::Deleted->value;
                 $removedBy  = $this->randomAdminAid();
                 $removedOn  = $created + mt_rand(60 * 60, 60 * 60 * 24 * 7);
                 if ($removedOn > $this->now) {
@@ -940,7 +942,7 @@ final class Synthesizer
                     $ends    = $created + $length;
                 }
             } else {
-                $removeType = 'U';
+                $removeType = \BanRemoval::Unbanned->value;
                 $removedBy  = $this->randomAdminAid();
                 $removedOn  = $created + mt_rand(60, 60 * 60 * 24);
                 if ($removedOn > $this->now) {
@@ -1225,27 +1227,30 @@ final class Synthesizer
         ));
         // Mix of action types so the audit log filter dropdown
         // (admin / message / type / date) has something to match.
+        $messageType = \LogType::Message->value;
+        $warningType = \LogType::Warning->value;
+        $errorType   = \LogType::Error->value;
         $events = [
-            ['m', 'Ban Added',       'admin added a ban for player'],
-            ['m', 'Ban Edited',      'admin edited a ban'],
-            ['m', 'Ban Unbanned',    'admin unbanned a player'],
-            ['m', 'Comment Added',   'admin added a comment for ban'],
-            ['m', 'Comment Edited',  'admin edited comment'],
-            ['m', 'Server Added',    'admin added server'],
-            ['m', 'Server Edited',   'admin edited server'],
-            ['m', 'Mod Added',       'admin added mod'],
-            ['m', 'Group Added',     'admin added group'],
-            ['m', 'Group Edited',    'admin edited group'],
-            ['m', 'Admin Added',     'admin added admin'],
-            ['m', 'Admin Edited',    'admin edited admin'],
-            ['m', 'Setting Updated', 'admin updated setting'],
-            ['m', 'Submission Archived', 'admin archived submission'],
-            ['m', 'Protest Archived',    'admin archived protest'],
-            ['w', 'Ban Failed',      'failed to add ban: server unreachable'],
-            ['w', 'RCON Failed',     'rcon command timed out'],
-            ['w', 'Permission Denied', 'admin attempted action without flag'],
-            ['e', 'Database Error',  'unexpected SQL state'],
-            ['e', 'Auth Failure',    'invalid login attempt'],
+            [$messageType, 'Ban Added',       'admin added a ban for player'],
+            [$messageType, 'Ban Edited',      'admin edited a ban'],
+            [$messageType, 'Ban Unbanned',    'admin unbanned a player'],
+            [$messageType, 'Comment Added',   'admin added a comment for ban'],
+            [$messageType, 'Comment Edited',  'admin edited comment'],
+            [$messageType, 'Server Added',    'admin added server'],
+            [$messageType, 'Server Edited',   'admin edited server'],
+            [$messageType, 'Mod Added',       'admin added mod'],
+            [$messageType, 'Group Added',     'admin added group'],
+            [$messageType, 'Group Edited',    'admin edited group'],
+            [$messageType, 'Admin Added',     'admin added admin'],
+            [$messageType, 'Admin Edited',    'admin edited admin'],
+            [$messageType, 'Setting Updated', 'admin updated setting'],
+            [$messageType, 'Submission Archived', 'admin archived submission'],
+            [$messageType, 'Protest Archived',    'admin archived protest'],
+            [$warningType, 'Ban Failed',      'failed to add ban: server unreachable'],
+            [$warningType, 'RCON Failed',     'rcon command timed out'],
+            [$warningType, 'Permission Denied', 'admin attempted action without flag'],
+            [$errorType,   'Database Error',  'unexpected SQL state'],
+            [$errorType,   'Auth Failure',    'invalid login attempt'],
         ];
         for ($i = 0; $i < $count; $i++) {
             $ev      = $events[mt_rand(0, count($events) - 1)];
