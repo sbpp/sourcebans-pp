@@ -503,6 +503,13 @@ function api_comms_detail(array $params): array
 
     $steam2 = $authid !== '' && SteamID::isValidID($authid) ? $authid : '';
     $steam3 = $steam2 !== '' ? (string)SteamID::toSteam3($steam2) : '';
+    // #1486: community_id is computed in SQL straight off C.authid. A
+    // comm block can't be IP-typed, but a malformed/empty legacy authid
+    // (#900) collapses the arithmetic to the base 76561197960265728
+    // (STEAM_0:0:0). Gate it on the same validity check as steam2/3 so the
+    // drawer never paints a synthetic "Community" id (parity with
+    // api_bans_detail).
+    $communityId = $steam2 !== '' ? (string)$row['community_id'] : '';
 
     $removedByName = null;
     if ($row['RemovedBy'] !== null && (int)$row['RemovedBy'] > 0 && !$hideAdmin) {
@@ -553,7 +560,7 @@ function api_comms_detail(array $params): array
             'name'         => (string)$row['name'],
             'steam_id'     => $steam2,
             'steam_id_3'   => $steam3,
-            'community_id' => (string)$row['community_id'],
+            'community_id' => $communityId,
             // Comm rows don't store an IP — `:prefix_comms` has no `ip`
             // column. Always null; the field is only here so the
             // drawer's `renderOverviewPane` can read `player.ip`

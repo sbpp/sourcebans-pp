@@ -525,6 +525,38 @@ final class BansTest extends ApiTestCase
             . 'api_bans_detail (parity with the page handler\'s SQL filter)');
     }
 
+    public function testDetailIpTypeBanReportsNoSteamOrCommunityId(): void
+    {
+        // #1486: an IP-type ban stores an empty authid (see
+        // testAddIpTypeAlwaysWritesEmptyAuthid). community_id is computed in
+        // SQL straight off authid, so an empty authid collapsed the
+        // arithmetic to the base 76561197960265728 (STEAM_0:0:0) and the
+        // drawer rendered a bogus "Community" id. steam_id / steam_id_3 were
+        // already gated on SteamID::isValidID(); community_id must match.
+        // The report's scenario is "fill out both IP and SteamID, pick IP
+        // type" — the SteamID is dropped and the IP is the row's real
+        // identity, so it must still surface. Assert as admin so
+        // banlist.hideplayerips can't mask the IP regardless of seed defaults.
+        $this->loginAsAdmin();
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp)
+             VALUES (UNIX_TIMESTAMP(), 1, ?, "", ?, UNIX_TIMESTAMP(), 0, ?, ?, "127.0.0.1")',
+            DB_PREFIX
+        ))->execute(['203.0.113.77', 'IpOnly', 'ip-type ban', Fixture::adminAid()]);
+        $bid = (int) $pdo->lastInsertId();
+
+        $env = $this->api('bans.detail', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(1, $env['data']['player']['type'], 'seeded ban is IP-type');
+        $this->assertSame('', $env['data']['player']['steam_id']);
+        $this->assertSame('', $env['data']['player']['steam_id_3']);
+        $this->assertSame('', $env['data']['player']['community_id'],
+            'IP-type ban (empty authid) must not surface a synthetic community id (#1486)');
+        $this->assertSame('203.0.113.77', $env['data']['player']['ip'],
+            'IP-type ban must still surface the IP as the row identity (#1486)');
+    }
+
     public function testAddCommentInsertsRow(): void
     {
         $this->loginAsAdmin();

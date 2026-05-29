@@ -895,6 +895,12 @@ function api_bans_detail(array $params): array
     // Some legacy rows hold malformed authids (#900); fall back to a
     // canonical placeholder so toSteam3() doesn't blow up the response.
     $steam3 = $steam2 !== '' ? (string)SteamID::toSteam3($steam2) : '';
+    // #1486: community_id is computed in SQL straight off BA.authid. An
+    // empty authid (IP-type ban — see api_bans_add's IP-type branch and
+    // testAddIpTypeAlwaysWritesEmptyAuthid) collapses the arithmetic to the
+    // base 76561197960265728 (STEAM_0:0:0), which the drawer rendered as a
+    // bogus "Community" id. Gate it on the same validity check as steam2/3.
+    $communityId = $steam2 !== '' ? (string)$row['community_id'] : '';
 
     $removedByName = null;
     if ($row['RemovedBy'] !== null && (int)$row['RemovedBy'] > 0 && !$hideAdmin) {
@@ -942,7 +948,7 @@ function api_bans_detail(array $params): array
             'type'         => $type,
             'steam_id'     => $steam2,
             'steam_id_3'   => $steam3,
-            'community_id' => (string)$row['community_id'],
+            'community_id' => $communityId,
             'ip'           => $hideIps || $banIp === '' ? null : $banIp,
             'country'      => !empty($row['country']) && trim((string)$row['country']) !== '' ? (string)$row['country'] : null,
         ],

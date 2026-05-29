@@ -616,6 +616,28 @@ final class CommsTest extends ApiTestCase
         $this->assertSame('Permanent', $env['data']['block']['length_human']);
     }
 
+    public function testDetailMalformedAuthidReportsNoSteamOrCommunityId(): void
+    {
+        // #1486 (parity with api_bans_detail): a comm block can't be
+        // IP-typed, but a malformed legacy authid (#900) made community_id
+        // collapse to the base 76561197960265728 (STEAM_0:0:0) since it's
+        // computed in SQL straight off authid. 'STEAM_0:0:' (empty Z) is the
+        // realistic comms corruption shape — non-empty, so it exits through
+        // the SteamID::isValidID()===false arm of the gate rather than the
+        // empty-authid short-circuit the bans test covers, exercising the
+        // other branch of the same guard. steam_id / steam_id_3 were already
+        // gated on isValidID(); community_id must match so the drawer never
+        // paints a synthetic id.
+        $cid = $this->seedComm('STEAM_0:0:', 'malformed-authid');
+
+        $env = $this->api('comms.detail', ['cid' => $cid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('', $env['data']['player']['steam_id']);
+        $this->assertSame('', $env['data']['player']['steam_id_3']);
+        $this->assertSame('', $env['data']['player']['community_id'],
+            'malformed authid must not surface a synthetic community id (#1486)');
+    }
+
     // -- comms.player_history with `authid` parameter (#COMMS-DRAWER) ------
 
     public function testPlayerHistoryAcceptsAuthidWithoutBid(): void
