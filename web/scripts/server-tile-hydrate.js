@@ -98,7 +98,10 @@
                                               `?p=servers&s=<n>` deep link
                                               behaviour from page.servers.php)
      data-trunchostname="<n>"                 hostname truncation forwarded
-                                              to the JSON action (default 70)
+                                              to the JSON action (default 70;
+                                              `0` = no server-side truncation,
+                                              CSS `.truncate` handles the cut
+                                              client-side, #1487)
 
    ----------------------------------------------------------------
    Public API (window.SBPP)
@@ -128,7 +131,7 @@
      * @typedef {Object} HydrateOptions
      * @property {ParentNode} [container] - tile-bearing wrapper (default: every `[data-server-hydrate]` in the doc).
      * @property {number} [openedIndex] - auto-expand the tile whose `data-index` matches this value (default: -1, i.e. don't auto-expand).
-     * @property {number} [trunchostname] - hostname truncation forwarded to the JSON action (default 70).
+     * @property {number} [trunchostname] - hostname truncation forwarded to the JSON action (default 70; `0` = no server-side truncation, CSS handles the cut client-side, #1487).
      */
 
     /**
@@ -430,6 +433,35 @@
     }
 
     /**
+     * Resolve the hostname truncation hint forwarded to
+     * `Actions.ServersHostPlayers`. The value is a max character count;
+     * `0` is the explicit "no server-side truncation" sentinel — the
+     * server returns the full hostname and the surface's CSS `.truncate`
+     * does the responsive visual cut, so the row shows as much of the
+     * name as fits in its column (#1487). A missing / non-numeric /
+     * negative value defaults to 70 (the public servers list's
+     * full-width budget).
+     *
+     * Note the deliberate `>= 0` (not `> 0`): a bare `(raw || 70)` /
+     * `(raw > 0 ? raw : 70)` would coerce the `0` sentinel back to 70
+     * and silently re-cap the hostname server-side — the exact bug this
+     * helper exists to prevent.
+     *
+     * @param {unknown} raw - number from a programmatic call, the string
+     *   value of a `data-trunchostname` attribute, or null/undefined.
+     * @returns {number} a non-negative integer truncation hint (0 = no
+     *   truncation). `Math.trunc` keeps a stray fractional input (e.g.
+     *   a hand-authored `data-trunchostname="1.5"`) from reaching the
+     *   PHP handler, which would `(int)`-floor it anyway.
+     */
+    function resolveTrunc(raw) {
+        var n = typeof raw === 'number'
+            ? raw
+            : (typeof raw === 'string' && raw !== '' ? Number(raw) : NaN);
+        return (typeof n === 'number' && isFinite(n) && n >= 0) ? Math.trunc(n) : 70;
+    }
+
+    /**
      * @param {HTMLElement} tile
      * @param {HydrateOptions} opts
      * @param {ParentNode} container
@@ -467,7 +499,7 @@
         var refresh = tile.querySelector('[data-testid="server-refresh"]');
         if (refresh instanceof HTMLButtonElement) refresh.disabled = true;
 
-        var trunc = (opts && opts.trunchostname) || 70;
+        var trunc = resolveTrunc(opts ? opts.trunchostname : undefined);
         var openedIndex = (opts && typeof opts.openedIndex === 'number') ? opts.openedIndex : -1;
         sb.api.call(Actions.ServersHostPlayers, { sid: sid, trunchostname: trunc }).then(function (r) {
             anyTile.__sbppLoading = false;
@@ -511,9 +543,9 @@
         var openedIndex = (typeof opts.openedIndex === 'number')
             ? opts.openedIndex
             : (containerEl ? Number(containerEl.getAttribute('data-opened-index') || -1) : -1);
-        var trunc = (typeof opts.trunchostname === 'number' && opts.trunchostname > 0)
-            ? opts.trunchostname
-            : (containerEl ? Number(containerEl.getAttribute('data-trunchostname') || 70) : 70);
+        var trunc = (typeof opts.trunchostname === 'number')
+            ? resolveTrunc(opts.trunchostname)
+            : resolveTrunc(containerEl ? containerEl.getAttribute('data-trunchostname') : null);
 
         Array.prototype.forEach.call(tiles, function (/** @type {HTMLElement} */ tile) {
             loadTile(tile, { openedIndex: openedIndex, trunchostname: trunc }, container);

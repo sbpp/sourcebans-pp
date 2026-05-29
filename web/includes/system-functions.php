@@ -163,9 +163,19 @@ function NextAid(): int
  * the byte length, not the multibyte codepoint length — kept that way
  * for byte-budget callers that pass an actual byte limit (e.g. SQL
  * column max size).
+ *
+ * A non-positive `$len` is the "no truncation" sentinel: the string is
+ * returned verbatim. Callers that want the full value back pass `0`
+ * instead of a large magic number. The dashboard's Servers widget uses
+ * this so the live hostname is sent untrimmed and the surface's CSS
+ * `.truncate` does the responsive visual cut, showing as much of the
+ * name as fits in its column instead of a fixed server-side cap (#1487).
  */
 function trunc(string $text, int $len): string
 {
+    if ($len <= 0) {
+        return $text;
+    }
     return strlen($text) > $len ? substr($text, 0, $len) . '...' : $text;
 }
 

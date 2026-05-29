@@ -49,6 +49,11 @@ use PHPUnit\Framework\TestCase;
  * `sys_get_temp_dir()` so it's hermetic — no fixture, no DB, no
  * docker-mounted `web/demos/` (which is shared across stacks and
  * could be polluted by other tests).
+ *
+ * The suite also pins `\trunc()`'s #1487 contract (the non-positive
+ * "no truncation" sentinel + the unchanged positive branch). Those
+ * cases are pure-string and need no temp tree; they live here because
+ * `trunc()` ships in the same `system-functions.php` under test.
  */
 final class SystemFunctionsTest extends TestCase
 {
@@ -218,6 +223,56 @@ final class SystemFunctionsTest extends TestCase
         $expected = 1 + 10 + 100 + 1000;
         $this->assertSame($expected, getDirSizeBytes($this->root));
         $this->assertSame(sizeFormat($expected), getDirSize($this->root));
+    }
+
+    /**
+     * #1487 — `trunc($text, 0)` is the "no truncation" sentinel: the
+     * string comes back verbatim. The pre-#1487 shape ran the
+     * unconditional `strlen($text) > $len ? substr($text, 0, $len) . '...'`
+     * path, so `$len === 0` produced a bare `'...'` (because
+     * `substr($text, 0, 0)` is `''`) — actively destructive, not a
+     * no-op. The dashboard Servers widget forwards `0` through
+     * `api_servers_host_players` so the live hostname reaches the
+     * browser untrimmed and the cell's CSS `.truncate` does the
+     * responsive visual cut.
+     */
+    public function testTruncReturnsVerbatimForZeroLength(): void
+    {
+        $host = 'SourceBans++ Community | 24/7 FastDL | Dust2 Only';
+        $this->assertSame(
+            $host,
+            trunc($host, 0),
+            'trunc($text, 0) must return $text verbatim (the no-truncation sentinel), '
+                . 'never the pre-#1487 destructive bare "..." that substr($text, 0, 0) . "..." produced.'
+        );
+        $this->assertStringNotContainsString('...', trunc($host, 0));
+    }
+
+    /**
+     * #1487 — negative lengths fall into the same `$len <= 0` sentinel
+     * branch. A negative arrival is almost certainly a caller bug, but
+     * returning the string verbatim is the safe, non-destructive choice
+     * (it never builds a `substr(..., 0, <negative>)` window, which on
+     * PHP counts from the end of the string and would silently corrupt
+     * the output).
+     */
+    public function testTruncReturnsVerbatimForNegativeLength(): void
+    {
+        $this->assertSame('abcdef', trunc('abcdef', -5));
+    }
+
+    /**
+     * #1487 — the positive branch is unchanged: a string longer than
+     * `$len` bytes is cut to `$len` + `'...'`; a string within budget
+     * (or exactly at it) comes back untouched, no gratuitous ellipsis.
+     * Every non-dashboard surface (public list 70, Add Admin grid /
+     * Server Groups 40) relies on this branch staying live.
+     */
+    public function testTruncStillTruncatesPositiveLength(): void
+    {
+        $this->assertSame('abcde...', trunc('abcdefghij', 5), 'over budget → cut + ellipsis');
+        $this->assertSame('abc', trunc('abc', 5), 'under budget → verbatim, no ellipsis');
+        $this->assertSame('abcde', trunc('abcde', 5), 'exactly at budget → verbatim, no ellipsis');
     }
 
     /**

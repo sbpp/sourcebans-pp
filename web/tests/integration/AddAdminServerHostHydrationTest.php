@@ -135,12 +135,15 @@ final class AddAdminServerHostHydrationTest extends TestCase
      * at first paint; without this attribute the Add Admin rows are
      * skipped entirely.
      *
-     * `data-trunchostname="40"` matches the dashboard widget's
-     * cramped-column hint — the per-row card is ~18rem wide
+     * `data-trunchostname="40"` caps the hostname server-side — this
+     * grid's per-row card is a FIXED ~18rem wide
      * (`grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr))`)
-     * and a long hostname would trip `truncate`'s ellipsis
-     * prematurely. The presence of the attribute is the contract;
-     * the helper falls back to 70 otherwise.
+     * so a small fixed cap keeps a long hostname from tripping
+     * `truncate`'s ellipsis. (The dashboard widget dropped its cap to
+     * `0` in #1487 — its column is fluid, so CSS sizes the cut to the
+     * rendered width; this grid's column is fixed, so the cap stays.)
+     * The presence of the attribute is the contract; the helper falls
+     * back to 70 otherwise.
      */
     public function testGridOptsIntoAutoHydration(): void
     {
@@ -155,9 +158,9 @@ final class AddAdminServerHostHydrationTest extends TestCase
             'The Add Admin per-server access grid wrapper must carry '
             . '`data-server-hydrate="auto" data-trunchostname="40"` on the SAME `<div>` opener '
             . 'so the shared hydration helper auto-runs on first paint and forwards the '
-            . 'cramped-column truncation hint to the JSON action (#1405). The 40-char hint '
-            . 'matches the dashboard widget\'s convention — same column constraint, same '
-            . 'truncation budget.',
+            . 'cramped-column truncation hint to the JSON action (#1405). The 40-char cap '
+            . 'suits this grid\'s FIXED ~18rem columns; the dashboard widget dropped to `0` '
+            . '(client-side CSS truncation) in #1487 because its column is fluid.',
         );
     }
 

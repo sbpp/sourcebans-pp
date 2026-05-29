@@ -46,10 +46,13 @@ use PHPUnit\Framework\TestCase;
  * subtitle came back". Each of those is a structural change to the
  * template's source text — `file_get_contents` + assert pins them
  * directly without booting Smarty, seeding `:prefix_servers` rows,
- * or instantiating the View DTO. The E2E suite covers the runtime
- * observable (the hostname actually paints in after the JSON action
- * lands); this PHPUnit guard is the contract gate, sub-millisecond
- * and deterministic.
+ * or instantiating the View DTO. This PHPUnit guard is the contract
+ * gate for the forwarded attribute value (sub-millisecond,
+ * deterministic). The API-side half of the #1487 contract —
+ * `trunchostname=0` returns the hostname verbatim — is pinned by
+ * `web/tests/api/ServersTest.php`; the dashboard widget has no
+ * dedicated runtime (Playwright) spec for the hostname paint
+ * (`smoke/dashboard.spec.ts` only smoke-checks that the page mounts).
  *
  * Pattern mirrors `ServerMapImageRenderTest` — same setUp, same
  * source-shape assertions.
@@ -94,28 +97,36 @@ final class DashboardServersWidgetHydrationTest extends TestCase
      * document at first paint; without this attribute the dashboard
      * rows are skipped entirely.
      *
-     * `data-trunchostname="40"` forwards to `api_servers_host_players`
-     * as the SourceQuery truncation hint — the dashboard column is
-     * cramped (shared with the Latest Bans card under the 2-up grid)
-     * and the public list's `=70` would overflow the `truncate`
-     * ellipsis. The number itself is a UX call but the presence of
-     * the attribute is the contract: the helper falls back to 70
-     * otherwise.
+     * `data-trunchostname="0"` is the "no server-side truncation"
+     * sentinel (#1487). The hostname cell carries the `truncate` CSS
+     * class, so the browser cuts the name with an ellipsis at exactly
+     * the column's rendered width — as much as fits. Pre-#1487 this
+     * forwarded `40` as a fixed server-side cap that fought the CSS:
+     * a hostname got chopped to 40 chars + "..." server-side even when
+     * the column was wide enough to show more, then `truncate` clipped
+     * it again. The `0` lets the client decide, so the row adapts to
+     * the actual rendered width instead of a magic number. The helper's
+     * `resolveTrunc` forwards `0` verbatim (its `>= 0` guard
+     * deliberately does NOT coerce the sentinel back to the 70
+     * default), and the server's `trunc()` treats `0` as "return the
+     * full string".
      */
     public function testServerListWrapperOptsIntoAutoHydration(): void
     {
         // Match against a `<div …>` opener that carries BOTH attrs.
-        // `[\s\S]*?` is the non-greedy "any char including newline"
-        // span; `\bdata-…\b` ensures we don't trip on a prefix match.
+        // `[^>]*` stays within the single opening tag so we don't trip
+        // on a later element; `\bdata-…\b` ensures we don't prefix-match.
         $this->assertMatchesRegularExpression(
-            '/<div\b[^>]*\bdata-server-hydrate="auto"[^>]*\bdata-trunchostname="40"/',
+            '/<div\b[^>]*\bdata-server-hydrate="auto"[^>]*\bdata-trunchostname="0"/',
             $this->template,
             'The dashboard Servers widget\'s row-list wrapper must carry '
-            . '`data-server-hydrate="auto" data-trunchostname="40"` so the shared hydration '
-            . 'helper auto-runs on first paint and forwards the cramped-column truncation hint '
-            . 'to the JSON action (#1375). Pre-fix the widget had neither attribute and the '
-            . 'rows stayed at the IP:port placeholder forever — same regression class as '
-            . 'the admin Server Management list before #1313.',
+            . '`data-server-hydrate="auto" data-trunchostname="0"` so the shared hydration '
+            . 'helper auto-runs on first paint and forwards the "no server-side truncation" '
+            . 'sentinel to the JSON action (#1487). The hostname cell\'s `truncate` CSS does '
+            . 'the responsive cut client-side so the row shows as much of the name as fits in '
+            . 'its column. Pre-#1487 this forwarded `40`, a fixed server-side cap that chopped '
+            . 'the name before the browser ever saw it. Pre-#1375 the widget had neither '
+            . 'attribute and the rows stayed at the IP:port placeholder forever.',
         );
     }
 

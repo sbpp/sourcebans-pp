@@ -436,6 +436,114 @@ final class ServersTest extends ApiTestCase
     }
 
     /**
+     * #1487 — a `trunchostname` of `0` is the "no server-side
+     * truncation" sentinel: the handler returns the full hostname so
+     * the dashboard widget's CSS `.truncate` can do the responsive
+     * visual cut. Pre-fix the dashboard forwarded a fixed `40`-char
+     * cap that chopped the name server-side before the browser ever
+     * saw it; now it forwards `0` and the row shows as much of the
+     * name as fits in its column.
+     */
+    public function testHostPlayersReturnsFullHostnameWhenTrunchostnameZero(): void
+    {
+        $longHost = 'SourceBans++ Community | 24/7 FastDL | Dust2 Only | EU West';
+        $this->assertGreaterThan(48, strlen($longHost), 'guard: the fixture hostname must exceed the legacy 48-char default to make the assertion meaningful');
+
+        SourceQueryCache::setProbeOverrideForTesting(static function () use ($longHost): array {
+            return [
+                'info' => [
+                    'HostName'   => $longHost,
+                    'Players'    => 3,
+                    'MaxPlayers' => 24,
+                    'Map'        => 'de_dust2',
+                    'Os'         => 'l',
+                    'Secure'     => true,
+                ],
+                'players' => [],
+            ];
+        });
+
+        $sid = $this->seedServer(130);
+        $env = $this->api('servers.host_players', ['sid' => $sid, 'trunchostname' => 0]);
+
+        $this->assertTrue($env['ok'], 'envelope: ' . json_encode($env));
+        $this->assertSame(
+            $longHost,
+            $env['data']['hostname'],
+            'trunchostname=0 must return the hostname verbatim (no "..."); CSS handles the visual cut client-side (#1487)',
+        );
+        $this->assertStringNotContainsString('...', $env['data']['hostname']);
+    }
+
+    /**
+     * #1487 — the inverse contract: a positive `trunchostname` still
+     * truncates server-side. The dashboard opts out via `0`, but every
+     * other surface (public list `70`, Add Admin grid / Server Groups
+     * `40`) relies on the cap staying live, so the positive branch must
+     * keep working.
+     */
+    public function testHostPlayersTruncatesHostnameWhenTrunchostnamePositive(): void
+    {
+        $longHost = 'SourceBans++ Community | 24/7 FastDL | Dust2 Only | EU West';
+
+        SourceQueryCache::setProbeOverrideForTesting(static function () use ($longHost): array {
+            return [
+                'info' => [
+                    'HostName'   => $longHost,
+                    'Players'    => 3,
+                    'MaxPlayers' => 24,
+                    'Map'        => 'de_dust2',
+                    'Os'         => 'l',
+                    'Secure'     => true,
+                ],
+                'players' => [],
+            ];
+        });
+
+        $sid = $this->seedServer(131);
+        $env = $this->api('servers.host_players', ['sid' => $sid, 'trunchostname' => 10]);
+
+        $this->assertTrue($env['ok'], 'envelope: ' . json_encode($env));
+        $this->assertSame(
+            substr($longHost, 0, 10) . '...',
+            $env['data']['hostname'],
+            'a positive trunchostname must still cap the hostname server-side (#1487 keeps the positive branch intact for the non-dashboard surfaces)',
+        );
+    }
+
+    /**
+     * #1487 — the property handler shares the same `trunc()` call, so
+     * the `0` sentinel must disable truncation there too. Pinned so a
+     * future refactor that splits the two handlers' truncation paths
+     * can't silently re-cap one of them.
+     */
+    public function testHostPropertyReturnsFullHostnameWhenTrunchostnameZero(): void
+    {
+        $longHost = 'SourceBans++ Community | 24/7 FastDL | Dust2 Only | EU West';
+
+        SourceQueryCache::setProbeOverrideForTesting(static function () use ($longHost): array {
+            return [
+                'info' => [
+                    'HostName'   => $longHost,
+                    'Players'    => 0,
+                    'MaxPlayers' => 24,
+                    'Map'        => 'de_dust2',
+                    'Os'         => 'l',
+                    'Secure'     => true,
+                ],
+                'players' => [],
+            ];
+        });
+
+        $sid = $this->seedServer(132);
+        $env = $this->api('servers.host_property', ['sid' => $sid, 'trunchostname' => 0]);
+
+        $this->assertTrue($env['ok'], 'envelope: ' . json_encode($env));
+        $this->assertSame($longHost, $env['data']['hostname']);
+        $this->assertStringNotContainsString('...', $env['data']['hostname']);
+    }
+
+    /**
      * #1311 regression — a `host_players` call against an unreachable
      * server must NOT keep hammering the socket. Negative caching
      * stamps the failed probe into the same `(ip, port)` slot so the

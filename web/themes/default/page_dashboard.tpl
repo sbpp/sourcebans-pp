@@ -224,20 +224,23 @@
                 players-bar) is intentionally omitted, and the helper's
                 feature-detection branches no-op for the missing ones.
 
-                `data-trunchostname="40"` keeps the live hostname short
-                enough to fit on a single line of the cramped dashboard
-                widget (the public list runs at 70, but it has the full
-                card width to spend; here the column is shared with the
-                Latest Bans card and `truncate` would silently chop a
-                70-char hostname). The number forwards to
-                `api_servers_host_players` as the SourceQuery truncation
-                hint — server-side cheaper than a JS-side trim because the
-                handler also htmlspecialchars()s the truncated string for
-                `sb.setHTML`.
+                `data-trunchostname="0"` is the "no server-side
+                truncation" sentinel (#1487). The hostname cell already
+                carries the `truncate` CSS class, so the browser cuts the
+                name with an ellipsis at exactly the width the column has
+                — as much as fits, no more. Pre-#1487 this forwarded `40`
+                as a fixed server-side character cap, which fought the
+                CSS: a name got chopped to 40 chars + "..." server-side
+                even when the column was wide enough to show more, and
+                then `truncate` clipped it again. Sending `0` lets the
+                client decide, so the row adapts to the actual rendered
+                width instead of a magic number. The attribute forwards
+                to `api_servers_host_players`; `trunc()` treats `0` as
+                "return verbatim".
             *}
             <div style="padding:0.5rem"
                  data-server-hydrate="auto"
-                 data-trunchostname="40">
+                 data-trunchostname="0">
                 {foreach $server_list as $server}
                 <a class="flex items-center gap-3"
                    style="padding:0.625rem;border-radius:var(--radius-md);text-decoration:none;color:var(--text)"

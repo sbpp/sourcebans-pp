@@ -204,17 +204,21 @@
                                 pills / player counts would only add
                                 visual noise to the checkbox grid.
 
-                                `data-trunchostname="40"` matches the
-                                dashboard widget's cramped-column hint:
-                                the per-row card is ~18rem wide and a
-                                long hostname would trip `truncate`'s
-                                ellipsis prematurely. The number
-                                forwards to `api_servers_host_players`
-                                as the SourceQuery truncation hint
-                                (cheaper server-side than a JS-side
-                                trim because the handler also
-                                htmlspecialchars()'s the truncated
-                                string for `sb.setHTML`).
+                                `data-trunchostname="40"` caps the live
+                                hostname server-side: this grid's per-row
+                                card is a FIXED ~18rem wide, so a small
+                                fixed cap keeps a long hostname from
+                                tripping `truncate`'s ellipsis. (The
+                                dashboard widget dropped its cap to `0`
+                                in #1487 because its column is fluid and
+                                CSS sizes the cut to the rendered width;
+                                this grid's column is fixed, so the cap
+                                stays.) The number forwards to
+                                `api_servers_host_players` as the
+                                SourceQuery truncation hint (cheaper
+                                server-side than a JS-side trim because
+                                the handler also htmlspecialchars()'s the
+                                truncated string for `sb.setHTML`).
 
                                 Pre-#1405 (post-#1404 cleanup) the row
                                 shipped `<span id="sa{$server.sid}">IP:port</span>`

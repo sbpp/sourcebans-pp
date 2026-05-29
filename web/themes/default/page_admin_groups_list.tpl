@@ -370,10 +370,12 @@
                             round-trips are absorbed cheaply even on a panel
                             with many groups.
 
-                            `data-trunchostname="40"` keeps the live hostname
-                            short enough to fit the cramped per-group card
-                            body (matches the dashboard widget; the public
-                            servers list runs at 70).
+                            `data-trunchostname="40"` caps the live hostname
+                            server-side so it fits this cramped per-group
+                            card body. (The dashboard widget dropped its cap
+                            to `0` in #1487 — its column is fluid and CSS
+                            sizes the cut; the public servers list runs at
+                            70 on its full-width cards.)
                         *}
                         <div class="card__body">
                             {* Deliberate deviation from the shared `.empty-state` chrome
