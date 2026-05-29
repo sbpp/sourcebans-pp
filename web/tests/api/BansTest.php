@@ -255,18 +255,36 @@ final class BansTest extends ApiTestCase
         $this->assertSame('steam', $env['error']['field']);
         $this->assertNull($this->row('bans', ['ip' => '203.0.113.43']), 'garbage steam must NOT create an IP ban row');
 
-        // 4) Newline-bypass `steam` with `type=1`. Same shape gate
-        //    (`HANDLER_STRICT_REGEX` carries the `D` modifier), same
-        //    rejection.
+        // 4) Non-trimmable malformed `steam` with `type=1`. The handler
+        //    trims `$rawSteam` first, so a trailing newline (`STEAM_0:0:1\n`)
+        //    is stripped to the valid `STEAM_0:0:1` (see case 5) — the gate
+        //    only has to catch shapes `trim()` can't fix. A MID-string
+        //    newline is the canonical such case, mirroring the Steam-branch
+        //    lockstep in testAddRejectsInvalidSteamIdShapeForType0.
         $env = $this->api('bans.add', [
-            'nickname' => 'IpType_newlineSteam', 'type' => 1,
-            'steam' => "STEAM_0:0:1\n", 'ip' => '203.0.113.44',
-            'length' => 0, 'reason' => 'ip ban with newline steam input',
+            'nickname' => 'IpType_malformedSteam', 'type' => 1,
+            'steam' => "STEAM_0:0:1\nGARBAGE", 'ip' => '203.0.113.44',
+            'length' => 0, 'reason' => 'ip ban with malformed steam input',
             'fromsub' => 0,
         ]);
         $this->assertEnvelopeError($env, 'validation');
         $this->assertSame('steam', $env['error']['field']);
-        $this->assertNull($this->row('bans', ['ip' => '203.0.113.44']), 'newline-bypass steam must NOT create an IP ban row');
+        $this->assertNull($this->row('bans', ['ip' => '203.0.113.44']), 'malformed steam must NOT create an IP ban row');
+
+        // 5) Trailing-newline `steam` with `type=1`: `trim()` strips it to
+        //    the valid `STEAM_0:0:1`, which is then kept as the record (the
+        //    handler is symmetric with the Steam branch here — the regex's
+        //    own newline-bypass rejection is pinned at the library level by
+        //    SteamIDValidationTest::testHandlerStrictRegexRejectsNewlineBypass).
+        $env = $this->api('bans.add', [
+            'nickname' => 'IpType_trailingNewline', 'type' => 1,
+            'steam' => "STEAM_0:0:1\n", 'ip' => '203.0.113.46',
+            'length' => 0, 'reason' => 'ip ban with trailing-newline steam',
+            'fromsub' => 0,
+        ]);
+        $this->assertTrue($env['ok'], 'trailing-newline trims to a valid steam and is kept');
+        $row = $this->row('bans', ['ip' => '203.0.113.46']);
+        $this->assertSame('STEAM_0:0:1', (string) $row['authid'], 'trimmed steam is stored on the IP ban');
     }
 
     public function testAddValidationNegativeLength(): void

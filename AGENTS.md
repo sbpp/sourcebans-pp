@@ -836,9 +836,11 @@ of the diff ship together or not at all.
   `web/tests/api/BansTest.php::testAddIpTypeKeepsValidatedSteamOfRecord`
   pins the #1486 IP-type Steam-of-record contract (valid Steam input
   is kept alongside the IP, no Steam input writes empty, garbage +
-  newline-bypass are rejected with a `validation` envelope on the
-  `steam` field BEFORE any row is written — the shape gate still runs
-  on the IP-type branch so a junk value can't 500 or get stored); the
+  non-trimmable malformed shapes — mid-string `\n` — are rejected with
+  a `validation` envelope on the `steam` field BEFORE any row is
+  written, while a trailing-newline `STEAM_0:0:1\n` trims to a valid
+  `STEAM_0:0:1` and is kept; the shape gate still runs on the IP-type
+  branch so a junk value can't 500 or get stored); the
   kickit / blockit
   `SteamID::compare()` pre-`isValidID()` gate is pinned by
   `KickitTest::testKickPlayerReturnsNotFoundForMalformedSteamId` /
@@ -4376,9 +4378,10 @@ contributions without contacting every contributor individually.
   Regression guard:
   `web/tests/api/BansTest.php::testAddIpTypeKeepsValidatedSteamOfRecord`
   (valid Steam input kept alongside the IP, empty input writes
-  empty `authid`, garbage + newline-bypass rejected with a
-  `validation` envelope on the `steam` field before any row is
-  written) +
+  empty `authid`, garbage + non-trimmable malformed shapes — mid-string
+  `\n` — rejected with a `validation` envelope on the `steam` field
+  before any row is written, trailing-newline trims to a valid value
+  and is kept) +
   `web/tests/integration/SteamIDValidationOrderTest.php` (pins the
   validate-before-convert order in `admin.edit.ban.php`).
 - Calling `SteamID::compare($a, $b)` (or any other
