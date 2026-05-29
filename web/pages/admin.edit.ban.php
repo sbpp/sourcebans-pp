@@ -143,22 +143,16 @@ if (isset($_POST['name'])) {
     // pass. Empty input is its own error message; non-empty-but-bad
     // is "please enter a valid…".
     //
-    // The IP-type branch writes `:authid = ''` regardless of whatever
-    // happened to be in the Steam ID input. The column is the *steam
-    // id* of the banned player; on an IP-type ban there is no steam
-    // id, so the canonical value is the schema's `NOT NULL default ''`
-    // empty string — matching the API handler (`api_bans_add`'s
-    // INTENT pre-#1423 follow-up #4, fully enforced after that PR)
-    // and matching the v1.x library's "throw on garbage" outcome
-    // (pre-tightening the unconditional `toSteam2($rawSteam)` would
-    // have raised on `garbage` and the page died with a 500; storing
-    // user-typed garbage into `:authid` is a regression introduced
-    // by the 82e8c3d2 "canonicalise valid IDs on IP-type bans" nit
-    // that preserved the canonical-on-valid case but failed to
-    // suppress the raw-on-invalid case). The form-side input remains
-    // visible on the IP-type bounce path (re-emit through the
-    // `placeholder` on the template, NOT a stale value), but the DB
-    // write is divorced from it.
+    // #1486: the IP-type branch keeps the Steam ID as a record-of-fact
+    // when the operator filled both fields, instead of dropping it. The
+    // SourceMod plugin enforces an IP ban on the `ip` column ONLY
+    // (sbpp_main.sp: `(type=0 AND authid…) OR (type=1 AND ip…)`), so the
+    // stored authid is inert plugin-side; it exists so the ban detail /
+    // banlist can show which account the IP belonged to. The shape gate
+    // still runs before `toSteam2()` so a garbage value can't escape as
+    // an uncaught Exception (500 page render) — same validate-then-convert
+    // ladder as the Steam branch, mirrored in `api_bans_add`. An empty
+    // Steam ID field on an IP ban records nothing.
     if ($postBanType === BanType::Steam) {
         if ($rawSteam === '') {
             $error++;
@@ -178,14 +172,22 @@ if (isset($_POST['name'])) {
             // through the shared `ID_PATTERNS` table.
             $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
         }
-    } else {
-        // IP-type ban: clear the steam slot for the DB write below
-        // (`:authid = $_POST['steam']` rides this). Whatever the
-        // operator happened to type in the Steam ID field stays
-        // visible in `$rawSteam` for any client-side echo, but it
-        // does NOT land in the DB. See the block comment above for
-        // the schema rationale.
+    } elseif ($rawSteam === '') {
+        // IP-type ban, no Steam ID typed: nothing to record.
         $_POST['steam'] = '';
+    } elseif (!\SteamID\SteamID::isValidID($rawSteam)) {
+        // IP-type ban with a typed Steam ID-of-record: validate its shape
+        // before converting so a garbage value can't escape `toSteam2()`
+        // as an uncaught Exception. Bounce with the raw input preserved,
+        // same as the Steam-branch typo path above.
+        $error++;
+        $validationErrors['steam'] = 'Please enter a valid Steam ID or Community ID';
+        $_POST['steam'] = $rawSteam;
+    } else {
+        // Keep the canonical Steam ID alongside the IP (record-of-fact;
+        // enforcement is IP-only). Parity with `api_bans_add`'s IP-type
+        // branch.
+        $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
     }
 
     if ($error === 0 && empty($_POST['ip']) && $postBanType === BanType::Ip) {

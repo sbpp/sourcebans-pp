@@ -833,9 +833,13 @@ of the diff ship together or not at all.
   `ApiError('validation', …, 'steam')` envelope (each test now
   includes the `STEAM_0:0:1\n` / `[U:1:1]\n` / `76561197960265728\n`
   newline-bypass cases as #1423 follow-up #4 regression guards);
-  `web/tests/api/BansTest.php::testAddIpTypeAlwaysWritesEmptyAuthid`
-  pins the IP-type empty-`authid` contract (valid Steam input +
-  garbage + newline-bypass all write empty); the kickit / blockit
+  `web/tests/api/BansTest.php::testAddIpTypeKeepsValidatedSteamOfRecord`
+  pins the #1486 IP-type Steam-of-record contract (valid Steam input
+  is kept alongside the IP, no Steam input writes empty, garbage +
+  newline-bypass are rejected with a `validation` envelope on the
+  `steam` field BEFORE any row is written — the shape gate still runs
+  on the IP-type branch so a junk value can't 500 or get stored); the
+  kickit / blockit
   `SteamID::compare()` pre-`isValidID()` gate is pinned by
   `KickitTest::testKickPlayerReturnsNotFoundForMalformedSteamId` /
   `testKickPlayerReturnsNotFoundForMalformedIp` and
@@ -859,20 +863,25 @@ of the diff ship together or not at all.
      the operator's raw input on the bounce so they see exactly
      what they typed and can correct the typo without re-typing
      everything else).
-   - `admin.edit.ban.php` ON IP-TYPE bans hard-codes
-     `$_POST['steam'] = ''` regardless of whatever the operator
-     typed in the Steam ID field — the column is the *steam id*
-     of the banned player; on an IP-type ban there is no steam id,
-     so the canonical value is the schema's `NOT NULL default ''`
-     empty string (matching `api_bans_add`'s same-PR fix). The
-     pre-#1423-follow-up-#4 shape (the `82e8c3d2` "canonicalise on
-     IP-type" nit) preserved the canonical-on-valid case but
-     failed to suppress the raw-on-invalid case AND continued
-     writing the canonicalised SteamID into `:authid` for IP-only
-     bans — both shapes are wrong. The form-side input remains
-     visible on the IP-type bounce path (re-emit through the
-     template `placeholder`, NOT a stale value), but the DB write
-     is divorced from it.
+   - `admin.edit.ban.php` ON IP-TYPE bans keeps a *validated* Steam
+     ID-of-record when the operator filled both fields (#1486 — parity
+     with `api_bans_add`'s IP-type branch), and writes the schema's
+     `NOT NULL default ''` empty string when the Steam ID field was
+     left blank. Enforcement stays IP-only (the SourceMod plugin
+     matches an IP ban on the `ip` column alone), so the stored authid
+     is inert plugin-side; it exists so the ban detail / banlist can
+     show which account the IP belonged to. The validate-before-convert
+     gate is still load-bearing: a non-empty Steam ID is run through
+     `SteamID::isValidID()` BEFORE `toSteam2()` so a garbage value
+     bounces with `$validationErrors['steam']` (raw input preserved on
+     the bounce, same as the Steam-branch typo path) instead of
+     escaping the converter as a 500 page render. Pre-#1486 the branch
+     hard-cleared `$_POST['steam'] = ''` regardless of input, dropping
+     a SteamID the operator deliberately typed; #1486 reversed that to
+     keep-when-valid. (The older `82e8c3d2` "canonicalise on IP-type"
+     nit had a worse shape still — it stored a *canonicalised* SteamID
+     but failed to suppress the raw-on-invalid case; #1486's
+     validate-then-convert ladder fixes both.)
    - `page.submit.php` doesn't call `SteamID::toSteam2()` at all —
      it stores the raw user-input verbatim in `:prefix_submissions`
      and the moderation queue resolves the canonical form on
@@ -4336,37 +4345,42 @@ contributions without contacting every contributor individually.
   + `BansTest.php` + `AdminsTest.php` (the
   `"STEAM_0:0:1\n"` / `"[U:1:1]\n"` / `"76561197960265728\n"`
   cases pin the wire-side behavior).
-- Storing the operator-typed Steam ID in `:prefix_bans.authid`
-  on an IP-type ban (the `82e8c3d2` "canonicalise valid IDs on
-  IP-type bans to match pre-tighter behaviour" nit shape) → the
-  `:authid` column is the *steam id* of the banned player. On
-  an IP-type ban (`BanType::Ip = 1`) there is no steam id, by
-  definition; the canonical "no steam id" value is the schema's
-  `NOT NULL default ''` empty string. The `82e8c3d2` nit aimed
-  to preserve "pre-tightening behavior" for the case where the
-  operator typed a valid-looking SteamID into the form's
-  Steam ID box and then flipped the type radio to "IP-type" —
-  pre-tightening the unconditional `toSteam2($rawSteam)` would
-  have stored the canonicalised value in `:authid` AND the
-  unconditional run would have raised on `garbage` and 500'd
-  the page. The nit canonicalised the valid case (good
-  intention) but didn't suppress the storage path (the bug it
-  carried), AND failed to defend the invalid-input branch on
-  the IP-type arm (the 500 was still reachable via
-  `?type=1&steam=garbage`). The right shape is: hard-code
-  `$_POST['steam'] = ''` for `$banType === BanType::Ip` and
-  let the operator's form input remain visible only as
-  client-side echo (template `placeholder`, NOT a stale value).
-  Matches the `api_bans_add` write-side fix in the same PR
-  (`$steam = $banType === BanType::Ip ? '' : ...`). The
-  asymmetry pre-#1423-follow-up-#4 (page handler stored
-  canonicalised, JSON handler stored empty) was its own bug
-  class — third-party callers POSTing to the iframe-routed
-  page handler vs. the JSON dispatcher produced inconsistent
-  DB state for the same logical input. Regression guard:
-  `web/tests/api/BansTest.php::testAddIpTypeAlwaysWritesEmptyAuthid`
-  (valid Steam input + garbage + newline-bypass all write
-  empty `authid` on `type=1`).
+- Storing an UNVALIDATED operator-typed Steam ID in
+  `:prefix_bans.authid` on an IP-type ban → as of #1486 an IP-type
+  ban DOES keep a Steam ID-of-record when the operator fills both
+  fields (the schema has always had separate `ip` + `authid`
+  columns; enforcement stays IP-only because the SourceMod plugin
+  matches an IP ban on the `ip` column alone, so the stored authid
+  is inert plugin-side and exists only so the ban detail / banlist
+  can show which account the IP belonged to). What stays forbidden
+  is storing it WITHOUT the shape gate: the value MUST pass
+  `SteamID::isValidID()` (page handler) / `HANDLER_STRICT_REGEX`
+  (JSON handler) BEFORE `toSteam2()`, exactly like the Steam-type
+  branch. Skipping the gate re-opens two bug classes — (a) a junk
+  value (`?type=1&steam=garbage`) escapes `toSteam2()` as
+  `Exception('Invalid SteamID input!')` → 500 (the #1420 / #1423
+  follow-up #4 class), and (b) a malformed authid lands on disk and
+  the drawer / banlist later derive a synthetic `community_id`
+  (`STEAM_0:0:0`) off it (#1486's display bug). The right shape is
+  the validate-then-convert ladder: empty Steam ID → write `''`
+  (nothing recorded); non-empty → shape-gate → `toSteam2()` → store;
+  bad shape → `validation` envelope (JSON) / `$validationErrors['steam']`
+  bounce with raw input preserved (page handler). Both surfaces
+  (`api_bans_add` + `admin.edit.ban.php`) share the ladder so the
+  JSON dispatcher and the iframe-routed page handler can't diverge
+  on the same logical input. The pre-#1486 shape hard-cleared
+  `authid` for `type=1`, silently dropping a SteamID the operator
+  deliberately typed; the older `82e8c3d2` "canonicalise on IP-type"
+  nit stored a *canonicalised* value but failed to suppress the
+  raw-on-invalid path — both are superseded by the gated keep.
+  Regression guard:
+  `web/tests/api/BansTest.php::testAddIpTypeKeepsValidatedSteamOfRecord`
+  (valid Steam input kept alongside the IP, empty input writes
+  empty `authid`, garbage + newline-bypass rejected with a
+  `validation` envelope on the `steam` field before any row is
+  written) +
+  `web/tests/integration/SteamIDValidationOrderTest.php` (pins the
+  validate-before-convert order in `admin.edit.ban.php`).
 - Calling `SteamID::compare($a, $b)` (or any other
   `SteamID::*` method that funnels through `toSteam64()` /
   `resolveInputID()`) with operator-controlled input that
