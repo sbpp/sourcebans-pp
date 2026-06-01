@@ -353,22 +353,23 @@ public void VerifyBlock(int client)
 			MarkClientAsGagged(client);
 	}
 
-	char sClAuthYZEscaped[sizeof(g_sSteamIDs[]) * 2 + 1];
-	g_hDatabase.Escape(g_sSteamIDs[client][8], sClAuthYZEscaped, sizeof(sClAuthYZEscaped));
-
 	char Query[4096];
-	FormatEx(Query, sizeof(Query),
+	if (g_hDatabase.Format(Query, sizeof(Query),
 		"SELECT		(c.ends - UNIX_TIMESTAMP()) AS remaining, \
 					c.length, c.type, c.created, c.reason, a.user, \
 					IF (a.immunity>=g.immunity, a.immunity, IFNULL(g.immunity,0)) AS immunity, \
 					c.aid, c.sid, a.authid \
-		FROM		%s_comms	AS c \
-		LEFT JOIN	%s_admins	AS a  ON a.aid = c.aid \
-		LEFT JOIN	%s_srvgroups AS g  ON g.name = a.srv_group \
+		FROM		%!s_comms	AS c \
+		LEFT JOIN	%!s_admins	AS a  ON a.aid = c.aid \
+		LEFT JOIN	%!s_srvgroups AS g  ON g.name = a.srv_group \
 		WHERE		RemoveType IS NULL \
 						AND c.authid REGEXP '^STEAM_[0-9]:%s$' \
 						AND (length = '0' OR ends > UNIX_TIMESTAMP())",
-		DatabasePrefix, DatabasePrefix, DatabasePrefix, sClAuthYZEscaped);
+		DatabasePrefix, DatabasePrefix, DatabasePrefix, g_sSteamIDs[client][8]) >= sizeof(Query))
+	{
+		LogError("VerifyBlock query truncated for %L", client);
+		return;
+	}
 	#if defined LOG_QUERIES
 	LogToFile(logQuery, "VerifyBlock for: %s. QUERY: %s", g_sSteamIDs[client], Query);
 	#endif
@@ -1557,18 +1558,19 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 				newDataPack.WriteString(g_sName[target]);
 				newDataPack.WriteString(targetAuth);
 
-				char unbanReason[sizeof(reason) * 2 + 1];
-				db.Escape(reason, unbanReason, sizeof(unbanReason));
-
 				char query[2048];
-				Format(query, sizeof(query),
-					"UPDATE	%s_comms \
+				if (db.Format(query, sizeof(query),
+					"UPDATE	%!s_comms \
 					SET		RemovedBy = %d, \
 							RemoveType = 'U', \
 							RemovedOn = UNIX_TIMESTAMP(), \
 							ureason = '%s' \
 					WHERE	bid = %d",
-					DatabasePrefix, iAID, unbanReason, bid);
+					DatabasePrefix, iAID, reason, bid) >= sizeof(query))
+				{
+					LogError("Query_UnBlockSelect update query truncated");
+					continue;
+				}
 				#if defined LOG_QUERIES
 				LogToFile(logQuery, "Query_UnBlockSelect. QUERY: %s", query);
 				#endif
@@ -1713,12 +1715,6 @@ public void Query_ProcessQueue(Database db, DBResultSet results, const char[] er
 		if (!results.FetchRow())
 			continue;
 
-		char sAuthEscaped[sizeof(auth) * 2 + 1];
-		char banName[MAX_NAME_LENGTH * 2 + 1];
-		char banReason[sizeof(reason) * 2 + 1];
-		char sAdmAuthEscaped[sizeof(adminAuth) * 2 + 1];
-		char sAdmAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
-
 		// if we get to here then there are rows in the queue pending processing
 		//steam_id TEXT, time INTEGER, start_time INTEGER, reason TEXT, name TEXT, admin_id TEXT, admin_ip TEXT, type INTEGER
 		int id = results.FetchInt(0);
@@ -1731,23 +1727,20 @@ public void Query_ProcessQueue(Database db, DBResultSet results, const char[] er
 		results.FetchString(7, adminIp, sizeof(adminIp));
 		int type = results.FetchInt(8);
 
-		if (DB_Connect()) {
-			db.Escape(auth, sAuthEscaped, sizeof(sAuthEscaped));
-			db.Escape(name, banName, sizeof(banName));
-			db.Escape(reason, banReason, sizeof(banReason));
-			db.Escape(adminAuth, sAdmAuthEscaped, sizeof(sAdmAuthEscaped));
-			db.Escape(adminAuth[8], sAdmAuthYZEscaped, sizeof(sAdmAuthYZEscaped));
-		}
-		else
+		if (!DB_Connect())
 			continue;
 		// all blocks should be entered into db!
 
-		FormatEx(query, sizeof(query),
-			"INSERT INTO	 %s_comms (authid, name, created, ends, length, reason, aid, adminIp, sid, type) \
+		if (db.Format(query, sizeof(query),
+			"INSERT INTO	 %!s_comms (authid, name, created, ends, length, reason, aid, adminIp, sid, type) \
 				VALUES		 ('%s', '%s', %d, %d, %d, '%s', \
-								IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '0'), \
+								IFNULL((SELECT aid FROM %!s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '0'), \
 								'%s', %d, %d)",
-			DatabasePrefix, sAuthEscaped, banName, startTime, (startTime + (time * 60)), (time * 60), banReason, DatabasePrefix, sAdmAuthEscaped, sAdmAuthYZEscaped, adminIp, serverID, type);
+			DatabasePrefix, auth, name, startTime, (startTime + (time * 60)), (time * 60), reason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID, type) >= sizeof(query))
+		{
+			LogError("Query_ProcessQueue insert query truncated");
+			continue;
+		}
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "Query_ProcessQueue. QUERY: %s", query);
 		#endif
@@ -1761,10 +1754,14 @@ public void Query_AddBlockFromQueue(Database db, DBResultSet results, const char
 	if (error[0] == '\0')
 	{
 		// The insert was successful so delete the record from the queue
-		FormatEx(query, sizeof(query),
+		if (SQLiteDB.Format(query, sizeof(query),
 			"DELETE FROM queue2 \
 			WHERE		id = %d",
-			data);
+			data) >= sizeof(query))
+		{
+			LogError("Query_AddBlockFromQueue delete query truncated");
+			return;
+		}
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "Query_AddBlockFromQueue. QUERY: %s", query);
 		#endif
@@ -2593,43 +2590,37 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 			}
 		}
 
-		// Pack everything into a data pack so we can retain it
-		DataPack dataPack = new DataPack();
-		dataPack.WriteCell(GetClientUserId2(client));
-		dataPack.WriteCell(g_iUserIDs[target]);
-		dataPack.WriteCell(type);
-		dataPack.WriteString(adminAuth);
-		dataPack.WriteString(targetAuth);
-		dataPack.WriteString(reason);
-
 		// Check current player status. If player has temporary punishment - don't get info from DB
 		if (DB_Connect())
 		{
-			char sAdminAuthEscaped[sizeof(adminAuth) * 2 + 1];
-			char sAdminAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
-			char sTargetAuthEscaped[sizeof(targetAuth) * 2 + 1];
-			char sTargetAuthYZEscaped[sizeof(targetAuth) * 2 + 1];
-
-			g_hDatabase.Escape(adminAuth, sAdminAuthEscaped, sizeof(sAdminAuthEscaped));
-			g_hDatabase.Escape(adminAuth[8], sAdminAuthYZEscaped, sizeof(sAdminAuthYZEscaped));
-			g_hDatabase.Escape(targetAuth, sTargetAuthEscaped, sizeof(sTargetAuthEscaped));
-			g_hDatabase.Escape(targetAuth[8], sTargetAuthYZEscaped, sizeof(sTargetAuthYZEscaped));
-
 			char query[4096];
-			Format(query, sizeof(query),
+			if (g_hDatabase.Format(query, sizeof(query),
 				"SELECT		c.bid, \
-							IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '0') as iaid, \
+							IFNULL((SELECT aid FROM %!s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '0') as iaid, \
 							c.aid, \
 							IF (a.immunity>=g.immunity, a.immunity, IFNULL(g.immunity,0)) as immunity, \
 							c.type \
-				FROM		%s_comms	 AS c \
-				LEFT JOIN	%s_admins	AS a ON a.aid = c.aid \
-				LEFT JOIN	%s_srvgroups AS g ON g.name = a.srv_group \
+				FROM		%!s_comms	 AS c \
+				LEFT JOIN	%!s_admins	AS a ON a.aid = c.aid \
+				LEFT JOIN	%!s_srvgroups AS g ON g.name = a.srv_group \
 				WHERE		RemoveType IS NULL \
 								AND (c.authid = '%s' OR c.authid REGEXP '^STEAM_[0-9]:%s$') \
 								AND (length = '0' OR ends > UNIX_TIMESTAMP()) \
-								AND %s",
-				DatabasePrefix, sAdminAuthEscaped, sAdminAuthYZEscaped, DatabasePrefix, DatabasePrefix, DatabasePrefix, sTargetAuthEscaped, sTargetAuthYZEscaped, typeWHERE);
+								AND %!s",
+				DatabasePrefix, adminAuth, adminAuth[8], DatabasePrefix, DatabasePrefix, DatabasePrefix, targetAuth, targetAuth[8], typeWHERE) >= sizeof(query))
+			{
+				LogError("ProcessUnBlock select query truncated");
+				return;
+			}
+
+			// Pack everything into a data pack so we can retain it
+			DataPack dataPack = new DataPack();
+			dataPack.WriteCell(GetClientUserId2(client));
+			dataPack.WriteCell(g_iUserIDs[target]);
+			dataPack.WriteCell(type);
+			dataPack.WriteString(adminAuth);
+			dataPack.WriteString(targetAuth);
+			dataPack.WriteString(reason);
 
 			#if defined LOG_QUERIES
 			LogToFile(logQuery, "ProcessUnBlock. QUERY: %s", query);
@@ -2639,6 +2630,14 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 		}
 		else
 		{
+			DataPack dataPack = new DataPack();
+			dataPack.WriteCell(GetClientUserId2(client));
+			dataPack.WriteCell(g_iUserIDs[target]);
+			dataPack.WriteCell(type);
+			dataPack.WriteString(adminAuth);
+			dataPack.WriteString(targetAuth);
+			dataPack.WriteString(reason);
+
 			#if defined DEBUG
 			PrintToServer("Calling TempUnBlock from ProcessUnBlock");
 			#endif
@@ -2754,23 +2753,17 @@ stock void InsertTempBlock(int length, int type, const char[] name, const char[]
 {
 	LogMessage("Saving punishment for %s into queue", auth);
 
-	char banName[MAX_NAME_LENGTH * 2 + 1];
-	char banReason[256 * 2 + 1];
-	char sAuthEscaped[MAX_AUTHID_LENGTH * 2 + 1];
-	char sAdminAuthEscaped[MAX_AUTHID_LENGTH * 2 + 1];
 	char sQuery[4096], sQueryVal[2048];
 	char sQueryMute[2048], sQueryGag[2048];
 
-	// escaping everything
-	SQLiteDB.Escape(name, banName, sizeof(banName));
-	SQLiteDB.Escape(reason, banReason, sizeof(banReason));
-	SQLiteDB.Escape(auth, sAuthEscaped, sizeof(sAuthEscaped));
-	SQLiteDB.Escape(adminAuth, sAdminAuthEscaped, sizeof(sAdminAuthEscaped));
-
 	// steam_id time start_time reason name admin_id admin_ip
-	FormatEx(sQueryVal, sizeof(sQueryVal),
+	if (SQLiteDB.Format(sQueryVal, sizeof(sQueryVal),
 		"'%s', %d, %d, '%s', '%s', '%s', '%s'",
-		sAuthEscaped, length, GetTime(), banReason, banName, sAdminAuthEscaped, adminIp);
+		auth, length, GetTime(), reason, name, adminAuth, adminIp) >= sizeof(sQueryVal))
+	{
+		LogError("InsertTempBlock values query truncated");
+		return;
+	}
 
 	switch (type)
 	{
@@ -2783,9 +2776,13 @@ stock void InsertTempBlock(int length, int type, const char[] name, const char[]
 		}
 	}
 
-	FormatEx(sQuery, sizeof(sQuery),
+	if (SQLiteDB.Format(sQuery, sizeof(sQuery),
 		"INSERT INTO queue2 (steam_id, time, start_time, reason, name, admin_id, admin_ip, type) VALUES %s%s%s",
-		sQueryMute, type == TYPE_SILENCE ? ", " : "", sQueryGag);
+		sQueryMute, type == TYPE_SILENCE ? ", " : "", sQueryGag) >= sizeof(sQuery))
+	{
+		LogError("InsertTempBlock insert query truncated");
+		return;
+	}
 
 	#if defined LOG_QUERIES
 	LogToFile(logQuery, "InsertTempBlock. QUERY: %s", sQuery);
@@ -3158,41 +3155,41 @@ stock void SavePunishment(int admin = 0, int target, int type, int length = -1, 
 	if (DB_Connect())
 	{
 		// Accepts length in minutes, writes to db in seconds! In all over places in plugin - length is in minutes.
-		char banName[MAX_NAME_LENGTH * 2 + 1];
-		char banReason[256 * 2 + 1];
-		char sAuthidEscaped[MAX_AUTHID_LENGTH * 2 + 1];
-		char sAdminAuthIdEscaped[MAX_AUTHID_LENGTH * 2 + 1];
-		char sAdminAuthIdYZEscaped[MAX_AUTHID_LENGTH * 2 + 1];
 		char sQuery[4096], sQueryAdm[512], sQueryVal[1024];
 		char sQueryMute[1024], sQueryGag[1024];
 		sQueryMute[0] = 0;
 		sQueryGag[0]  = 0;
 
-		// escaping everything
-		g_hDatabase.Escape(sName, banName, sizeof(banName));
-		g_hDatabase.Escape(reason, banReason, sizeof(banReason));
-		g_hDatabase.Escape(targetAuth, sAuthidEscaped, sizeof(sAuthidEscaped));
-		g_hDatabase.Escape(adminAuth, sAdminAuthIdEscaped, sizeof(sAdminAuthIdEscaped));
-		g_hDatabase.Escape(adminAuth[8], sAdminAuthIdYZEscaped, sizeof(sAdminAuthIdYZEscaped));
-
 		// bid	authid	name	created ends lenght reason aid adminip	sid	removedBy removedType removedon type ureason
-		FormatEx(sQueryAdm, sizeof(sQueryAdm),
-			"IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), 0)",
-			DatabasePrefix, sAdminAuthIdEscaped, sAdminAuthIdYZEscaped);
+		if (g_hDatabase.Format(sQueryAdm, sizeof(sQueryAdm),
+			"IFNULL((SELECT aid FROM %!s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), 0)",
+			DatabasePrefix, adminAuth, adminAuth[8]) >= sizeof(sQueryAdm))
+		{
+			LogError("SavePunishment admin subquery truncated");
+			return;
+		}
 
 		if (length >= 0)
 		{
 			// authid name, created, ends, length, reason, aid, adminIp, sid
-			FormatEx(sQueryVal, sizeof(sQueryVal),
-				"'%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', %s, '%s', %d",
-				sAuthidEscaped, banName, length * 60, length * 60, banReason, sQueryAdm, adminIp, serverID);
+			if (g_hDatabase.Format(sQueryVal, sizeof(sQueryVal),
+				"'%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', %!s, '%s', %d",
+				targetAuth, sName, length * 60, length * 60, reason, sQueryAdm, adminIp, serverID) >= sizeof(sQueryVal))
+			{
+				LogError("SavePunishment values query truncated");
+				return;
+			}
 		}
 		else // Session mutes
 		{
 			// authid name, created, ends, length, reason, aid, adminIp, sid
-			FormatEx(sQueryVal, sizeof(sQueryVal),
-				"'%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', %s, '%s', %d",
-				sAuthidEscaped, banName, SESSION_MUTE_FALLBACK, -1, banReason, sQueryAdm, adminIp, serverID);
+			if (g_hDatabase.Format(sQueryVal, sizeof(sQueryVal),
+				"'%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', %!s, '%s', %d",
+				targetAuth, sName, SESSION_MUTE_FALLBACK, -1, reason, sQueryAdm, adminIp, serverID) >= sizeof(sQueryVal))
+			{
+				LogError("SavePunishment values query truncated");
+				return;
+			}
 		}
 
 		switch (type)
@@ -3209,9 +3206,13 @@ stock void SavePunishment(int admin = 0, int target, int type, int length = -1, 
 		}
 
 		// litle magic - one query for all actions (mute, gag or silence)
-		FormatEx(sQuery, sizeof(sQuery),
-			"INSERT INTO %s_comms (authid, name, created, ends, length, reason, aid, adminIp, sid, type) VALUES %s%s%s",
-			DatabasePrefix, sQueryMute, type == TYPE_SILENCE ? ", " : "", sQueryGag);
+		if (g_hDatabase.Format(sQuery, sizeof(sQuery),
+			"INSERT INTO %!s_comms (authid, name, created, ends, length, reason, aid, adminIp, sid, type) VALUES %!s%!s%!s",
+			DatabasePrefix, sQueryMute, type == TYPE_SILENCE ? ", " : "", sQueryGag) >= sizeof(sQuery))
+		{
+			LogError("SavePunishment insert query truncated");
+			return;
+		}
 
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "SavePunishment. QUERY: %s", sQuery);
