@@ -2462,9 +2462,10 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 
 	GetNativeString(3, sReason, iReasonLen);
 
-	char[] sQuery = new char[768 + (iReasonLen * 2 + 1)];
-	if (DB.Format(sQuery, sizeof(sQuery), "INSERT INTO %!s_submissions (`submitted`, `modid`, `SteamId`, `name`, `email`, `reason`, `ip`, `subname`, `sip`, `archiv`, `server`)"
-	... "VALUES ('%d', 0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 0, '%d')", DatabasePrefix, iTime, g_sSteamIDs[iTarget], g_sName[iTarget], g_sSteamIDs[iReporter], sReason, g_sPlayerIP[iReporter], g_sName[iReporter], g_sPlayerIP[iTarget], (serverID != -1) ? serverID : 0) >= sizeof(sQuery))
+	int iQueryLen = 768 + (iReasonLen * 2 + 1);
+	char[] sQuery = new char[iQueryLen];
+	if (DB.Format(sQuery, iQueryLen, "INSERT INTO %!s_submissions (`submitted`, `modid`, `SteamId`, `name`, `email`, `reason`, `ip`, `subname`, `sip`, `archiv`, `server`)"
+	... "VALUES ('%d', 0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 0, '%d')", DatabasePrefix, iTime, g_sSteamIDs[iTarget], g_sName[iTarget], g_sSteamIDs[iReporter], sReason, g_sPlayerIP[iReporter], g_sName[iReporter], g_sPlayerIP[iTarget], (serverID != -1) ? serverID : 0) >= iQueryLen)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Failed to build report query (buffer too small)");
 		return 0;
