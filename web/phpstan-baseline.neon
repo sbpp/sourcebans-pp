@@ -515,9 +515,3 @@ parameters:
 			identifier: variable.undefined
 			count: 4
 			path: updater/data/705.php
-
-		-
-			message: '#^Variable \$this might not be defined\.$#'
-			identifier: variable.undefined
-			count: 4
-			path: updater/data/801.php
