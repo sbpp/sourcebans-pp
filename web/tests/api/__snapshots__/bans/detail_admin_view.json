@@ -43,6 +43,7 @@
                 "added": "<*>",
                 "added_human": "<*>",
                 "author": "admin",
+                "author_hidden": false,
                 "text": "note for the drawer",
                 "edited_at": null,
                 "edited_by": null

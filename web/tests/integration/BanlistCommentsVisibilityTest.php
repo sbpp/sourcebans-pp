@@ -124,6 +124,15 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
         // survives, the rest is htmlspecialchars-escaped per text
         // segment. The seeded body is one line so no `<br/>` is
         // emitted; the literal text reaches the assertion surface.
+        // Control for #1500: an admin viewer resolves hideadminname to
+        // false (`getBool && !is_admin()`), so the comment author renders
+        // un-hidden as `<strong>admin</strong>`. The anonymous + #1500
+        // tests assert this exact wrapper is suppressed.
+        $this->assertStringContainsString(
+            '<strong>admin</strong>',
+            $html,
+            'admin viewer sees the un-hidden comment author username (control for #1500)',
+        );
         $this->assertStringContainsString(
             'first comment from worker C',
             $html,
@@ -235,6 +244,165 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
             $html,
             'comment text must reach anonymous callers when the flag is on (this is the public-comments use case)',
         );
+        // banlist.hideadminname defaults to '1' (data.sql), so this
+        // anonymous render already hides the author — the comment text
+        // reaches the page but the admin username does NOT. (The
+        // dedicated #1500 test below pins that suppression explicitly;
+        // the admin-viewer test pins the un-hidden control.)
+        $this->assertStringNotContainsString(
+            '<strong>admin</strong>',
+            $html,
+            'comment author username must not leak to anonymous callers (hideadminname defaults on) (#1500)',
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // Banlist — #1500: hideadminname suppresses the comment author too
+    // ---------------------------------------------------------------
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistHidesCommentAuthorWhenHideAdminName(): void
+    {
+        // #1500: with public comments ON, the inline disclosure must
+        // still suppress the comment author (an admin username) for
+        // anonymous callers when banlist.hideadminname is on — same gate
+        // the unban-meta inline already honours. Pre-fix the author
+        // leaked even though the focal ban's admin name was suppressed.
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('config.enablepubliccomments', '1'),
+                ('banlist.hideadminname', '1')",
+            DB_PREFIX,
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $_GET = ['p' => 'banlist'];
+        $html = $this->renderBanlistPage();
+
+        // The disclosure + comment body still render — hideadminname
+        // gates the NAME, not the comment.
+        $this->assertStringContainsString('data-testid="ban-comments-inline"', $html);
+        $this->assertStringContainsString('first comment from worker C', $html);
+        // The author username must NOT leak inline...
+        $this->assertStringNotContainsString(
+            '<strong>admin</strong>',
+            $html,
+            'comment author (admin username) must not leak inline when hideadminname is on (#1500)',
+        );
+        // ...and the gated placeholder renders in its place.
+        $this->assertStringContainsString(
+            '<i class="text-faint">Hidden</i>',
+            $html,
+            'the gated comment author must render the Hidden placeholder (#1500)',
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // Banlist — #1500 (M2): the ?comment=N "Other comments" surface.
+    // The comment-edit view (page.banlist.php $cotherdata block) is
+    // reachable by ANY caller — there is no admin gate; $commentCanedit
+    // only controls whether the textarea + submit render. Pre-fix it
+    // listed every comment on the ban with the author / editor admin
+    // username inline regardless of banlist.hideadminname, so it was a
+    // second leak surface distinct from the inline disclosure above.
+    // ---------------------------------------------------------------
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistCommentViewHidesAuthorAndEditorForPublicWhenHideAdminName(): void
+    {
+        // Give both seeded comments an editor so the "last edit by"
+        // branch is exercised (the editor name is a second admin
+        // username that must be suppressed too).
+        Fixture::rawPdo()->prepare(sprintf(
+            'UPDATE `%s_comments` SET editaid = ?, edittime = ? WHERE bid = ? AND type = ?',
+            DB_PREFIX,
+        ))->execute([Fixture::adminAid(), time() - 300, $this->banWithCommentsBid, 'B']);
+
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('config.enablepubliccomments', '1'),
+                ('banlist.hideadminname', '1')",
+            DB_PREFIX,
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        // Anonymous caller hits the comment-edit view in "Add" mode (no
+        // cid), which lists every comment on the ban as "Other comments".
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => (string) $this->banWithCommentsBid,
+            'ctype'   => 'B',
+        ];
+        $html = $this->renderBanlistPage();
+
+        // The "Other comments" surface + bodies render...
+        $this->assertStringContainsString(
+            'Other comments',
+            $html,
+            'the comment-edit view must list existing comments under "Other comments"',
+        );
+        $this->assertStringContainsString('first comment from worker C', $html);
+        // ...the "last edit by" line renders (edittime present, gated on
+        // edittime not editname so the indicator survives the #1500 null)...
+        $this->assertStringContainsString(
+            'last edit',
+            $html,
+            'the edit indicator must survive — it gates on edittime, which #1500 does NOT null',
+        );
+        // ...but neither the author nor the editor admin username leaks...
+        $this->assertStringNotContainsString(
+            '<strong>admin</strong>',
+            $html,
+            'comment author (admin username) must not leak in the ?comment=N view (#1500 M2)',
+        );
+        $this->assertStringNotContainsString(
+            'by admin',
+            $html,
+            'comment editor (admin username) must not leak in the "last edit by" line (#1500 M2)',
+        );
+        // ...and the Hidden placeholder stands in for author AND editor
+        // (two comments × {author + editor} = at least 2 occurrences).
+        $this->assertGreaterThanOrEqual(
+            2,
+            substr_count($html, '<i class="text-faint">Hidden</i>'),
+            'both the suppressed author and editor must render the Hidden placeholder (#1500 M2)',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistCommentViewShowsAuthorAndEditorForAdmin(): void
+    {
+        // Control for the M2 test above: an admin viewer resolves
+        // hideadminname=false, so the ?comment=N view shows both the
+        // author and editor admin usernames un-hidden.
+        Fixture::rawPdo()->prepare(sprintf(
+            'UPDATE `%s_comments` SET editaid = ?, edittime = ? WHERE bid = ? AND type = ?',
+            DB_PREFIX,
+        ))->execute([Fixture::adminAid(), time() - 300, $this->banWithCommentsBid, 'B']);
+        $this->setPublicCommentsFlag(true);
+        $this->loginAsAdmin();
+
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => (string) $this->banWithCommentsBid,
+            'ctype'   => 'B',
+        ];
+        $html = $this->renderBanlistPage();
+
+        $this->assertStringContainsString('Other comments', $html);
+        $this->assertStringContainsString(
+            '<strong>admin</strong>',
+            $html,
+            'admin viewer sees the un-hidden comment author in the ?comment=N view (control for #1500 M2)',
+        );
+        $this->assertStringNotContainsString(
+            '<i class="text-faint">Hidden</i>',
+            $html,
+            'no Hidden placeholder for admin viewers',
+        );
     }
 
     // ---------------------------------------------------------------
@@ -271,6 +439,12 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
             $html,
             'seeded mute-comment text must reach the rendered HTML inside the disclosure body',
         );
+        // Control for #1500: admin viewer sees the un-hidden author.
+        $this->assertStringContainsString(
+            '<strong>admin</strong>',
+            $html,
+            'admin viewer sees the un-hidden comm-block comment author username (control for #1500)',
+        );
     }
 
     #[RunInSeparateProcess]
@@ -291,6 +465,42 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
             'mute comment for worker C',
             $html,
             'no mute-comment text may leak to anonymous callers when the flag is off',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCommslistHidesCommentAuthorWhenHideAdminName(): void
+    {
+        // #1500 sister-fix: the commslist inline disclosure has no
+        // drawer fallback, so a leaked comm-block comment author is the
+        // ONLY on-page surface — must honour banlist.hideadminname too.
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('config.enablepubliccomments', '1'),
+                ('banlist.hideadminname', '1')",
+            DB_PREFIX,
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $_GET = ['p' => 'commslist'];
+        $html = $this->renderCommslistPage();
+
+        // Disclosure + comment body still render — the gate suppresses
+        // the NAME, not the comment.
+        $this->assertStringContainsString('data-testid="comm-comments-inline"', $html);
+        $this->assertStringContainsString('mute comment for worker C', $html);
+        // The author username must NOT leak inline...
+        $this->assertStringNotContainsString(
+            '<strong>admin</strong>',
+            $html,
+            'comm-block comment author (admin username) must not leak inline when hideadminname is on (#1500)',
+        );
+        // ...and the gated placeholder renders in its place.
+        $this->assertStringContainsString(
+            '<i class="text-faint">Hidden</i>',
+            $html,
+            'the gated comm-block comment author must render the Hidden placeholder (#1500)',
         );
     }
 

@@ -788,7 +788,7 @@
             + comments.map((c) =>
                 '<li style="border:1px solid var(--border);border-radius:var(--radius-md);padding:0.625rem 0.75rem;background:var(--bg-surface)">'
                 + '<div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">'
-                +   '<span class="font-medium">' + escapeHtml(c.author || 'unknown') + '</span>'
+                +   '<span class="font-medium">' + escapeHtml(c.author_hidden ? 'Hidden' : (c.author || 'unknown')) + '</span>'
                 +   '<span>' + escapeHtml(c.added_human || '') + '</span>'
                 + '</div>'
                 + '<div class="text-sm" style="white-space:pre-wrap">' + escapeHtml(c.text || '') + '</div>'

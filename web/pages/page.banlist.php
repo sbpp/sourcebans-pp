@@ -1005,6 +1005,11 @@ foreach ($res as $row) {
     //-----------------------------------
     if (Config::getBool('config.enablepubliccomments') || $userbank->is_admin()) {
         $view_comments = true;
+        // #1500: comment author/editor are admin usernames. Null them at the
+        // data layer for public viewers when banlist.hideadminname is on, so a
+        // third-party theme that renders the name directly can't re-leak it
+        // (parity with the focal $data['admin'] = false gate above).
+        $commentsHideAdmin = Config::getBool('banlist.hideadminname') && !$userbank->is_admin();
         $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
 											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
 											(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
@@ -1043,7 +1048,7 @@ foreach ($res as $row) {
                     $cdata['delcomlink']  = "";
                 }
 
-                $cdata['comname']    = $crow['comname'];
+                $cdata['comname']    = $commentsHideAdmin ? '' : $crow['comname'];
                 $cdata['added']      = Config::time($crow['added']);
                 $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
                 $commentText         = encodePreservingBr($commentText);
@@ -1053,7 +1058,7 @@ foreach ($res as $row) {
 
                 if (!empty($crow['edittime'])) {
                     $cdata['edittime'] = Config::time($crow['edittime']);
-                    $cdata['editname'] = $crow['editname'];
+                    $cdata['editname'] = $commentsHideAdmin ? '' : $crow['editname'];
                 } else {
                     $cdata['edittime'] = "";
                     $cdata['editname'] = "";
@@ -1281,10 +1286,15 @@ if (isset($_GET["comment"])) {
         $_GET["comment"],
     ]);
 
+    // #1500: same gate as the per-ban comment thread above — null admin
+    // usernames for public viewers so this comment-edit surface (reachable
+    // by anyone via ?comment=N) doesn't leak them regardless of theme.
+    $commentsHideAdmin = Config::getBool('banlist.hideadminname') && !$userbank->is_admin();
+
     $ocomments = [];
     foreach ($cotherdata as $cdrow) {
         $coment               = [];
-        $coment['comname']    = $cdrow['comname'];
+        $coment['comname']    = $commentsHideAdmin ? '' : $cdrow['comname'];
         $coment['added']      = Config::time($cdrow['added']);
         $commentTextRow       = html_entity_decode($cdrow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $commentTextRow       = encodePreservingBr($commentTextRow);
@@ -1294,7 +1304,7 @@ if (isset($_GET["comment"])) {
 
         if ($cdrow['editname'] != "") {
             $coment['edittime'] = Config::time($cdrow['edittime']);
-            $coment['editname'] = $cdrow['editname'];
+            $coment['editname'] = $commentsHideAdmin ? '' : $cdrow['editname'];
         } else {
             $coment['editname'] = "";
             $coment['edittime'] = "";

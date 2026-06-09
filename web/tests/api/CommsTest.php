@@ -587,6 +587,57 @@ final class CommsTest extends ApiTestCase
         $this->assertSame('Gag', $env['data']['block']['type_label']);
     }
 
+    public function testDetailHidesCommentAuthorForPublicWhenHideAdminName(): void
+    {
+        // #1500: with public comments ENABLED, the comment author/editor
+        // (admin usernames) must still be suppressed for public callers
+        // under banlist.hideadminname — same as the focal admin.name and
+        // removed_by fields. Pre-fix the handler leaked them: the
+        // testDetailPublicViewHidesAdminFields case above turns public
+        // comments OFF, so it never exercised this combination.
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('banlist.hideadminname', '1'),
+                ('config.enablepubliccomments', '1')",
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $cid = $this->seedComm('STEAM_0:0:1500', 'comment-author-leak');
+        // Author AND editor set to the seeded admin so both subqueries
+        // resolve to a real username (the value that must NOT leak).
+        Fixture::rawPdo()->prepare(sprintf(
+            "INSERT INTO `%s_comments` (`bid`, `type`, `aid`, `editaid`, `commenttxt`, `added`, `edittime`)
+             VALUES (?, 'C', ?, ?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP())",
+            DB_PREFIX
+        ))->execute([$cid, Fixture::adminAid(), Fixture::adminAid(), 'leaky comment']);
+
+        // Public caller (not logged in).
+        $env = $this->api('comms.detail', ['cid' => $cid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertTrue($env['data']['comments_visible'], 'public comments are enabled');
+        $this->assertCount(1, $env['data']['comments']);
+        $this->assertSame('leaky comment', $env['data']['comments'][0]['text']);
+        $this->assertNull($env['data']['comments'][0]['author'],
+            'comment author must be hidden for public + hideadminname (#1500)');
+        $this->assertNull($env['data']['comments'][0]['edited_by'],
+            'comment editor must be hidden for public + hideadminname (#1500)');
+        $this->assertTrue($env['data']['comments'][0]['author_hidden'],
+            'author_hidden sentinel must be true when a real name was suppressed (#1500 m1: lets the drawer render "Hidden" vs "unknown")');
+        $this->assertNull($env['data']['admin']['name'], 'focal admin name is hidden too');
+
+        // Admins still see the author + editor; author_hidden is false.
+        $this->loginAsAdmin();
+        $adminEnv = $this->api('comms.detail', ['cid' => $cid]);
+        $this->assertTrue($adminEnv['ok'], json_encode($adminEnv));
+        $this->assertNotNull($adminEnv['data']['comments'][0]['author'],
+            'admins still see the comment author');
+        $this->assertNotNull($adminEnv['data']['comments'][0]['edited_by'],
+            'admins still see the comment editor');
+        $this->assertFalse($adminEnv['data']['comments'][0]['author_hidden'],
+            'author_hidden must be false for admin viewers (#1500 m1)');
+    }
+
     public function testDetailReportsUnmutedForLiftedBlock(): void
     {
         // After comms.unblock the block's state must be 'unmuted' (the

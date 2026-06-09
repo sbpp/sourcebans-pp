@@ -542,14 +542,22 @@ function api_comms_detail(array $params): array
         )->resultset([$cid]);
         foreach ($commentRows as $crow) {
             $editTime = $crow['edittime'] !== null ? (int)$crow['edittime'] : null;
+            // #1500: comment author/editor are admin usernames; suppress them
+            // for public callers when `banlist.hideadminname` is on, same as
+            // the focal admin.name and removed_by fields above. `author_hidden`
+            // lets the drawer render "Hidden" (policy) distinctly from "unknown"
+            // (deleted admin -> author already null), matching the server-side
+            // inline disclosure's three-way label.
+            $authorHidden = $hideAdmin && $crow['author'] !== null;
             $comments[] = [
                 'cid'        => (int)$crow['cid'],
                 'added'      => (int)$crow['added'],
                 'added_human'=> Config::time((int)$crow['added']),
-                'author'     => $crow['author'] !== null ? (string)$crow['author'] : null,
+                'author'     => ($authorHidden || $crow['author'] === null) ? null : (string)$crow['author'],
+                'author_hidden' => $authorHidden,
                 'text'       => (string)$crow['commenttxt'],
                 'edited_at'  => $editTime,
-                'edited_by'  => $crow['editor'] !== null ? (string)$crow['editor'] : null,
+                'edited_by'  => (!$hideAdmin && $crow['editor'] !== null) ? (string)$crow['editor'] : null,
             ];
         }
     }

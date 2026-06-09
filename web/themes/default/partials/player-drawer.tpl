@@ -34,6 +34,7 @@
       - $detail.server.name                  string|null
       - $detail.comments_visible             bool
       - $detail.comments[].author            string|null
+      - $detail.comments[].author_hidden     bool   (#1500: name suppressed by banlist.hideadminname)
       - $detail.comments[].added_human       string
       - $detail.comments[].text              string
 
@@ -123,7 +124,7 @@
                 {foreach $detail.comments as $c}
                     <li style="border:1px solid var(--border);border-radius:var(--radius-md);padding:0.625rem 0.75rem;background:var(--bg-surface)">
                         <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">
-                            <span class="font-medium">{$c.author|default:'unknown'}</span>
+                            <span class="font-medium">{if $c.author_hidden}Hidden{else}{$c.author|default:'unknown'}{/if}</span>
                             <span>{$c.added_human}</span>
                         </div>
                         <div class="text-sm" style="white-space:pre-wrap">{$c.text}</div>

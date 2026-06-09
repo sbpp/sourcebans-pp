@@ -45,13 +45,15 @@
         {if $smarty.foreach.othercomments.first}<h3 style="font-size:var(--fs-base);font-weight:600;margin:0 0 0.5rem">Other comments</h3>{/if}
         <div class="mt-4" style="border-top:1px solid var(--border);padding-top:0.75rem">
           <div class="flex items-center justify-between">
-            <strong>{$com.comname|escape}</strong>
+            {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the inline disclosure block below). *}
+            {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.comname)}<strong>{$com.comname|escape}</strong>{else}<i class="text-faint">deleted admin</i>{/if}
             <span class="text-xs text-muted">{$com.added}</span>
           </div>
           {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.banlist.php $cotherdata loop *}
           <div class="text-sm mt-2">{$com.commenttxt nofilter}</div>
-          {if $com.editname != ''}
-          <div class="text-xs text-faint mt-2">last edit {$com.edittime} by {$com.editname|escape}</div>
+          {* gate on edittime not editname: #1500 nulls editname for hidden viewers, edittime survives so the "last edit" indicator still shows. *}
+          {if !empty($com.edittime)}
+          <div class="text-xs text-faint mt-2">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
           {/if}
         </div>
       {/foreach}
@@ -360,7 +362,10 @@
                 {foreach from=$ban.commentdata item=com}
                 <li class="ban-comments-inline__item" data-testid="ban-comment-item">
                   <div class="ban-comments-inline__meta">
-                    {if !empty($com.comname)}
+                    {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the unban-meta gate below). *}
+                    {if $hideadminname}
+                      <i class="text-faint">Hidden</i>
+                    {elseif !empty($com.comname)}
                       <strong>{$com.comname|escape}</strong>
                     {else}
                       <i class="text-faint">deleted admin</i>
@@ -371,7 +376,7 @@
                   {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.banlist.php $commentres loop. Same provenance + safety as the existing comment-edit-mode block at the top of this template. *}
                   <div class="ban-comments-inline__text" data-testid="ban-comment-text">{$com.commenttxt nofilter}</div>
                   {if !empty($com.edittime)}
-                  <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
+                  <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
                   {/if}
                 </li>
                 {/foreach}
