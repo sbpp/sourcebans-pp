@@ -2399,6 +2399,12 @@ public int Native_SBPP_BanPlayerBySteamId(Handle plugin, int numParams)
 	GetNativeString(3, name, sizeof(name));
 	GetNativeString(5, reason, sizeof(reason));
 
+	if (strncmp(steamId, "STEAM_", 6, false) != 0)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "SBPP_BanPlayerBySteamId: steamId must be in SteamID2 format (STEAM_X:Y:Z), got: %s", steamId);
+		return 0;
+	}
+
 	if (reason[0] == '\0')
 		strcopy(reason, sizeof(reason), "Banned by SourceBans");
 
