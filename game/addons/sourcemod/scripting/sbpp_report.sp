@@ -67,7 +67,7 @@ public Action CmdReport(int iClient, int iArgs)
 
 	char sName[MAX_NAME_LENGTH], sIndex[4];
 
-	for (int i = 0; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsValidClient(i))
 			continue;

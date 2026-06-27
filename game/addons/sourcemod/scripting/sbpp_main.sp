@@ -1257,8 +1257,6 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 	DB.Escape(reason, banReason, sizeof(banReason));
 	DB.Escape(targetName, sTEscapedName, sizeof(sTEscapedName));
 
-	LogMessage("******************************Tagetauth: %s", targetAuth);
-
 	if (results == null)
 	{
 		LogToFile(logFile, "Ban IP Select Query Failed: %s", error);
@@ -1327,7 +1325,7 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 		{
 			char length[32];
 			if(minutes == 0)
-				FormatEx(length, sizeof(length), "permament");
+				FormatEx(length, sizeof(length), "permanent");
 			else
 				FormatEx(length, sizeof(length), "%d %s", minutes, minutes == 1 ? "minute" : "minutes");
 
@@ -1609,7 +1607,7 @@ public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char
 	char auth[MAX_AUTHID_LENGTH];
 
 	dataPack.ReadString(auth, sizeof(auth));
-	if (results == null)
+	if (results != null)
 	{
 		// The insert was successful so delete the record from the queue
 		FormatEx(buffer, sizeof(buffer), "DELETE FROM queue WHERE steam_id = '%s'", auth);
@@ -2599,7 +2597,7 @@ stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, co
 	{
 		char length[32];
 		if(time == 0)
-			FormatEx(length, sizeof(length), "permament");
+			FormatEx(length, sizeof(length), "permanent");
 		else
 			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
 		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);

@@ -182,7 +182,7 @@ public Action ReloadListCallBack(int client, int args)
 		PrintToChat(client, "%sWhiteList has been reloaded!", PREFIX);
 	}
 
-	return Plugin_Continue;
+	return Plugin_Handled;
 }
 
 public void OnClientPostAdminCheck(int client)
