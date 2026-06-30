@@ -1216,6 +1216,8 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 	dataPack.ReadString(Name, sizeof(Name));
 	ReasonPack.ReadString(Reason, sizeof(Reason));
 
+	delete dataPack;
+
 	if (!time)
 	{
 		if (Reason[0] == '\0')
@@ -1278,6 +1280,7 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 		else
 			PrintToServer("%s%t", Prefix, "Ban Fail");
 
+		delete dataPack;
 		return;
 	}
 	if (results.RowCount)
@@ -1287,6 +1290,7 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 		else
 			PrintToServer("%s%t", Prefix, "Already Banned", ip);
 
+		delete dataPack;
 		return;
 	}
 	if (serverID == -1)
@@ -1297,6 +1301,7 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 			DatabasePrefix, ip, targetAuth, targetName, (minutes * 60), (minutes * 60), reason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort) >= sizeof(Query))
 		{
 			LogError("SelectBanIpCallback insert query truncated");
+			delete dataPack;
 			return;
 		}
 	} else {
@@ -1306,6 +1311,7 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 			DatabasePrefix, ip, targetAuth, targetName, (minutes * 60), (minutes * 60), reason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID) >= sizeof(Query))
 		{
 			LogError("SelectBanIpCallback insert query truncated");
+			delete dataPack;
 			return;
 		}
 	}
@@ -1495,6 +1501,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 		else
 			PrintToServer("%s%t", Prefix, "Ban Fail");
 
+		delete dataPack;
 		return;
 	}
 	if (results.RowCount)
@@ -1504,6 +1511,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 		else
 			PrintToServer("%s%t", Prefix, "Already Banned", authid);
 
+		delete dataPack;
 		return;
 	}
 	if (serverID == -1)
@@ -1514,6 +1522,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 			DatabasePrefix, authid, (minutes * 60), (minutes * 60), reason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort) >= sizeof(Query))
 		{
 			LogError("SelectAddbanCallback insert query truncated");
+			delete dataPack;
 			return;
 		}
 	} else {
@@ -1523,6 +1532,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 			DatabasePrefix, authid, (minutes * 60), (minutes * 60), reason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID) >= sizeof(Query))
 		{
 			LogError("SelectAddbanCallback insert query truncated");
+			delete dataPack;
 			return;
 		}
 	}
@@ -1628,12 +1638,12 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 			db.Query(AddedFromSQLiteCallback, query, authPack);
 		} else {
 			// The ban is no longer valid and should be deleted from the queue
-			if (SQLiteDB.Format(query, sizeof(query), "DELETE FROM queue WHERE steam_id = '%s'", auth) >= sizeof(query))
+			if (db.Format(query, sizeof(query), "DELETE FROM queue WHERE steam_id = '%s'", auth) >= sizeof(query))
 			{
 				LogError("ProcessQueueCallback delete query truncated");
 				continue;
 			}
-			SQLiteDB.Query(ErrorCheckCallback, query);
+			db.Query(ErrorCheckCallback, query);
 		}
 	}
 	// We have finished processing the queue but should process again in ProcessQueueTime minutes
@@ -2485,7 +2495,10 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	if (results == null)
+	{
 		LogToFile(logFile, "Failed to submit report: %s", error);
+		delete dataPack;
+	}
 	else
 	{
 		dataPack.Reset();
@@ -2603,8 +2616,34 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 	return true;
 }
 
+stock void CleanupBanDataPack(DataPack pack)
+{
+	if (pack == null)
+	{
+		return;
+	}
+
+	pack.Reset();
+	pack.ReadCell(); // admin index
+	pack.ReadCell(); // target index
+	pack.ReadCell(); // admin userid
+	pack.ReadCell(); // target userid
+	pack.ReadCell(); // time
+
+	DataPack reasonPack = view_as<DataPack>(pack.ReadCell());
+	if (reasonPack != null)
+		delete reasonPack;
+
+	delete pack;
+}
+
 stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, const char[] Ip, const char[] Reason, const char[] AdminAuthid, const char[] AdminIp, DataPack dataPack)
 {
+	if (dataPack == null)
+	{
+		return;
+	}
+
 	//new Handle:dummy;
 	//PruneBans(dummy);
 	char Query[2048];
@@ -2616,6 +2655,7 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 			DatabasePrefix, Ip, Authid, Name, (time * 60), (time * 60), Reason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, DatabasePrefix, ServerIp, ServerPort) >= sizeof(Query))
 		{
 			LogError("UTIL_InsertBan query truncated");
+			CleanupBanDataPack(dataPack);
 			return;
 		}
 	} else {
@@ -2625,6 +2665,7 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 			DatabasePrefix, Ip, Authid, Name, (time * 60), (time * 60), Reason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, serverID) >= sizeof(Query))
 		{
 			LogError("UTIL_InsertBan query truncated");
+			CleanupBanDataPack(dataPack);
 			return;
 		}
 	}
