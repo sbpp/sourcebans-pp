@@ -1569,6 +1569,7 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 					DatabasePrefix, iAID, reason, bid) >= sizeof(query))
 				{
 					LogError("Query_UnBlockSelect update query truncated");
+					delete newDataPack;
 					continue;
 				}
 				#if defined LOG_QUERIES
