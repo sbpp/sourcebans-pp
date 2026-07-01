@@ -2422,11 +2422,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.1",
+            "version": "2.2.3",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/dea9c8f2d25cc849391042b71e429c1a4bf82660",
-                "reference": "dea9c8f2d25cc849391042b71e429c1a4bf82660",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/4048833dd47b377287818841877fb3087289509c",
+                "reference": "4048833dd47b377287818841877fb3087289509c",
                 "shasum": ""
             },
             "require": {
@@ -2482,7 +2482,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-05-28T14:44:12+00:00"
+            "time": "2026-06-30T21:15:26+00:00"
         },
         {
             "name": "phpstan/phpstan-deprecation-rules",
@@ -4097,16 +4097,16 @@
         },
         {
             "name": "staabm/phpstan-dba",
-            "version": "0.4.2",
+            "version": "0.4.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/staabm/phpstan-dba.git",
-                "reference": "b4a6084d9c08db2d208cef81184bbf26d1581864"
+                "reference": "68009d15e6611beda443399cffd892229e0ff8dd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/staabm/phpstan-dba/zipball/b4a6084d9c08db2d208cef81184bbf26d1581864",
-                "reference": "b4a6084d9c08db2d208cef81184bbf26d1581864",
+                "url": "https://api.github.com/repos/staabm/phpstan-dba/zipball/68009d15e6611beda443399cffd892229e0ff8dd",
+                "reference": "68009d15e6611beda443399cffd892229e0ff8dd",
                 "shasum": ""
             },
             "require": {
@@ -4114,9 +4114,10 @@
                 "composer/semver": "^3.2",
                 "doctrine/dbal": "3.*|4.*",
                 "php": "^7.4 || ^8.0",
-                "phpstan/phpstan": "^2.0"
+                "phpstan/phpstan": "^2.1.2"
             },
             "conflict": {
+                "phpstan/phpstan": "2.1.55||2.1.56||2.2.0||2.2.1",
                 "sqlftw/sqlftw": "<0.1.16"
             },
             "require-dev": {
@@ -4130,7 +4131,7 @@
                 "phpstan/phpstan-strict-rules": "^2.0",
                 "phpunit/phpunit": "^8.5|^9.5",
                 "symplify/easy-coding-standard": "^12.5",
-                "tomasvotruba/unused-public": "^2.0",
+                "tomasvotruba/unused-public": "^2.2",
                 "vlucas/phpdotenv": "^5.4"
             },
             "type": "phpstan-extension",
@@ -4163,7 +4164,7 @@
             ],
             "support": {
                 "issues": "https://github.com/staabm/phpstan-dba/issues",
-                "source": "https://github.com/staabm/phpstan-dba/tree/0.4.2"
+                "source": "https://github.com/staabm/phpstan-dba/tree/0.4.5"
             },
             "funding": [
                 {
@@ -4171,7 +4172,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-08-07T09:33:14+00:00"
+            "time": "2026-06-30T14:09:43+00:00"
         },
         {
             "name": "staabm/side-effects-detector",
