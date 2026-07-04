@@ -104,10 +104,14 @@ public SMCResult ReadUsers_KeyValue(SMCParser smc,
 	}
 	else if (StrEqual(key, "group", false))
 	{
-		GroupId id = FindAdmGroup(value);
+		// Case-insensitive so a case mismatch between the group definition
+		// in sb_admin_groups.cfg and this reference doesn't drop the admin's
+		// group inheritance with a spurious "Unknown group" error (#1503).
+		GroupId id = FindAdmGroupInsensitive(value);
 		if (id == INVALID_GROUP_ID)
 		{
 			ParseError("Unknown group \"%s\"", value);
+			return SMCParse_Continue;
 		}
 
 		g_GroupArray.Push(id);

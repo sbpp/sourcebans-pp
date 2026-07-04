@@ -66,6 +66,9 @@ public SMCResult ReadGroups_NewSection(SMCParser smc, const char[] name, bool op
 		{
 			g_CurGrp = FindAdmGroup(name);
 		}
+		// Track the name so a later case-mismatched reference (from an admin
+		// or a group-immunity line) still resolves to this group (#1503).
+		RegisterGroupName(name, g_CurGrp);
 		g_GroupState = GroupState_InGroup;
 	} else if (g_GroupState == GroupState_InGroup) {
 		if (StrEqual(name, "Overrides", false))
@@ -144,12 +147,15 @@ public SMCResult ReadGroups_KeyValue(SMCParser smc,
 				{
 					g_CurGrp.ImmunityLevel = level;
 				} else {
+					// Case-insensitive so a group-immunity reference survives a
+					// case mismatch against the referenced group's definition,
+					// same drift class as the admin group reference (#1503).
 					GroupId id;
 					if (value[0] == '@')
 					{
-						id = FindAdmGroup(value[1]);
+						id = FindAdmGroupInsensitive(value[1]);
 					} else {
-						id = FindAdmGroup(value);
+						id = FindAdmGroupInsensitive(value);
 					}
 					if (id != INVALID_GROUP_ID)
 					{
@@ -231,6 +237,18 @@ static void InternalReadGroups(const char[] path, GroupPass pass)
 void ReadGroups()
 {
 	InitializeGroupParser();
+
+	// Reset the case-insensitive lookup table for this rebuild. The GroupIds
+	// stored below are only valid for the cache we are about to (re)build, so
+	// a stale entry from a prior pass must never leak into the next one.
+	if (g_GroupNameMap == null)
+	{
+		g_GroupNameMap = new StringMap();
+	}
+	else
+	{
+		g_GroupNameMap.Clear();
+	}
 
 	BuildPath(Path_SM, g_Filename, sizeof(g_Filename), "configs/sourcebans/sb_admin_groups.cfg");
 
