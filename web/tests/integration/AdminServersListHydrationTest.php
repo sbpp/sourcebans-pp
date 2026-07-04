@@ -192,6 +192,54 @@ final class AdminServersListHydrationTest extends ApiTestCase
     }
 
     /**
+     * Issue #1504 — the SourceMod plugin's `sourcebans.cfg` and the
+     * setup docs both tell operators to "check the admin panel ->
+     * servers" to find the numeric `ServerID` a game server needs,
+     * but the card grid never surfaced it. Every enabled AND disabled
+     * tile must render a labelled, copyable "Server ID" row showing
+     * the raw sid so operators can wire the plugin without guessing.
+     */
+    public function testTileRendersCopyableServerId(): void
+    {
+        $_GET = ['p' => 'admin', 'c' => 'servers', 'section' => 'list'];
+        $html = $this->renderAdminServersPage();
+
+        foreach ([$this->enabledSid, $this->disabledSid] as $sid) {
+            $tileHtml = $this->extractTile($html, $sid);
+
+            $this->assertStringContainsString('data-testid="server-id"', $tileHtml,
+                'Every tile must expose data-testid="server-id" so operators can find the ServerID the plugin needs (#1504).');
+            // The raw sid is rendered inside the value span.
+            $this->assertMatchesRegularExpression(
+                '/data-testid="server-id-value"[^>]*>' . $sid . '</',
+                $tileHtml,
+                "Tile for sid $sid must print the numeric Server ID in the value span (#1504)."
+            );
+            // The copy button feeds the document-level [data-copy]
+            // delegate in theme.js with the sid as its payload. Order-
+            // independent lookaheads so a future attribute reshuffle
+            // (data-copy vs data-testid ordering) doesn't false-fail.
+            $this->assertMatchesRegularExpression(
+                '/<button\b(?=[^>]*\bdata-testid="server-id-copy")(?=[^>]*\bdata-copy="' . $sid . '")/',
+                $tileHtml,
+                "Tile for sid $sid must ship a copy button carrying data-copy=\"$sid\" (#1504)."
+            );
+            // The human-readable label anchors discoverability — the
+            // whole point of the fix is that "Server ID" is written on
+            // the card, not just derivable from a URL. Assert the
+            // visible <dt>, not a bare substring: the copy button's
+            // title="Copy Server ID" / aria-label="Copy Server ID"
+            // would otherwise satisfy a substring match even if the
+            // label row were deleted.
+            $this->assertMatchesRegularExpression(
+                '/<dt[^>]*>Server ID<\/dt>/',
+                $tileHtml,
+                "Tile for sid $sid must carry the visible 'Server ID' <dt> label (#1504)."
+            );
+        }
+    }
+
+    /**
      * The View DTO and handler must continue to feed the template the
      * fields the markup contract depends on. This is a belt-and-braces
      * regression guard: if a future PR cleans up the View, the test

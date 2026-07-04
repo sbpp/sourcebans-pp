@@ -50,6 +50,23 @@ export class AdminServersPage extends BasePage {
         return this.page.locator('script[src$="server-tile-hydrate.js"]');
     }
 
+    /**
+     * The tile for a specific server, keyed on the stable
+     * `data-id="<sid>"` hook the hydration helper also routes on.
+     */
+    tile(sid: number): Locator {
+        return this.page.locator(`[data-testid="server-tile"][data-id="${sid}"]`);
+    }
+
+    /**
+     * The "Server ID" `<dd>` inside a tile (#1504) — carries the
+     * numeric value span + the copy button. Operators need this to
+     * wire the SourceMod plugin's `sourcebans.cfg` `ServerID` field.
+     */
+    serverIdRow(sid: number): Locator {
+        return this.tile(sid).locator('[data-testid="server-id"]');
+    }
+
     async goto(): Promise<void> {
         await super.goto(this.path);
     }
