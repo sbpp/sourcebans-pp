@@ -150,7 +150,16 @@
                             {/if}
                         </header>
 
-                        <dl class="text-xs text-muted" style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:0.25rem 0.5rem">
+                        {*
+                            align-items:center keeps each label/value pair on the
+                            same vertical line. The "Server ID" row's <dd> is a flex
+                            container whose copy button (btn--xs, 1.5rem) makes the
+                            row taller than a single line of text; without centering
+                            the grid, the <dt> label sits top-aligned while the
+                            button-driven <dd> content centres, so the ID reads as
+                            dropped below its label (#1523 follow-up).
+                        *}
+                        <dl class="text-xs text-muted" style="margin:0;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0.25rem 0.5rem">
                             {*
                                 Server ID (#1504): the numeric sid the SourceMod
                                 plugin's sourcebans.cfg "ServerID" field needs.
