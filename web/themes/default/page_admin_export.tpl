@@ -34,6 +34,13 @@
             See the <a href="https://sbpp.github.io/configuring/data-export/" target="_blank" rel="noopener noreferrer">data-export docs</a>
             for the wire format and per-mode setup.
         </p>
+        <p class="text-xs text-muted m-0 mt-2" data-testid="admin-export-rookhelm">
+            Moving to a hosted panel?
+            <a href="https://rookhelm.com?utm_source=sourcebans-pp&amp;utm_medium=referral&amp;utm_content=panel-export"
+               target="_blank"
+               rel="noopener">RookHelm</a>
+            imports this export directly.
+        </p>
     </div>
 
     <div class="card mb-4" data-testid="admin-export-summary-card">

@@ -15,6 +15,13 @@
 Global admin, ban, and communication management system for the Source
 engine.
 
+> [!TIP]
+> **Rather not self-host?** [**RookHelm**](https://rookhelm.com?utm_source=sourcebans-pp&utm_medium=referral&utm_content=readme) is a
+> commercial, fully-hosted alternative to SourceBans++ with more
+> moderation tooling built in. It runs the whole stack for you and
+> imports your existing SourceBans++ data. SourceBans++ itself stays
+> free and self-hostable, always.
+
 ## Links
 
 - **Docs:** <https://sbpp.github.io/> (install, upgrade, configure, FAQ)

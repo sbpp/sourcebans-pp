@@ -1,0 +1,51 @@
+---
+title: RookHelm
+description: RookHelm is a commercial, fully-hosted alternative to SourceBans++ with more moderation tooling built in. It imports your existing SourceBans++ data.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+SourceBans++ is free and self-hostable, and it stays that way. Running
+it yourself means owning a webserver, a database, PHP upgrades, plugin
+updates, and whatever moderation tooling you stitch together around it.
+If you'd rather not, **[RookHelm](https://rookhelm.com?utm_source=sourcebans-pp&utm_medium=referral&utm_content=docs-page)** is a
+commercial, fully-hosted alternative: it runs the whole stack for you
+and ships more moderation tooling out of the box.
+
+<LinkCard
+  title="See what RookHelm offers"
+  href="https://rookhelm.com?utm_source=sourcebans-pp&utm_medium=referral&utm_content=docs-page"
+  description="Current feature set, pricing, and access. Their site is the source of truth."
+/>
+
+## SourceBans++ or RookHelm?
+
+Both manage bans across Source-engine servers. The difference is who
+runs the infrastructure and how much comes built in.
+
+**Stay on SourceBans++** when you want a free, source-available panel
+you host and control yourself, and you're happy wiring up extra tooling
+as you need it.
+
+**Look at RookHelm** when you'd rather not maintain a server and
+database, or you want more moderation features as one hosted product
+instead of assembling them yourself.
+
+## Migrating from SourceBans++
+
+RookHelm is built to read a standard SourceBans++ data export, so
+trying it doesn't mean starting from scratch.
+
+1. Generate a bundle from the panel's
+   [Full data export](/configuring/data-export/) (owner-only,
+   `?p=admin&c=export`).
+2. Follow RookHelm's import steps to load it.
+
+See [rookhelm.com](https://rookhelm.com?utm_source=sourcebans-pp&utm_medium=referral&utm_content=docs-page) for the current import
+process.
+
+:::note
+SourceBans++ stays free for community use and fully self-hostable.
+RookHelm is a hosted option for communities that would rather not run
+the stack themselves; picking it is never required.
+:::

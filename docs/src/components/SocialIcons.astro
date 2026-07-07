@@ -1,0 +1,79 @@
+---
+// Override of Starlight's stock SocialIcons. The stock icon loop is
+// re-implemented inline (mirroring
+// node_modules/@astrojs/starlight/components/SocialIcons.astro — same
+// `config.social` source, markup, and scoped styles) rather than
+// re-rendered from `virtual:starlight/components/SocialIcons`: from an
+// override of this component that specifier resolves back to THIS file
+// and recurses until the build stack overflows (RangeError). Re-diff
+// against the stock component on a Starlight upgrade.
+
+import config from 'virtual:starlight/user-config';
+import { Icon } from '@astrojs/starlight/components';
+
+const links = config.social || [];
+---
+
+<a
+	class="sbpp-rookhelm-cta"
+	href="https://rookhelm.com?utm_source=sourcebans-pp&utm_medium=referral&utm_content=docs-nav"
+	rel="noopener"
+>
+	RookHelm
+	<span class="sbpp-rookhelm-cta__arrow" aria-hidden="true">↗</span>
+</a>
+
+{
+	links.length > 0 && (
+		<>
+			{links.map(({ label, href, icon }) => (
+				<a {href} rel="me" class="sbpp-social-link sl-flex">
+					<span class="sr-only">{label}</span>
+					<Icon name={icon} />
+				</a>
+			))}
+		</>
+	)
+}
+
+<style>
+	/* Mirrors the stock SocialIcons `a` rule so the icons render
+	   identically to upstream (the stock component's scoped styles
+	   don't apply once we stop rendering it). */
+	.sbpp-social-link {
+		color: var(--sl-color-text-accent);
+		padding: 0.5em;
+		margin: -0.5em;
+	}
+	.sbpp-social-link:hover {
+		color: var(--sl-color-white);
+	}
+
+	.sbpp-rookhelm-cta {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3em;
+		padding: 0.3rem 0.7rem;
+		border: 1px solid var(--sl-color-accent);
+		border-radius: 999px;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		line-height: 1;
+		white-space: nowrap;
+		color: var(--sl-color-text-accent);
+		text-decoration: none;
+		transition:
+			background-color 150ms ease,
+			border-color 150ms ease,
+			color 150ms ease;
+	}
+	.sbpp-rookhelm-cta:hover,
+	.sbpp-rookhelm-cta:focus-visible {
+		background-color: var(--sl-color-accent-low);
+		border-color: var(--sl-color-accent);
+		color: var(--sl-color-text-accent);
+	}
+	.sbpp-rookhelm-cta__arrow {
+		font-size: 0.9em;
+	}
+</style>
