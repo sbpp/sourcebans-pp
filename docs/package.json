@@ -14,6 +14,7 @@
     "capture": "node scripts/capture.mjs"
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.7.2",
     "@astrojs/starlight": "^0.39.2",
     "astro": "^6.4.8",
     "sharp": "^0.34.5"

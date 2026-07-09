@@ -12,6 +12,7 @@
 
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import sitemap from '@astrojs/sitemap';
 
 // `astro-mermaid` was scaffolded into the initial migration commit but
 // no docs page actually uses a fenced ```mermaid block yet. The
@@ -193,5 +194,6 @@ export default defineConfig({
         },
       ],
     }),
+    sitemap(),
   ],
 });
