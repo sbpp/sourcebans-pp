@@ -2421,6 +2421,7 @@ public int Native_SBPP_BanPlayerBySteamId(Handle plugin, int numParams)
 	}
 
 	DataPack pack = new DataPack();
+	pack.WriteCell(admin);
 	pack.WriteCell(iTime);
 	pack.WriteString(reason);
 	pack.WriteString(steamId);
@@ -2437,13 +2438,6 @@ public int Native_SBPP_BanPlayerBySteamId(Handle plugin, int numParams)
 
 	DB.Query(DB_OnBanBySteamIdSelect, query, pack, DBPrio_High);
 
-	Call_StartForward(g_hFwd_OnBanAdded);
-	Call_PushCell(admin);
-	Call_PushCell(-1);
-	Call_PushCell(iTime);
-	Call_PushString(reason);
-	Call_Finish();
-
 	return 0;
 }
 
@@ -2457,6 +2451,7 @@ void DB_OnBanBySteamIdSelect(Database db, DBResultSet results, const char[] erro
 	}
 
 	pack.Reset();
+	int admin = pack.ReadCell();
 	int iTime = pack.ReadCell();
 	char reason[128], steamId[MAX_AUTHID_LENGTH], name[MAX_NAME_LENGTH], adminAuth[MAX_AUTHID_LENGTH], adminIp[16];
 	pack.ReadString(reason, sizeof(reason));
@@ -2499,13 +2494,35 @@ void DB_OnBanBySteamIdSelect(Database db, DBResultSet results, const char[] erro
 			serverID);
 	}
 
-	DB.Query(DB_OnBanBySteamIdInsert, query, _, DBPrio_High);
+	DataPack fwdPack = new DataPack();
+	fwdPack.WriteCell(admin);
+	fwdPack.WriteCell(iTime);
+	fwdPack.WriteString(reason);
+
+	DB.Query(DB_OnBanBySteamIdInsert, query, fwdPack, DBPrio_High);
 }
 
-void DB_OnBanBySteamIdInsert(Database db, DBResultSet results, const char[] error, any data)
+void DB_OnBanBySteamIdInsert(Database db, DBResultSet results, const char[] error, DataPack pack)
 {
+	pack.Reset();
+	int admin = pack.ReadCell();
+	int iTime = pack.ReadCell();
+	char reason[128];
+	pack.ReadString(reason, sizeof(reason));
+	delete pack;
+
 	if (results == null)
+	{
 		LogToFile(logFile, "[SBPP] BanPlayerBySteamId insert failed: %s", error);
+		return;
+	}
+
+	Call_StartForward(g_hFwd_OnBanAdded);
+	Call_PushCell(admin);
+	Call_PushCell(-1);
+	Call_PushCell(iTime);
+	Call_PushString(reason);
+	Call_Finish();
 }
 
 public int Native_SBReportPlayer(Handle plugin, int numParams)
