@@ -187,6 +187,46 @@ final class AdminExportPermissionTest extends TestCase
     }
 
     /**
+     * The S3-mode completion redirects (success + failure) must
+     * target `index.php?p=admin&c=export`, NOT a bare query-only
+     * `?p=admin&c=export`. This redirect fires from
+     * `web/export.php`, so a `Location: ?p=...` reference resolves
+     * against THIS script's path per RFC 3986 §5.2 (an empty-path
+     * reference keeps the base path) — the browser would follow it
+     * to `export.php?p=admin&c=export...` as a GET and hit the
+     * POST-only method gate ("POST required."). The ZIP mode
+     * streams its body and never redirects, so the bug only ever
+     * surfaced on the S3 path — the operator saw "POST required."
+     * after the upload actually ran. The admin page handler lives
+     * behind `index.php`, so the router entry point MUST be named
+     * explicitly. Regression guard for the S3 "POST required." report.
+     */
+    public function testEntryPointRedirectsNameIndexPhpNotBareQuery(): void
+    {
+        $src = $this->entryPointSource();
+
+        // A bare `Location: ?p=...` query-only reference re-enters
+        // export.php's POST gate. It must never appear.
+        $this->assertDoesNotMatchRegularExpression(
+            "/Location:\s*\?p=/",
+            $src,
+            'export.php must NOT emit a bare `Location: ?p=...` query-only redirect. It fires from export.php, so a query-only reference keeps the base path (/export.php) and bounces the browser back into the POST-only gate ("POST required."). Name index.php explicitly.',
+        );
+
+        // Both completion arms must name index.php explicitly.
+        $this->assertMatchesRegularExpression(
+            "/Location: index\.php\?p=admin&c=export&result=success/",
+            $src,
+            'export.php S3 success redirect must target index.php?p=admin&c=export&result=success (the router entry point), not export.php itself.',
+        );
+        $this->assertMatchesRegularExpression(
+            "/Location: index\.php\?p=admin&c=export&result=error/",
+            $src,
+            'export.php S3 failure redirect must target index.php?p=admin&c=export&result=error (the router entry point), not export.php itself.',
+        );
+    }
+
+    /**
      * Defence-in-depth: the page handler must re-check the
      * permission via `CheckAdminAccess(ADMIN_OWNER)` even though
      * the routing table already gated `?p=admin&c=export` on

@@ -497,7 +497,15 @@ function sbpp_export_run_s3_mode(Manifest $manifest, EntityExporter $entities, i
  */
 function sbpp_export_redirect_success(string $bundleId): never
 {
-    header('Location: ?p=admin&c=export&result=success&bid=' . rawurlencode($bundleId));
+    // NOTE: the path is explicit (`index.php`), NOT a bare `?p=...`
+    // query-only reference. This redirect fires from `web/export.php`,
+    // so a query-only `Location` would resolve against THIS script's
+    // path (RFC 3986 §5.2: an empty-path reference keeps the base
+    // path) and bounce the browser to `export.php?p=admin&c=export...`
+    // as a GET — straight into the POST-only method gate above
+    // ("POST required."). The admin page handler lives behind
+    // `index.php`, so the router entry point has to be named.
+    header('Location: index.php?p=admin&c=export&result=success&bid=' . rawurlencode($bundleId));
     exit;
 }
 
@@ -514,6 +522,9 @@ function sbpp_export_redirect_success(string $bundleId): never
  */
 function sbpp_export_redirect_failure(string $code, string $context = ''): never
 {
-    header('Location: ?p=admin&c=export&result=error&code=' . rawurlencode($code));
+    // Explicit `index.php` path — see the note in
+    // sbpp_export_redirect_success() for why a bare `?p=...`
+    // query-only reference would re-enter export.php's POST gate.
+    header('Location: index.php?p=admin&c=export&result=error&code=' . rawurlencode($code));
     exit;
 }
