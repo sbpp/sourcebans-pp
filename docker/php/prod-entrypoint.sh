@@ -369,6 +369,18 @@ validate_identifiers() {
 configure_apache() {
     log "step 2: configuring Apache (PORT=${PORT}, trusted proxies: ${SBPP_TRUSTED_PROXIES:-<none>})"
 
+    # Defense-in-depth re-assertion of the MPM pin the Dockerfile already
+    # applies at build time. Some platforms overlay or reset parts of
+    # /etc/apache2/mods-enabled between the image build and the container
+    # boot (e.g. a re-applied base layer, a build-cache restore that
+    # predates the pin); if that happens, `event`/`worker` can end up
+    # re-enabled alongside `prefork` and Apache dies on startup with
+    # "AH00534: More than one MPM loaded." mod_php only works under
+    # prefork, so re-pin it here every boot, before apache2-foreground
+    # ever runs.
+    a2dismod -f mpm_event mpm_worker >/dev/null 2>&1 || true
+    a2enmod mpm_prefork >/dev/null 2>&1 || true
+
     # Rewrite `Listen 80` -> `Listen ${PORT}` in /etc/apache2/ports.conf
     # and `<VirtualHost *:80>` in the default site. Only when PORT
     # differs from 80 (the image default) — saves a write on the
