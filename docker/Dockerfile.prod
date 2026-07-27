@@ -175,6 +175,17 @@ RUN { \
     } > /etc/apache2/conf-available/zz-sbpp-tokens.conf \
  && a2enconf zz-sbpp-tokens
 
+# `mod_php` only works under the `prefork` MPM. The base `php:8.5-apache`
+# image ships `prefork` enabled by default, but a dpkg trigger fired by
+# one of the `apt-get install` steps above (or by a downstream layer in a
+# platform's own build pipeline) can re-run apache2's package-level MPM
+# auto-selection and leave `event` (or `worker`) enabled alongside it —
+# Apache then refuses to start with "AH00534: More than one MPM loaded."
+# Re-assert the exclusive state as the last Apache-touching step so
+# nothing after this point can silently flip it back.
+RUN a2dismod -f mpm_event mpm_worker \
+ && a2enmod mpm_prefork
+
 # Copy the panel tree from the builder stage (vendor/ already populated).
 # We chown to www-data:www-data so the runtime user can write to cache/
 # templates_c/ + the demos/ volume mount target.
