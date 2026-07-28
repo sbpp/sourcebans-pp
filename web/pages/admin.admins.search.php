@@ -158,19 +158,12 @@ if (is_string($rawSrvFlag)) {
 $activeSrvFlags = [];
 if (is_array($rawSrvFlag)) {
     foreach ($rawSrvFlag as $f) {
-        if (is_string($f) && preg_match('/^SM_[A-Z_]+$/', $f)) {
+        if (is_string($f) && preg_match('/^SM_[A-Z0-9_]+$/', $f)) {
             $activeSrvFlags[] = $f;
         }
     }
 }
 
-// Match-mode defaults differ per filter (#1231):
-//   - steam_match defaults to '0' (exact) — typical SteamID
-//     queries are "find this one admin by their full ID".
-//   - name_match / admemail_match default to '1' (partial) so
-//     pre-#1231 URLs (`?name=alice`) keep their substring
-//     behaviour. Adding the toggle widens the UI without
-//     regressing the default.
 $activeFilterName        = is_string($_GET['name']        ?? null) ? (string) $_GET['name']        : '';
 $activeFilterSteamid     = is_string($_GET['steamid']     ?? null) ? (string) $_GET['steamid']     : '';
 $activeFilterAdmemail    = is_string($_GET['admemail']    ?? null) ? (string) $_GET['admemail']    : '';
@@ -179,26 +172,20 @@ $activeFilterSrvadmgroup = is_string($_GET['srvadmgroup'] ?? null) ? (string) $_
 $activeFilterSrvgroup    = is_scalar($_GET['srvgroup']    ?? null) ? (string) $_GET['srvgroup']    : '';
 $activeFilterServer      = is_scalar($_GET['server']      ?? null) ? (string) $_GET['server']      : '';
 
-// #1303 — the `admemail` filter is permission-gated by
-// `$can_editadmin` in both the rendering template AND the page
-// handler (`admin.admins.php` ignores `?admemail=` from a user without
-// `EditAdmins | Owner`). For URL-forgery cases where a non-admin
-// passes `?admemail=foo`, the input is hidden in the form and the
-// server narrows nothing; the count must mirror that — otherwise the
-// "N active" badge would say "1 active" while every visible filter
-// row reads empty. Mirror the gate locally so the count stays an
-// honest summary of what the visible form actually filters on.
+// The `admemail` filter is permission-gated by `$can_editadmin` in
+// both the rendering template AND the page handler (`admin.admins.php`
+// ignores `?admemail=` from a user without `EditAdmins | Owner`). For
+// URL-forgery cases where a non-admin passes `?admemail=foo`, the
+// input is hidden in the form and the server narrows nothing; the
+// count must mirror that — otherwise the "N active" badge would say
+// "1 active" while every visible filter row reads empty.
 $canFilterByEmail = $userbank->HasAccess(WebPermission::mask(WebPermission::EditAdmins, WebPermission::Owner));
 
 // #1303 — count populated filter slots so the disclosure can paint a
 // "Filters · N active" badge on the <summary> and auto-expand on
-// post-submit. Match-mode selects (`name_match` / `steam_match` /
-// `admemail_match`) deliberately don't count: they always carry a
-// default ('0' or '1') and only refine the matching filter, they
-// don't filter on their own. Empty multi-select arrays count as zero
-// even though the array itself "exists" — the user hasn't picked a
-// permission. The `admemail` slot only counts when the user can
-// actually filter by it (see `$canFilterByEmail` above).
+// post-submit. Empty multi-select arrays count as zero even though
+// the array itself "exists". The `admemail` slot only counts when
+// the user can actually filter by it (see `$canFilterByEmail`).
 $activeFilterCount =
       ($activeFilterName        !== '' ? 1 : 0)
     + ($activeFilterSteamid     !== '' ? 1 : 0)
@@ -220,11 +207,8 @@ $activeFilterCount =
     admwebflag_list:           $webflag,
     admsrvflag_list:           $serverflag,
     active_filter_name:           $activeFilterName,
-    active_filter_name_match:     is_scalar($_GET['name_match']     ?? null) ? (string) $_GET['name_match']     : '1',
     active_filter_steamid:        $activeFilterSteamid,
-    active_filter_steam_match:    is_scalar($_GET['steam_match']    ?? null) ? (string) $_GET['steam_match']    : '0',
     active_filter_admemail:       $activeFilterAdmemail,
-    active_filter_admemail_match: is_scalar($_GET['admemail_match'] ?? null) ? (string) $_GET['admemail_match'] : '1',
     active_filter_webgroup:       $activeFilterWebgroup,
     active_filter_srvadmgroup:    $activeFilterSrvadmgroup,
     active_filter_srvgroup:       $activeFilterSrvgroup,
