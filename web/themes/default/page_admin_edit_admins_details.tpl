@@ -5,9 +5,9 @@
     web/includes/View/EditAdminDetailsView.php.
 
     The handler gates entry on ADMIN_OWNER | ADMIN_EDIT_ADMINS (or
-    self-edit) before reaching this template. $change_pass narrows the
-    in-template form: when the editor lacks password-edit rights (e.g.
-    a non-owner editing someone else), the password rows hide.
+    self-edit) before reaching this template. $change_pass mirrors that
+    gate: anyone allowed to edit the target can also set their password.
+    Edit-admins callers still cannot reach owner targets (handler-side).
 
     The cross-page tab nav (Details / Group / Servers / Permissions)
     lifts the four legacy admin-edit handlers into a single tabbed UX;

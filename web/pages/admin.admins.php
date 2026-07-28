@@ -56,7 +56,12 @@ global $userbank, $theme;
  */
 
 /** @var bool $canListAdmins */
-$canListAdmins   = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListAdmins));
+$canListAdmins   = $userbank->HasAccess(WebPermission::mask(
+    WebPermission::Owner,
+    WebPermission::ListAdmins,
+    WebPermission::EditAdmins,
+    WebPermission::DeleteAdmins,
+));
 /** @var bool $canAddAdmins */
 $canAddAdmins    = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddAdmins));
 /** @var bool $canEditAdmins */
@@ -79,7 +84,7 @@ $sections = [
     [
         'slug'       => 'admins',
         'name'       => 'Admins',
-        'permission' => ADMIN_OWNER | ADMIN_LIST_ADMINS,
+        'permission' => ADMIN_OWNER | ADMIN_LIST_ADMINS | ADMIN_EDIT_ADMINS | ADMIN_DELETE_ADMINS,
         'url'        => 'index.php?p=admin&c=admins&section=admins',
         'icon'       => 'users',
     ],

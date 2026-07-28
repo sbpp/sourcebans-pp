@@ -10,8 +10,9 @@ namespace Sbpp\View;
  * The page handler (`admin.edit.admindetails.php`) gates entry on
  * `ADMIN_OWNER | ADMIN_EDIT_ADMINS` (or self-edit) before reaching the
  * template, so the View doesn't carry its own access boolean. `$change_pass`
- * is a per-request capability flag from the handler — true when the current
- * user is allowed to set the target admin's password (root or self).
+ * mirrors that gate: true when the current user may edit the target
+ * (including setting their password). Edit-admins callers cannot open
+ * owner targets; that block lives in the page handler.
  *
  * The property set is intentionally identical to the legacy handler's
  * `$theme->assign(...)` calls so the existing `$theme->display(...)` path

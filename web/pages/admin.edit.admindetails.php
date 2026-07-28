@@ -49,7 +49,7 @@ if (!$canEditTarget) {
     return;
 }
 
-$canEditPasswords = $isOwnerEditor || $isSelfEdit;
+$canEditPasswords = $canEditTarget;
 $webBitmask        = (int) $userbank->GetProperty('extraflags', $adminId);
 $webGroupId        = (int) $userbank->GetProperty('gid', $adminId);
 $hasWebPermissions = $webBitmask !== 0 || $webGroupId > 0;
