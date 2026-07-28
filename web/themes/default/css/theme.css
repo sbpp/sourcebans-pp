@@ -1198,6 +1198,9 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
   column-gap: 0.25rem;
   justify-content: flex-end;
 }
+.table .row-actions--icons {
+  flex-wrap: nowrap;
+}
 
 /* PUB-1 (#1207): banlist column widths + horizontal-scroll fallback.
    With realistic per-row content the auto-layout previously
@@ -1826,6 +1829,11 @@ details.queue-row > summary > .row-actions {
   .log-card__chevron { transition: none; }
 }
 
+.admins-list-cards { display: none; }
+.admins-list-card { border-bottom: 1px solid var(--border); }
+.admins-list-card:last-child { border-bottom: none; }
+.admins-list-card__body { padding: 0.75rem 1rem 0.25rem; }
+
 /* ---- Responsive ---- */
 [data-mobile-menu] { display: none; }
 @media (max-width: 1024px) {
@@ -1840,6 +1848,7 @@ details.queue-row > summary > .row-actions {
      `.log-cards` block above for the full rationale). Same `display`
      dance as `.ban-cards` — hidden at desktop, block at mobile. */
   .log-cards { display: block; }
+  .admins-list-cards { display: block; }
   /* #1181: filter chip rows wrap onto multiple lines on mobile
      instead of horizontal-scrolling, so every chip is reachable
      without a swipe. The .scroll-x desktop affordance is the
@@ -1850,6 +1859,7 @@ details.queue-row > summary > .row-actions {
 @media (min-width: 769px) {
   .ban-cards { display: none; }
   .log-cards { display: none; }
+  .admins-list-cards { display: none; }
 }
 
 /* ---- Utility classes used by templates ---- */

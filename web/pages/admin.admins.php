@@ -475,10 +475,10 @@ foreach ($admins as $admin) {
     $admin['web_group']    = $userbank->GetProperty("group_name", $admin['aid']);
     $admin['server_group'] = $userbank->GetProperty("srv_groups", $admin['aid']);
     if (empty($admin['web_group']) || $admin['web_group'] == " ") {
-        $admin['web_group'] = "No Group/Individual Permissions";
+        $admin['web_group'] = "No groups";
     }
     if (empty($admin['server_group']) || $admin['server_group'] == " ") {
-        $admin['server_group'] = "No Group/Individual Permissions";
+        $admin['server_group'] = "No groups";
     }
     $GLOBALS['PDO']->query("SELECT count(authid) AS num FROM `:prefix_bans` WHERE aid = :aid");
     $GLOBALS['PDO']->bind(':aid', $admin['aid']);
