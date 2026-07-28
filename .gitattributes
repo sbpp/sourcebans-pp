@@ -1,0 +1,10 @@
+
+# Force LF line endings for scripts executed inside Linux containers.
+# A CRLF shebang (`#!/bin/sh` followed by a stray `\r`) makes the
+# kernel look for a nonexistent `/bin/sh\r` interpreter, which
+# surfaces as a confusing "exec: no such file or directory" error
+# instead of a parse error. Contributors on Windows with git's
+# default `core.autocrlf=true` get CRLF in their local working tree;
+# without this override that CRLF also lands in whatever Docker
+# COPYs from disk when building the image locally.
+docker/**/*.sh text eol=lf
