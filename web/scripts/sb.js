@@ -262,67 +262,201 @@
     };
 
     // ---------------------------------------------------------------
-    // Tooltips (replaces MooTools `Tips`).
-    // Reads `title` of "Header::Body" (or just "Body") and shows a
-    // floating tooltip on hover.
+    // Tooltips — themed replacement for the MooTools Tips / native
+    // title= bubble. Event-delegated on document so dynamically added
+    // rows (and third-party themes that keep emitting `class="tip"
+    // title="…"`) pick it up without a per-page init call.
+    //
+    // Prefer `data-tooltip="Label"` on the trigger. Legacy
+    // `a.tip[title]` / `button.tip[title]` (CreateLinkR) still works:
+    // the first hover migrates `title` → `data-tooltip` so the browser
+    // bubble never races the themed tip. Keep `aria-label` for AT;
+    // the tip is visual-only (`role="tooltip"` + aria-describedby).
     // ---------------------------------------------------------------
+    const SB_TOOLTIP_ID = 'sb-tooltip';
+    const SB_TOOLTIP_DELAY_MS = 350;
+    /** @type {HTMLDivElement | null} */
+    let sbTooltipEl = null;
+    /** @type {Element | null} */
+    let sbTooltipActive = null;
+    /** @type {ReturnType<typeof setTimeout> | null} */
+    let sbTooltipTimer = null;
+
+    /**
+     * @returns {HTMLDivElement}
+     */
+    function sbTooltipEnsure() {
+        if (sbTooltipEl && document.body.contains(sbTooltipEl)) {
+            return sbTooltipEl;
+        }
+        const tip = document.createElement('div');
+        tip.id = SB_TOOLTIP_ID;
+        tip.className = 'sb-tooltip';
+        tip.setAttribute('role', 'tooltip');
+        tip.hidden = true;
+        document.body.appendChild(tip);
+        sbTooltipEl = tip;
+        return tip;
+    }
+
+    /**
+     * @param {Element} el
+     * @returns {string}
+     */
+    function sbTooltipLabel(el) {
+        const data = el.getAttribute('data-tooltip');
+        if (data !== null && data.trim() !== '') {
+            return data.trim();
+        }
+        const title = el.getAttribute('title');
+        return title ? title.trim() : '';
+    }
+
+    /**
+     * @param {Element} el
+     * @returns {void}
+     */
+    function sbTooltipAdoptTitle(el) {
+        if (!el.hasAttribute('title')) {
+            return;
+        }
+        const title = el.getAttribute('title') || '';
+        if (!el.hasAttribute('data-tooltip') && title.trim() !== '') {
+            el.setAttribute('data-tooltip', title);
+        }
+        el.removeAttribute('title');
+    }
+
+    /**
+     * @returns {void}
+     */
+    function sbTooltipHide() {
+        if (sbTooltipTimer !== null) {
+            clearTimeout(sbTooltipTimer);
+            sbTooltipTimer = null;
+        }
+        if (sbTooltipEl) {
+            sbTooltipEl.hidden = true;
+            sbTooltipEl.textContent = '';
+        }
+        if (sbTooltipActive) {
+            sbTooltipActive.removeAttribute('aria-describedby');
+            sbTooltipActive = null;
+        }
+    }
+
+    /**
+     * @param {Element} el
+     * @returns {void}
+     */
+    function sbTooltipPlace(el) {
+        const tip = sbTooltipEnsure();
+        const r = el.getBoundingClientRect();
+        const tr = tip.getBoundingClientRect();
+        let top = r.bottom + 6;
+        if (top + tr.height > window.innerHeight - 8) {
+            top = r.top - tr.height - 6;
+        }
+        let left = r.left + (r.width - tr.width) / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - tr.width - 8));
+        tip.style.top = Math.round(top) + 'px';
+        tip.style.left = Math.round(left) + 'px';
+    }
+
+    /**
+     * @param {Element} el
+     * @returns {void}
+     */
+    function sbTooltipShow(el) {
+        sbTooltipAdoptTitle(el);
+        const text = sbTooltipLabel(el);
+        if (text === '') {
+            return;
+        }
+        const tip = sbTooltipEnsure();
+        tip.textContent = text;
+        tip.hidden = false;
+        el.setAttribute('aria-describedby', SB_TOOLTIP_ID);
+        sbTooltipActive = el;
+        sbTooltipPlace(el);
+    }
+
+    /**
+     * @param {EventTarget | null} target
+     * @returns {Element | null}
+     */
+    function sbTooltipTriggerFrom(target) {
+        if (!(target instanceof Element)) {
+            return null;
+        }
+        return target.closest('[data-tooltip], a.tip[title], button.tip[title], a.tip[data-tooltip], button.tip[data-tooltip]');
+    }
+
+    document.addEventListener('pointerover', (e) => {
+        const el = sbTooltipTriggerFrom(e.target);
+        if (!el || el === sbTooltipActive) {
+            return;
+        }
+        sbTooltipHide();
+        sbTooltipTimer = setTimeout(() => {
+            sbTooltipTimer = null;
+            sbTooltipShow(el);
+        }, SB_TOOLTIP_DELAY_MS);
+    });
+
+    document.addEventListener('pointerout', (e) => {
+        const el = sbTooltipTriggerFrom(e.target);
+        if (!el) {
+            return;
+        }
+        const related = /** @type {MouseEvent} */ (e).relatedTarget;
+        if (related instanceof Node && el.contains(related)) {
+            return;
+        }
+        sbTooltipHide();
+    });
+
+    document.addEventListener('focusin', (e) => {
+        const el = sbTooltipTriggerFrom(e.target);
+        if (!el || !el.hasAttribute('data-tooltip')) {
+            return;
+        }
+        sbTooltipHide();
+        sbTooltipShow(el);
+    });
+
+    document.addEventListener('focusout', () => {
+        sbTooltipHide();
+    });
+
+    document.addEventListener('scroll', () => {
+        sbTooltipHide();
+    }, true);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            sbTooltipHide();
+        }
+    });
+
+    document.addEventListener('pointerdown', () => {
+        sbTooltipHide();
+    });
+
+    /**
+     * Back-compat: migrate `title` → `data-tooltip` on a selector set.
+     * Delegation already covers `[data-tooltip]` and legacy `.tip[title]`;
+     * this is for callers that want an eager migrate (e.g. strip native
+     * bubbles before first hover).
+     *
+     * @param {string} selector
+     * @param {{ className?: string }} [opts] ignored; kept for call-site compat
+     * @returns {void}
+     */
     sb.tooltip = function (selector, opts) {
-        opts = opts || {};
-        const className = opts.className || 'tool-tip';
+        void opts;
         sb.$qsa(selector).forEach((el) => {
-            const raw = el.getAttribute('title');
-            if (!raw) return;
-            // Save original title and prevent the browser from showing it.
-            el.setAttribute('data-sb-title', raw);
-            el.removeAttribute('title');
-
-            const parts = raw.split('::');
-            const head  = parts.length > 1 ? parts[0] : '';
-            const body  = parts.length > 1 ? parts.slice(1).join('::') : raw;
-
-            /** @type {HTMLDivElement | null} */
-            let tip = null;
-            /** @param {MouseEvent} e */
-            const show = (e) => {
-                if (tip) return;
-                tip = document.createElement('div');
-                tip.className = className;
-                tip.style.position = 'absolute';
-                tip.style.zIndex = '10000';
-                tip.style.opacity = '0';
-                tip.style.pointerEvents = 'none';
-                if (head) {
-                    const t = document.createElement('span');
-                    t.className = 'tool-title';
-                    t.textContent = head;
-                    tip.appendChild(t);
-                }
-                const tx = document.createElement('span');
-                tx.className = 'tool-text';
-                tx.innerHTML = body;
-                tip.appendChild(tx);
-                document.body.appendChild(tip);
-                position(e);
-                requestAnimationFrame(() => {
-                    if (!tip) return;
-                    tip.style.transition = 'opacity 200ms';
-                    tip.style.opacity = '1';
-                });
-            };
-            /** @param {MouseEvent} e */
-            const move = (e) => { if (tip) position(e); };
-            const hide = () => { if (tip) { tip.remove(); tip = null; } };
-            /** @param {MouseEvent} e */
-            const position = (e) => {
-                if (!tip) return;
-                tip.style.left = (e.pageX + 16) + 'px';
-                tip.style.top  = (e.pageY + 16) + 'px';
-            };
-
-            el.addEventListener('mouseover', show);
-            el.addEventListener('mousemove', move);
-            el.addEventListener('mouseout',  hide);
-            el.addEventListener('click',     hide);
+            sbTooltipAdoptTitle(el);
         });
     };
 
