@@ -640,7 +640,7 @@ $bans          = [];
 
 $removedByAdminIds = [];
 foreach ($res as $row) {
-    if (!empty($row['RemovedBy'])) {
+    if ($row['RemovedBy'] !== null) {
         $removedByAdminIds[(int) $row['RemovedBy']] = true;
     }
 }
