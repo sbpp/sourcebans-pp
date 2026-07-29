@@ -78,6 +78,19 @@ if ($section === 'add') {
 // the same per-group queries below.
 // ------------------------------------------------------------------
 $web_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != '3'")->resultset();
+
+$webGroupIds = array_map(static fn ($r) => (int) $r['gid'], $web_group_rows);
+$webGroupMembersByGid = [];
+if ($webGroupIds !== []) {
+    $placeholders  = implode(',', array_fill(0, count($webGroupIds), '?'));
+    $memberRows    = $GLOBALS['PDO']->query(
+        "SELECT aid, user, authid, gid FROM `:prefix_admins` WHERE gid IN ($placeholders)"
+    )->resultset($webGroupIds);
+    foreach ($memberRows as $memberRow) {
+        $webGroupMembersByGid[(int) $memberRow['gid']][] = $memberRow;
+    }
+}
+
 $web_group_list          = [];
 $web_admins              = [];
 $web_admins_list         = [];
@@ -86,14 +99,8 @@ foreach ($web_group_rows as $row) {
     $row['flags']       = (int) $row['flags'];
     $row['permissions'] = BitToString($row['flags']);
 
-    $cnt = $GLOBALS['PDO']->query("SELECT COUNT(gid) AS cnt FROM `:prefix_admins` WHERE gid = :gid");
-    $GLOBALS['PDO']->bind(':gid', $row['gid']);
-    $cnt = $GLOBALS['PDO']->single();
-    $row['member_count'] = (int) $cnt['cnt'];
-
-    $GLOBALS['PDO']->query("SELECT aid, user, authid FROM `:prefix_admins` WHERE gid = :gid");
-    $GLOBALS['PDO']->bind(':gid', $row['gid']);
-    $members = $GLOBALS['PDO']->resultset();
+    $members = $webGroupMembersByGid[$row['gid']] ?? [];
+    $row['member_count'] = count($members);
 
     $web_group_list[]  = $row;
     $web_admins[]      = $row['member_count'];
@@ -105,6 +112,31 @@ $web_group_count = count($web_group_list);
 // Server admin groups (`:prefix_srvgroups`).
 // ------------------------------------------------------------------
 $server_admin_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups`")->resultset();
+
+$srvGroupNames = array_map(static fn ($r) => (string) $r['name'], $server_admin_group_rows);
+$srvGroupMembersByName = [];
+if ($srvGroupNames !== []) {
+    $placeholders = implode(',', array_fill(0, count($srvGroupNames), '?'));
+    $memberRows   = $GLOBALS['PDO']->query(
+        "SELECT aid, user, authid, srv_group FROM `:prefix_admins` WHERE srv_group IN ($placeholders)"
+    )->resultset($srvGroupNames);
+    foreach ($memberRows as $memberRow) {
+        $srvGroupMembersByName[$memberRow['srv_group']][] = $memberRow;
+    }
+}
+
+$srvGroupIds = array_map(static fn ($r) => (int) $r['id'], $server_admin_group_rows);
+$srvGroupOverridesByGroupId = [];
+if ($srvGroupIds !== []) {
+    $placeholders = implode(',', array_fill(0, count($srvGroupIds), '?'));
+    $overrideRows = $GLOBALS['PDO']->query(
+        "SELECT type, name, access, group_id FROM `:prefix_srvgroups_overrides` WHERE group_id IN ($placeholders)"
+    )->resultset($srvGroupIds);
+    foreach ($overrideRows as $overrideRow) {
+        $srvGroupOverridesByGroupId[(int) $overrideRow['group_id']][] = $overrideRow;
+    }
+}
+
 $server_group_list       = [];
 $server_admins           = [];
 $server_admins_list      = [];
@@ -114,18 +146,10 @@ foreach ($server_admin_group_rows as $row) {
     $row['immunity']    = (int) ($row['immunity'] ?? 0);
     $row['permissions'] = SmFlagsToSb($row['flags']);
 
-    $GLOBALS['PDO']->query("SELECT COUNT(aid) AS cnt FROM `:prefix_admins` WHERE srv_group = :srv_group");
-    $GLOBALS['PDO']->bind(':srv_group', $row['name']);
-    $cnt = $GLOBALS['PDO']->single();
-    $row['member_count'] = (int) $cnt['cnt'];
+    $members = $srvGroupMembersByName[$row['name']] ?? [];
+    $row['member_count'] = count($members);
 
-    $GLOBALS['PDO']->query("SELECT aid, user, authid FROM `:prefix_admins` WHERE srv_group = :srv_group");
-    $GLOBALS['PDO']->bind(':srv_group', $row['name']);
-    $members = $GLOBALS['PDO']->resultset();
-
-    $GLOBALS['PDO']->query("SELECT type, name, access FROM `:prefix_srvgroups_overrides` WHERE group_id = :gid");
-    $GLOBALS['PDO']->bind(':gid', $row['id']);
-    $overrides = $GLOBALS['PDO']->resultset();
+    $overrides = $srvGroupOverridesByGroupId[$row['id']] ?? [];
 
     $server_group_list[]     = $row;
     $server_admins[]         = $row['member_count'];
@@ -153,6 +177,23 @@ $server_admin_group_count = count($server_group_list);
 // action is registered for this surface.
 // ------------------------------------------------------------------
 $server_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
+
+$serverGroupIds = array_map(static fn ($r) => (int) $r['gid'], $server_group_rows);
+$serverRowsByGroupId = [];
+if ($serverGroupIds !== []) {
+    $placeholders = implode(',', array_fill(0, count($serverGroupIds), '?'));
+    $groupServerRows = $GLOBALS['PDO']->query(
+        "SELECT S.sid, S.ip, S.port, S.enabled, SG.group_id
+         FROM `:prefix_servers_groups` AS SG
+         INNER JOIN `:prefix_servers` AS S ON S.sid = SG.server_id
+         WHERE SG.group_id IN ($placeholders)
+         ORDER BY S.sid ASC"
+    )->resultset($serverGroupIds);
+    foreach ($groupServerRows as $groupServerRow) {
+        $serverRowsByGroupId[(int) $groupServerRow['group_id']][] = $groupServerRow;
+    }
+}
+
 $server_list   = [];
 $server_counts = [];
 foreach ($server_group_rows as $row) {
@@ -177,15 +218,7 @@ foreach ($server_group_rows as $row) {
     // `Actions.ServersHostPlayers` against a server the panel
     // already knows is offline by config. Mirrors the sibling
     // contract in `page_admin_servers_list.tpl`.
-    $GLOBALS['PDO']->query(
-        "SELECT S.sid, S.ip, S.port, S.enabled
-         FROM `:prefix_servers_groups` AS SG
-         INNER JOIN `:prefix_servers` AS S ON S.sid = SG.server_id
-         WHERE SG.group_id = :gid
-         ORDER BY S.sid ASC"
-    );
-    $GLOBALS['PDO']->bind(':gid', $row['gid']);
-    $serverRows = $GLOBALS['PDO']->resultset();
+    $serverRows = $serverRowsByGroupId[$row['gid']] ?? [];
 
     $row['servers'] = array_map(static fn (array $s): array => [
         'sid'     => (int)    $s['sid'],
