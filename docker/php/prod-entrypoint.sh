@@ -361,6 +361,25 @@ validate_identifiers() {
             die "DB_CHARSET='${DB_CHARSET:-}' must match [A-Za-z0-9_]+."
             ;;
     esac
+
+    # SB_SECRET_KEY must be valid base64 (standard or URL-safe). The JWT
+    # signer consumes it via InMemory::base64Encoded(); a UUID / random
+    # password / hex string pasted into the env var boots fine and then
+    # fatal()s on the first login with a library stack dump. Catch that
+    # here so the operator sees the fix in the boot log instead.
+    if [ -n "${SB_SECRET_KEY:-}" ]; then
+        if ! php -r '
+            require "/var/www/html/web/includes/vendor/autoload.php";
+            try {
+                \Lcobucci\JWT\Signer\Key\InMemory::base64Encoded((string) getenv("SB_SECRET_KEY"));
+            } catch (Throwable $e) {
+                fwrite(STDERR, $e->getMessage());
+                exit(1);
+            }
+        ' >/dev/null 2>&1; then
+            die "SB_SECRET_KEY is not valid base64. Generate one with: openssl rand -base64 47. Then set SB_SECRET_KEY to that output and restart."
+        fi
+    fi
 }
 
 # ---------------------------------------------------------------------------
