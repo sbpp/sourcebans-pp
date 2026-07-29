@@ -86,4 +86,19 @@ final class UserManagerGetAllAdminsQueryCountTest extends ApiTestCase
         $this->assertArrayHasKey(Fixture::adminAid(), $all);
         $this->assertSame($expected, $all[Fixture::adminAid()]);
     }
+
+    public function testGetAllAdminsExcludesConsoleAidZero(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $consoleExists = (int) $pdo->query(sprintf(
+            'SELECT COUNT(*) FROM `%s_admins` WHERE aid = 0',
+            DB_PREFIX,
+        ))->fetchColumn();
+        $this->assertSame(1, $consoleExists, 'fixture must seed the CONSOLE aid 0 row');
+
+        $all = (new UserManager(null))->GetAllAdmins();
+
+        $this->assertArrayNotHasKey(0, $all);
+        $this->assertArrayHasKey(Fixture::adminAid(), $all);
+    }
 }

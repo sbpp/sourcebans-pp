@@ -215,6 +215,9 @@ final class UserManager
 
         foreach ($rows as $res) {
             $aid = (int) $res['aid'];
+            if ($aid <= 0) {
+                continue;
+            }
             $this->admins[$aid] = $this->mapAdminRow($aid, $res);
         }
 
