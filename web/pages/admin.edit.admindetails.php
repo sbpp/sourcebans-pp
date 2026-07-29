@@ -47,7 +47,6 @@ if (!$canEditTarget) {
     return;
 }
 
-$canEditPasswords = $canEditTarget;
 $webBitmask        = (int) $userbank->GetProperty('extraflags', $adminId);
 $webGroupId        = (int) $userbank->GetProperty('gid', $adminId);
 $hasWebPermissions = $webBitmask !== 0 || $webGroupId > 0;
@@ -127,33 +126,32 @@ if (isset($_POST['adminname'])) {
     }
 
     // Passwords ---------------------------------------------------------
+    // Editable for anyone who passed the !$canEditTarget gate above.
     $passwordChanged   = false;
     $serverPassChanged = false;
 
-    if ($canEditPasswords) {
-        if ($newPassword !== '') {
-            $passwordChanged = true;
-            if (strlen($newPassword) < MIN_PASS_LENGTH) {
-                $validationErrors['password'] = 'Your password must be at least '
-                    . MIN_PASS_LENGTH . ' characters long.';
-            } elseif ($newPassword2 === '') {
-                $validationErrors['password2'] = 'You must confirm the password.';
-            } elseif ($newPassword !== $newPassword2) {
-                $validationErrors['password2'] = "Your passwords don't match.";
-            }
+    if ($newPassword !== '') {
+        $passwordChanged = true;
+        if (strlen($newPassword) < MIN_PASS_LENGTH) {
+            $validationErrors['password'] = 'Your password must be at least '
+                . MIN_PASS_LENGTH . ' characters long.';
+        } elseif ($newPassword2 === '') {
+            $validationErrors['password2'] = 'You must confirm the password.';
+        } elseif ($newPassword !== $newPassword2) {
+            $validationErrors['password2'] = "Your passwords don't match.";
         }
+    }
 
-        if ($useServerPass) {
-            if ($newServerPass !== '') {
-                $serverPassChanged = true;
-            }
-            $existingServerPass = (string) $userbank->GetProperty('srv_password', $adminId);
-            if ($newServerPass === '' && $existingServerPass === '') {
-                $validationErrors['a_serverpass'] = 'You must type a server password or uncheck the box.';
-            } elseif ($newServerPass !== '' && strlen($newServerPass) < MIN_PASS_LENGTH) {
-                $validationErrors['a_serverpass'] = 'Your password must be at least '
-                    . MIN_PASS_LENGTH . ' characters long.';
-            }
+    if ($useServerPass) {
+        if ($newServerPass !== '') {
+            $serverPassChanged = true;
+        }
+        $existingServerPass = (string) $userbank->GetProperty('srv_password', $adminId);
+        if ($newServerPass === '' && $existingServerPass === '') {
+            $validationErrors['a_serverpass'] = 'You must type a server password or uncheck the box.';
+        } elseif ($newServerPass !== '' && strlen($newServerPass) < MIN_PASS_LENGTH) {
+            $validationErrors['a_serverpass'] = 'Your password must be at least '
+                . MIN_PASS_LENGTH . ' characters long.';
         }
     }
 
@@ -226,7 +224,7 @@ if (isset($_POST['adminname'])) {
     authid:      $authidValue,
     email:       $emailDisplay,
     a_spass:     $haveServerPw,
-    change_pass: $canEditPasswords,
+    change_pass: true,
 ));
 
 sbpp_admin_edit_emit_tail_script(
