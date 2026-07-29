@@ -463,6 +463,28 @@ if ($AdminsEnd > $admin_count) {
     $AdminsEnd = $admin_count;
 }
 
+$userbank->GetAllAdmins();
+
+$adminAids        = array_map(static fn ($a) => (int) $a['aid'], $admins);
+$banCountByAid    = [];
+$nodemoCountByAid = [];
+if ($adminAids !== []) {
+    $placeholders = implode(',', array_fill(0, count($adminAids), '?'));
+    $banCountRows = $GLOBALS['PDO']->query(
+        "SELECT aid, count(authid) AS num FROM `:prefix_bans` WHERE aid IN ($placeholders) GROUP BY aid"
+    )->resultset($adminAids);
+    foreach ($banCountRows as $banCountRow) {
+        $banCountByAid[(int) $banCountRow['aid']] = (int) $banCountRow['num'];
+    }
+
+    $nodemoCountRows = $GLOBALS['PDO']->query(
+        "SELECT B.aid AS aid, count(B.bid) AS num FROM `:prefix_bans` AS B WHERE B.aid IN ($placeholders) AND NOT EXISTS (SELECT D.demid FROM `:prefix_demos` AS D WHERE D.demid = B.bid) GROUP BY B.aid"
+    )->resultset($adminAids);
+    foreach ($nodemoCountRows as $nodemoCountRow) {
+        $nodemoCountByAid[(int) $nodemoCountRow['aid']] = (int) $nodemoCountRow['num'];
+    }
+}
+
 // List Page
 $admin_list = [];
 foreach ($admins as $admin) {
@@ -475,16 +497,9 @@ foreach ($admins as $admin) {
     if (empty($admin['server_group']) || $admin['server_group'] == " ") {
         $admin['server_group'] = "No Group/Individual Permissions";
     }
-    $GLOBALS['PDO']->query("SELECT count(authid) AS num FROM `:prefix_bans` WHERE aid = :aid");
-    $GLOBALS['PDO']->bind(':aid', $admin['aid']);
-    $num               = $GLOBALS['PDO']->single();
-    $admin['bancount'] = $num['num'];
-
-    $GLOBALS['PDO']->query("SELECT count(B.bid) AS num FROM `:prefix_bans` AS B WHERE aid = :aid AND NOT EXISTS (SELECT D.demid FROM `:prefix_demos` AS D WHERE D.demid = B.bid)");
-    $GLOBALS['PDO']->bind(':aid', $admin['aid']);
-    $nodem                = $GLOBALS['PDO']->single();
+    $admin['bancount']    = $banCountByAid[(int) $admin['aid']] ?? 0;
     $admin['aid']         = $admin['aid'];
-    $admin['nodemocount'] = $nodem['num'];
+    $admin['nodemocount'] = $nodemoCountByAid[(int) $admin['aid']] ?? 0;
 
     $admin['name']               = stripslashes($admin['user']);
     $admin['server_flag_string'] = SmFlagsToSb($userbank->GetProperty("srv_flags", $admin['aid']));
