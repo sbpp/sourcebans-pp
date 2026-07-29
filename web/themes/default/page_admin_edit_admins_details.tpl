@@ -22,7 +22,7 @@
         <p class="text-sm text-muted m-0 mt-2">Update identity, login credentials, and the in-game admin password.</p>
     </div>
 
-    <nav class="flex gap-2 mb-4" role="tablist" aria-label="Edit admin sections">
+    <nav class="flex gap-2 mb-4 items-center" role="tablist" aria-label="Edit admin sections">
         <a class="btn btn--secondary btn--sm" role="tab" aria-current="page"
            href="?p=admin&c=admins&o=editdetails&id={$smarty.get.id|escape:'url'}"
            data-testid="admin-tab-details">Details</a>
@@ -32,8 +32,14 @@
         <a class="btn btn--ghost btn--sm" role="tab"
            href="?p=admin&c=admins&o=editservers&id={$smarty.get.id|escape:'url'}"
            data-testid="admin-tab-servers">Servers</a>
-        <a class="btn btn--ghost btn--sm"
-           href="?p=admin&c=admins&o=editpermissions&id={$smarty.get.id|escape:'url'}">Permissions</a>
+        <a class="btn btn--ghost btn--sm" role="tab"
+           href="?p=admin&c=admins&o=editpermissions&id={$smarty.get.id|escape:'url'}"
+           data-testid="admin-tab-permissions">Permissions</a>
+        <a class="btn btn--ghost btn--sm admin-tabs__back"
+           href="index.php?p=admin&amp;c=admins"
+           data-testid="admin-tab-back">
+            <i data-lucide="arrow-left"></i> Back
+        </a>
     </nav>
 
     <form method="post" action="" class="space-y-4" autocomplete="off">
