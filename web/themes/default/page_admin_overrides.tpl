@@ -117,7 +117,7 @@
                 </div>
             </div>
             <div class="card__body">
-                <div class="grid gap-3" style="grid-template-columns:8rem 1fr 14rem">
+                <div class="grid gap-3 overrides-add-grid">
                     <div>
                         <label class="label" for="addoverride-type">Type</label>
                         <select class="select" id="addoverride-type" name="new_override_type"

@@ -2083,6 +2083,17 @@ details.queue-row > summary > .row-actions {
 .justify-between { justify-content: space-between; } .justify-end { justify-content: flex-end; }
 .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; }
 .grid { display: grid; }
+/* Overrides "Add an override" row: stack on narrow viewports so the
+   Flags input cannot overflow the card (fixed 8rem+1fr+14rem did). */
+.overrides-add-grid {
+  grid-template-columns: 1fr;
+}
+.overrides-add-grid > * { min-width: 0; }
+@media (min-width: 768px) {
+  .overrides-add-grid {
+    grid-template-columns: 8rem minmax(0, 1fr) 14rem;
+  }
+}
 .text-xs { font-size: var(--fs-xs); } .text-sm { font-size: var(--fs-sm); }
 .text-muted { color: var(--text-muted); } .text-faint { color: var(--text-faint); }
 .font-mono { font-family: var(--font-mono); }
