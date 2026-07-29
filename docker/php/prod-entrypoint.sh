@@ -362,18 +362,57 @@ validate_identifiers() {
             ;;
     esac
 
-    # SB_SECRET_KEY must be base64 that decodes to >= 32 bytes (HMAC-SHA256).
-    # Reuse JWT::signingKeyFromSecret so boot and runtime share one gate:
-    # invalid base64 AND short-but-valid base64 both fail closed here
-    # instead of letting the container start and dumping a Lcobucci
-    # exception on first login.
-    if [ -n "${SB_SECRET_KEY:-}" ]; then
-        if ! php -r '
-            require "/var/www/html/web/includes/vendor/autoload.php";
-            \Sbpp\Auth\JWT::signingKeyFromSecret((string) getenv("SB_SECRET_KEY"));
-        ' >/dev/null 2>&1; then
-            die "SB_SECRET_KEY must be base64 that decodes to at least 32 bytes. Generate one with: openssl rand -base64 47. Then set SB_SECRET_KEY to that output and restart."
-        fi
+    # SB_SECRET_KEY is NOT validated here. Env may be stale or unset while
+    # an existing config.php carries the real key (or the reverse). The
+    # effective key PHP will load is validated after render_config via
+    # validate_effective_secret_key. Pre-write env checks live inside
+    # render_config so a bad env value cannot be persisted into a fresh
+    # config.php.
+}
+
+# ---------------------------------------------------------------------------
+# SB_SECRET_KEY gate (shared by render_config + validate_effective_*)
+# ---------------------------------------------------------------------------
+#
+# HMAC-SHA256 needs >= 32 decoded bytes. JWT::signingKeyFromSecret is the
+# single PHP-side source of truth (invalid base64 AND short-but-valid
+# base64). Pass the candidate via SB_SECRET_KEY_CHECK so shell quoting
+# cannot mangle the secret.
+assert_sb_secret_key() {
+    secret="$1"
+    context="$2"
+    if [ -z "$secret" ]; then
+        die "SB_SECRET_KEY is empty (${context}). Generate one with: openssl rand -base64 47."
+    fi
+    if ! SB_SECRET_KEY_CHECK="$secret" php -r '
+        require "/var/www/html/web/includes/vendor/autoload.php";
+        \Sbpp\Auth\JWT::signingKeyFromSecret((string) getenv("SB_SECRET_KEY_CHECK"));
+    ' >/dev/null 2>&1; then
+        die "SB_SECRET_KEY must be base64 that decodes to at least 32 bytes (${context}). Generate one with: openssl rand -base64 47. Then set SB_SECRET_KEY / fix config.php and restart."
+    fi
+}
+
+# After render_config, config.php is the install-state sentinel and the
+# panel's request-time source of truth for SB_SECRET_KEY (env is unset
+# before apache starts). Validate THAT value — not getenv — so a stale
+# invalid env cannot block a healthy persisted install, and a corrected
+# env cannot mask a bad key still sitting in config.php.
+validate_effective_secret_key() {
+    log "validating effective SB_SECRET_KEY from ${SBPP_CONFIG_PATH}"
+    if [ ! -s "${SBPP_CONFIG_PATH}" ]; then
+        die "${SBPP_CONFIG_PATH} missing after render_config — cannot validate JWT signing key."
+    fi
+    if ! php -r '
+        require "/var/www/html/web/includes/vendor/autoload.php";
+        define("IN_SB", true);
+        require getenv("SBPP_CONFIG_PATH");
+        if (!defined("SB_SECRET_KEY")) {
+            fwrite(STDERR, "SB_SECRET_KEY constant missing\n");
+            exit(1);
+        }
+        \Sbpp\Auth\JWT::signingKeyFromSecret((string) SB_SECRET_KEY);
+    ' >/dev/null 2>&1; then
+        die "Effective SB_SECRET_KEY in ${SBPP_CONFIG_PATH} is not usable (must be base64 decoding to at least 32 bytes). Fix or delete the file, set SB_SECRET_KEY, and restart. Generate with: openssl rand -base64 47."
     fi
 }
 
@@ -520,6 +559,10 @@ render_config() {
         SB_SECRET_KEY="$(openssl rand -base64 47 | tr -d '\n')"
         log "step 4: minted fresh SB_SECRET_KEY (47-byte base64) — persist by re-reading from this file or set SB_SECRET_KEY env var"
         export SB_SECRET_KEY
+    else
+        # Fail before writing so a bad env value cannot become a sticky
+        # install-state sentinel that every restart re-loads.
+        assert_sb_secret_key "$SB_SECRET_KEY" "environment before writing config.php"
     fi
 
     # Single-quote string literals; escape `'` and `\` to defend the
@@ -934,6 +977,7 @@ main() {
     configure_apache        # step 2
     wait_for_db             # step 3
     render_config           # step 4
+    validate_effective_secret_key  # step 4b — key PHP will actually load
     first_boot_install      # step 5
     run_pending_migrations  # step 6
     strip_install_dirs      # step 7
