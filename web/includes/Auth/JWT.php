@@ -54,18 +54,34 @@ final class JWT
     }
 
     /**
+     * Minimum decoded length for {@see SB_SECRET_KEY}. HMAC-SHA256
+     * needs a 256-bit key; shorter values decode as base64 but fail
+     * later inside Lcobucci's signer.
+     */
+    public const MIN_SECRET_BYTES = 32;
+
+    /**
      * Decode an operator-supplied SB_SECRET_KEY into a signing key.
      *
      * Public so tests can pin the invalid-key operator message without
-     * redefining the SB_SECRET_KEY constant mid-process.
+     * redefining the SB_SECRET_KEY constant mid-process. Decodes once,
+     * then rejects keys shorter than {@see MIN_SECRET_BYTES}.
      */
     public static function signingKeyFromSecret(string $secret): InMemory
     {
         try {
-            return InMemory::base64Encoded($secret);
+            $key = InMemory::base64Encoded($secret);
         } catch (CannotDecodeContent|InvalidKeyProvided $e) {
             self::failInvalidSecretKey($e);
         }
+
+        if (strlen($key->contents()) < self::MIN_SECRET_BYTES) {
+            self::failInvalidSecretKey(new \InvalidArgumentException(
+                'decoded SB_SECRET_KEY is shorter than ' . self::MIN_SECRET_BYTES . ' bytes',
+            ));
+        }
+
+        return $key;
     }
 
     private static function getConfig(): Configuration
@@ -74,16 +90,17 @@ final class JWT
     }
 
     /**
-     * Operator-facing abort when SB_SECRET_KEY is not valid base64.
+     * Operator-facing abort when SB_SECRET_KEY cannot be used to sign.
      *
-     * The JWT library's CannotDecodeContent message ("invalid base64
-     * characters detected") is accurate but useless for a self-hoster
-     * who pasted a UUID / random password into the env var. Surface
-     * the fix instead of the library stack.
+     * Covers non-base64 values (UUID / hex / random password) and
+     * base64 that decodes to fewer than {@see MIN_SECRET_BYTES}. Both
+     * used to surface as late Lcobucci exceptions on first login;
+     * surface the fix instead of the library stack.
      */
     private static function failInvalidSecretKey(\Throwable $cause): never
     {
-        $message = "SB_SECRET_KEY is not valid base64.\n"
+        $message = "SB_SECRET_KEY must be base64 that decodes to at least "
+            . self::MIN_SECRET_BYTES . " bytes (256 bits for HMAC-SHA256).\n"
             . "The panel's session cookies are signed with that value, so login cannot continue.\n"
             . "\n"
             . "Generate a valid key:\n"

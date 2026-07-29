@@ -8,15 +8,15 @@ declare(strict_types=1);
 namespace Sbpp\Tests\Unit;
 
 use Lcobucci\JWT\Signer\Key\InMemory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Sbpp\Auth\JWT;
 
 /**
- * SB_SECRET_KEY must be valid base64 for lcobucci's
- * InMemory::base64Encoded(). A UUID / hex / random password in the
- * env var used to surface as a raw CannotDecodeContent stack dump on
- * first login. JWT::signingKeyFromSecret() is the gate that turns
- * that into an operator-facing abort.
+ * SB_SECRET_KEY must be base64 that decodes to at least
+ * {@see JWT::MIN_SECRET_BYTES}. Invalid base64 and short-but-valid
+ * base64 both used to reach Lcobucci's HMAC signer and dump a library
+ * stack on first login. JWT::signingKeyFromSecret() is the shared gate.
  */
 final class JwtSecretKeyTest extends TestCase
 {
@@ -26,10 +26,31 @@ final class JwtSecretKeyTest extends TestCase
         $key = JWT::signingKeyFromSecret($secret);
 
         $this->assertInstanceOf(InMemory::class, $key);
-        $this->assertNotSame('', $key->contents());
+        $this->assertGreaterThanOrEqual(JWT::MIN_SECRET_BYTES, strlen($key->contents()));
     }
 
-    public function testInvalidSecretKeyAbortsWithOperatorMessage(): void
+    public function testExactlyMinSecretBytesIsAccepted(): void
+    {
+        $secret = base64_encode(random_bytes(JWT::MIN_SECRET_BYTES));
+        $key = JWT::signingKeyFromSecret($secret);
+
+        $this->assertSame(JWT::MIN_SECRET_BYTES, strlen($key->contents()));
+    }
+
+    /**
+     * @return list<array{0: string}>
+     */
+    public static function rejectedSecretProvider(): array
+    {
+        return [
+            'non-base64' => ['not-valid-base64!!!'],
+            'short valid base64 (16 bytes)' => [base64_encode(random_bytes(16))],
+            'one byte under minimum' => [base64_encode(random_bytes(JWT::MIN_SECRET_BYTES - 1))],
+        ];
+    }
+
+    #[DataProvider('rejectedSecretProvider')]
+    public function testRejectedSecretAbortsWithOperatorMessage(string $secret): void
     {
         // failInvalidSecretKey uses exit(1) on the CLI SAPI, which
         // would kill the PHPUnit worker. Drive it in a subprocess so
@@ -40,7 +61,7 @@ final class JwtSecretKeyTest extends TestCase
         $script = <<<'PHP'
 require $argv[1];
 require $argv[2];
-\Sbpp\Auth\JWT::signingKeyFromSecret('not-valid-base64!!!');
+\Sbpp\Auth\JWT::signingKeyFromSecret($argv[3]);
 fwrite(STDERR, "EXPECTED_ABORT_MISSING\n");
 exit(2);
 PHP;
@@ -52,6 +73,7 @@ PHP;
             '--',
             $autoload,
             $jwtFile,
+            $secret,
         ];
 
         $descriptors = [
@@ -74,10 +96,10 @@ PHP;
         $this->assertSame(
             1,
             $exitCode,
-            "invalid SB_SECRET_KEY must exit 1; output was:\n{$combined}",
+            "rejected SB_SECRET_KEY must exit 1; output was:\n{$combined}",
         );
         $this->assertStringContainsString(
-            'SB_SECRET_KEY is not valid base64',
+            'SB_SECRET_KEY must be base64 that decodes to at least ' . JWT::MIN_SECRET_BYTES . ' bytes',
             $combined,
             "subprocess output was:\n{$combined}",
         );

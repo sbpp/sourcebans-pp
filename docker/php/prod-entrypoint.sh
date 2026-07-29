@@ -362,22 +362,17 @@ validate_identifiers() {
             ;;
     esac
 
-    # SB_SECRET_KEY must be valid base64 (standard or URL-safe). The JWT
-    # signer consumes it via InMemory::base64Encoded(); a UUID / random
-    # password / hex string pasted into the env var boots fine and then
-    # fatal()s on the first login with a library stack dump. Catch that
-    # here so the operator sees the fix in the boot log instead.
+    # SB_SECRET_KEY must be base64 that decodes to >= 32 bytes (HMAC-SHA256).
+    # Reuse JWT::signingKeyFromSecret so boot and runtime share one gate:
+    # invalid base64 AND short-but-valid base64 both fail closed here
+    # instead of letting the container start and dumping a Lcobucci
+    # exception on first login.
     if [ -n "${SB_SECRET_KEY:-}" ]; then
         if ! php -r '
             require "/var/www/html/web/includes/vendor/autoload.php";
-            try {
-                \Lcobucci\JWT\Signer\Key\InMemory::base64Encoded((string) getenv("SB_SECRET_KEY"));
-            } catch (Throwable $e) {
-                fwrite(STDERR, $e->getMessage());
-                exit(1);
-            }
+            \Sbpp\Auth\JWT::signingKeyFromSecret((string) getenv("SB_SECRET_KEY"));
         ' >/dev/null 2>&1; then
-            die "SB_SECRET_KEY is not valid base64. Generate one with: openssl rand -base64 47. Then set SB_SECRET_KEY to that output and restart."
+            die "SB_SECRET_KEY must be base64 that decodes to at least 32 bytes. Generate one with: openssl rand -base64 47. Then set SB_SECRET_KEY to that output and restart."
         fi
     fi
 }
