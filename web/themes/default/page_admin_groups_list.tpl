@@ -21,7 +21,7 @@
    stays so the per-section vertical rhythm holds; the `max-width`
    cap is also unnecessary here because the outer shell already
    clamps to 1400px. *}
-<div class="space-y-6">
+<div class="page-section space-y-6">
 
     {* ------------------------------------------------------------ *}
     {* Master-detail: Web admin groups                              *}

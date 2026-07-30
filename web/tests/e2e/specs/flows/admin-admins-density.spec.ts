@@ -196,20 +196,18 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         await expect(p.searchInput('name')).toHaveValue('');
     });
 
-    // ----- ADM-3 (#1275) — Add admin CTA navigates to its section -----
+    // ----- ADM-3 (#1490) — Add admin lives in the main sidebar accordion -----
 
-    test('ADM-3: header "Add admin" CTA navigates to the add-admin section', async ({ page }, testInfo) => {
-        test.skip(testInfo.project.name !== 'chromium', 'In-page CTA is project-agnostic; pinning to desktop for runtime.');
+    test('ADM-3: sidebar "Add admin" link navigates to the add-admin section', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'chromium', 'Sidebar accordion is project-agnostic; pinning to desktop for runtime.');
 
         const p = new AdminAdminsPage(page);
         await p.goto();
 
-        const cta = page.locator('[data-testid="admin-add-cta"]');
-        await expect(cta).toBeVisible();
-        // Pre-#1275 this was `#add-admin` (anchor scroll within the
-        // long-scroll page); now it's a Pattern A URL.
-        await expect(cta).toHaveAttribute('href', /section=add-admin/);
-        await cta.click();
+        const link = p.tocLink('add-admin');
+        await expect(link).toBeVisible();
+        await expect(link).toHaveAttribute('href', /section=add-admin/);
+        await link.click();
 
         await expect(page).toHaveURL(/section=add-admin/);
         await expect(p.tocLink('add-admin')).toHaveAttribute('aria-current', 'page');

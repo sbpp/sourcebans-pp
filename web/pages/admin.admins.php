@@ -65,47 +65,12 @@ $canEditAdmins   = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner
 $canDeleteAdmins = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteAdmins));
 
 /*
- * #1275 — `$sections` array drives the new vertical sidebar via
- * AdminTabs. Each entry carries `slug` + `name` + `permission` +
- * `url` + `icon` (Lucide). Icons follow the Pattern A vocabulary
- * already in `admin.servers.php` / `admin.groups.php` / etc.
- *
- * `permission` filters happen inside AdminTabs (it skips entries
- * the current user can't reach), so an admin without LIST_ADMINS
- * sees the Add admin / Overrides sidebar links but not Admins.
+ * #1275 / #1490 — `$sections` comes from AdminNavCatalog (main
+ * sidebar accordion). Permission filters happen in
+ * AdminNavCatalog::filterForUser when the navbar builds children.
  */
-/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
-$sections = [
-    [
-        'slug'       => 'admins',
-        'name'       => 'Admins',
-        'permission' => ADMIN_OWNER | ADMIN_LIST_ADMINS,
-        'url'        => 'index.php?p=admin&c=admins&section=admins',
-        'icon'       => 'users',
-    ],
-    [
-        'slug'       => 'add-admin',
-        'name'       => 'Add admin',
-        'permission' => ADMIN_OWNER | ADMIN_ADD_ADMINS,
-        'url'        => 'index.php?p=admin&c=admins&section=add-admin',
-        'icon'       => 'user-plus',
-    ],
-    [
-        'slug'       => 'overrides',
-        'name'       => 'Overrides',
-        'permission' => ADMIN_OWNER | ADMIN_ADD_ADMINS,
-        'url'        => 'index.php?p=admin&c=admins&section=overrides',
-        'icon'       => 'shield',
-    ],
-];
-
-// Default to the first accessible section so the page never renders
-// a blank body when `?section=` is missing or carries an unknown
-// value. Admins → Add admin → Overrides; an admin without ADD_ADMINS
-// can't reach Add admin or Overrides, so they always land on Admins
-// (or the access-denied stub the View renders if they also lack
-// LIST_ADMINS).
-$validSlugs = ['admins', 'add-admin', 'overrides'];
+$sections = \Sbpp\View\AdminNavCatalog::sectionsFor('admins');
+$validSlugs = array_column($sections, 'slug');
 $section    = (string) ($_GET['section'] ?? '');
 if (!in_array($section, $validSlugs, true)) {
     if ($canListAdmins) {
@@ -116,11 +81,6 @@ if (!in_array($section, $validSlugs, true)) {
         $section = 'admins';
     }
 }
-
-// AdminTabs opens the sidebar shell + emits the <aside> + opens the
-// content column. Closing tags live AFTER each render branch below —
-// document the pairing so future edits don't strand an open <div>.
-new AdminTabs($sections, $userbank, $theme, $section, 'Admin sections');
 
 // ---------------------------------------------------------------- add-admin
 if ($section === 'add-admin') {
@@ -167,7 +127,6 @@ if ($section === 'add-admin') {
         // half; this is the visible-affordance half).
         can_grant_owner: $userbank->HasAccess(WebPermission::Owner),
     ));
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;
 }
 
@@ -179,7 +138,6 @@ if ($section === 'overrides') {
     // unchanged; this require keeps the existing POST URL
     // (`?p=admin&c=admins`) working for the form's submit.
     require(TEMPLATES_PATH . "/admin.overrides.php");
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;
 }
 
@@ -558,11 +516,9 @@ if ($pages > 1) {
     // the View itself still follows the can_* convention from
     // Sbpp\View\View's class-level docblock.
     can_list_admins: $canListAdmins,
-    can_add_admins: $canAddAdmins,
     can_edit_admins: $canEditAdmins,
     can_delete_admins: $canDeleteAdmins,
     admin_count: (int) $admin_count,
     admin_nav: (string) $admin_nav,
     admins: $admin_list,
 ));
-echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';

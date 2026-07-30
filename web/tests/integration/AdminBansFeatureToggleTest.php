@@ -178,49 +178,37 @@ final class AdminBansFeatureToggleTest extends ApiTestCase
     }
 
     /**
-     * Extract the comma-separated tab slugs from the stub's
-     * `<!--SBPP_DISPLAY:core/admin_sidebar.tpl:…-->` marker. Returns
-     * an empty list when the sidebar never rendered (which is itself
-     * an assertable signal — every test case below either expects
-     * the marker present with specific slugs, or expects a specific
-     * slug missing from the marker).
-     *
-     * Non-greedy `(.*?)` capture: slugs themselves carry `-`
-     * (`add-ban`, `group-ban`) so the slugs body can't be `[^-]+`;
-     * we anchor on the closing `-->` of the comment marker instead.
+     * Slugs the main-sidebar Bans accordion would expose for the
+     * current user + config toggles (#1490 / AdminNavCatalog).
      *
      * @return list<string>
      */
-    private static function sidebarSlugs(string $out): array
+    private function catalogBansSlugs(): array
     {
-        if (preg_match('/<!--SBPP_DISPLAY:core\/admin_sidebar\.tpl:(.*?)-->/', $out, $m) !== 1) {
-            return [];
-        }
-        $csv = trim((string) $m[1]);
-        if ($csv === '') {
-            return [];
-        }
-        return array_values(array_filter(explode(',', $csv), static fn($s) => $s !== ''));
+        /** @var \Sbpp\Auth\UserManager $userbank */
+        $userbank = $GLOBALS['userbank'];
+        $sections = \Sbpp\View\AdminNavCatalog::filterForUser(
+            \Sbpp\View\AdminNavCatalog::sectionsFor('bans'),
+            $userbank,
+        );
+        return array_values(array_column($sections, 'slug'));
     }
 
     /**
      * Baseline: with both toggles on (the `data.sql` default), the
-     * sidebar `tabs` array passed to `core/admin_sidebar.tpl` must
-     * carry BOTH the `protests` and `submissions` slugs. Same shape
+     * AdminNavCatalog bans children must carry BOTH the `protests`
+     * and `submissions` slugs. Same shape
      * `PaletteActionsTest::testPublicTogglesGateEntries` pins for the
-     * sibling palette + navbar surfaces. Without this baseline the
-     * negative tests below could pass for a different reason (e.g.
-     * the marker format drifted) and the user-reported regression
-     * would stay open.
+     * sibling palette + navbar surfaces.
      */
     #[RunInSeparateProcess]
     #[PreserveGlobalState(false)]
     public function testSidebarShowsBothEntriesWhenTogglesAreOn(): void
     {
         $this->loginAsAdmin();
+        $this->bootRenderHarness();
 
-        $out   = $this->renderAdminBans([]);
-        $slugs = self::sidebarSlugs($out);
+        $slugs = $this->catalogBansSlugs();
 
         $this->assertContains('protests', $slugs,
             'Ban protests entry must appear in the sidebar when config.enableprotest is on (baseline for #1421).');
@@ -241,9 +229,9 @@ final class AdminBansFeatureToggleTest extends ApiTestCase
     {
         $this->loginAsAdmin();
         $this->setSetting('config.enableprotest', '0');
+        $this->bootRenderHarness();
 
-        $out   = $this->renderAdminBans([]);
-        $slugs = self::sidebarSlugs($out);
+        $slugs = $this->catalogBansSlugs();
 
         $this->assertNotContains('protests', $slugs,
             'Ban protests entry must NOT appear in the sidebar when config.enableprotest=0 (#1421).');
@@ -260,9 +248,9 @@ final class AdminBansFeatureToggleTest extends ApiTestCase
     {
         $this->loginAsAdmin();
         $this->setSetting('config.enablesubmit', '0');
+        $this->bootRenderHarness();
 
-        $out   = $this->renderAdminBans([]);
-        $slugs = self::sidebarSlugs($out);
+        $slugs = $this->catalogBansSlugs();
 
         $this->assertNotContains('submissions', $slugs,
             'Ban submissions entry must NOT appear in the sidebar when config.enablesubmit=0 (#1421).');
@@ -535,9 +523,9 @@ final class AdminBansFeatureToggleTest extends ApiTestCase
         $this->loginAsAdmin();
         $this->setSetting('config.enableprotest', '0');
         $this->setSetting('config.enablesubmit', '0');
+        $this->bootRenderHarness();
 
-        $out   = $this->renderAdminBans([]);
-        $slugs = self::sidebarSlugs($out);
+        $slugs = $this->catalogBansSlugs();
 
         $this->assertNotContains('protests', $slugs,
             'Both toggles off: protests entry must be absent from the sidebar (#1421).');

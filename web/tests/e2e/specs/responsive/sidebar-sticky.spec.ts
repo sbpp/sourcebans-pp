@@ -84,11 +84,10 @@ test.describe('responsive: sidebar sticky at desktop', () => {
 
     test('sidebar stays pinned at viewport y=0 across the entire scroll range of admin-settings', async ({ page }) => {
         await page.goto('/index.php?p=admin&c=settings');
-        // The settings page mounts the AdminTabs sidebar shell + the
-        // settings View. Anchor on the sidebar shell as the
-        // "page mounted" signal — it's the wrapper AdminTabs opens
-        // before the page body renders.
-        await expect(page.locator('[data-testid="admin-sidebar-shell"]')).toBeVisible();
+        // Settings lands with the main-sidebar Settings accordion open
+        // (#1490) and the Main section body painted.
+        await expect(page.locator('[data-testid="nav-admin-settings-accordion"]')).toBeVisible();
+        await expect(page.locator('[data-testid="nav-admin-settings-settings"]')).toHaveAttribute('aria-current', 'page');
 
         // Sanity: the page has to be taller than the viewport for the
         // sticky test to be meaningful. If the page fits in the

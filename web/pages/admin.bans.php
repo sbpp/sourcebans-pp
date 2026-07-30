@@ -83,8 +83,8 @@ $canGroupBan     = $canAddBan && $groupBanEnabled;
  * file-upload `importBans` POST. These run regardless of section
  * because the redirects are out-of-band (banlist row -> "deleted" /
  * "unbanned" toast on bans landing page) and the POST has to hit its
- * dedicated section anyway. Order them BEFORE the AdminTabs sidebar
- * paints so any echo'd toast lands above the chrome.
+ * dedicated section anyway. Run them before the section body so any
+ * echo'd toast lands above the page content.
  */
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
     echo "<script>sb.message.show('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
@@ -213,71 +213,6 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
     echo "<script>sb.message.show('Bans Import', '" . addslashes($importMsg) . "', 'green', '');</script>";
 }
 
-/*
- * #1275 — `$sections` array drives the new vertical sidebar via
- * AdminTabs. Each entry carries `slug` + `name` + `permission` +
- * `url` + `icon` (Lucide). Icons follow the Pattern A vocabulary
- * already in `admin.servers.php` / `admin.groups.php` / etc:
- * `plus` for create, `flag` for reports, `clipboard-list` for
- * queues, `upload` for file imports, `users` for multi-user.
- */
-/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
-$sections = [
-    [
-        'slug'       => 'add-ban',
-        'name'       => 'Add a ban',
-        'permission' => ADMIN_OWNER | ADMIN_ADD_BAN,
-        'url'        => 'index.php?p=admin&c=bans&section=add-ban',
-        'icon'       => 'plus',
-    ],
-];
-// #1421 — Ban protests / submissions ride the same feature-flag gate
-// shape group-ban does below: omitted from the sidebar entirely when
-// the public-pages toggle (`config.enableprotest` / `config.enablesubmit`)
-// is off, instead of leaving a dead link that lands on a page rendering
-// records the public form can't even produce. The matching section
-// handlers also short-circuit on direct URL access (see the
-// `if (!$protestEnabled)` / `if (!$submitEnabled)` stubs below).
-if ($protestEnabled) {
-    $sections[] = [
-        'slug'       => 'protests',
-        'name'       => 'Ban protests',
-        'permission' => ADMIN_OWNER | ADMIN_BAN_PROTESTS,
-        'url'        => 'index.php?p=admin&c=bans&section=protests',
-        'icon'       => 'flag',
-    ];
-}
-if ($submitEnabled) {
-    $sections[] = [
-        'slug'       => 'submissions',
-        'name'       => 'Ban submissions',
-        'permission' => ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS,
-        'url'        => 'index.php?p=admin&c=bans&section=submissions',
-        'icon'       => 'clipboard-list',
-    ];
-}
-$sections[] = [
-    'slug'       => 'import',
-    'name'       => 'Import bans',
-    'permission' => ADMIN_OWNER | ADMIN_BAN_IMPORT,
-    'url'        => 'index.php?p=admin&c=bans&section=import',
-    'icon'       => 'upload',
-];
-// Group ban is feature-flag-gated (Config::getBool('config.enablegroupbanning'))
-// in addition to the permission gate. The other sections render an
-// access-denied stub when the user lacks the perm; group-ban is omitted
-// from the sidebar entirely when the feature is off, so the link
-// doesn't appear at all on installs that have the feature disabled.
-if ($groupBanEnabled) {
-    $sections[] = [
-        'slug'       => 'group-ban',
-        'name'       => 'Group ban',
-        'permission' => ADMIN_OWNER | ADMIN_ADD_BAN,
-        'url'        => 'index.php?p=admin&c=bans&section=group-ban',
-        'icon'       => 'users',
-    ];
-}
-
 $validSlugs = ['add-ban', 'protests', 'submissions', 'import', 'group-ban'];
 $section    = (string) ($_GET['section'] ?? '');
 
@@ -321,15 +256,6 @@ if (!in_array($section, $validSlugs, true)) {
         $section = 'add-ban';
     }
 }
-
-// AdminTabs opens the sidebar shell + emits the <aside> + opens the
-// content column. Closing tags live AFTER each render branch below —
-// document the pairing so future edits don't strand an open <div>.
-new AdminTabs($sections, $userbank, $theme, $section, 'Bans sections');
-
-// Helper to close the shell consistently after every section returns.
-// PHP doesn't bind a local closure to `return` from the outer scope,
-// so each branch echoes the closing pair itself before returning.
 
 // ---------------------------------------------------------------- add-ban
 if ($section === 'add-ban') {
@@ -560,7 +486,6 @@ window.__sbppApplyBanFields = function (d) {
 };
 </script>
 JS;
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;
 }
 
@@ -573,12 +498,10 @@ if ($section === 'protests') {
     // denied"). Mirrors the `group-ban` stub a few branches below.
     if (!$protestEnabled) {
         echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Ban protests are disabled in <strong>config.enableprotest</strong>.</p></div></div>';
-        echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
         return;
     }
     if (!$canProtests) {
         echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>';
-        echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
         return;
     }
 
@@ -592,10 +515,11 @@ if ($section === 'protests') {
     $protestView = (isset($_GET['view']) && $_GET['view'] === 'archive') ? 'archive' : 'current';
     $currentActive = $protestView === 'current' ? 'true' : 'false';
     $archiveActive = $protestView === 'archive' ? 'true' : 'false';
-    echo '<div class="chip-row" role="tablist" aria-label="Protest archive filter" data-testid="protests-archive-tabs" style="margin-bottom:0.75rem">'
+    echo '<div class="page-section" style="padding-bottom:0">'
+        . '<div class="chip-row" role="tablist" aria-label="Protest archive filter" data-testid="protests-archive-tabs" style="margin-bottom:0">'
         . '<a class="chip" data-active="' . $currentActive . '" data-testid="filter-chip-protests-current" role="tab" aria-selected="' . $currentActive . '" href="index.php?p=admin&amp;c=bans&amp;section=protests" title="Show current protests">Current</a>'
         . '<a class="chip" data-active="' . $archiveActive . '" data-testid="filter-chip-protests-archive" role="tab" aria-selected="' . $archiveActive . '" href="index.php?p=admin&amp;c=bans&amp;section=protests&amp;view=archive" title="Show the protest archive">Archive</a>'
-        . '</div>';
+        . '</div></div>';
 
     if ($protestView === 'current') {
         $ItemsPerPage = SB_BANS_PER_PAGE;
@@ -789,7 +713,6 @@ if ($section === 'protests') {
             protest_count_archiv: (int) $page_count,
         ));
     }
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
     return;
 }
 
@@ -800,22 +723,21 @@ if ($section === 'submissions') {
     // on a disabled install and the message points at the toggle key.
     if (!$submitEnabled) {
         echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Ban submissions are disabled in <strong>config.enablesubmit</strong>.</p></div></div>';
-        echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
         return;
     }
     if (!$canSubmissions) {
         echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>';
-        echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
         return;
     }
 
     $submissionView = (isset($_GET['view']) && $_GET['view'] === 'archive') ? 'archive' : 'current';
     $currentActive = $submissionView === 'current' ? 'true' : 'false';
     $archiveActive = $submissionView === 'archive' ? 'true' : 'false';
-    echo '<div class="chip-row" role="tablist" aria-label="Submission archive filter" data-testid="submissions-archive-tabs" style="margin-bottom:0.75rem">'
+    echo '<div class="page-section" style="padding-bottom:0">'
+        . '<div class="chip-row" role="tablist" aria-label="Submission archive filter" data-testid="submissions-archive-tabs" style="margin-bottom:0">'
         . '<a class="chip" data-active="' . $currentActive . '" data-testid="filter-chip-submissions-current" role="tab" aria-selected="' . $currentActive . '" href="index.php?p=admin&amp;c=bans&amp;section=submissions" title="Show current submissions">Current</a>'
         . '<a class="chip" data-active="' . $archiveActive . '" data-testid="filter-chip-submissions-archive" role="tab" aria-selected="' . $archiveActive . '" href="index.php?p=admin&amp;c=bans&amp;section=submissions&amp;view=archive" title="Show the submission archive">Archive</a>'
-        . '</div>';
+        . '</div></div>';
 
     if ($submissionView === 'current') {
         $ItemsPerPage = SB_BANS_PER_PAGE;
@@ -982,7 +904,6 @@ if ($section === 'submissions') {
             submission_list_archiv: $submission_list_archiv,
         ));
     }
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
     return;
 }
 
@@ -990,14 +911,12 @@ if ($section === 'submissions') {
 if ($section === 'import') {
     if (!$canImport) {
         echo '<div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>';
-        echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
         return;
     }
     \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansImportView(
         permission_import: true,
         extreq: ini_get('safe_mode') != 1,
     ));
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
     return;
 }
 
@@ -1015,7 +934,6 @@ if (!$canGroupBan) {
     echo '<div class="card"><div class="card__body"><p class="text-muted m-0">'
         . (!$canAddBan ? 'Access denied.' : 'Group banning is disabled in <strong>config.enablegroupbanning</strong>.')
         . '</p></div></div>';
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
     return;
 }
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansGroupsView(
@@ -1254,7 +1172,6 @@ echo <<<'JS'
 })();
 </script>
 JS;
-echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
 
 /*
  * Comment-thread builder used by both protests + submissions sections.

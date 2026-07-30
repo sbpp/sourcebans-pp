@@ -21,7 +21,7 @@ export class AdminSettingsPage extends BasePage {
     readonly path = '/index.php?p=admin&c=settings';
 
     get pageMounted(): Locator {
-        return this.page.locator('[data-testid="admin-tab-settings"]');
+        return this.page.locator('[data-testid="nav-admin-settings-settings"]');
     }
 
     async goto(): Promise<void> {

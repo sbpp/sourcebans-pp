@@ -18,10 +18,10 @@ import { BasePage } from '../_base.ts';
  * collapsed the page onto Pattern A: each section is its own URL
  * (`?section=admins`, `?section=add-admin`, `?section=overrides`),
  * so `tocLink()` / `section()` now both pivot on the standard
- * Pattern A `data-testid="admin-tab-<slug>"` hook. The
- * `data-testid="admin-admins-section-<slug>"` wrappers stay on the
- * rendered section body so cross-section assertions (e.g. "the
- * search form is inside the admins section") still work.
+ * main-sidebar accordion hook `data-testid="nav-admin-admins-<slug>"`
+ * (#1490). The `data-testid="admin-admins-section-<slug>"` wrappers
+ * stay on the rendered section body so cross-section assertions
+ * (e.g. "the search form is inside the admins section") still work.
  */
 export class AdminAdminsPage extends BasePage {
     constructor(page: Page) {
@@ -34,19 +34,19 @@ export class AdminAdminsPage extends BasePage {
         return this.page.locator('[data-testid="admin-count"]');
     }
 
-    /** Pattern A — outer page wrapper (now the admin sidebar shell). */
+    /** Main sidebar accordion for the Admins category (#1490). */
     get shell(): Locator {
-        return this.page.locator('[data-testid="admin-sidebar-shell"]');
+        return this.page.locator('[data-testid="nav-admin-admins-accordion"]');
     }
 
-    /** Pattern A — the vertical sidebar (replaces the page-level ToC). */
+    /** Alias for the Admins category accordion. */
     get toc(): Locator {
-        return this.page.locator('[data-testid="admin-sidebar"]');
+        return this.page.locator('[data-testid="nav-admin-admins-accordion"]');
     }
 
-    /** Pattern A — single sidebar link by section slug. */
+    /** Nested section link inside the main sidebar accordion. */
     tocLink(section: 'admins' | 'add-admin' | 'overrides'): Locator {
-        return this.page.locator(`[data-testid="admin-tab-${section}"]`);
+        return this.page.locator(`[data-testid="nav-admin-admins-${section}"]`);
     }
 
     /**

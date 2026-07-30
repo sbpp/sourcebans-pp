@@ -22,7 +22,7 @@
     "add an override" form sits inline below the editable table —
     one `<form>`, one Save button, both rows submit together.
 *}
-<div data-testid="admin-admins-section-overrides">
+<div class="page-section" data-testid="admin-admins-section-overrides">
 {if not $permission_addadmin}
     <div class="card">
         <div class="card__body">

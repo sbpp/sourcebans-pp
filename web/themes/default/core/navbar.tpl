@@ -87,13 +87,37 @@
                     {/if}
                 {/foreach}
                 {foreach from=$adminbar item=admin}
-                    <a class="sidebar__link"
-                       href="index.php?p=admin&c={$admin.endpoint}"
-                       data-testid="nav-admin-{$admin.endpoint}"
-                       {if $admin.state == 'active'}aria-current="page"{/if}>
-                        <i data-lucide="{if $admin.endpoint == 'admins'}users{elseif $admin.endpoint == 'servers'}server{elseif $admin.endpoint == 'bans'}ban{elseif $admin.endpoint == 'comms'}mic-off{elseif $admin.endpoint == 'groups'}shield-check{elseif $admin.endpoint == 'settings'}settings{elseif $admin.endpoint == 'mods'}puzzle{else}circle{/if}"></i>
-                        {$admin.title}
-                    </a>
+                    {if !empty($admin.children)}
+                        <details class="sidebar__accordion"
+                                 data-testid="nav-admin-{$admin.endpoint}-accordion"
+                                 {if $admin.open}open{/if}>
+                            <summary class="sidebar__link sidebar__accordion-summary"
+                                     data-testid="nav-admin-{$admin.endpoint}">
+                                <i data-lucide="{if $admin.endpoint == 'admins'}users{elseif $admin.endpoint == 'servers'}server{elseif $admin.endpoint == 'bans'}ban{elseif $admin.endpoint == 'comms'}mic-off{elseif $admin.endpoint == 'groups'}shield-check{elseif $admin.endpoint == 'settings'}settings{elseif $admin.endpoint == 'mods'}puzzle{else}circle{/if}"></i>
+                                <span class="sidebar__accordion-label">{$admin.title}</span>
+                                <i data-lucide="chevron-down" class="sidebar__accordion-chevron" aria-hidden="true"></i>
+                            </summary>
+                            <div class="sidebar__children" role="group" aria-label="{$admin.title} sections">
+                                {foreach from=$admin.children item=child}
+                                    <a class="sidebar__link sidebar__link--child"
+                                       href="{$child.url}"
+                                       data-testid="nav-admin-{$admin.endpoint}-{$child.slug}"
+                                       {if $child.state == 'active'}aria-current="page"{/if}>
+                                        <i data-lucide="{$child.icon}"></i>
+                                        {$child.name}
+                                    </a>
+                                {/foreach}
+                            </div>
+                        </details>
+                    {else}
+                        <a class="sidebar__link"
+                           href="index.php?p=admin&c={$admin.endpoint}"
+                           data-testid="nav-admin-{$admin.endpoint}"
+                           {if $admin.state == 'active'}aria-current="page"{/if}>
+                            <i data-lucide="{if $admin.endpoint == 'admins'}users{elseif $admin.endpoint == 'servers'}server{elseif $admin.endpoint == 'bans'}ban{elseif $admin.endpoint == 'comms'}mic-off{elseif $admin.endpoint == 'groups'}shield-check{elseif $admin.endpoint == 'settings'}settings{elseif $admin.endpoint == 'mods'}puzzle{else}circle{/if}"></i>
+                            {$admin.title}
+                        </a>
+                    {/if}
                 {/foreach}
             </div>
         {/if}
