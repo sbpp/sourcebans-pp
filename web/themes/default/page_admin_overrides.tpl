@@ -68,7 +68,9 @@
                 </div>
             </div>
             <div class="card__body">
-                <table class="table" data-testid="overrides-table">
+                {* Form table with no paired mobile-card surface — keep
+                   visible under the <=768px `.table` hide via keep-mobile. *}
+                <table class="table table--keep-mobile" data-testid="overrides-table">
                     <thead>
                         <tr>
                             <th style="width:8rem">Type</th>
