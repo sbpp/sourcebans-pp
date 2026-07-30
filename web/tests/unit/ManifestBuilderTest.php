@@ -44,7 +44,7 @@ final class ManifestBuilderTest extends TestCase
     {
         $this->assertSame(5 * 1024 * 1024 * 1024, Manifest::MAX_S3_PUT_BYTES);
         $this->assertSame(64 * 1024 * 1024, Manifest::SAFETY_MARGIN_BYTES);
-        $this->assertSame(1, Manifest::FORMAT_VERSION);
+        $this->assertSame(2, Manifest::FORMAT_VERSION);
     }
 
     /**
@@ -174,7 +174,7 @@ final class ManifestBuilderTest extends TestCase
             $keys,
         );
 
-        $this->assertSame(1, $decoded['format_version']);
+        $this->assertSame(2, $decoded['format_version']);
         $this->assertIsArray($decoded['row_counts']);
         $this->assertIsArray($decoded['demo_files']);
         $this->assertIsArray($decoded['pii_policy']);

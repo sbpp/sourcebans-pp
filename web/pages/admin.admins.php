@@ -424,6 +424,18 @@ if ($joinServersGroups) {
     $join .= " LEFT JOIN `:prefix_servers_groups` AS SGS ON SGS.group_id = ASG.srv_group_id";
 }
 
+// Soft-retire filter (#1509): default to active admins only.
+$view = (string) ($_GET['view'] ?? 'active');
+if (!in_array($view, ['active', 'inactive', 'all'], true)) {
+    $view = 'active';
+}
+$hasEnabledColumn = \Sbpp\Auth\AdminsSchema::hasEnabledColumn($GLOBALS['PDO']);
+$enabledWhere = !$hasEnabledColumn ? '' : match ($view) {
+    'inactive' => ' AND ADM.enabled = 0',
+    'all'      => '',
+    default    => ' AND ADM.enabled = 1',
+};
+
 // Pagination needs the active-filter snapshot baked into every "next"
 // page link so subsequent navigation preserves the search. Pre-#1275
 // the section was implicit (`?p=admin&c=admins`); now the page links
@@ -432,7 +444,12 @@ if ($joinServersGroups) {
 // `http_build_query` handles array values (`admwebflag[]=…&admwebflag[]=…`)
 // natively, so multi-select filters round-trip without manual joining.
 $advSearchString = empty($activeFilters) ? '' : '&' . http_build_query($activeFilters);
-$admins = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . (int) (($page-1) * $AdminsPerPage) . "," . (int) $AdminsPerPage)->resultset($whereParams);
+$viewLink = $view === 'active' ? '' : '&view=' . rawurlencode($view);
+$admins = $GLOBALS['PDO']->query(
+    "SELECT * FROM `:prefix_admins` AS ADM" . $join
+    . " WHERE ADM.aid > 0" . $enabledWhere . $where
+    . " ORDER BY user LIMIT " . (int) (($page - 1) * $AdminsPerPage) . "," . (int) $AdminsPerPage
+)->resultset($whereParams);
 // The server filter joins through `:prefix_admins_servers_groups` and
 // `:prefix_servers_groups`, which can produce duplicate ADM.aid rows
 // when an admin reaches the same server via multiple paths. Dedupe
@@ -450,7 +467,10 @@ if (isset($activeFilters['server'])) {
     }
 }
 
-$query = $GLOBALS['PDO']->query("SELECT COUNT(ADM.aid) AS cnt FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where)->single($whereParams);
+$query = $GLOBALS['PDO']->query(
+    "SELECT COUNT(ADM.aid) AS cnt FROM `:prefix_admins` AS ADM" . $join
+    . " WHERE ADM.aid > 0" . $enabledWhere . $where
+)->single($whereParams);
 $admin_count = $query['cnt'];
 
 if (isset($_GET['page']) && $_GET['page'] > 0) {
@@ -487,8 +507,9 @@ foreach ($admins as $admin) {
     $admin['nodemocount'] = $nodem['num'];
 
     $admin['name']               = stripslashes($admin['user']);
-    $admin['server_flag_string'] = SmFlagsToSb($userbank->GetProperty("srv_flags", $admin['aid']));
-    $admin['web_flag_string']    = BitToString($userbank->GetProperty("extraflags", $admin['aid']));
+    $admin['server_flag_string'] = SmFlagsToSb((string) ($userbank->GetProperty("srv_flags", $admin['aid']) ?? ''));
+    $admin['web_flag_string']    = BitToString((int) ($userbank->GetProperty("extraflags", $admin['aid']) ?? 0));
+    $admin['enabled']            = (int) ($admin['enabled'] ?? 1);
 
     $lastvisit = $userbank->GetProperty("lastvisit", $admin['aid']);
     if (!$lastvisit) {
@@ -502,12 +523,12 @@ foreach ($admins as $admin) {
 // Page links carry &section=admins so prev/next/picker keep the user
 // on this section rather than ricocheting to the default landing.
 if ($page > 1) {
-    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=admins&section=admins&page=" . ($page - 1) . $advSearchString);
+    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=admins&section=admins&page=" . ($page - 1) . $viewLink . $advSearchString);
 } else {
     $prev = "";
 }
 if ($AdminsEnd < $admin_count) {
-    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=admins&section=admins&page=" . ($page + 1) . $advSearchString);
+    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=admins&section=admins&page=" . ($page + 1) . $viewLink . $advSearchString);
 } else {
     $next = "";
 }
@@ -535,7 +556,7 @@ if ($pages > 1) {
     // `htmlspecialchars` on the base URL is what stops the ADM-4
     // multi-filter `&admwebflag[]=…` from breaking out of the
     // attribute string.
-    $baseUrl    = 'index.php?p=admin&c=admins&section=admins' . $advSearchString . '&page=';
+    $baseUrl    = 'index.php?p=admin&c=admins&section=admins' . $viewLink . $advSearchString . '&page=';
     $baseUrlAttr = htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8');
     $admin_nav .= '&nbsp;<select onchange="window.location.href=\'' . $baseUrlAttr . '\'+encodeURIComponent(this.value);"'
         . ' aria-label="Jump to page">';
@@ -548,6 +569,8 @@ if ($pages > 1) {
     }
     $admin_nav .= '</select>';
 }
+
+$chipBase = 'index.php?p=admin&c=admins&section=admins' . $advSearchString;
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsListView(
     // We pass the can_* gates explicitly rather than splatting
@@ -564,5 +587,7 @@ if ($pages > 1) {
     admin_count: (int) $admin_count,
     admin_nav: (string) $admin_nav,
     admins: $admin_list,
+    active_view: $view,
+    chip_base_link: $chipBase,
 ));
 echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';

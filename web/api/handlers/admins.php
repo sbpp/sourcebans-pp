@@ -50,25 +50,32 @@ function api_admins_remove(array $params): array
         throw new ApiError('cannot_delete_owner', 'Error: You cannot delete the owner.');
     }
 
+    // Snapshot issuer names onto bans/comms before the admin row disappears
+    // so historical lists keep showing who issued the action (#1509).
+    if ($admin) {
+        $snapName = (string) ($admin['user'] ?? '');
+        $GLOBALS['PDO']->query(
+            "UPDATE `:prefix_bans` SET admin_name = :user WHERE aid = :aid AND admin_name = ''"
+        );
+        $GLOBALS['PDO']->bind(':user', $snapName);
+        $GLOBALS['PDO']->bind(':aid', $aid);
+        $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query(
+            "UPDATE `:prefix_comms` SET admin_name = :user WHERE aid = :aid AND admin_name = ''"
+        );
+        $GLOBALS['PDO']->bind(':user', $snapName);
+        $GLOBALS['PDO']->bind(':aid', $aid);
+        $GLOBALS['PDO']->execute();
+    }
+
     $GLOBALS['PDO']->query("DELETE FROM `:prefix_admins` WHERE aid = :aid LIMIT 1");
     $GLOBALS['PDO']->bind(':aid', $aid);
     $ok = $GLOBALS['PDO']->execute();
 
     $allservers = [];
     if ($ok) {
-        if (Config::getBool('config.enableadminrehashing')) {
-            $rows = $GLOBALS['PDO']->query("SELECT s.sid FROM `:prefix_servers` s
-                LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = ?
-                LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
-                WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-                OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-                AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1")->resultset([$aid]);
-            foreach ($rows as $r) {
-                if (!in_array($r['sid'], $allservers, true)) {
-                    $allservers[] = $r['sid'];
-                }
-            }
-        }
+        $allservers = _api_admins_rehash_sids($aid);
 
         $GLOBALS['PDO']->query("DELETE FROM `:prefix_admins_servers_groups` WHERE admin_id = :aid");
         $GLOBALS['PDO']->bind(':aid', $aid);
@@ -103,6 +110,135 @@ function api_admins_remove(array $params): array
             'redir' => 'index.php?p=admin&c=admins',
         ],
     ];
+}
+
+/**
+ * Soft-retire an admin: keeps the row (and ban/comm attribution) but
+ * blocks panel login and SourceMod admin load via `enabled = 0`.
+ *
+ * @param array{aid?: int|string, ureason?: string} $params
+ * @return array{aid: int, enabled: int, rehash: ?string, message: array{title: string, body: string, kind: string}}
+ */
+function api_admins_deactivate(array $params): array
+{
+    $aid = (int)($params['aid'] ?? 0);
+    $ureason = trim((string)($params['ureason'] ?? ''));
+
+    $admin = $GLOBALS['PDO']->query(
+        "SELECT user, extraflags, enabled FROM `:prefix_admins` WHERE aid = :aid"
+    );
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $admin = $GLOBALS['PDO']->single();
+
+    if (!$admin) {
+        throw new ApiError('not_found', 'Admin not found.');
+    }
+    if (((int) $admin['extraflags'] & ADMIN_OWNER) !== 0) {
+        throw new ApiError('cannot_deactivate_owner', 'Error: You cannot deactivate the owner.');
+    }
+    if ((int) ($admin['enabled'] ?? 1) === 0) {
+        throw new ApiError('already_inactive', 'That admin is already inactive.');
+    }
+
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET enabled = 0 WHERE aid = :aid LIMIT 1");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    if (!$GLOBALS['PDO']->execute()) {
+        throw new ApiError('deactivate_failed', 'There was an error deactivating the admin.');
+    }
+
+    $allservers = _api_admins_rehash_sids($aid);
+    $logBody = "Admin ({$admin['user']}) has been deactivated.";
+    if ($ureason !== '') {
+        $logBody .= " Reason: {$ureason}";
+    }
+    Log::add(LogType::Message, 'Admin Deactivated', $logBody);
+
+    return [
+        'aid'     => $aid,
+        'enabled' => 0,
+        'rehash'  => $allservers ? implode(',', $allservers) : null,
+        'message' => [
+            'title' => 'Admin deactivated',
+            'body'  => $admin['user'] . ' can no longer log in or use in-game admin. Ban history still shows their name.',
+            'kind'  => 'green',
+        ],
+    ];
+}
+
+/**
+ * Restore a soft-retired admin (`enabled = 1`).
+ *
+ * @param array{aid?: int|string, ureason?: string} $params
+ * @return array{aid: int, enabled: int, rehash: ?string, message: array{title: string, body: string, kind: string}}
+ */
+function api_admins_reactivate(array $params): array
+{
+    $aid = (int)($params['aid'] ?? 0);
+    $ureason = trim((string)($params['ureason'] ?? ''));
+
+    $admin = $GLOBALS['PDO']->query(
+        "SELECT user, enabled FROM `:prefix_admins` WHERE aid = :aid"
+    );
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $admin = $GLOBALS['PDO']->single();
+
+    if (!$admin) {
+        throw new ApiError('not_found', 'Admin not found.');
+    }
+    if ((int) ($admin['enabled'] ?? 1) === 1) {
+        throw new ApiError('already_active', 'That admin is already active.');
+    }
+
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET enabled = 1 WHERE aid = :aid LIMIT 1");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    if (!$GLOBALS['PDO']->execute()) {
+        throw new ApiError('reactivate_failed', 'There was an error reactivating the admin.');
+    }
+
+    $allservers = _api_admins_rehash_sids($aid);
+    $logBody = "Admin ({$admin['user']}) has been reactivated.";
+    if ($ureason !== '') {
+        $logBody .= " Reason: {$ureason}";
+    }
+    Log::add(LogType::Message, 'Admin Reactivated', $logBody);
+
+    return [
+        'aid'     => $aid,
+        'enabled' => 1,
+        'rehash'  => $allservers ? implode(',', $allservers) : null,
+        'message' => [
+            'title' => 'Admin reactivated',
+            'body'  => $admin['user'] . ' can log in and use in-game admin again.',
+            'kind'  => 'green',
+        ],
+    ];
+}
+
+/**
+ * Server SIDs that need `sm_rehash` after an admin access change.
+ *
+ * @return list<int>
+ */
+function _api_admins_rehash_sids(int $aid): array
+{
+    if (!Config::getBool('config.enableadminrehashing')) {
+        return [];
+    }
+
+    $rows = $GLOBALS['PDO']->query("SELECT s.sid FROM `:prefix_servers` s
+        LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = ?
+        LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
+        WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
+        OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
+        AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1")->resultset([$aid]);
+
+    $allservers = [];
+    foreach ($rows as $r) {
+        if (!in_array($r['sid'], $allservers, true)) {
+            $allservers[] = $r['sid'];
+        }
+    }
+    return $allservers;
 }
 
 function api_admins_add(array $params): array

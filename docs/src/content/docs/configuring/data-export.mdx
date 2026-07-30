@@ -79,8 +79,10 @@ sbpp-export-<uuid>.zip
 `manifest.json` is always the first central-directory entry, so
 consumers can read it without slurping the whole bundle. Fields:
 
-- `format_version`: integer (currently `1`). Bumps trigger a
-  documented consumer-side migration.
+- `format_version`: integer (currently `2`). Bumps trigger a
+  documented consumer-side migration. Version `2` adds
+  `admins.enabled` and `bans.admin_name` / `comms.admin_name`
+  (durable issuer snapshot).
 - `bundle_id`: UUIDv4 string. Unique per attempt. Logged in the
   audit trail.
 - `created_at`: integer unix seconds (UTC).
@@ -144,6 +146,12 @@ A few entities carry derived fields:
 - `comms.mute_kind`: `"mute"`, `"gag"`, `"silence"`, or
   `"unknown"` (from `:prefix_comms.type` 1/2/3). `type_raw` is
   the source int.
+- `admins.enabled`: `1` (active) or `0` (soft-retired). Inactive
+  admins keep their row so attribution JOINs still resolve.
+- `bans.admin_name` / `comms.admin_name`: snapshot of the issuing
+  admin's username at insert time (and re-snapshotted on hard
+  delete when still empty). Prefer this over joining `admins.user`
+  when reconstructing history.
 - `bans.state`: `"active"`, `"expired"`, `"unbanned"`,
   `"deleted"`, or `"permanent"`. Same classifier the banlist
   page uses. `RemoveType` / `removed_by` / `removed_on` /

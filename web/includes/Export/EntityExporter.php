@@ -243,7 +243,7 @@ final class EntityExporter
         // = "never"` attestation truthful.
         $this->dbs->query(
             "SELECT `aid`, `user`, `authid`, `gid`, `email`, `extraflags`, `immunity`,
-                    `srv_group`, `srv_flags`, `lastvisit`
+                    `srv_group`, `srv_flags`, `lastvisit`, `enabled`
              FROM `:prefix_admins`
              ORDER BY `aid`"
         );
@@ -261,6 +261,7 @@ final class EntityExporter
                 'srv_group'      => $this->asString($row['srv_group'] ?? null),
                 'srv_flags'      => $this->asString($row['srv_flags'] ?? null),
                 'lastvisit'      => $row['lastvisit'] !== null ? (int) $row['lastvisit'] : null,
+                'enabled'        => (int) ($row['enabled'] ?? 1),
             ]);
         }
     }
@@ -334,7 +335,7 @@ final class EntityExporter
     {
         $this->dbs->query(
             "SELECT B.`bid`, B.`ip`, B.`authid`, B.`name`, B.`created`, B.`ends`, B.`length`,
-                    B.`reason`, B.`aid`, B.`adminIp`, B.`sid`, B.`country`,
+                    B.`reason`, B.`aid`, B.`admin_name`, B.`adminIp`, B.`sid`, B.`country`,
                     B.`RemovedBy`, B.`RemoveType`, B.`RemovedOn`, B.`type`, B.`ureason`,
                     D.`filename` AS `demo_filename_raw`,
                     A.`user` AS `removed_by_user`, A.`authid` AS `removed_by_authid`
@@ -362,6 +363,7 @@ final class EntityExporter
                 'length'           => (int) ($row['length'] ?? 0),
                 'reason'           => $this->asString($row['reason'] ?? null),
                 'aid'              => (int) ($row['aid'] ?? 0),
+                'admin_name'       => $this->asString($row['admin_name'] ?? null),
                 'admin_ip'         => $this->asString($row['adminIp'] ?? null),
                 'sid'              => (int) ($row['sid'] ?? 0),
                 'country'          => $this->asString($row['country'] ?? null),
@@ -424,7 +426,7 @@ final class EntityExporter
     {
         $this->dbs->query(
             "SELECT `bid`, `authid`, `name`, `created`, `ends`, `length`, `reason`,
-                    `aid`, `adminIp`, `sid`, `RemovedBy`, `RemoveType`, `RemovedOn`,
+                    `aid`, `admin_name`, `adminIp`, `sid`, `RemovedBy`, `RemoveType`, `RemovedOn`,
                     `type`, `ureason`
              FROM `:prefix_comms`
              ORDER BY `bid`"
@@ -444,6 +446,7 @@ final class EntityExporter
                 'length'         => (int) ($row['length'] ?? 0),
                 'reason'         => $this->asString($row['reason'] ?? null),
                 'aid'            => (int) ($row['aid'] ?? 0),
+                'admin_name'     => $this->asString($row['admin_name'] ?? null),
                 'admin_ip'       => $this->asString($row['adminIp'] ?? null),
                 'sid'            => (int) ($row['sid'] ?? 0),
                 'removed_by'     => $row['RemovedBy'] !== null ? (int) $row['RemovedBy'] : null,

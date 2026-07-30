@@ -132,13 +132,14 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
                     $bancnt++;
 
                     $GLOBALS['PDO']->query(
-                        "INSERT INTO `:prefix_bans` (`created`, `authid`, `ip`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`, `type`)
-                        VALUES (UNIX_TIMESTAMP(), '', :ip, 'Imported Ban', (UNIX_TIMESTAMP() + 0), 0, 'banned_ip.cfg import', :aid, :admip, :btype)"
+                        "INSERT INTO `:prefix_bans` (`created`, `authid`, `ip`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`, `admin_name`, `type`)
+                        VALUES (UNIX_TIMESTAMP(), '', :ip, 'Imported Ban', (UNIX_TIMESTAMP() + 0), 0, 'banned_ip.cfg import', :aid, :admip, :admin_name, :btype)"
                     );
                     $GLOBALS['PDO']->bindMultiple([
                         ':ip' => $line[2],
                         ':aid' => $userbank->GetAid(),
                         ':admip' => $_SERVER['REMOTE_ADDR'],
+                        ':admin_name' => (string) $userbank->GetProperty('user'),
                         ':btype' => BanType::Ip->value,
                     ]);
                     $GLOBALS['PDO']->execute();
@@ -181,14 +182,15 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
                 }
                 $bancnt++;
                 $GLOBALS['PDO']->query(
-                    "INSERT INTO `:prefix_bans` (`created`, `authid`, `ip`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`, `type`)
-                    VALUES (UNIX_TIMESTAMP(), :authid, '', :name, (UNIX_TIMESTAMP() + 0), 0, 'banned_user.cfg import', :aid, :ip, :btype)"
+                    "INSERT INTO `:prefix_bans` (`created`, `authid`, `ip`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`, `admin_name`, `type`)
+                    VALUES (UNIX_TIMESTAMP(), :authid, '', :name, (UNIX_TIMESTAMP() + 0), 0, 'banned_user.cfg import', :aid, :ip, :admin_name, :btype)"
                 );
                 $GLOBALS['PDO']->bindMultiple([
                     ':authid' => $steam,
                     ':name' => $name,
                     ':aid' => $userbank->GetAid(),
                     ':ip' => $_SERVER['REMOTE_ADDR'],
+                    ':admin_name' => (string) $userbank->GetProperty('user'),
                     ':btype' => BanType::Steam->value,
                 ]);
                 $GLOBALS['PDO']->execute();

@@ -132,6 +132,11 @@ final class EntityExporterTest extends TestCase
         $this->assertContains('password', EntityExporter::FORBIDDEN_ADMIN_COLUMNS);
         $this->assertContains('srv_password', EntityExporter::FORBIDDEN_ADMIN_COLUMNS);
         $this->assertContains('validate', EntityExporter::FORBIDDEN_ADMIN_COLUMNS);
+
+        $decoded = json_decode(trim(explode("\n", trim($output))[0]), true);
+        $this->assertIsArray($decoded);
+        $this->assertArrayHasKey('enabled', $decoded);
+        $this->assertSame(1, $decoded['enabled']);
     }
 
     /**

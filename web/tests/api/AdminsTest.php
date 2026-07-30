@@ -417,4 +417,97 @@ final class AdminsTest extends ApiTestCase
         $env = $this->api('admins.generate_password', []);
         $this->assertEnvelopeError($env, 'forbidden');
     }
+
+    public function testDeactivateSetsEnabledZero(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'DeactivateMe',
+            'steam' => 'STEAM_0:0:15091',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+
+        $env = $this->api('admins.deactivate', ['aid' => $aid, 'ureason' => 'left team']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(0, (int) $env['data']['enabled']);
+        $row = $this->row('admins', ['aid' => $aid]);
+        $this->assertNotNull($row);
+        $this->assertSame(0, (int) $row['enabled']);
+        $this->assertSame(
+            'Admin (DeactivateMe) has been deactivated. Reason: left team',
+            $this->latestLogMessage('Admin Deactivated'),
+        );
+        $this->assertSnapshot('admins/deactivate_success', $env, ['data.aid', 'data.rehash']);
+    }
+
+    public function testDeactivateRefusesOwner(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('admins.deactivate', ['aid' => Fixture::adminAid()]);
+        $this->assertEnvelopeError($env, 'cannot_deactivate_owner');
+        $this->assertSnapshot('admins/deactivate_owner_blocked', $env);
+    }
+
+    public function testDeactivateRefusesAlreadyInactive(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'AlreadyOff',
+            'steam' => 'STEAM_0:0:15092',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+        $this->assertTrue($this->api('admins.deactivate', ['aid' => $aid])['ok']);
+
+        $env = $this->api('admins.deactivate', ['aid' => $aid]);
+        $this->assertEnvelopeError($env, 'already_inactive');
+    }
+
+    public function testReactivateSetsEnabledOne(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'ReactivateMe',
+            'steam' => 'STEAM_0:0:15093',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+        $this->assertTrue($this->api('admins.deactivate', ['aid' => $aid])['ok']);
+
+        $env = $this->api('admins.reactivate', ['aid' => $aid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(1, (int) $env['data']['enabled']);
+        $row = $this->row('admins', ['aid' => $aid]);
+        $this->assertNotNull($row);
+        $this->assertSame(1, (int) $row['enabled']);
+        $this->assertSnapshot('admins/reactivate_success', $env, ['data.aid', 'data.rehash']);
+    }
+
+    public function testRemoveSnapshotsAdminNameOnBans(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'SnapIssuer',
+            'steam' => 'STEAM_0:0:15094',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp, admin_name)
+             VALUES (UNIX_TIMESTAMP(), 0, "", ?, ?, UNIX_TIMESTAMP(), 0, ?, ?, "127.0.0.1", "")',
+            DB_PREFIX
+        ))->execute(['STEAM_0:1:15094', 'Target', 'for snapshot', $aid]);
+        $bid = (int) $pdo->lastInsertId();
+
+        $env = $this->api('admins.remove', ['aid' => $aid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertNull($this->row('admins', ['aid' => $aid]));
+
+        $ban = $this->row('bans', ['bid' => $bid]);
+        $this->assertNotNull($ban);
+        $this->assertSame('SnapIssuer', $ban['admin_name']);
+    }
 }

@@ -40,12 +40,25 @@
  * @typedef {Object} ApiAdminsAddResponse
  */
 /**
+ * Soft-retire an admin: keeps the row (and ban/comm attribution) but blocks
+ * panel login and SourceMod admin load via `enabled = 0`.
+ *
+ * @typedef {Object} ApiAdminsDeactivateRequest
+ * @typedef {{aid: number, enabled: number, rehash: (string, message: {title: string, body: string, kind: string}} | null)} ApiAdminsDeactivateResponse
+ */
+/**
  * @typedef {Object} ApiAdminsEditPermsRequest
  * @typedef {Object} ApiAdminsEditPermsResponse
  */
 /**
  * @typedef {Object} ApiAdminsGeneratePasswordRequest
  * @typedef {Object} ApiAdminsGeneratePasswordResponse
+ */
+/**
+ * Restore a soft-retired admin (`enabled = 1`).
+ *
+ * @typedef {Object} ApiAdminsReactivateRequest
+ * @typedef {{aid: number, enabled: number, rehash: (string, message: {title: string, body: string, kind: string}} | null)} ApiAdminsReactivateResponse
  */
 /**
  * Delete an admin row + their server group memberships (#1352).  Modern JSON
@@ -652,8 +665,10 @@ var Actions = Object.freeze({
     AccountCheckPassword: 'account.check_password',
     AccountCheckSrvPassword: 'account.check_srv_password',
     AdminsAdd: 'admins.add',
+    AdminsDeactivate: 'admins.deactivate',
     AdminsEditPerms: 'admins.edit_perms',
     AdminsGeneratePassword: 'admins.generate_password',
+    AdminsReactivate: 'admins.reactivate',
     AdminsRemove: 'admins.remove',
     AuthLogin: 'auth.login',
     AuthLostPassword: 'auth.lost_password',

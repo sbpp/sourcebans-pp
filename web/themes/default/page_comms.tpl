@@ -316,7 +316,7 @@
                             {if $comm.admin}
                                 {$comm.admin|escape}
                             {else}
-                                <span class="text-faint">—</span>
+                                <span class="text-faint">Unknown</span>
                             {/if}
                         </td>
                         <td class="col-tier-3 text-muted text-xs">

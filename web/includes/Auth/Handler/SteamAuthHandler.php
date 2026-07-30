@@ -77,7 +77,10 @@ final class SteamAuthHandler
         }
         $steamid = \SteamID\SteamID::toSteam2($steamid);
 
-        $this->dbs->query('SELECT aid FROM `:prefix_admins` WHERE authid = :authid');
+        $enabledGate = \Sbpp\Auth\AdminsSchema::hasEnabledColumn($this->dbs)
+            ? ' AND enabled = 1'
+            : '';
+        $this->dbs->query("SELECT aid FROM `:prefix_admins` WHERE authid = :authid{$enabledGate}");
         $this->dbs->bind(':authid', $steamid);
         $result = $this->dbs->single();
 

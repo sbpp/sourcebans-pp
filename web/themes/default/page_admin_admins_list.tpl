@@ -59,6 +59,27 @@
         {load_template file="admin.admins.search"}
     </div>
 
+    <div class="chip-row mb-3" role="tablist" aria-label="Admin status filter" data-testid="admins-view-chips">
+        <a class="chip"
+           href="{$chip_base_link|escape}&amp;view=active"
+           data-testid="admins-view-active"
+           data-active="{if $active_view == 'active'}true{else}false{/if}"
+           aria-selected="{if $active_view == 'active'}true{else}false{/if}"
+           {if $active_view == 'active'}aria-current="true"{/if}>Active</a>
+        <a class="chip"
+           href="{$chip_base_link|escape}&amp;view=inactive"
+           data-testid="admins-view-inactive"
+           data-active="{if $active_view == 'inactive'}true{else}false{/if}"
+           aria-selected="{if $active_view == 'inactive'}true{else}false{/if}"
+           {if $active_view == 'inactive'}aria-current="true"{/if}>Inactive</a>
+        <a class="chip"
+           href="{$chip_base_link|escape}&amp;view=all"
+           data-testid="admins-view-all"
+           data-active="{if $active_view == 'all'}true{else}false{/if}"
+           aria-selected="{if $active_view == 'all'}true{else}false{/if}"
+           {if $active_view == 'all'}aria-current="true"{/if}>All</a>
+    </div>
+
     <div data-testid="admin-admins-section-admins">
         <div class="text-xs text-muted mb-2" data-testid="admin-nav">
             {* nofilter: server-built pagination HTML — `<displaying N - M of K results>` (integers), prev/next `<a>` from `CreateLinkR(…)`, and a page-jump `<select onchange>`. After #1207 ADM-4 every populated filter flows through `http_build_query($activeFilters)`, which percent-encodes filter values (so single quotes / angle brackets can't break out of the single-quoted `href='…'` or `onchange="… '…'…"` attributes). The page-jump `<select>` additionally `htmlspecialchars()`-escapes the base URL with `ENT_QUOTES` before interpolation. Loop counters and pre-computed page numbers are integers. No raw user input reaches the rendered string. *}
@@ -87,7 +108,12 @@
                                     {$admin.user|truncate:1:'':true|upper|escape}
                                 </div>
                                 <div>
-                                    <div class="font-medium">{$admin.user|escape}</div>
+                                    <div class="font-medium">
+                                        {$admin.user|escape}
+                                        {if isset($admin.enabled) && $admin.enabled == 0}
+                                            <span class="pill pill--warn text-xs" style="margin-left:0.375rem" data-testid="admin-inactive-badge">Inactive</span>
+                                        {/if}
+                                    </div>
                                     <div class="text-xs text-faint" style="margin-top:0.125rem">aid {$admin.aid}</div>
                                 </div>
                             </div>
@@ -136,20 +162,27 @@
                                     </a>
                                 {/if}
                                 {if $can_delete_admins}
-                                    {* #1352: data-action wires the delete button to the inline
-                                       page-tail script below, which opens the
-                                       `#admins-delete-dialog` <dialog> for a confirm + reason
-                                       prompt, then calls `Actions.AdminsRemove` with the
-                                       trimmed reason. The pre-fix `onclick="if (typeof
-                                       RemoveAdmin === 'function') RemoveAdmin(...)"` was a
-                                       silent no-op since #1123 D1 deleted sourcebans.js (which
-                                       was the only definer of `RemoveAdmin`). The fallback
-                                       href lands on the admins list — there is no legacy GET
-                                       handler for `o=remove` (RemoveAdmin always went through
-                                       the JSON dispatcher), and adding one would expand scope
-                                       beyond the bug; the fallback is a graceful degradation
-                                       for the rare case where the JSON dispatcher itself is
-                                       missing (e.g. third-party theme that stripped api.js). *}
+                                    {if isset($admin.enabled) && $admin.enabled == 0}
+                                        <button type="button" class="btn btn--secondary btn--sm"
+                                                data-action="admins-reactivate"
+                                                data-aid="{$admin.aid}"
+                                                data-name="{$admin.user|escape}"
+                                                title="Reactivate admin"
+                                                aria-label="Reactivate admin {$admin.user|escape}"
+                                                data-testid="admin-action-reactivate">
+                                            <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
+                                        </button>
+                                    {else}
+                                        <button type="button" class="btn btn--ghost btn--icon btn--sm"
+                                                data-action="admins-deactivate"
+                                                data-aid="{$admin.aid}"
+                                                data-name="{$admin.user|escape}"
+                                                title="Deactivate admin"
+                                                aria-label="Deactivate admin {$admin.user|escape}"
+                                                data-testid="admin-action-deactivate">
+                                            <i data-lucide="user-x" style="width:14px;height:14px"></i>
+                                        </button>
+                                    {/if}
                                     <button type="button" class="btn btn--ghost btn--icon btn--sm"
                                             data-action="admins-delete"
                                             data-aid="{$admin.aid}"
@@ -229,6 +262,37 @@
         </form>
     </dialog>
 
+    <dialog id="admins-deactivate-dialog"
+            class="palette"
+            aria-labelledby="admins-deactivate-dialog-title"
+            data-testid="admins-deactivate-dialog"
+            hidden
+            style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+        <form method="dialog" data-testid="admins-deactivate-form">
+            <h2 id="admins-deactivate-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Deactivate admin</h2>
+            <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+                You're about to deactivate <strong data-testid="admins-deactivate-target">this admin</strong>.
+                They will lose panel login and in-game admin access. Ban history still shows their name.
+            </p>
+            <label class="label" for="admins-deactivate-reason">Reason (optional)</label>
+            <textarea class="textarea"
+                      id="admins-deactivate-reason"
+                      data-testid="admins-deactivate-reason"
+                      rows="3"
+                      aria-required="false"
+                      maxlength="255"
+                      autocomplete="off"
+                      placeholder="Audit-log only. Leave blank to skip."></textarea>
+            <p class="text-xs" data-testid="admins-deactivate-error" role="alert" hidden style="color:var(--danger);margin:0.25rem 0 0"></p>
+            <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+                <button type="button" class="btn btn--secondary" data-testid="admins-deactivate-cancel" value="cancel">Cancel</button>
+                <button type="submit" class="btn btn--primary" data-testid="admins-deactivate-submit" value="confirm">
+                    <i data-lucide="user-x" style="width:13px;height:13px"></i> Deactivate
+                </button>
+            </div>
+        </form>
+    </dialog>
+
     {* ============================================================
        #1352 — admins-delete row-action wiring (inline page-tail JS).
 
@@ -266,10 +330,6 @@
             }
         }
         /**
-         * Flip the busy / loading state on a triggered action button. Calls
-         * window.SBPP.setBusy when present (theme.js owns the spinner CSS
-         * contract) and falls back to plain `disabled` so third-party themes
-         * that strip theme.js still gate against double-clicks.
          * @param {Element|null} btn
          * @param {boolean} [busy] defaults to true
          */
@@ -288,13 +348,7 @@
             return document.querySelector('[data-testid="admin-row"][data-id="' + aid + '"]');
         }
 
-        /**
-         * Drop one from the count badge. Reads the parenthesised number out
-         * of the badge's textContent so a third-party theme that wraps the
-         * count differently still works as long as the testid points at a
-         * node whose text contains the digits.
-         * @returns {void}
-         */
+        /** @returns {void} */
         function decrementCount() {
             var el = document.querySelector('[data-testid="admin-count"]');
             if (!el) return;
@@ -303,54 +357,73 @@
             el.textContent = '(' + (n - 1).toLocaleString() + ')';
         }
 
-        /** @returns {HTMLDialogElement|null} */
-        function dialog() {
-            return /** @type {HTMLDialogElement|null} */ (document.getElementById('admins-delete-dialog'));
-        }
-        /** @returns {HTMLTextAreaElement|null} */
-        function reasonInput() {
-            return /** @type {HTMLTextAreaElement|null} */ (document.getElementById('admins-delete-reason'));
-        }
-        /** @returns {HTMLElement|null} */
-        function errorEl() {
-            var d = dialog();
-            return d ? /** @type {HTMLElement|null} */ (d.querySelector('[data-testid="admins-delete-error"]')) : null;
-        }
-        /** @param {string} msg */
-        function showError(msg) { var e = errorEl(); if (!e) return; e.textContent = msg; e.hidden = false; }
-        function clearError() { var e = errorEl(); if (!e) return; e.textContent = ''; e.hidden = true; }
-
-        /** @type {{aid: string, name: string, fallback: string}|null} */
+        /** @type {{aid: string, name: string, fallback: string, mode: string}|null} */
         var pending = null;
 
-        /** @param {{aid: string, name: string, fallback: string}} ctx */
-        function openDeleteDialog(ctx) {
+        /**
+         * @param {string} prefix
+         * @returns {HTMLDialogElement|null}
+         */
+        function dialogBy(prefix) {
+            return /** @type {HTMLDialogElement|null} */ (document.getElementById(prefix + '-dialog'));
+        }
+        /**
+         * @param {string} prefix
+         * @returns {HTMLTextAreaElement|null}
+         */
+        function reasonBy(prefix) {
+            return /** @type {HTMLTextAreaElement|null} */ (document.getElementById(prefix + '-reason'));
+        }
+        /**
+         * @param {string} prefix
+         * @returns {HTMLElement|null}
+         */
+        function errorBy(prefix) {
+            var d = dialogBy(prefix);
+            return d ? /** @type {HTMLElement|null} */ (d.querySelector('[data-testid="' + prefix + '-error"]')) : null;
+        }
+        /** @param {string} prefix @param {string} msg */
+        function showError(prefix, msg) {
+            var e = errorBy(prefix);
+            if (!e) return;
+            e.textContent = msg;
+            e.hidden = false;
+        }
+        /** @param {string} prefix */
+        function clearError(prefix) {
+            var e = errorBy(prefix);
+            if (!e) return;
+            e.textContent = '';
+            e.hidden = true;
+        }
+
+        /**
+         * @param {string} prefix
+         * @param {{aid: string, name: string, fallback: string, mode: string}} ctx
+         */
+        function openDialog(prefix, ctx) {
             pending = ctx;
-            var d = dialog();
+            var d = dialogBy(prefix);
             if (!d) {
-                // Dialog markup missing (third-party theme that stripped
-                // the partial). Fall back to the admins list landing —
-                // there's no legacy GET handler for `o=remove`, so we
-                // can't perform the delete from this code path. Loud no-op
-                // is preferable to a silent no-op.
                 if (ctx.fallback) window.location.href = ctx.fallback;
                 return;
             }
-            var target = d.querySelector('[data-testid="admins-delete-target"]');
+            var target = d.querySelector('[data-testid="' + prefix + '-target"]');
             if (target) target.textContent = ctx.name || ('admin #' + ctx.aid);
-            var input = reasonInput();
+            var input = reasonBy(prefix);
             if (input) input.value = '';
-            clearError();
+            clearError(prefix);
             d.removeAttribute('hidden');
             try { d.showModal(); }
             catch (_e) { d.setAttribute('open', ''); }
-            if (input) { try { input.focus(); } catch (_e) { /* focus may throw if hidden */ } }
+            if (input) { try { input.focus(); } catch (_e2) { /* ignore */ } }
         }
 
-        function closeDeleteDialog() {
-            var d = dialog();
+        /** @param {string} prefix */
+        function closeDialog(prefix) {
+            var d = dialogBy(prefix);
             if (!d) return;
-            try { d.close(); } catch (_e) { /* not opened modally */ }
+            try { d.close(); } catch (_e) { /* ignore */ }
             d.setAttribute('hidden', '');
             pending = null;
         }
@@ -359,10 +432,48 @@
             var t = /** @type {Element|null} */ (e.target);
             if (!t || !t.closest) return;
 
-            // Cancel button inside the dialog.
             if (t.closest('[data-testid="admins-delete-cancel"]')) {
                 e.preventDefault();
-                closeDeleteDialog();
+                closeDialog('admins-delete');
+                return;
+            }
+            if (t.closest('[data-testid="admins-deactivate-cancel"]')) {
+                e.preventDefault();
+                closeDialog('admins-deactivate');
+                return;
+            }
+
+            var reactivateBtn = /** @type {HTMLElement|null} */ (t.closest('[data-action="admins-reactivate"]'));
+            if (reactivateBtn) {
+                e.preventDefault();
+                var rAid = reactivateBtn.getAttribute('data-aid') || '';
+                var rName = reactivateBtn.getAttribute('data-name') || ('admin #' + rAid);
+                var a = api(), A = actions();
+                if (!a || !A || !rAid) return;
+                setBusy(reactivateBtn, true);
+                a.call(A.AdminsReactivate, { aid: Number(rAid) }).then(function (r) {
+                    setBusy(reactivateBtn, false);
+                    if (!r || r.ok === false) {
+                        var msg = (r && r.error && r.error.message) || 'Unknown error';
+                        toast('error', 'Reactivate failed', msg);
+                        return;
+                    }
+                    var row = rowForAid(rAid);
+                    if (row && row.parentNode) row.parentNode.removeChild(row);
+                    decrementCount();
+                    toast('success', 'Admin reactivated', rName + ' can log in again.');
+                });
+                return;
+            }
+
+            var deactivateBtn = /** @type {HTMLElement|null} */ (t.closest('[data-action="admins-deactivate"]'));
+            if (deactivateBtn) {
+                e.preventDefault();
+                var dAid = deactivateBtn.getAttribute('data-aid') || '';
+                var dName = deactivateBtn.getAttribute('data-name') || ('admin #' + dAid);
+                var a2 = api(), A2 = actions();
+                if (!a2 || !A2 || !dAid) return;
+                openDialog('admins-deactivate', { aid: dAid, name: dName, fallback: '', mode: 'deactivate' });
                 return;
             }
 
@@ -373,33 +484,31 @@
             var aid = btn.getAttribute('data-aid') || '';
             var name = btn.getAttribute('data-name') || ('admin #' + aid);
             var fallback = btn.getAttribute('data-fallback-href') || '';
-            var a = api(), A = actions();
-            if (!a || !A || !aid) {
-                // No JSON dispatcher available — fall back to the admins
-                // list (no legacy GET handler exists for `o=remove`).
+            var a3 = api(), A3 = actions();
+            if (!a3 || !A3 || !aid) {
                 if (fallback) window.location.href = fallback;
                 return;
             }
-            openDeleteDialog({ aid: aid, name: name, fallback: fallback });
+            openDialog('admins-delete', { aid: aid, name: name, fallback: fallback, mode: 'delete' });
         });
 
         document.addEventListener('submit', function (e) {
             var form = /** @type {Element|null} */ (e.target);
             if (!form || !(/** @type {Element} */ (form)).closest) return;
-            if (!form.matches('[data-testid="admins-delete-form"]')) return;
+
+            var isDelete = form.matches('[data-testid="admins-delete-form"]');
+            var isDeactivate = form.matches('[data-testid="admins-deactivate-form"]');
+            if (!isDelete && !isDeactivate) return;
             e.preventDefault();
             if (!pending) return;
 
-            var input = reasonInput();
-            // Reason is optional for the delete-admin surface (server-side
-            // handler accepts empty `ureason` and omits the audit suffix).
-            // Trim whitespace so the audit-log "Reason: " prefix doesn't
-            // get a blank tail when the operator typed only spaces.
+            var prefix = isDelete ? 'admins-delete' : 'admins-deactivate';
+            var input = reasonBy(prefix);
             var reason = input ? input.value.trim() : '';
-            clearError();
+            clearError(prefix);
 
             var ctx = pending;
-            var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="admins-delete-submit"]'));
+            var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="' + prefix + '-submit"]'));
             setBusy(submitBtn, true);
 
             var a = api(), A = actions();
@@ -413,27 +522,37 @@
             var params = { aid: Number(ctx.aid) };
             if (reason !== '') params.ureason = reason;
 
-            a.call(A.AdminsRemove, params).then(function (r) {
+            var action = isDelete ? A.AdminsRemove : A.AdminsDeactivate;
+            a.call(action, params).then(function (r) {
                 setBusy(submitBtn, false);
                 if (!r || r.ok === false) {
                     var msg = (r && r.error && r.error.message) || 'Unknown error';
-                    showError(msg);
-                    toast('error', 'Delete failed', msg);
+                    showError(prefix, msg);
+                    toast('error', isDelete ? 'Delete failed' : 'Deactivate failed', msg);
                     return;
                 }
                 var row = rowForAid(ctx.aid);
                 if (row && row.parentNode) row.parentNode.removeChild(row);
                 decrementCount();
-                closeDeleteDialog();
-                toast('success', 'Admin deleted', ctx.name + ' has been removed.');
+                closeDialog(prefix);
+                if (isDelete) {
+                    toast('success', 'Admin deleted', ctx.name + ' has been removed.');
+                } else {
+                    toast('success', 'Admin deactivated', ctx.name + ' can no longer log in.');
+                }
             });
         });
 
         document.addEventListener('cancel', function (e) {
             var t = /** @type {Element|null} */ (e.target);
-            if (!t || t.id !== 'admins-delete-dialog') return;
-            pending = null;
-            clearError();
+            if (!t) return;
+            if (t.id === 'admins-delete-dialog') {
+                pending = null;
+                clearError('admins-delete');
+            } else if (t.id === 'admins-deactivate-dialog') {
+                pending = null;
+                clearError('admins-deactivate');
+            }
         });
     })();
     </script>

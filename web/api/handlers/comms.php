@@ -97,17 +97,18 @@ function api_comms_add(array $params): array
         }
     }
 
+    $adminName = (string) $userbank->GetProperty('user');
     if ($type === 1 || $type === 3) {
         $GLOBALS['PDO']->query(
-            "INSERT INTO `:prefix_comms`(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
-            (UNIX_TIMESTAMP(),1,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)"
-        )->execute([$steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
+            "INSERT INTO `:prefix_comms`(created,type,authid,name,ends,length,reason,aid,adminIp,admin_name) VALUES
+            (UNIX_TIMESTAMP(),1,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)"
+        )->execute([$steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '', $adminName]);
     }
     if ($type === 2 || $type === 3) {
         $GLOBALS['PDO']->query(
-            "INSERT INTO `:prefix_comms`(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
-            (UNIX_TIMESTAMP(),2,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)"
-        )->execute([$steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
+            "INSERT INTO `:prefix_comms`(created,type,authid,name,ends,length,reason,aid,adminIp,admin_name) VALUES
+            (UNIX_TIMESTAMP(),2,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)"
+        )->execute([$steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '', $adminName]);
     }
 
     Log::add(LogType::Message, 'Block Added', "Block against ($steam) has been added. Reason: $reason; Length: $length");
@@ -453,7 +454,7 @@ function api_comms_detail(array $params): array
     $row = $GLOBALS['PDO']->query(
         "SELECT C.bid AS cid, C.type, C.authid, C.name, C.created, C.ends, C.length,
                 C.reason, C.aid, C.sid, C.RemovedOn, C.RemovedBy, C.RemoveType, C.ureason,
-                AD.user AS admin_name,
+                COALESCE(NULLIF(CO.admin_name, ''), AD.user) AS admin_name,
                 SE.ip AS server_ip, SE.port AS server_port,
                 MO.icon AS mod_icon, MO.name AS mod_name,
                 CAST(MID(C.authid, 9, 1) AS UNSIGNED)
@@ -730,7 +731,7 @@ function api_comms_player_history(array $params): array
         $rows = $GLOBALS['PDO']->query(
             "SELECT C.bid, C.type, C.created, C.ends, C.length, C.reason,
                     C.RemovedOn, C.RemovedBy, C.RemoveType,
-                    AD.user AS admin_name
+                    COALESCE(NULLIF(C.admin_name, ''), AD.user) AS admin_name
                FROM `:prefix_comms` AS C
           LEFT JOIN `:prefix_admins` AS AD ON C.aid = AD.aid
               WHERE C.authid = ? AND C.bid <> ?
@@ -741,7 +742,7 @@ function api_comms_player_history(array $params): array
         $rows = $GLOBALS['PDO']->query(
             "SELECT C.bid, C.type, C.created, C.ends, C.length, C.reason,
                     C.RemovedOn, C.RemovedBy, C.RemoveType,
-                    AD.user AS admin_name
+                    COALESCE(NULLIF(C.admin_name, ''), AD.user) AS admin_name
                FROM `:prefix_comms` AS C
           LEFT JOIN `:prefix_admins` AS AD ON C.aid = AD.aid
               WHERE C.authid = ?

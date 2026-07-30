@@ -58,6 +58,8 @@ Api::register('account.change_email',       'api_account_change_email');
 // ---- admins -----------------------------------------------------------
 Api::register('admins.add',               'api_admins_add',               ADMIN_OWNER | ADMIN_ADD_ADMINS);
 Api::register('admins.remove',            'api_admins_remove',            ADMIN_OWNER | ADMIN_DELETE_ADMINS);
+Api::register('admins.deactivate',        'api_admins_deactivate',        ADMIN_OWNER | ADMIN_DELETE_ADMINS);
+Api::register('admins.reactivate',        'api_admins_reactivate',        ADMIN_OWNER | ADMIN_DELETE_ADMINS);
 Api::register('admins.edit_perms',        'api_admins_edit_perms',        ADMIN_OWNER | ADMIN_EDIT_ADMINS);
 Api::register('admins.generate_password', 'api_admins_generate_password', 0, true);
 
