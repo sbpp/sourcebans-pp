@@ -7,11 +7,10 @@ import { BasePage } from '../_base.ts';
  *
  * Pair: `web/pages/admin.settings.php` -> Sbpp\View\AdminSettingsView
  * + `page_admin_settings_settings.tpl` (default `?section=settings`).
- * #1259 unified the sidebar chrome on `core/admin_sidebar.tpl` so the
- * Settings page now exposes its sub-nav under the same testid shape
- * every Pattern A admin route uses (`admin-tab-<slug>`); the sidebar
- * itself sits outside the `$can_web_settings` gate, so this selector
- * remains valid even on the access-denied fallback.
+ * Section chrome lives in the main sidebar accordion (#1490). The
+ * mount marker is content-area (`settings-save`) so smoke specs stay
+ * valid on mobile where `#sidebar` is off-canvas until the hamburger
+ * opens it.
  */
 export class AdminSettingsPage extends BasePage {
     constructor(page: Page) {
@@ -21,7 +20,7 @@ export class AdminSettingsPage extends BasePage {
     readonly path = '/index.php?p=admin&c=settings';
 
     get pageMounted(): Locator {
-        return this.page.locator('[data-testid="nav-admin-settings-settings"]');
+        return this.page.locator('[data-testid="settings-save"]');
     }
 
     async goto(): Promise<void> {

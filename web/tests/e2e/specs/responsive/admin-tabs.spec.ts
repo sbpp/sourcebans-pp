@@ -12,10 +12,13 @@
  *   - Active leaf carries `aria-current="page"`
  *   - Feature-gated bans sections stay omitted when toggles are off
  *
- * Project gating: mobile-chromium only (accordion toggle chrome).
+ * Project gating: mobile-chromium only. Accordion links live inside
+ * `#sidebar`, which is off-canvas until the hamburger opens it — every
+ * test calls `openMobileSidebar` after navigation.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
+import { openMobileSidebar } from '../../fixtures/sidebar.ts';
 
 test.describe('responsive: admin sidebar accordion', () => {
     test.beforeEach(({}, testInfo) => {
@@ -27,6 +30,7 @@ test.describe('responsive: admin sidebar accordion', () => {
 
     test('admin-servers accordion renders nested section links at iPhone-13 width', async ({ page }) => {
         await page.goto('/index.php?p=admin&c=servers');
+        await openMobileSidebar(page);
 
         const accordion = page.locator('[data-testid="nav-admin-servers-accordion"]');
         await expect(accordion).toBeVisible();
@@ -56,6 +60,7 @@ test.describe('responsive: admin sidebar accordion', () => {
 
     test('admin-servers accordion can be toggled closed at iPhone-13 width', async ({ page }) => {
         await page.goto('/index.php?p=admin&c=servers');
+        await openMobileSidebar(page);
 
         const details = page.locator('[data-testid="nav-admin-servers-accordion"]');
         const summary = page.locator('[data-testid="nav-admin-servers"]');
@@ -78,6 +83,8 @@ test.describe('responsive: admin sidebar accordion', () => {
         page: import('@playwright/test').Page,
         theme: 'light' | 'dark',
     ): Promise<void> {
+        await openMobileSidebar(page);
+
         const activeLink = page.locator(
             '[data-testid="nav-admin-servers-accordion"] [aria-current="page"]',
         ).first();
@@ -134,6 +141,7 @@ test.describe('responsive: admin sidebar accordion', () => {
     for (const spec of patternARoutes) {
         test(`admin-${spec.route} accordion renders all sections at iPhone-13 width`, async ({ page }) => {
             await page.goto(`/index.php?p=admin&c=${spec.route}`);
+            await openMobileSidebar(page);
 
             const accordion = page.locator(`[data-testid="nav-admin-${spec.route}-accordion"]`);
             await expect(accordion).toBeVisible();
@@ -150,6 +158,7 @@ test.describe('responsive: admin sidebar accordion', () => {
 
         test(`admin-${spec.route} accordion navigates between sections without scrolling`, async ({ page }) => {
             await page.goto(`/index.php?p=admin&c=${spec.route}`);
+            await openMobileSidebar(page);
 
             const targetSlug = spec.slugs.find((s) => s !== spec.active) ?? spec.slugs[1];
             const link = page.locator(`[data-testid="nav-admin-${spec.route}-${targetSlug}"]`);
@@ -157,6 +166,8 @@ test.describe('responsive: admin sidebar accordion', () => {
             await link.click();
 
             await expect(page).toHaveURL(new RegExp(`section=${targetSlug.replace(/-/g, '\\-')}`));
+            // Post-nav the drawer may close; aria-current is on the
+            // attached leaf regardless of off-canvas visibility.
             await expect(page.locator(`[data-testid="nav-admin-${spec.route}-${targetSlug}"]`))
                 .toHaveAttribute('aria-current', 'page');
         });
@@ -164,6 +175,7 @@ test.describe('responsive: admin sidebar accordion', () => {
 
     test('admin-bans group-ban tab is omitted when config.enablegroupbanning is off', async ({ page }) => {
         await page.goto('/index.php?p=admin&c=bans');
+        await openMobileSidebar(page);
 
         const accordion = page.locator('[data-testid="nav-admin-bans-accordion"]');
         await expect(accordion).toBeVisible();

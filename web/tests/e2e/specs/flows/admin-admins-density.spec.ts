@@ -33,6 +33,7 @@
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
+import { openMobileSidebar } from '../../fixtures/sidebar.ts';
 import { AdminAdminsPage } from '../../pages/admin/AdminAdmins.ts';
 
 test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', () => {
@@ -78,16 +79,15 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         const p = new AdminAdminsPage(page);
         await p.goto();
         await expect(p.pageMounted).toBeVisible();
+
+        // Accordion links live in `#sidebar`, off-canvas until the
+        // hamburger opens the drawer (#1490).
+        await openMobileSidebar(page);
         await expect(p.toc).toBeVisible();
 
-        // The mobile chrome is `<details open>` so the link list is
-        // visible without an extra tap. The summary contains the
-        // configured sidebar label ("Admin sections" — assigned by
-        // admin.admins.php's `new AdminTabs(...)` call).
-        const summary = p.toc.locator('summary');
+        const summary = page.locator('[data-testid="nav-admin-admins"]');
         await expect(summary).toBeVisible();
 
-        // Tap "Add admin" — page navigates to its dedicated URL.
         await p.tocLink('add-admin').click();
         await expect(page).toHaveURL(/section=add-admin(?:&|$)/);
         await expect(p.tocLink('add-admin')).toHaveAttribute('aria-current', 'page');
