@@ -22,7 +22,7 @@
     "add an override" form sits inline below the editable table —
     one `<form>`, one Save button, both rows submit together.
 *}
-<div data-testid="admin-admins-section-overrides">
+<div class="page-section" data-testid="admin-admins-section-overrides">
 {if not $permission_addadmin}
     <div class="card">
         <div class="card__body">
@@ -68,7 +68,9 @@
                 </div>
             </div>
             <div class="card__body">
-                <table class="table" data-testid="overrides-table">
+                {* Form table with no paired mobile-card surface — keep
+                   visible under the <=768px `.table` hide via keep-mobile. *}
+                <table class="table table--keep-mobile" data-testid="overrides-table">
                     <thead>
                         <tr>
                             <th style="width:8rem">Type</th>
@@ -117,7 +119,7 @@
                 </div>
             </div>
             <div class="card__body">
-                <div class="grid gap-3" style="grid-template-columns:8rem 1fr 14rem">
+                <div class="grid gap-3 overrides-add-grid">
                     <div>
                         <label class="label" for="addoverride-type">Type</label>
                         <select class="select" id="addoverride-type" name="new_override_type"

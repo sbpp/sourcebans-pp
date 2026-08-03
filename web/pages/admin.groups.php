@@ -10,38 +10,19 @@ if (!defined("IN_SB")) {
 global $userbank, $theme;
 
 /*
- * Section routing (#1239 — Pattern A, settings-page shape).
+ * Section routing (#1239 — Pattern A). Read `?section=list|add`,
+ * render one View per request. Section chrome lives in the main
+ * sidebar accordion (`AdminNavCatalog` + `core/navbar.tpl`, #1490).
  *
- * Mirrors `admin.servers.php`: read `?section=list|add`, render one
- * View per request. #1259 unified the chrome on the Settings-style
- * vertical sidebar (`core/admin_sidebar.tpl`).
- *
- * Note: legacy callers reach this page with `?gid=<n>` to focus the
- * master-detail editor on a specific group; that's a *list* concern,
+ * Legacy callers reach this page with `?gid=<n>` to focus the
+ * master-detail editor on a specific group; that's a list concern,
  * so it always lands on the list section.
  */
 $canList = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListGroups));
 $canAdd  = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddGroup));
 
-/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
-$sections = [
-    [
-        'slug'       => 'list',
-        'name'       => 'List groups',
-        'permission' => ADMIN_OWNER | ADMIN_LIST_GROUPS,
-        'url'        => 'index.php?p=admin&c=groups&section=list',
-        'icon'       => 'users',
-    ],
-    [
-        'slug'       => 'add',
-        'name'       => 'Add a group',
-        'permission' => ADMIN_OWNER | ADMIN_ADD_GROUP,
-        'url'        => 'index.php?p=admin&c=groups&section=add',
-        'icon'       => 'plus',
-    ],
-];
-
-$validSlugs = ['list', 'add'];
+$sections = \Sbpp\View\AdminNavCatalog::sectionsFor('groups');
+$validSlugs = array_column($sections, 'slug');
 $section    = (string) ($_GET['section'] ?? '');
 if (!in_array($section, $validSlugs, true)) {
     if ($canList) {
@@ -53,18 +34,10 @@ if (!in_array($section, $validSlugs, true)) {
     }
 }
 
-// AdminTabs opens the sidebar shell + emits the <aside> + opens the
-// content column. Closing tags live at the bottom of this file. The
-// PHP block here is followed by a `<script>` HTML island in the
-// default theme — the closing divs are emitted via PHP `echo` BEFORE
-// the file's closing PHP delimiter so the markup nests correctly.
-new AdminTabs($sections, $userbank, $theme, $section, 'Group sections');
-
 if ($section === 'add') {
     \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsAddView(
         permission_addgroup: $canAdd,
     ));
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;
 }
 
@@ -310,7 +283,6 @@ if (!empty($web_group_list)) {
     selected_group:           $selected_group,
 ));
 
-echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
 ?>
 <script>
 // sb.accordion (sb.js) is the actual implementation, so call it directly.

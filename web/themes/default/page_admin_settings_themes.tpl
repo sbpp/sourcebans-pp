@@ -55,7 +55,7 @@
     #1266 — outer `.p-6` removed; the page inset lives on
     `.admin-sidebar-shell` so both grid columns share the same top y.
 *}
-<div>
+<div class="page-section">
     <div class="mb-6">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
         <p class="text-sm text-muted m-0 mt-2">Pick the theme that paints the panel chrome for every visitor.</p>

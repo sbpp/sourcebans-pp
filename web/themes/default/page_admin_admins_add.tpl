@@ -37,7 +37,7 @@
     `admin-admins-section-add-admin` so existing E2E selectors keep
     matching the surface.
 *}
-<div data-testid="admin-admins-section-add-admin">
+<div class="page-section" data-testid="admin-admins-section-add-admin">
     {if !$can_add_admins}
         <div class="card">
             <div class="card__body">

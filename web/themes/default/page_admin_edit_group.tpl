@@ -49,7 +49,7 @@
                     <h3>Web Admin Permissions</h3>
                 </div></div>
                 <div class="card__body">
-                    <table class="table" style="margin:0;font-size:var(--fs-sm)">
+                    <table class="table table--keep-mobile" style="margin:0;font-size:var(--fs-sm)">
                         <colgroup>
                             <col style="width:auto">
                             <col style="width:5rem">
@@ -152,7 +152,7 @@
                     <h3>Server Admin Permissions</h3>
                 </div></div>
                 <div class="card__body">
-                    <table class="table" style="margin:0;font-size:var(--fs-sm)">
+                    <table class="table table--keep-mobile" style="margin:0;font-size:var(--fs-sm)">
                         <thead><tr>
                             <th>Permission</th>
                             <th class="text-center" style="width:4rem">Flag</th>
@@ -237,7 +237,7 @@
                     </p>
                 </div></div>
                 <div class="card__body">
-                    <table class="table" style="margin:0;font-size:var(--fs-sm)" id="overrides-table">
+                    <table class="table table--keep-mobile" style="margin:0;font-size:var(--fs-sm)" id="overrides-table">
                         <thead><tr>
                             <th style="width:7rem">Type</th>
                             <th>Name</th>

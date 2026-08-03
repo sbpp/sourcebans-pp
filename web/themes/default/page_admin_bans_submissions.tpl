@@ -28,7 +28,7 @@
         </div>
     </div>
 {else}
-    <section class="p-6" data-testid="submissions-section" style="max-width:1400px">
+    <section class="page-section" data-testid="submissions-section" style="padding-top:0.75rem">
         <div class="flex items-center justify-between gap-4 mb-4" style="flex-wrap:wrap">
             <div>
                 <h1 style="font-size:1.5rem;font-weight:600;margin:0">

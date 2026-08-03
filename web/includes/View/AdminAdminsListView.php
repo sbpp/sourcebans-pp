@@ -36,7 +36,6 @@ final class AdminAdminsListView extends View
      */
     public function __construct(
         public readonly bool $can_list_admins,
-        public readonly bool $can_add_admins,
         public readonly bool $can_edit_admins,
         public readonly bool $can_delete_admins,
         public readonly int $admin_count,

@@ -6,48 +6,16 @@ if (!defined("IN_SB")) {
 global $userbank, $theme;
 
 /*
- * Section routing (#1239 — Pattern A, settings-page shape).
- *
- * Each section is its own page request keyed on `?section=list|add`;
- * the sub-nav (vertical sidebar since #1259 — see AGENTS.md
- * "Sub-paged admin routes") carries `aria-current="page"` on the
- * active link. Pre-#1239 the page emitted a broken
- * `<button onclick="openTab(...)">` strip (the JS handler was deleted
- * with sourcebans.js at #1123 D1) and rendered BOTH panes back-to-back
- * below it, so the tab strip lied about being a tab control. #1239
- * routed each section to its own URL and #1259 unified the chrome on
- * the Settings-style vertical sidebar.
- *
- * `icon` keys feed the Lucide glyph in `core/admin_sidebar.tpl`; the
- * vocabulary mirrors `page_admin_settings_*.tpl` ("server" for the
- * list, "plus" for the add form).
+ * Section routing (#1239 — Pattern A). Each section is its own page
+ * request keyed on `?section=list|add`. Section chrome lives in the
+ * main sidebar accordion (`AdminNavCatalog` + `core/navbar.tpl`,
+ * #1490). See AGENTS.md "Sub-paged admin routes".
  */
 $canList = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListServers));
 $canAdd  = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddServer));
 
-/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
-$sections = [
-    [
-        'slug'       => 'list',
-        'name'       => 'List servers',
-        'permission' => ADMIN_OWNER | ADMIN_LIST_SERVERS,
-        'url'        => 'index.php?p=admin&c=servers&section=list',
-        'icon'       => 'server',
-    ],
-    [
-        'slug'       => 'add',
-        'name'       => 'Add new server',
-        'permission' => ADMIN_OWNER | ADMIN_ADD_SERVER,
-        'url'        => 'index.php?p=admin&c=servers&section=add',
-        'icon'       => 'plus',
-    ],
-];
-
-// Default to the first accessible section so the page doesn't render
-// a blank body when the URL omits ?section= or carries an unknown
-// value. List > Add for users who have both, falling back to whichever
-// permission they hold otherwise.
-$validSlugs = ['list', 'add'];
+$sections = \Sbpp\View\AdminNavCatalog::sectionsFor('servers');
+$validSlugs = array_column($sections, 'slug');
 $section    = (string) ($_GET['section'] ?? '');
 if (!in_array($section, $validSlugs, true)) {
     if ($canList) {
@@ -58,11 +26,6 @@ if (!in_array($section, $validSlugs, true)) {
         $section = 'list';
     }
 }
-
-// AdminTabs opens the sidebar shell + emits the <aside> + opens the
-// content column. Closing tags live at the bottom of this file —
-// document the pairing so future edits don't strand an open <div>.
-new AdminTabs($sections, $userbank, $theme, $section, 'Server sections');
 
 if ($section === 'add') {
     // List mods (drives the mod <select> in the add form).
@@ -81,7 +44,6 @@ if ($section === 'add') {
         grouplist: $grouplist,
         submit_text: 'Add Server',
     ));
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;
 }
 
@@ -129,4 +91,3 @@ foreach ($servers as &$server) {
     server_list: $servers,
 ));
 
-echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';

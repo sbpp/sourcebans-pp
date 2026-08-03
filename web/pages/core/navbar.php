@@ -1,6 +1,8 @@
 <?php
 global $userbank, $theme;
 
+use Sbpp\View\AdminNavCatalog;
+
 $navbar = [
      [
         'title' => 'Dashboard',
@@ -113,12 +115,39 @@ foreach ($navbar as $key => $tab) {
 
 if ($userbank->is_admin()) {
     $cat = $_GET['c'] ?? null;
+    $section = (string) ($_GET['section'] ?? '');
     foreach ($admin as $key => $tab) {
-        $admin[$key]['state'] = ($cat === $tab['endpoint']) ? 'active' : '';
-
         if (!$userbank->HasAccess($tab['permission'])) {
             unset($admin[$key]);
+            continue;
         }
+
+        $isCategoryActive = ($cat === $tab['endpoint']);
+        $children = AdminNavCatalog::filterForUser(
+            AdminNavCatalog::sectionsFor($tab['endpoint']),
+            $userbank,
+        );
+
+        $childRows = [];
+        foreach ($children as $idx => $child) {
+            $childActive = $isCategoryActive && (
+                $section === $child['slug']
+                || ($section === '' && $idx === 0)
+            );
+            $childRows[] = [
+                'slug'  => $child['slug'],
+                'name'  => $child['name'],
+                'url'   => $child['url'],
+                'icon'  => $child['icon'] ?? 'circle-dot',
+                'state' => $childActive ? 'active' : '',
+            ];
+        }
+
+        $admin[$key]['children'] = $childRows;
+        $admin[$key]['open'] = $isCategoryActive;
+        // Category row itself is never aria-current when children exist;
+        // the matching child leaf owns the active state (#1233 / #1490).
+        $admin[$key]['state'] = ($isCategoryActive && $childRows === []) ? 'active' : '';
     }
 }
 

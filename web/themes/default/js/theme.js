@@ -1984,4 +1984,165 @@
   }
   if (document.readyState !== 'loading') applyPlatformHints();
   else document.addEventListener('DOMContentLoaded', applyPlatformHints);
+
+  // ---- MULTI-SELECT (select[data-multiselect]) ---------------
+  // Progressive enhancement around a real <select multiple> so GET
+  // submit and no-JS still work. After enhance, the native select is
+  // visually hidden (still in the form) and a trigger + checkbox
+  // panel mirrors option.selected.
+  /**
+   * @param {HTMLSelectElement} select
+   * @returns {void}
+   */
+  function enhanceMultiselect(select) {
+    if (select.dataset.mselReady === '1') return;
+    if (!select.multiple) return;
+    select.dataset.mselReady = '1';
+
+    const parent = select.parentNode;
+    if (!parent) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'msel';
+    wrap.setAttribute('data-msel', 'true');
+    parent.insertBefore(wrap, select);
+    wrap.appendChild(select);
+
+    select.classList.add('visually-hidden');
+    select.setAttribute('aria-hidden', 'true');
+    select.tabIndex = -1;
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'msel__trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    if (select.id) trigger.setAttribute('aria-controls', select.id + '-msel-panel');
+    trigger.innerHTML =
+      '<span class="msel__trigger-label"></span>' +
+      '<i data-lucide="chevron-down" class="msel__chevron" aria-hidden="true"></i>';
+
+    const panel = document.createElement('div');
+    panel.className = 'msel__panel';
+    panel.setAttribute('role', 'listbox');
+    panel.setAttribute('aria-multiselectable', 'true');
+    if (select.id) panel.id = select.id + '-msel-panel';
+    panel.hidden = true;
+
+    const chips = document.createElement('div');
+    chips.className = 'msel__chips';
+
+    wrap.insertBefore(trigger, select);
+    wrap.appendChild(panel);
+    wrap.appendChild(chips);
+
+    const labelEl = /** @type {HTMLElement} */ (trigger.querySelector('.msel__trigger-label'));
+
+    /** @returns {HTMLOptionElement[]} */
+    function optionList() {
+      return Array.prototype.slice.call(select.options);
+    }
+
+    /** @returns {void} */
+    function syncFromSelect() {
+      const selected = optionList().filter((o) => o.selected && o.value !== '');
+      const n = selected.length;
+      wrap.setAttribute('data-has-value', n > 0 ? 'true' : 'false');
+      if (labelEl) {
+        labelEl.textContent = n === 0 ? 'Any' : (n === 1 ? selected[0].textContent || selected[0].value : (n + ' selected'));
+      }
+      panel.querySelectorAll('input[type="checkbox"]').forEach((/** @type {Element} */ el) => {
+        const input = /** @type {HTMLInputElement} */ (el);
+        const opt = optionList().find((o) => o.value === input.value);
+        input.checked = !!(opt && opt.selected);
+      });
+      chips.textContent = '';
+      selected.forEach((opt) => {
+        const chip = document.createElement('span');
+        chip.className = 'msel__chip';
+        const text = document.createElement('span');
+        text.className = 'msel__chip-label';
+        text.textContent = opt.textContent || opt.value;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'msel__chip-remove';
+        remove.setAttribute('aria-label', 'Remove ' + (opt.textContent || opt.value));
+        remove.textContent = '\u00d7';
+        remove.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          opt.selected = false;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          syncFromSelect();
+        });
+        chip.appendChild(text);
+        chip.appendChild(remove);
+        chips.appendChild(chip);
+      });
+    }
+
+    /** @returns {void} */
+    function buildPanel() {
+      panel.textContent = '';
+      optionList().forEach((opt) => {
+        if (opt.value === '') return;
+        const row = document.createElement('label');
+        row.className = 'msel__option';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = opt.value;
+        input.checked = opt.selected;
+        input.addEventListener('change', () => {
+          opt.selected = input.checked;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          syncFromSelect();
+        });
+        const span = document.createElement('span');
+        span.textContent = opt.textContent || opt.value;
+        row.appendChild(input);
+        row.appendChild(span);
+        panel.appendChild(row);
+      });
+    }
+
+    /** @param {boolean} open */
+    function setOpen(open) {
+      wrap.setAttribute('data-open', open ? 'true' : 'false');
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      panel.hidden = !open;
+    }
+
+    buildPanel();
+    syncFromSelect();
+
+    trigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(panel.hidden);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(/** @type {Node} */ (e.target))) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden) {
+        setOpen(false);
+        trigger.focus();
+      }
+    });
+
+    select.addEventListener('change', syncFromSelect);
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  /** @returns {void} */
+  function initMultiselects() {
+    document.querySelectorAll('select[data-multiselect]').forEach((el) => {
+      if (el instanceof HTMLSelectElement) enhanceMultiselect(el);
+    });
+  }
+  if (document.readyState !== 'loading') initMultiselects();
+  else document.addEventListener('DOMContentLoaded', initMultiselects);
 })();

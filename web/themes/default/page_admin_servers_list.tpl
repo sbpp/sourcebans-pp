@@ -48,13 +48,6 @@
                     Live host / map / player counts hydrate after first paint.
                 </p>
             </div>
-            {if $permission_addserver}
-                <a class="btn btn--primary"
-                   href="index.php?p=admin&amp;c=servers&amp;section=add"
-                   data-testid="server-list-add">
-                    Add server
-                </a>
-            {/if}
         </div>
 
         {if $server_count == 0}
