@@ -201,10 +201,11 @@
                     <th>Type</th>
                     <th>Player</th>
                     <th>SteamID</th>
-                    <th class="col-length col-tier-3">Length</th>
+                    <th class="col-tier-2">Reason</th>
                     <th class="col-tier-2">Server</th>
                     <th class="col-admin col-tier-2">Admin</th>
-                    <th class="col-tier-3">Started</th>
+                    <th class="col-length col-tier-3">Length</th>
+                    <th class="col-tier-3">Invoked on</th>
                     <th class="col-status">Status</th>
                     <th class="col-actions" aria-label="Actions"></th>
                 </tr>
@@ -309,8 +310,7 @@
                             </div>
                         </td>
                         <td class="font-mono text-xs text-muted">{$comm.steam|escape}</td>
-                        <td class="col-length col-tier-3 tabular-nums text-muted"
-                            {if !empty($comm.length_human)}title="{$comm.length_human|escape}"{/if}>{$comm.length_human|escape}</td>
+                        <td class="col-tier-2 text-muted">{if !empty($comm.reason)}{$comm.reason|escape}{else}<span class="text-faint">—</span>{/if}</td>
                         <td class="col-tier-2 text-muted">{$comm.sname|escape}</td>
                         <td class="col-admin col-tier-2 text-muted">
                             {if $comm.admin}
@@ -319,6 +319,8 @@
                                 <span class="text-faint">—</span>
                             {/if}
                         </td>
+                        <td class="col-length col-tier-3 tabular-nums text-muted"
+                            {if !empty($comm.length_human)}title="{$comm.length_human|escape}"{/if}>{$comm.length_human|escape}</td>
                         <td class="col-tier-3 text-muted text-xs">
                             <time datetime="{$comm.started_iso|escape}">{$comm.started_human|escape}</time>
                         </td>
@@ -372,6 +374,16 @@
                                         Re-apply
                                     </a>
                                 {/if}
+                                {if !empty($comm.steam)}
+                                <button class="btn btn--ghost btn--sm" type="button"
+                                        data-copy="{$comm.steam|escape}"
+                                        data-testid="row-action-copy-steam-mobile"
+                                        aria-label="Copy SteamID"
+                                        title="Copy SteamID">
+                                    <i data-lucide="copy" style="width:13px;height:13px"></i>
+                                    Copy
+                                </button>
+                                {/if}
                                 {if $can_delete_comm}
                                     <button type="button"
                                             class="btn btn--ghost btn--sm"
@@ -397,7 +409,7 @@
                        `can_add_comm`); otherwise it stays "Clear filters". *}
                     <tr>
                         {if $is_filtered}
-                        <td colspan="9"
+                        <td colspan="10"
                             style="padding:0"
                             data-testid="comms-empty"
                             data-filtered="true">
@@ -418,7 +430,7 @@
                             </div>
                         </td>
                         {else}
-                        <td colspan="9"
+                        <td colspan="10"
                             style="padding:0"
                             data-testid="comms-empty"
                             data-filtered="false">
