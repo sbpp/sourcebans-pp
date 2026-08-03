@@ -56,7 +56,12 @@ global $userbank, $theme;
  */
 
 /** @var bool $canListAdmins */
-$canListAdmins   = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListAdmins));
+$canListAdmins   = $userbank->HasAccess(WebPermission::mask(
+    WebPermission::Owner,
+    WebPermission::ListAdmins,
+    WebPermission::EditAdmins,
+    WebPermission::DeleteAdmins,
+));
 /** @var bool $canAddAdmins */
 $canAddAdmins    = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddAdmins));
 /** @var bool $canEditAdmins */
@@ -153,11 +158,12 @@ if (isset($_GET['page']) && $_GET['page'] > 0) {
  * combined filter form and AND the populated filters server-side.
  *
  * The new wire format reads each filter from its own query parameter
- * (`name`, `steamid`, `steam_match`, `admemail`, `webgroup`,
+ * (`name`, `steamid`, `admemail`, `webgroup`,
  * `srvadmgroup`, `srvgroup`, `admwebflag[]`, `admsrvflag[]`, `server`)
- * so a single GET submit carries the full filter snapshot. URL-shareable
- * searches are preserved by the legacy-shim block below: any incoming
- * `?advType=…&advSearch=…` is translated into the new shape so old
+ * so a single GET submit carries the full filter snapshot. Text filters
+ * always substring-match (`LIKE %…%`). URL-shareable searches are
+ * preserved by the legacy-shim block below: any incoming
+ * `?advType=…&advSearch=…` is translated into the modern shape so old
  * bookmarks and cross-page links keep working.
  *
  * Server-side filters are AND-combined: a request with two non-empty
@@ -196,10 +202,9 @@ if (isset($_GET['advType']) && isset($_GET['advSearch']) && $_GET['advSearch'] !
         case 'steam':
             // The legacy form distinguished exact (`steamid`) from
             // partial (`steam`) matches as two distinct advTypes. The
-            // modern form folds both onto `steamid` + `steam_match`.
+            // modern form folds both onto `steamid` (always partial).
             if (!isset($_GET['steamid']) || $_GET['steamid'] === '') {
-                $_GET['steamid']     = $legacyValue;
-                $_GET['steam_match'] = '1';
+                $_GET['steamid'] = $legacyValue;
             }
             break;
         case 'admwebflag':
@@ -211,52 +216,26 @@ if (isset($_GET['advType']) && isset($_GET['advSearch']) && $_GET['advSearch'] !
     }
 }
 
-// 1) Login name (exact or partial against ADM.user).
-//    `name_match` was added in #1231; default is partial ('1') so
-//    pre-#1231 URLs (`?name=alice` with no name_match) keep their
-//    substring semantics. `0` flips to exact.
+// 1) Login name (partial against ADM.user).
 if (!empty($_GET['name']) && is_string($_GET['name'])) {
-    $partialName = !isset($_GET['name_match']) || (string) $_GET['name_match'] !== '0';
-    if ($partialName) {
-        $where        .= " AND ADM.user LIKE ?";
-        $whereParams[] = '%' . $_GET['name'] . '%';
-    } else {
-        $where        .= " AND ADM.user = ?";
-        $whereParams[] = $_GET['name'];
-    }
-    $activeFilters['name']       = (string) $_GET['name'];
-    $activeFilters['name_match'] = $partialName ? '1' : '0';
+    $where                       .= " AND ADM.user LIKE ?";
+    $whereParams[]                = '%' . $_GET['name'] . '%';
+    $activeFilters['name']        = (string) $_GET['name'];
 }
 
-// 2) Steam ID (exact or partial against ADM.authid).
+// 2) Steam ID (partial against ADM.authid).
 if (!empty($_GET['steamid']) && is_string($_GET['steamid'])) {
-    $partial = isset($_GET['steam_match']) && (string) $_GET['steam_match'] === '1';
-    if ($partial) {
-        $where        .= " AND ADM.authid LIKE ?";
-        $whereParams[] = '%' . $_GET['steamid'] . '%';
-    } else {
-        $where        .= " AND ADM.authid = ?";
-        $whereParams[] = $_GET['steamid'];
-    }
-    $activeFilters['steamid']     = (string) $_GET['steamid'];
-    $activeFilters['steam_match'] = $partial ? '1' : '0';
+    $where                        .= " AND ADM.authid LIKE ?";
+    $whereParams[]                 = '%' . $_GET['steamid'] . '%';
+    $activeFilters['steamid']      = (string) $_GET['steamid'];
 }
 
-// 3) E-mail (exact or partial; `admemail_match` was added in #1231,
-//    same default-partial shape as `name_match`). Gated on the same
-//    flag the search box gates the input field on so URL forgery
-//    can't bypass the visibility gate.
+// 3) E-mail (partial). Gated on the same flag the search box gates
+//    the input field on so URL forgery can't bypass the visibility gate.
 if (!empty($_GET['admemail']) && is_string($_GET['admemail']) && $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
-    $partialEmail = !isset($_GET['admemail_match']) || (string) $_GET['admemail_match'] !== '0';
-    if ($partialEmail) {
-        $where        .= " AND ADM.email LIKE ?";
-        $whereParams[] = '%' . $_GET['admemail'] . '%';
-    } else {
-        $where        .= " AND ADM.email = ?";
-        $whereParams[] = $_GET['admemail'];
-    }
-    $activeFilters['admemail']       = (string) $_GET['admemail'];
-    $activeFilters['admemail_match'] = $partialEmail ? '1' : '0';
+    $where                         .= " AND ADM.email LIKE ?";
+    $whereParams[]                  = '%' . $_GET['admemail'] . '%';
+    $activeFilters['admemail']      = (string) $_GET['admemail'];
 }
 
 // 4) Web group (`:prefix_groups.gid` -> `:prefix_admins.gid`).
@@ -318,7 +297,9 @@ if (is_array($rawWebFlags)) {
     }
 }
 
-// 8) Server permission flags (multi).
+// 8) Server permission flags (multi). SM_* constants are single-char
+// strings (`SM_ROOT` = `z`); pass them to HasAccess as strings so the
+// srv_flags path runs. SM_ROOT implies every other server flag.
 $rawSrvFlags = $_GET['admsrvflag'] ?? null;
 if (is_string($rawSrvFlags)) {
     $rawSrvFlags = explode(',', $rawSrvFlags);
@@ -327,27 +308,29 @@ if (is_array($rawSrvFlags)) {
     /** @var list<string> $srvFlagNames */
     $srvFlagNames = [];
     foreach ($rawSrvFlags as $candidate) {
-        if (is_string($candidate) && preg_match('/^SM_[A-Z_]+$/', $candidate) && defined($candidate)) {
+        if (is_string($candidate) && preg_match('/^SM_[A-Z0-9_]+$/', $candidate) && defined($candidate)) {
             $srvFlagNames[] = $candidate;
         }
     }
     if (!empty($srvFlagNames)) {
-        $flagBits = array_map(fn(string $name): int => (int) constant($name), $srvFlagNames);
-        $alladmins = $GLOBALS['PDO']->query("SELECT aid, authid FROM `:prefix_admins` WHERE aid > 0")->resultset();
+        /** @var list<string> $flagChars */
+        $flagChars = array_map(fn(string $name): string => (string) constant($name), $srvFlagNames);
+        $alladmins = $GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE aid > 0")->resultset();
         $accessAids = [];
         foreach ($alladmins as $row) {
+            $aid = (int) $row['aid'];
             $matched = false;
-            foreach ($flagBits as $fla) {
-                if ($userbank->HasAccess($fla, $row['authid'])) {
+            foreach ($flagChars as $fla) {
+                if ($userbank->HasAccess($fla, $aid)) {
                     $matched = true;
                     break;
                 }
             }
-            if (!$matched && $userbank->HasAccess(SM_ROOT, $row['authid'])) {
+            if (!$matched && $userbank->HasAccess(SM_ROOT, $aid)) {
                 $matched = true;
             }
             if ($matched) {
-                $accessAids[] = (int) $row['aid'];
+                $accessAids[] = $aid;
             }
         }
         if (empty($accessAids)) {
@@ -428,10 +411,10 @@ foreach ($admins as $admin) {
     $admin['web_group']    = $userbank->GetProperty("group_name", $admin['aid']);
     $admin['server_group'] = $userbank->GetProperty("srv_groups", $admin['aid']);
     if (empty($admin['web_group']) || $admin['web_group'] == " ") {
-        $admin['web_group'] = "No Group/Individual Permissions";
+        $admin['web_group'] = "No groups";
     }
     if (empty($admin['server_group']) || $admin['server_group'] == " ") {
-        $admin['server_group'] = "No Group/Individual Permissions";
+        $admin['server_group'] = "No groups";
     }
     $GLOBALS['PDO']->query("SELECT count(authid) AS num FROM `:prefix_bans` WHERE aid = :aid");
     $GLOBALS['PDO']->bind(':aid', $admin['aid']);

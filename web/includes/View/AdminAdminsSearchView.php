@@ -22,16 +22,11 @@ namespace Sbpp\View;
  * `{load_template file="admin.admins.search"}` Smarty plugin.
  *
  * The form submits as a plain `GET` to `?p=admin&c=admins` with one
- * parameter per populated filter (`name`, `name_match`, `steamid`,
- * `steam_match`, `admemail`, `admemail_match`, `webgroup`,
- * `srvadmgroup`, `srvgroup`, `admwebflag[]`, `admsrvflag[]`,
- * `server`). admin.admins.php AND-combines every non-empty filter —
- * see #1207 ADM-4. No CSRF field — search is read-only.
- *
- * `name_match` / `admemail_match` were added in #1231 so Login and
- * E-mail can be flipped between exact / partial mode the way SteamID
- * already could; defaults are partial ('1') to preserve pre-#1231
- * substring behaviour for legacy URLs.
+ * parameter per populated filter (`name`, `steamid`, `admemail`,
+ * `webgroup`, `srvadmgroup`, `srvgroup`, `admwebflag[]`, `admsrvflag[]`,
+ * `server`). Text filters are always partial (`LIKE %…%`).
+ * admin.admins.php AND-combines every non-empty filter. No CSRF
+ * field — search is read-only.
  *
  * `$active_filter_*` mirror the corresponding $_GET keys so the
  * template can pre-fill the form without splattering
@@ -40,14 +35,11 @@ namespace Sbpp\View;
  * given $_GET shape came from a modern submit, a legacy
  * `advType=…&advSearch=…` URL, or nothing at all.
  *
- * #1303 — collapsible disclosure
- * ------------------------------
  * The form is wrapped in a `<details class="card filters-details">`
  * default-collapsed disclosure so the unfiltered admin list paints
- * above the fold. `$has_active_filters` (derived from the nine
- * `active_filter_*` value slots — match-mode toggles don't count
- * because they always carry a default) drives the `[open]` attribute,
- * so any post-submit page paints with the form expanded. The chrome
+ * above the fold. `$has_active_filters` (derived from the
+ * `active_filter_*` value slots) drives the `[open]` attribute, so
+ * any post-submit page paints with the form expanded. The chrome
  * mirrors `core/admin_sidebar.tpl`'s mobile `<details open>` pattern
  * (chevron + label + `prefers-reduced-motion: reduce` override). The
  * count badge ("Filters · N active") rides `$active_filter_count`.
@@ -88,10 +80,8 @@ final class AdminAdminsSearchView extends View
      *     `admsrvflag[]` values.
      * @param int $active_filter_count Number of non-empty filter
      *     value slots — drives the `<summary>` count badge ("Filters
-     *     · N active") and `$has_active_filters`. Match-mode toggles
-     *     (`name_match` / `steam_match` / `admemail_match`) are NOT
-     *     counted: they always carry a default ('0' or '1') and only
-     *     refine the matching filter, they don't filter on their own.
+     *     · N active") and `$has_active_filters`. Empty multi-select
+     *     arrays count as zero.
      * @param bool $has_active_filters Convenience boolean derived from
      *     `$active_filter_count > 0`. The template uses it to decide
      *     whether the disclosure paints `<details open>` (post-submit
@@ -107,11 +97,8 @@ final class AdminAdminsSearchView extends View
         public readonly array $admwebflag_list,
         public readonly array $admsrvflag_list,
         public readonly string $active_filter_name = '',
-        public readonly string $active_filter_name_match = '1',
         public readonly string $active_filter_steamid = '',
-        public readonly string $active_filter_steam_match = '0',
         public readonly string $active_filter_admemail = '',
-        public readonly string $active_filter_admemail_match = '1',
         public readonly string $active_filter_webgroup = '',
         public readonly string $active_filter_srvadmgroup = '',
         public readonly string $active_filter_srvgroup = '',

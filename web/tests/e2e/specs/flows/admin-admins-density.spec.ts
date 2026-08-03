@@ -124,12 +124,12 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         await p.searchToggle.click();
 
         // Two filters at once: a deliberately not-matching login
-        // ("zzznoadminmatchesthis") + a steam_match=1 (partial). The
-        // login filter narrows the result list to zero — locking the
+        // ("zzznoadminmatchesthis") + a steamid substring. The login
+        // filter narrows the result list to zero — locking the
         // server-side AND contract — while still emitting both
         // filters on the wire so we can assert two-param submission.
         await p.searchInput('name').fill('zzznoadminmatchesthis');
-        await page.locator('[data-testid="search-admins-steam-match"]').selectOption('1');
+        await p.searchInput('steamid').fill('STEAM_0:0:0');
 
         // Single submit → single document navigation. Capture every
         // document-level request kicked off after we click submit so
@@ -146,7 +146,8 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
 
         const url = new URL(page.url());
         expect(url.searchParams.get('name')).toBe('zzznoadminmatchesthis');
-        expect(url.searchParams.get('steam_match')).toBe('1');
+        expect(url.searchParams.get('steamid')).toBe('STEAM_0:0:0');
+        expect(url.searchParams.get('steam_match')).toBeNull();
         // #1275 — the form carries `<input type="hidden" name="section" value="admins">`
         // so the post-submit URL keeps the user on the admins section.
         expect(url.searchParams.get('section')).toBe('admins');
@@ -171,15 +172,14 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         test.skip(testInfo.project.name !== 'chromium', 'Pre-fill contract is project-agnostic; pinning to desktop for runtime.');
 
         const p = new AdminAdminsPage(page);
-        await page.goto('/index.php?p=admin&c=admins&section=admins&name=admin&steamid=STEAM_0:0:0&steam_match=1');
+        await page.goto('/index.php?p=admin&c=admins&section=admins&name=admin&steamid=STEAM_0:0:0');
         await expect(p.pageMounted).toBeVisible();
 
         // The form re-paints from `$active_filter_*` on the View
         // DTO; values land in the inputs without JS assistance.
         await expect(p.searchInput('name')).toHaveValue('admin');
         await expect(p.searchInput('steamid')).toHaveValue('STEAM_0:0:0');
-        const matchSelect = page.locator('[data-testid="search-admins-steam-match"]');
-        await expect(matchSelect).toHaveValue('1');
+        await expect(page.locator('[data-testid="search-admins-steam-match"]')).toHaveCount(0);
     });
 
     // ----- ADM-4 — Clear filters resets form state --------------------

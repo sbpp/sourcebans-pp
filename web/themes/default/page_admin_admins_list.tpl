@@ -62,6 +62,7 @@
         </div>
 
         <div class="card" style="overflow:hidden">
+            <div class="table-scroll">
             <table class="table" role="table" aria-label="Admins">
                 <thead>
                     <tr>
@@ -71,7 +72,7 @@
                         <th scope="col">Web group</th>
                         <th scope="col">Immunity</th>
                         <th scope="col">Last visit</th>
-                        <th scope="col" style="width:1%"></th>
+                        <th scope="col" class="col-actions"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -95,37 +96,37 @@
                             <a href="./index.php?p=banlist&advSearch={$admin.aid|escape:'url'}&advType=nodemo"
                                title="Show bans without demo">{$admin.nodemocount} w/o demo</a>
                         </td>
-                        <td class="text-muted">{$admin.server_group|escape}</td>
-                        <td class="text-muted">{$admin.web_group|escape}</td>
+                        <td class="text-muted truncate" style="max-width:10rem" title="{$admin.server_group|escape}">{$admin.server_group|escape}</td>
+                        <td class="text-muted truncate" style="max-width:10rem" title="{$admin.web_group|escape}">{$admin.web_group|escape}</td>
                         <td class="tabular-nums text-muted">{$admin.immunity}</td>
                         <td class="text-xs text-muted">{$admin.lastvisit|escape}</td>
-                        <td>
-                            <div class="row-actions" style="white-space:nowrap">
+                        <td class="col-actions">
+                            <div class="row-actions row-actions--icons">
                                 {if $can_edit_admins}
                                     <a class="btn btn--ghost btn--icon btn--sm"
                                        href="index.php?p=admin&c=admins&o=editdetails&id={$admin.aid|escape:'url'}"
-                                       title="Edit details"
+                                       data-tooltip="Edit details"
                                        aria-label="Edit details for {$admin.user|escape}"
                                        data-testid="admin-action-edit-details">
                                         <i data-lucide="clipboard-list" style="width:14px;height:14px"></i>
                                     </a>
                                     <a class="btn btn--ghost btn--icon btn--sm"
                                        href="index.php?p=admin&c=admins&o=editpermissions&id={$admin.aid|escape:'url'}"
-                                       title="Edit permissions"
+                                       data-tooltip="Edit permissions"
                                        aria-label="Edit permissions for {$admin.user|escape}"
                                        data-testid="admin-action-edit-perms">
                                         <i data-lucide="shield" style="width:14px;height:14px"></i>
                                     </a>
                                     <a class="btn btn--ghost btn--icon btn--sm"
                                        href="index.php?p=admin&c=admins&o=editservers&id={$admin.aid|escape:'url'}"
-                                       title="Edit server access"
+                                       data-tooltip="Edit server access"
                                        aria-label="Edit server access for {$admin.user|escape}"
                                        data-testid="admin-action-edit-servers">
                                         <i data-lucide="server" style="width:14px;height:14px"></i>
                                     </a>
                                     <a class="btn btn--ghost btn--icon btn--sm"
                                        href="index.php?p=admin&c=admins&o=editgroup&id={$admin.aid|escape:'url'}"
-                                       title="Edit groups"
+                                       data-tooltip="Edit groups"
                                        aria-label="Edit groups for {$admin.user|escape}"
                                        data-testid="admin-action-edit-group">
                                         <i data-lucide="users" style="width:14px;height:14px"></i>
@@ -151,7 +152,7 @@
                                             data-aid="{$admin.aid}"
                                             data-name="{$admin.user|escape}"
                                             data-fallback-href="index.php?p=admin&amp;c=admins"
-                                            title="Delete admin"
+                                            data-tooltip="Delete admin"
                                             aria-label="Delete admin {$admin.user|escape}"
                                             data-testid="admin-action-delete">
                                         <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
@@ -163,6 +164,80 @@
                 {/foreach}
                 </tbody>
             </table>
+            </div>
+
+            {* Mobile cards — paired surface for the global
+               `@media (max-width: 768px) { .table { display: none } }`
+               rule. Same display dance as `.ban-cards` / `.log-cards`. *}
+            <div class="admins-list-cards" data-testid="admins-list-cards">
+                {foreach $admins as $admin}
+                    <div class="admins-list-card" data-testid="admins-list-card" data-id="{$admin.aid}">
+                        <div class="admins-list-card__body flex items-center gap-3">
+                            <div class="avatar" style="width:2.25rem;height:2.25rem;background:var(--brand-600);font-size:var(--fs-xs)">
+                                {$admin.user|truncate:1:'':true|upper|escape}
+                            </div>
+                            <div style="flex:1;min-width:0">
+                                <div class="font-medium text-sm truncate">{$admin.user|escape}</div>
+                                <div class="text-xs text-muted truncate" style="margin-top:0.125rem">
+                                    {$admin.web_group|escape}
+                                    · {$admin.server_group|escape}
+                                    · imm {$admin.immunity}
+                                </div>
+                                <div class="text-xs text-faint truncate" style="margin-top:0.125rem">
+                                    <a href="./index.php?p=banlist&amp;advSearch={$admin.aid|escape:'url'}&amp;advType=admin">{$admin.bancount} bans</a>
+                                    · {$admin.lastvisit|escape}
+                                </div>
+                            </div>
+                        </div>
+                        {if $can_edit_admins || $can_delete_admins}
+                        <div class="row-actions ban-card__actions">
+                            {if $can_edit_admins}
+                                <a class="btn btn--ghost btn--icon btn--sm"
+                                   href="index.php?p=admin&amp;c=admins&amp;o=editdetails&amp;id={$admin.aid|escape:'url'}"
+                                   data-tooltip="Edit details"
+                                   aria-label="Edit details for {$admin.user|escape}"
+                                   data-testid="admin-action-edit-details-mobile">
+                                    <i data-lucide="clipboard-list" style="width:14px;height:14px"></i>
+                                </a>
+                                <a class="btn btn--ghost btn--icon btn--sm"
+                                   href="index.php?p=admin&amp;c=admins&amp;o=editpermissions&amp;id={$admin.aid|escape:'url'}"
+                                   data-tooltip="Edit permissions"
+                                   aria-label="Edit permissions for {$admin.user|escape}"
+                                   data-testid="admin-action-edit-perms-mobile">
+                                    <i data-lucide="shield" style="width:14px;height:14px"></i>
+                                </a>
+                                <a class="btn btn--ghost btn--icon btn--sm"
+                                   href="index.php?p=admin&amp;c=admins&amp;o=editservers&amp;id={$admin.aid|escape:'url'}"
+                                   data-tooltip="Edit server access"
+                                   aria-label="Edit server access for {$admin.user|escape}"
+                                   data-testid="admin-action-edit-servers-mobile">
+                                    <i data-lucide="server" style="width:14px;height:14px"></i>
+                                </a>
+                                <a class="btn btn--ghost btn--icon btn--sm"
+                                   href="index.php?p=admin&amp;c=admins&amp;o=editgroup&amp;id={$admin.aid|escape:'url'}"
+                                   data-tooltip="Edit groups"
+                                   aria-label="Edit groups for {$admin.user|escape}"
+                                   data-testid="admin-action-edit-group-mobile">
+                                    <i data-lucide="users" style="width:14px;height:14px"></i>
+                                </a>
+                            {/if}
+                            {if $can_delete_admins}
+                                <button type="button" class="btn btn--ghost btn--icon btn--sm"
+                                        data-action="admins-delete"
+                                        data-aid="{$admin.aid}"
+                                        data-name="{$admin.user|escape}"
+                                        data-fallback-href="index.php?p=admin&amp;c=admins"
+                                        data-tooltip="Delete admin"
+                                        aria-label="Delete admin {$admin.user|escape}"
+                                        data-testid="admin-action-delete-mobile">
+                                    <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
+                                </button>
+                            {/if}
+                        </div>
+                        {/if}
+                    </div>
+                {/foreach}
+            </div>
         </div>
     </div>
 
@@ -278,10 +353,13 @@
 
         /**
          * @param {string} aid
-         * @returns {Element|null}
+         * @returns {NodeListOf<Element>}
          */
-        function rowForAid(aid) {
-            return document.querySelector('[data-testid="admin-row"][data-id="' + aid + '"]');
+        function rowsForAid(aid) {
+            return document.querySelectorAll(
+                '[data-testid="admin-row"][data-id="' + aid + '"],'
+                + '[data-testid="admins-list-card"][data-id="' + aid + '"]'
+            );
         }
 
         /**
@@ -417,8 +495,11 @@
                     toast('error', 'Delete failed', msg);
                     return;
                 }
-                var row = rowForAid(ctx.aid);
-                if (row && row.parentNode) row.parentNode.removeChild(row);
+                var rows = rowsForAid(ctx.aid);
+                for (var i = 0; i < rows.length; i++) {
+                    var row = rows[i];
+                    if (row && row.parentNode) row.parentNode.removeChild(row);
+                }
                 decrementCount();
                 closeDeleteDialog();
                 toast('success', 'Admin deleted', ctx.name + ' has been removed.');

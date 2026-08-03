@@ -9,28 +9,16 @@
     page_admin_admins_list.tpl. Submits as a plain `GET` to
     ?p=admin&c=admins with one parameter per populated filter.
 
-    Wire format (#1207 ADM-4 redesign — single submit, AND semantics;
-    extended in #1231 to give every text filter its own match-mode select):
-        name=<text>                login
-        name_match=0|1             0 = exact, 1 = partial (default 1)
-        steamid=<text>             Steam ID
-        steam_match=0|1            0 = exact, 1 = partial (default 0)
-        admemail=<text>            E-mail (gated by can_edit_admins)
-        admemail_match=0|1         0 = exact, 1 = partial (default 1)
+    Wire format (#1207 ADM-4 redesign — single submit, AND semantics):
+        name=<text>                login (always partial / LIKE)
+        steamid=<text>             Steam ID (always partial / LIKE)
+        admemail=<text>            E-mail (gated by can_edit_admins; always partial)
         webgroup=<gid>             Panel group
         srvadmgroup=<group_name>   SourceMod admin group
         srvgroup=<gid>             Server group
         admwebflag[]=ADMIN_*       Web permission flags (multi)
         admsrvflag[]=SM_*          Server permission flags (multi)
         server=<sid>               Server access
-
-    Match-mode defaults are asymmetric on purpose:
-        - SteamID defaults to exact (0) — typical use is "find one
-          admin by their full Steam ID".
-        - Login / E-mail default to partial (1) — preserves the
-          pre-#1231 substring behaviour so existing bookmarks and
-          legacy `advType=…&advSearch=…` URLs keep narrowing the
-          way admins expect.
 
     Multiple non-empty filters are combined with AND on the server side
     (admin.admins.php). The legacy single-filter shape
@@ -64,11 +52,8 @@
         data-testid="search-admins-active-count"   "N active" badge        (#1303; only when count > 0)
         data-testid="search-admins-form"           outer form
         data-testid="search-admins-name"           login <input>
-        data-testid="search-admins-name-match"     login exact / partial match (#1231)
         data-testid="search-admins-steamid"        SteamID <input>
-        data-testid="search-admins-steam-match"    SteamID exact / partial match
         data-testid="search-admins-admemail"       email <input>      (gated)
-        data-testid="search-admins-admemail-match" email exact / partial match (#1231; gated)
         data-testid="search-admins-webgroup"       web-group <select>
         data-testid="search-admins-srvadmgroup"    SM admin-group <select>
         data-testid="search-admins-srvgroup"       server-group <select>
@@ -144,76 +129,40 @@
 
     <div class="card__body space-y-3">
         <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-            <label class="label" for="search-admins-name" style="grid-column:1;align-self:end">Login name</label>
-            <div class="flex gap-2" style="flex-wrap:wrap">
-                <input class="input"
-                       id="search-admins-name"
-                       name="name"
-                       type="text"
-                       placeholder="Match against the panel login&hellip;"
-                       data-testid="search-admins-name"
-                       value="{$active_filter_name|escape}"
-                       style="flex:1;min-width:14rem"
-                       autocomplete="off">
-                <select class="select"
-                        id="search-admins-name-match"
-                        name="name_match"
-                        data-testid="search-admins-name-match"
-                        aria-label="Login name match mode"
-                        style="width:9rem">
-                    <option value="0"{if $active_filter_name_match == '0'} selected{/if}>Exact match</option>
-                    <option value="1"{if $active_filter_name_match != '0'} selected{/if}>Partial match</option>
-                </select>
-            </div>
+            <label class="label" for="search-admins-name">Login name</label>
+            <input class="input"
+                   id="search-admins-name"
+                   name="name"
+                   type="text"
+                   placeholder="Match against the panel login&hellip;"
+                   data-testid="search-admins-name"
+                   value="{$active_filter_name|escape}"
+                   autocomplete="off">
         </div>
 
         <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-            <label class="label" for="search-admins-steamid" style="grid-column:1;align-self:end">Steam ID</label>
-            <div class="flex gap-2" style="flex-wrap:wrap">
-                <input class="input font-mono"
-                       id="search-admins-steamid"
-                       name="steamid"
-                       type="text"
-                       placeholder="STEAM_0:0:1234 or [U:1:1234]&hellip;"
-                       data-testid="search-admins-steamid"
-                       value="{$active_filter_steamid|escape}"
-                       style="flex:1;min-width:14rem"
-                       autocomplete="off">
-                <select class="select"
-                        id="search-admins-steam-match"
-                        name="steam_match"
-                        data-testid="search-admins-steam-match"
-                        aria-label="Steam ID match mode"
-                        style="width:9rem">
-                    <option value="0"{if $active_filter_steam_match != '1'} selected{/if}>Exact match</option>
-                    <option value="1"{if $active_filter_steam_match == '1'} selected{/if}>Partial match</option>
-                </select>
-            </div>
+            <label class="label" for="search-admins-steamid">Steam ID</label>
+            <input class="input font-mono"
+                   id="search-admins-steamid"
+                   name="steamid"
+                   type="text"
+                   placeholder="STEAM_0:0:1234 or [U:1:1234]&hellip;"
+                   data-testid="search-admins-steamid"
+                   value="{$active_filter_steamid|escape}"
+                   autocomplete="off">
         </div>
 
         {if $can_editadmin}
             <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
-                <label class="label" for="search-admins-admemail" style="grid-column:1;align-self:end">E-mail</label>
-                <div class="flex gap-2" style="flex-wrap:wrap">
-                    <input class="input"
-                           id="search-admins-admemail"
-                           name="admemail"
-                           type="email"
-                           placeholder="Match against the panel e-mail&hellip;"
-                           data-testid="search-admins-admemail"
-                           value="{$active_filter_admemail|escape}"
-                           style="flex:1;min-width:14rem"
-                           autocomplete="off">
-                    <select class="select"
-                            id="search-admins-admemail-match"
-                            name="admemail_match"
-                            data-testid="search-admins-admemail-match"
-                            aria-label="E-mail match mode"
-                            style="width:9rem">
-                        <option value="0"{if $active_filter_admemail_match == '0'} selected{/if}>Exact match</option>
-                        <option value="1"{if $active_filter_admemail_match != '0'} selected{/if}>Partial match</option>
-                    </select>
-                </div>
+                <label class="label" for="search-admins-admemail">E-mail</label>
+                <input class="input"
+                       id="search-admins-admemail"
+                       name="admemail"
+                       type="email"
+                       placeholder="Match against the panel e-mail&hellip;"
+                       data-testid="search-admins-admemail"
+                       value="{$active_filter_admemail|escape}"
+                       autocomplete="off">
             </div>
         {/if}
 
@@ -269,9 +218,8 @@
                         id="search-admins-admwebflag"
                         name="admwebflag[]"
                         data-testid="search-admins-admwebflag"
-                        size="6"
-                        multiple
-                        style="height:auto">
+                        data-multiselect
+                        multiple>
                     {foreach from=$admwebflag_list item="admwebflag"}
                         <option value="{$admwebflag.flag}"{if in_array($admwebflag.flag, $active_filter_admwebflag)} selected{/if}>{$admwebflag.name}</option>
                     {/foreach}
@@ -286,9 +234,8 @@
                         id="search-admins-admsrvflag"
                         name="admsrvflag[]"
                         data-testid="search-admins-admsrvflag"
-                        size="6"
-                        multiple
-                        style="height:auto">
+                        data-multiselect
+                        multiple>
                     {foreach from=$admsrvflag_list item="admsrvflag"}
                         <option value="{$admsrvflag.flag}"{if in_array($admsrvflag.flag, $active_filter_admsrvflag)} selected{/if}>{$admsrvflag.name}</option>
                     {/foreach}

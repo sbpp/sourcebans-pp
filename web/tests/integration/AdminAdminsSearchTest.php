@@ -192,111 +192,54 @@ final class AdminAdminsSearchTest extends ApiTestCase
     }
 
     /**
-     * Steam-ID exact / partial split. Modern shape uses
-     * `steamid=<text>&steam_match=0|1`. The filter is exact when
-     * `steam_match` is unset or `0`, partial when `1`.
+     * Steam ID / login / e-mail always substring-match (`LIKE %…%`).
+     * Legacy `*_match` query params are ignored when present.
      */
-    public function testSteamIdExactMatchSplit(): void
+    public function testTextFiltersAreAlwaysPartial(): void
     {
+        $_GET = [
+            'p'       => 'admin',
+            'c'       => 'admins',
+            'steamid' => 'STEAM_0:0:1001',
+        ];
+        $exactShape = $this->renderAdminsPage();
+        $this->assertSame(1, $this->extractAdminCount($exactShape), 'full steamid still matches alice');
+
         $_GET = [
             'p'           => 'admin',
             'c'           => 'admins',
-            'steamid'     => 'STEAM_0:0:1001',
+            'steamid'     => 'STEAM_0:0:10',
             'steam_match' => '0',
         ];
-        $exact = $this->renderAdminsPage();
-        $this->assertSame(1, $this->extractAdminCount($exact), 'exact match on alice steamid');
+        $partialSteam = $this->renderAdminsPage();
+        $this->assertSame(3, $this->extractAdminCount($partialSteam), 'steamid substring matches even when steam_match=0 is present');
 
-        $_GET = [
-            'p'           => 'admin',
-            'c'           => 'admins',
-            'steamid'     => 'STEAM_0:0:10', // partial substring (matches 1001/1002/1003 → all 3)
-            'steam_match' => '1',
-        ];
-        $partial = $this->renderAdminsPage();
-        $this->assertSame(3, $this->extractAdminCount($partial), 'partial match on STEAM_0:0:10 substring');
-    }
-
-    /**
-     * Login-name and E-mail exact / partial split (#1231).
-     *
-     * Pre-#1231, only SteamID shipped a `<select>` to flip between
-     * exact and partial; Login and E-mail silently substring-matched
-     * with no way to ask for "give me the row whose login is
-     * literally `admin`". The fix mirrors the steam_match shape onto
-     * both filters as `name_match` and `admemail_match`.
-     *
-     * Match-mode default is `'1'` (partial) for both — i.e. when the
-     * URL omits the new param, the filter behaves the way it always
-     * did. That preserves every legacy bookmark and the
-     * `?advType=name&advSearch=…` shim's contract; the new feature is
-     * purely opt-in via `…_match=0`.
-     */
-    public function testLoginAndEmailExactMatchSplit(): void
-    {
-        // Login name: 'ali' is a substring of 'alice' but not exact.
-        // Partial → 1 row (alice). Exact → 0 rows. Then 'alice' exact
-        // → 1 row (the literal alice), proving exact mode resolves
-        // the "find me the single admin" contract.
         $_GET = [
             'p'          => 'admin',
             'c'          => 'admins',
             'name'       => 'ali',
-            'name_match' => '1',
+            'name_match' => '0',
         ];
         $partialName = $this->renderAdminsPage();
-        $this->assertSame(1, $this->extractAdminCount($partialName), 'partial name=ali matches alice');
+        $this->assertSame(1, $this->extractAdminCount($partialName), 'name=ali matches alice; name_match is ignored');
 
-        $_GET = [
-            'p'          => 'admin',
-            'c'          => 'admins',
-            'name'       => 'ali',
-            'name_match' => '0',
-        ];
-        $exactNameMiss = $this->renderAdminsPage();
-        $this->assertSame(0, $this->extractAdminCount($exactNameMiss), 'exact name=ali matches no admin (none is literally ali)');
-
-        $_GET = [
-            'p'          => 'admin',
-            'c'          => 'admins',
-            'name'       => 'alice',
-            'name_match' => '0',
-        ];
-        $exactNameHit = $this->renderAdminsPage();
-        $this->assertSame(1, $this->extractAdminCount($exactNameHit), 'exact name=alice matches alice');
-        $this->assertStringContainsString('>alice<', $exactNameHit);
-
-        // E-mail: every seeded row (admin, alice, bob, charlie) shares
-        // '@example.test', so partial 'example.test' returns 4 and
-        // exact 'example.test' returns 0; exact 'alice@example.test'
-        // narrows back to alice.
         $_GET = [
             'p'              => 'admin',
             'c'              => 'admins',
             'admemail'       => 'example.test',
-            'admemail_match' => '1',
+            'admemail_match' => '0',
         ];
         $partialEmail = $this->renderAdminsPage();
-        $this->assertSame(4, $this->extractAdminCount($partialEmail), 'partial admemail=example.test matches all 4 admins');
+        $this->assertSame(4, $this->extractAdminCount($partialEmail), 'admemail substring matches; admemail_match is ignored');
 
         $_GET = [
-            'p'              => 'admin',
-            'c'              => 'admins',
-            'admemail'       => 'example.test',
-            'admemail_match' => '0',
+            'p'        => 'admin',
+            'c'        => 'admins',
+            'admemail' => 'alice@example.test',
         ];
-        $exactEmailMiss = $this->renderAdminsPage();
-        $this->assertSame(0, $this->extractAdminCount($exactEmailMiss), 'exact admemail=example.test matches no admin (none is literally that)');
-
-        $_GET = [
-            'p'              => 'admin',
-            'c'              => 'admins',
-            'admemail'       => 'alice@example.test',
-            'admemail_match' => '0',
-        ];
-        $exactEmailHit = $this->renderAdminsPage();
-        $this->assertSame(1, $this->extractAdminCount($exactEmailHit), 'exact admemail=alice@example.test matches alice');
-        $this->assertStringContainsString('>alice<', $exactEmailHit);
+        $emailHit = $this->renderAdminsPage();
+        $this->assertSame(1, $this->extractAdminCount($emailHit), 'full admemail still narrows to alice');
+        $this->assertStringContainsString('>alice<', $emailHit);
     }
 
     /**
@@ -381,26 +324,24 @@ final class AdminAdminsSearchTest extends ApiTestCase
     }
 
     /**
-     * #1303 — multi-filter URLs lift the active count to N. Locks the
-     * counter's behaviour against the headline ADM-4 contract: every
-     * populated value slot counts ONCE, match-mode toggles do NOT.
+     * #1303 — multi-filter URLs lift the active count to N. Every
+     * populated value slot counts ONCE. Stale `*_match` params do not
+     * lift the count.
      *
      * Two text filters (`name`, `steamid`) + one select (`webgroup`) +
-     * one multi-select (`admwebflag[]`) → 4 active. The presence of
-     * `name_match=0` (a refinement on the `name` filter) must NOT
-     * lift the count to 5; same for `steam_match=1` on `steamid`.
+     * one multi-select (`admwebflag[]`) → 4 active.
      */
     public function testDisclosureCountMatchesPopulatedFilterSlots(): void
     {
         $_GET = [
-            'p'          => 'admin',
-            'c'          => 'admins',
-            'name'       => 'alice',
-            'name_match' => '0',
-            'steamid'    => 'STEAM_0:0:1001',
+            'p'           => 'admin',
+            'c'           => 'admins',
+            'name'        => 'alice',
+            'name_match'  => '0',
+            'steamid'     => 'STEAM_0:0:1001',
             'steam_match' => '1',
-            'webgroup'   => (string) $this->powerGid,
-            'admwebflag' => ['ADMIN_OWNER'],
+            'webgroup'    => (string) $this->powerGid,
+            'admwebflag'  => ['ADMIN_OWNER'],
         ];
 
         $html = $this->renderAdminsPage();
@@ -409,6 +350,9 @@ final class AdminAdminsSearchTest extends ApiTestCase
         $this->assertStringContainsString(' open', $disclosure);
         $this->assertStringContainsString('data-active-filter-count="4"', $disclosure);
         $this->assertStringContainsString('aria-label="4 active filters"', $html);
+        $this->assertStringNotContainsString('search-admins-name-match', $html);
+        $this->assertStringNotContainsString('search-admins-steam-match', $html);
+        $this->assertStringContainsString('data-multiselect', $html);
     }
 
     /**
@@ -566,6 +510,100 @@ final class AdminAdminsSearchTest extends ApiTestCase
         // here: with no `?section=`, the user lands on `add-admin`
         // (the first entry whose permission they hold).
         $this->assertSame(['add-admin'], $this->renderedSectionSlugs($html));
+    }
+
+    /**
+     * Server-permission multi-select filters by SM_* char flags on
+     * `:prefix_admins.srv_flags`. HasAccess must receive the admin's
+     * aid (int), not authid, and the SM constant as a string char.
+     */
+    public function testServerFlagFilterMatchesSrvFlagsAndDoesNotCrash(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'UPDATE `%s_admins` SET srv_flags = ? WHERE aid = ?',
+            DB_PREFIX,
+        ))->execute(['a', $this->aliceAid]);
+        $pdo->prepare(sprintf(
+            'UPDATE `%s_admins` SET srv_flags = ? WHERE aid = ?',
+            DB_PREFIX,
+        ))->execute(['d', $this->bobAid]);
+
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'admsrvflag' => ['SM_RESERVED_SLOT'],
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $this->assertSame(1, $this->extractAdminCount($html), 'SM_RESERVED_SLOT matches alice only');
+        $this->assertStringContainsString('>alice<', $html);
+        $this->assertStringNotContainsString('>bob<', $html);
+        $this->assertStringNotContainsString('>charlie<', $html);
+    }
+
+    /**
+     * SM_ROOT on srv_flags implies every server permission, so a
+     * reserved-slot filter still returns root holders.
+     */
+    public function testServerFlagFilterIncludesSmRootHolders(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'UPDATE `%s_admins` SET srv_flags = ? WHERE aid = ?',
+            DB_PREFIX,
+        ))->execute(['z', $this->charlieAid]);
+
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'admsrvflag' => ['SM_RESERVED_SLOT'],
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $this->assertSame(1, $this->extractAdminCount($html), 'SM_ROOT implies SM_RESERVED_SLOT');
+        $this->assertStringContainsString('>charlie<', $html);
+    }
+
+    /**
+     * SM_CUSTOM1…6 end in a digit. The allowlist regex must accept
+     * digits or those flags are dropped from both the SQL filter and
+     * the form pre-fill after submit.
+     */
+    public function testServerCustomFlagFilterRoundTripsAndMatches(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'UPDATE `%s_admins` SET srv_flags = ? WHERE aid = ?',
+            DB_PREFIX,
+        ))->execute(['o', $this->aliceAid]);
+        $pdo->prepare(sprintf(
+            'UPDATE `%s_admins` SET srv_flags = ? WHERE aid = ?',
+            DB_PREFIX,
+        ))->execute(['a', $this->bobAid]);
+
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'admsrvflag' => ['SM_CUSTOM1'],
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $this->assertSame(1, $this->extractAdminCount($html), 'SM_CUSTOM1 matches alice (flag o)');
+        $this->assertStringContainsString('>alice<', $html);
+        $this->assertStringNotContainsString('>bob<', $html);
+        $this->assertStringContainsString(
+            'data-active-filter-count="1"',
+            $this->extractDisclosureTag($html),
+        );
+        $this->assertMatchesRegularExpression(
+            '/<option[^>]*value="SM_CUSTOM1"[^>]*selected/i',
+            $html,
+            'custom flag must stay selected after submit',
+        );
     }
 
     private function seedTestAdmins(): void
