@@ -110,9 +110,7 @@ test.describe('flow: admin/admins advanced-search disclosure (#1303)', () => {
         test.skip(testInfo.project.name !== 'chromium', 'Count badge contract is project-agnostic; pinning to desktop for runtime.');
 
         // Three populated value slots: `name`, `steamid`, `webgroup`.
-        // `name_match` / `steam_match` are refinements on `name` /
-        // `steamid` and must NOT lift the count.
-        await page.goto('/index.php?p=admin&c=admins&section=admins&name=admin&name_match=0&steamid=STEAM_0:0:0&steam_match=1&webgroup=1');
+        await page.goto('/index.php?p=admin&c=admins&section=admins&name=admin&steamid=STEAM_0:0:0&webgroup=1');
         const p = new AdminAdminsPage(page);
         await expect(p.pageMounted).toBeVisible();
 

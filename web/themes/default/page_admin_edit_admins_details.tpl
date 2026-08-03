@@ -5,9 +5,10 @@
     web/includes/View/EditAdminDetailsView.php.
 
     The handler gates entry on ADMIN_OWNER | ADMIN_EDIT_ADMINS (or
-    self-edit) before reaching this template. $change_pass narrows the
-    in-template form: when the editor lacks password-edit rights (e.g.
-    a non-owner editing someone else), the password rows hide.
+    self-edit) before reaching this template. $change_pass is always
+    true on that path: anyone allowed to edit the target can also set
+    their password. Edit-admins callers still cannot reach owner
+    targets (handler-side).
 
     The cross-page tab nav (Details / Group / Servers / Permissions)
     lifts the four legacy admin-edit handlers into a single tabbed UX;
@@ -22,7 +23,7 @@
         <p class="text-sm text-muted m-0 mt-2">Update identity, login credentials, and the in-game admin password.</p>
     </div>
 
-    <nav class="flex gap-2 mb-4" role="tablist" aria-label="Edit admin sections">
+    <nav class="flex gap-2 mb-4 items-center" role="tablist" aria-label="Edit admin sections">
         <a class="btn btn--secondary btn--sm" role="tab" aria-current="page"
            href="?p=admin&c=admins&o=editdetails&id={$smarty.get.id|escape:'url'}"
            data-testid="admin-tab-details">Details</a>
@@ -32,8 +33,14 @@
         <a class="btn btn--ghost btn--sm" role="tab"
            href="?p=admin&c=admins&o=editservers&id={$smarty.get.id|escape:'url'}"
            data-testid="admin-tab-servers">Servers</a>
-        <a class="btn btn--ghost btn--sm"
-           href="?p=admin&c=admins&o=editpermissions&id={$smarty.get.id|escape:'url'}">Permissions</a>
+        <a class="btn btn--ghost btn--sm" role="tab"
+           href="?p=admin&c=admins&o=editpermissions&id={$smarty.get.id|escape:'url'}"
+           data-testid="admin-tab-permissions">Permissions</a>
+        <a class="btn btn--ghost btn--sm admin-tabs__back"
+           href="index.php?p=admin&amp;c=admins"
+           data-testid="admin-tab-back">
+            <i data-lucide="arrow-left"></i> Back
+        </a>
     </nav>
 
     <form method="post" action="" class="space-y-4" autocomplete="off">

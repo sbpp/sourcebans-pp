@@ -804,6 +804,141 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
 .textarea { height: auto; padding: 0.625rem 0.75rem; resize: vertical; min-height: 5rem; }
 .input--with-icon { padding-left: 2rem; }
 
+/* Visually hide an element while keeping it in the accessibility /
+   form-submit tree. Used by the data-multiselect enhancer after it
+   builds the themed control around a real <select multiple>. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Themed multi-select (progressive enhancement on select[data-multiselect]). */
+.msel {
+  position: relative;
+  width: 100%;
+  min-width: 14rem;
+}
+.msel__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: var(--fs-base);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s, box-shadow .15s;
+}
+.msel__trigger:hover { border-color: var(--border-strong, var(--border)); }
+.msel__trigger:focus-visible,
+.msel[data-open="true"] .msel__trigger {
+  outline: none;
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgb(234 88 12 / 0.15);
+}
+.msel__trigger-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+.msel[data-has-value="true"] .msel__trigger-label { color: var(--text); }
+.msel__chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform .15s;
+}
+.msel[data-open="true"] .msel__chevron { transform: rotate(180deg); }
+.msel__panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: 0.35rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg, 0 10px 30px rgb(0 0 0 / 0.18));
+}
+.msel__panel[hidden] { display: none !important; }
+.msel__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--fs-sm, 0.875rem);
+  color: var(--text);
+}
+.msel__option:hover,
+.msel__option:focus-within { background: var(--bg-muted); }
+.msel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+.msel__chips:empty { display: none; }
+.msel__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: var(--fs-xs, 0.75rem);
+  line-height: 1.3;
+}
+.msel__chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msel__chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.msel__chip-remove:hover { color: var(--text); background: var(--bg-surface); }
+@media (prefers-reduced-motion: reduce) {
+  .msel__chevron { transition: none; }
+}
+
 /* Global checkbox paint (#1256).
 
    Style the native checkbox so it reads at the same scale as
@@ -902,6 +1037,7 @@ input[type="checkbox"]:disabled {
 .card__header h3 { margin: 0; font-size: var(--fs-base); font-weight: 600; color: var(--text); }
 .card__header p { margin: 0.25rem 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
 .card__body { padding: 1.25rem; }
+.card__body--compact { padding: 0.5rem 0.75rem; }
 
 /* ---- Collapsible filter disclosure (#1303 + #1315) ----
    Reusable `<details class="card filters-details">` shape that wraps a
@@ -1166,6 +1302,82 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table tbody tr:hover { background: var(--bg-muted); }
 .table.table--clickable-rows tbody tr { cursor: pointer; }
 .table td { padding: 0.75rem; vertical-align: middle; }
+/* Dense row height for checkbox / permission grids where the default
+   0.75rem cell padding leaves too much vertical whitespace. */
+.table.table--compact {
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+.table.table--compact th {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+.table.table--compact td {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+.table.table--compact th:first-child,
+.table.table--compact td:first-child { padding-left: 0.75rem; }
+.table.table--compact th:last-child,
+.table.table--compact td:last-child { padding-right: 0.75rem; }
+
+/* Edit-admin Permissions: Web + Server cards side-by-side when wide. */
+.edit-perms-columns {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 1200px) {
+  .edit-perms-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .edit-perms-columns .table-scroll,
+  .edit-perms-columns .card__body {
+    overflow-x: auto;
+  }
+}
+.edit-perms-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.edit-perms-select-all:hover { color: var(--text); }
+.table tr.perms-group-head td {
+  background: var(--bg-muted);
+  border-top: 1px solid var(--border);
+  padding-top: 0.55rem;
+  padding-bottom: 0.45rem;
+}
+.table tbody > tr.perms-group-head:first-child td {
+  border-top: none;
+}
+.table tr.perms-group-child + tr.perms-group-head td {
+  border-top: 1px solid var(--border);
+  box-shadow: inset 0 0.35rem 0 0 var(--bg-page);
+}
+.table tr.perms-group-child td:first-child {
+  padding-left: 1.5rem;
+  color: var(--text-muted);
+}
+.table tr.perms-group-sep td {
+  padding: 0.65rem 0.75rem 0.3rem;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: transparent;
+  border-top: 1px solid var(--border);
+}
+
 /* #1207 ADM-5: row actions are *always* visible — the previous
    `opacity: 0 → 1 on tr:hover` treatment was a discoverability dead
    end (no hover on touch, hostile to `prefers-reduced-motion: reduce`,
@@ -1197,6 +1409,9 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
   row-gap: 0.25rem;
   column-gap: 0.25rem;
   justify-content: flex-end;
+}
+.table .row-actions--icons {
+  flex-wrap: nowrap;
 }
 
 /* PUB-1 (#1207): banlist column widths + horizontal-scroll fallback.
@@ -1360,6 +1575,28 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 
 /* ---- Avatar ---- */
 .avatar { display: inline-grid; place-items: center; border-radius: 50%; color: white; font-weight: 600; flex-shrink: 0; }
+
+/* ---- Themed tooltip (sb.js) ----
+   Trigger with `data-tooltip="Label"` (preferred) or legacy
+   `class="tip" title="…"`. Floating tip is position:fixed; z-index
+   sits above the drawer (51) and below toasts (80). */
+.sb-tooltip {
+  position: fixed;
+  z-index: 70;
+  max-width: min(16rem, calc(100vw - 1rem));
+  padding: 0.3125rem 0.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.3;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  white-space: normal;
+}
+.sb-tooltip[hidden] { display: none !important; }
 
 /* ---- Toast + drawer + palette ---- */
 .toast-stack { position: fixed; top: 1rem; right: 1rem; z-index: 80; display: flex; flex-direction: column; gap: 0.5rem; width: min(22.5rem, calc(100vw - 2rem)); }
@@ -1804,6 +2041,11 @@ details.queue-row > summary > .row-actions {
   .log-card__chevron { transition: none; }
 }
 
+.admins-list-cards { display: none; }
+.admins-list-card { border-bottom: 1px solid var(--border); }
+.admins-list-card:last-child { border-bottom: none; }
+.admins-list-card__body { padding: 0.75rem 1rem 0.25rem; }
+
 /* ---- Responsive ---- */
 [data-mobile-menu] { display: none; }
 @media (max-width: 1024px) {
@@ -1813,11 +2055,15 @@ details.queue-row > summary > .row-actions {
 }
 @media (max-width: 768px) {
   .table { display: none; }
+  /* Form / settings tables with no paired mobile-card surface must
+     opt out of the banlist-style hide, or the whole control vanishes. */
+  .table.table--keep-mobile { display: table; }
   .ban-cards { display: block; }
   /* #1462: paired mobile surface for the System Log table (see
      `.log-cards` block above for the full rationale). Same `display`
      dance as `.ban-cards` — hidden at desktop, block at mobile. */
   .log-cards { display: block; }
+  .admins-list-cards { display: block; }
   /* #1181: filter chip rows wrap onto multiple lines on mobile
      instead of horizontal-scrolling, so every chip is reachable
      without a swipe. The .scroll-x desktop affordance is the
@@ -1828,6 +2074,7 @@ details.queue-row > summary > .row-actions {
 @media (min-width: 769px) {
   .ban-cards { display: none; }
   .log-cards { display: none; }
+  .admins-list-cards { display: none; }
 }
 
 /* ---- Utility classes used by templates ---- */
@@ -1836,6 +2083,17 @@ details.queue-row > summary > .row-actions {
 .justify-between { justify-content: space-between; } .justify-end { justify-content: flex-end; }
 .gap-1 { gap: 0.25rem; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; }
 .grid { display: grid; }
+/* Overrides "Add an override" row: stack on narrow viewports so the
+   Flags input cannot overflow the card (fixed 8rem+1fr+14rem did). */
+.overrides-add-grid {
+  grid-template-columns: 1fr;
+}
+.overrides-add-grid > * { min-width: 0; }
+@media (min-width: 768px) {
+  .overrides-add-grid {
+    grid-template-columns: 8rem minmax(0, 1fr) 14rem;
+  }
+}
 .text-xs { font-size: var(--fs-xs); } .text-sm { font-size: var(--fs-sm); }
 .text-muted { color: var(--text-muted); } .text-faint { color: var(--text-faint); }
 .font-mono { font-family: var(--font-mono); }
