@@ -35,24 +35,20 @@
     filters). See the docblock on web/pages/admin.admins.php.
 *}
 {if !$can_list_admins}
-    <div class="card">
-        <div class="card__body">
-            <p class="text-sm text-muted m-0">Access denied.</p>
+    <div class="page-section">
+        <div class="card">
+            <div class="card__body">
+                <p class="text-sm text-muted m-0">Access denied.</p>
+            </div>
         </div>
     </div>
 {else}
-    <div class="flex items-end justify-between gap-3 mb-4" style="flex-wrap:wrap">
-        <div>
-            <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Admins
-                <span class="text-faint" style="font-weight:400;margin-left:0.375rem" data-testid="admin-count">({$admin_count})</span>
-            </h1>
-            <p class="text-sm text-muted m-0 mt-2">Click an admin row's actions to edit details, permissions, or server access.</p>
-        </div>
-        {if $can_add_admins}
-            <a class="btn btn--primary btn--sm"
-               href="index.php?p=admin&amp;c=admins&amp;section=add-admin"
-               data-testid="admin-add-cta"><i data-lucide="user-plus"></i> Add admin</a>
-        {/if}
+<div class="page-section">
+    <div class="mb-4">
+        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Admins
+            <span class="text-faint" style="font-weight:400;margin-left:0.375rem" data-testid="admin-count">({$admin_count})</span>
+        </h1>
+        <p class="text-sm text-muted m-0 mt-2">Click an admin row's actions to edit details, permissions, or server access.</p>
     </div>
 
     <div data-testid="admin-admins-section-search">
@@ -519,4 +515,5 @@
     })();
     </script>
     {/literal}
+</div>
 {/if}

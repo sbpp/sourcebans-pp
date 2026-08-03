@@ -19,7 +19,7 @@
    `.admin-sidebar-shell` (the AdminTabs grid host). The `max-width:
    48rem` form clamp stays so the form column doesn't grow past a
    readable line length on wide viewports. *}
-<div style="max-width:48rem">
+<div class="page-section" style="max-width:48rem">
     <div class="mb-4">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Create a group</h1>
         <p class="text-sm text-muted m-0 mt-2">Pick a name and a type. You can edit permission flags from the <strong>List groups</strong> tab once the group exists.</p>

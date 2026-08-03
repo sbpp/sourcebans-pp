@@ -442,7 +442,7 @@ final class AdminAdminsSearchTest extends ApiTestCase
 
         $html = $this->renderAdminsPage();
 
-        $sidebarLinks = $this->renderedSidebarLinkSlugs($html);
+        $sidebarLinks = $this->catalogAdminsSlugs();
         $this->assertSame(
             ['add-admin', 'admins', 'overrides'],
             $sidebarLinks,
@@ -497,14 +497,14 @@ final class AdminAdminsSearchTest extends ApiTestCase
 
         $html = $this->renderAdminsPage();
 
-        $sidebarLinks = $this->renderedSidebarLinkSlugs($html);
+        $sidebarLinks = $this->catalogAdminsSlugs();
 
         // ADMIN_ADD_ADMINS gates both `add-admin` and `overrides`
         // (the two Pattern A sections that surface the SourceMod
         // override editor + the Add admin form). `admins` is gated
         // on ADMIN_LIST_ADMINS and must be elided.
         $this->assertSame(['add-admin', 'overrides'], $sidebarLinks);
-        $this->assertStringNotContainsString('data-testid="admin-tab-admins"', $html);
+        $this->assertNotContains('admins', $sidebarLinks);
 
         // The dispatcher's first-accessible-section default kicks in
         // here: with no `?section=`, the user lands on `add-admin`
@@ -743,19 +743,23 @@ final class AdminAdminsSearchTest extends ApiTestCase
     }
 
     /**
-     * Extract every Pattern A sidebar link slug (`admins`,
-     * `add-admin`, `overrides`) from `[data-testid="admin-tab-<slug>"]`
-     * attributes in the rendered HTML. Sorted so callers can compare
-     * against a fixed ordering without depending on emit order.
+     * Slugs the main-sidebar Admins accordion would expose for the
+     * current user (#1490 / AdminNavCatalog). Sorted for stable
+     * assertSame comparisons.
      *
      * @return list<string>
      */
-    private function renderedSidebarLinkSlugs(string $html): array
+    private function catalogAdminsSlugs(): array
     {
-        preg_match_all('/data-testid="admin-tab-([a-z-]+)"/', $html, $m);
-        $slugs = $m[1];
+        /** @var \Sbpp\Auth\UserManager $userbank */
+        $userbank = $GLOBALS['userbank'];
+        $sections = \Sbpp\View\AdminNavCatalog::filterForUser(
+            \Sbpp\View\AdminNavCatalog::sectionsFor('admins'),
+            $userbank,
+        );
+        $slugs = array_column($sections, 'slug');
         sort($slugs);
-        return array_values(array_unique($slugs));
+        return array_values($slugs);
     }
 
     /**

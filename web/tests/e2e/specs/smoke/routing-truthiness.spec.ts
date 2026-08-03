@@ -99,7 +99,7 @@ test.describe('#1207 routing + truthiness fixes', () => {
             // active. The selector follows the standard
             // `data-testid="admin-tab-<slug>"` shape used by every
             // Pattern A route after #1259's chrome unification.
-            await expect(page.locator('[data-testid="admin-tab-overrides"]')).toHaveAttribute('aria-current', 'page');
+            await expect(page.locator('[data-testid="nav-admin-admins-overrides"]')).toHaveAttribute('aria-current', 'page');
         });
     });
 

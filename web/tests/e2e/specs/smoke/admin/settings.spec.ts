@@ -6,8 +6,8 @@
  * by default), so the route is accessible without a per-spec login.
  *
  * Selector contract: see `pages/admin/AdminSettings.ts` (pinned on
- * the settings sub-nav, which sits outside the `$can_web_settings`
- * gate so the selector remains stable on the access-denied fallback).
+ * the content-area Save button so the mount marker stays visible on
+ * mobile where the main sidebar is off-canvas).
  */
 import { test, expect } from '../../../fixtures/auth.ts';
 import { expectNoCriticalA11y } from '../../../fixtures/axe.ts';

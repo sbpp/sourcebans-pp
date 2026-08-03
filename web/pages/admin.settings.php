@@ -21,67 +21,17 @@ use Sbpp\View\Renderer;
  * Section routing (B18 redesign).
  *
  * Each section is its own page request keyed on
- * `?section=settings|features|logs|themes`; the sub-nav (vertical
- * sidebar since #1259 — see AGENTS.md "Sub-paged admin routes")
- * carries `aria-current="page"` on the active link. CSRF is enforced
- * globally by `route()` in includes/page-builder.php.
- *
- * #1239 brought the rest of the admin family onto this same shape —
- * servers / mods / groups now route via `?section=…` too.
- * #1259 unified the chrome on the Settings-style vertical sidebar
- * (`core/admin_sidebar.tpl` driven by `web/includes/View/AdminTabs.php`),
- * replacing the Settings-only inline `<nav>` block that lived in
- * every page_admin_settings_*.tpl. See AGENTS.md "Sub-paged admin
- * routes" for the convention; this file remains the long-standing
- * reference.
+ * `?section=settings|features|logs|themes`. CSRF is enforced
+ * globally by `route()` in includes/page-builder.php. Section
+ * chrome lives in the main sidebar accordion (`AdminNavCatalog`
+ * + `core/navbar.tpl`, #1490). See AGENTS.md "Sub-paged admin
+ * routes".
  */
 $validSections = ['settings', 'features', 'logs', 'themes'];
 $section = (string)($_GET['section'] ?? 'settings');
 if (!in_array($section, $validSections, true)) {
     $section = 'settings';
 }
-
-/*
- * Sidebar sections.
- *
- * Every entry is gated behind ADMIN_OWNER|ADMIN_WEB_SETTINGS — the
- * Settings page itself requires the flag, so the gate per row mirrors
- * what the dispatcher would render anyway. `icon` keys feed the
- * Lucide glyph in `core/admin_sidebar.tpl`; the vocabulary mirrors
- * what the inline pre-#1259 templates declared (settings / toggle-
- * right / scroll-text / palette).
- */
-/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
-$sections = [
-    [
-        'slug'       => 'settings',
-        'name'       => 'Main',
-        'permission' => ADMIN_OWNER | ADMIN_WEB_SETTINGS,
-        'url'        => 'index.php?p=admin&c=settings&section=settings',
-        'icon'       => 'settings',
-    ],
-    [
-        'slug'       => 'features',
-        'name'       => 'Features',
-        'permission' => ADMIN_OWNER | ADMIN_WEB_SETTINGS,
-        'url'        => 'index.php?p=admin&c=settings&section=features',
-        'icon'       => 'toggle-right',
-    ],
-    [
-        'slug'       => 'logs',
-        'name'       => 'System Log',
-        'permission' => ADMIN_OWNER | ADMIN_WEB_SETTINGS,
-        'url'        => 'index.php?p=admin&c=settings&section=logs',
-        'icon'       => 'scroll-text',
-    ],
-    [
-        'slug'       => 'themes',
-        'name'       => 'Themes',
-        'permission' => ADMIN_OWNER | ADMIN_WEB_SETTINGS,
-        'url'        => 'index.php?p=admin&c=settings&section=themes',
-        'icon'       => 'palette',
-    ],
-];
 
 if (isset($_GET['log_clear']) && $_GET['log_clear'] === 'true') {
     if ($userbank->HasAccess(WebPermission::Owner)) {
@@ -331,14 +281,6 @@ $currentScreenshotImg = '<img width="250px" height="170px" src="' . htmlspecialc
  */
 $perms = Perms::for($userbank);
 
-/*
- * Open the sidebar shell (#1259). AdminTabs emits the outer
- * `<div class="admin-sidebar-shell">` + the <aside> + the opening
- * `<div class="admin-sidebar-content">`. Closing tags live near the
- * bottom of this file — search for "/.admin-sidebar-shell".
- */
-new AdminTabs($sections, $userbank, $theme, $section, 'Settings sections');
-
 if ($section === 'themes') {
     Renderer::render($theme, new AdminThemesView(
         can_web_settings:  $perms['can_web_settings'],
@@ -519,15 +461,6 @@ if ($section === 'themes') {
         admin_email:                 (string) ($userbank->GetProperty('email') ?? ''),
     ));
 }
-
-/*
- * Close the sidebar shell (#1259) — paired with the `new AdminTabs(...)`
- * call above. The `<div class="admin-sidebar-content">` and outer
- * `<div class="admin-sidebar-shell">` were both opened by AdminTabs;
- * the post-save flash <script> below sits OUTSIDE the shell so it
- * never lands inside the content column.
- */
-echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
 
 /*
  * Post-save flash + bounce.
