@@ -188,21 +188,21 @@
                                 {/if}
                                 {if $can_delete_admins}
                                     {if isset($admin.enabled) && $admin.enabled == 0}
-                                        <button type="button" class="btn btn--secondary btn--sm"
+                                        <button type="button" class="btn btn--ghost btn--icon btn--sm"
                                                 data-action="admins-reactivate"
                                                 data-aid="{$admin.aid}"
                                                 data-name="{$admin.user|escape}"
-                                                title="Reactivate admin"
+                                                data-tooltip="Reactivate admin"
                                                 aria-label="Reactivate admin {$admin.user|escape}"
                                                 data-testid="admin-action-reactivate">
-                                            <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
+                                            <i data-lucide="user-check" style="width:14px;height:14px"></i>
                                         </button>
                                     {else}
                                         <button type="button" class="btn btn--ghost btn--icon btn--sm"
                                                 data-action="admins-deactivate"
                                                 data-aid="{$admin.aid}"
                                                 data-name="{$admin.user|escape}"
-                                                title="Deactivate admin"
+                                                data-tooltip="Deactivate admin"
                                                 aria-label="Deactivate admin {$admin.user|escape}"
                                                 data-testid="admin-action-deactivate">
                                             <i data-lucide="user-x" style="width:14px;height:14px"></i>
@@ -303,21 +303,21 @@
                             {/if}
                             {if $can_delete_admins}
                                     {if isset($admin.enabled) && $admin.enabled == 0}
-                                        <button type="button" class="btn btn--secondary btn--sm"
+                                        <button type="button" class="btn btn--ghost btn--icon btn--sm"
                                                 data-action="admins-reactivate"
                                                 data-aid="{$admin.aid}"
                                                 data-name="{$admin.user|escape}"
-                                                title="Reactivate admin"
+                                                data-tooltip="Reactivate admin"
                                                 aria-label="Reactivate admin {$admin.user|escape}"
                                                 data-testid="admin-action-reactivate-mobile">
-                                            <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
+                                            <i data-lucide="user-check" style="width:14px;height:14px"></i>
                                         </button>
                                     {else}
                                         <button type="button" class="btn btn--ghost btn--icon btn--sm"
                                                 data-action="admins-deactivate"
                                                 data-aid="{$admin.aid}"
                                                 data-name="{$admin.user|escape}"
-                                                title="Deactivate admin"
+                                                data-tooltip="Deactivate admin"
                                                 aria-label="Deactivate admin {$admin.user|escape}"
                                                 data-testid="admin-action-deactivate-mobile">
                                             <i data-lucide="user-x" style="width:14px;height:14px"></i>
