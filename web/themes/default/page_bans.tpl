@@ -140,9 +140,15 @@
     <input type="hidden" name="p" value="banlist">
     <div class="flex gap-3" style="flex-wrap:wrap">
       <div style="flex:1;min-width:14rem;max-width:24rem;position:relative">
-        <input class="input" type="search" name="searchText" data-testid="bans-search"
-          value="{$filters.search|escape}"
-          placeholder="Player, SteamID, or IP&hellip;" aria-label="Search bans">
+        <i data-lucide="search"
+           style="position:absolute;left:0.625rem;top:50%;transform:translateY(-50%);color:var(--text-faint);width:14px;height:14px"></i>
+        <input class="input input--with-icon"
+               type="search"
+               name="searchText"
+               data-testid="bans-search"
+               value="{$filters.search|escape}"
+               placeholder="Player, SteamID, or IP&hellip;"
+               aria-label="Search bans">
       </div>
       <select class="select" name="server" style="width:auto;min-width:11rem" data-testid="bans-server-filter" aria-label="Filter by server">
         <option value="">All servers</option>
