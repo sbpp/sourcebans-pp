@@ -271,7 +271,7 @@
        waste a scroll on a 3-line wrapped date. *}
   <div class="card" style="overflow:hidden">
     <div class="table-scroll">
-    <table class="table">
+    <table class="table table--compact">
       <thead>
         {* Column tier classes (`.col-tier-2` / `.col-tier-3`) are paired
            rules in `theme.css` next to `.table-scroll`. Tier-2 (Server,
@@ -309,7 +309,7 @@
                  from $ban.avatar_initials / $ban.avatar_hue,
                  precomputed in page.banlist.php so the template
                  doesn't depend on Smarty's `%` operator parsing. *}
-              <span class="avatar" style="width:28px;height:28px;background:hsl({$ban.avatar_hue} 55% 45%);font-size:10px" aria-hidden="true">{$ban.avatar_initials|escape}</span>
+              <span class="avatar" style="width:22px;height:22px;background:hsl({$ban.avatar_hue} 55% 45%);font-size:9px" aria-hidden="true">{$ban.avatar_initials|escape}</span>
               {* No `onclick="event.stopPropagation()"` here even though
                  the row's action buttons carry it. theme.js wires the
                  drawer via a delegated `document.addEventListener('click',
@@ -448,25 +448,19 @@
             <span class="pill pill--{$ban.state}">{$_pill_label|escape}</span>
           </td>
           <td class="col-actions">
-            {* #1207 ADM-5 + (this PR): banlist row affordances now mirror
-               the commslist row chrome — Lucide icon + visible text label
-               inside `.btn--ghost` / `.btn--secondary btn--sm` pills
-               (`page_comms.tpl` lines 258-311 is the canonical reference).
-               The bare HTML-entity glyphs the v2.0 cutover shipped
-               (`&#9998;` ✎ / `&#10003;` ✓ / `&#8634;` ↺ / `&#128203;` 📋)
-               are gone — they read as broken icons / a different app
-               next to commslist's affordance set, and the icon-only
-               buttons gave no SR / hover affordance. Edit / Unban / Re-apply
-               / Copy / Remove are gated identically to the v2.0 shape;
-               only the chrome moved. *}
-            <div class="row-actions">
+            {* Icon-only row actions matching `page_admin_admins_list.tpl`:
+               Lucide icon + `data-tooltip` + `aria-label` inside
+               `.row-actions--icons`. Keep `data-testid` / `data-action`
+               / `data-fallback-href` / `data-copy` wiring unchanged. *}
+            <div class="row-actions row-actions--icons">
               {if $view_bans}
                 {if $ban.can_edit_ban && $ban.state != 'unbanned'}
-                <a class="btn btn--ghost btn--sm" data-testid="row-action-edit"
+                <a class="btn btn--ghost btn--icon btn--sm" data-testid="row-action-edit"
                    href="index.php?p=admin&amp;c=bans&amp;o=edit&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
+                   data-tooltip="Edit"
+                   aria-label="Edit ban for {$ban.name|escape}"
                    onclick="event.stopPropagation()">
-                    <i data-lucide="pencil" style="width:13px;height:13px"></i>
-                    Edit
+                    <i data-lucide="pencil" style="width:14px;height:14px"></i>
                 </a>
                 {/if}
                 {if $ban.can_unban && $ban.state != 'unbanned' && $ban.state != 'expired'}
@@ -489,83 +483,60 @@
                    bubbled click has nothing to confuse on the drawer
                    side. *}
                 <button type="button"
-                        class="btn btn--secondary btn--sm"
+                        class="btn btn--secondary btn--icon btn--sm"
                         data-testid="row-action-unban"
                         data-action="bans-unban"
                         data-bid="{$ban.bid}"
                         data-name="{$ban.name|escape}"
-                        data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}">
-                    <i data-lucide="check" style="width:13px;height:13px"></i>
-                    Unban
+                        data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
+                        data-tooltip="Unban"
+                        aria-label="Unban {$ban.name|escape}">
+                    <i data-lucide="check" style="width:14px;height:14px"></i>
                 </button>
                 {/if}
                 {* #1315: Re-apply affordance for expired / unbanned rows.
-                   Mirrors the commslist row's existing Re-apply anchor
-                   (`page_comms.tpl` lines 286-298 desktop, 448-454
-                   mobile). Routes to the admin add-ban form's
-                   `?rebanid=` smart-default block, which
-                   `web/api/handlers/bans.php::api_bans_prepare_reban`
-                   pre-populates with the original ban's parameters.
-                   Gated on $can_add_ban so the affordance only renders
-                   for admins who can act on it. Also gated on
-                   `!$ban.has_active_sibling` so we don't surface a
-                   button that would 4xx as `already_banned` —
-                   `page.banlist.php` flags the row when the same
-                   identity (authid for type=0, ip for type=1) has
-                   another currently-active ban. The v1.x template
-                   honoured the same gate via `$data['reban_link']`;
-                   the v2.0 rewrite (#1315) dropped it, which is the
-                   regression this restores. *}
+                   Mirrors the commslist row's existing Re-apply anchor.
+                   Routes to the admin add-ban form's `?rebanid=`
+                   smart-default block. Gated on $can_add_ban and
+                   `!$ban.has_active_sibling`. *}
                 {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned') && !$ban.has_active_sibling}
-                <a class="btn btn--secondary btn--sm" data-testid="row-action-reapply"
+                <a class="btn btn--secondary btn--icon btn--sm" data-testid="row-action-reapply"
                    href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid={$ban.bid}&amp;key={$admin_postkey|escape}"
+                   data-tooltip="Re-apply"
+                   aria-label="Re-apply ban for {$ban.name|escape}"
                    onclick="event.stopPropagation()">
-                    <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
-                    Re-apply
+                    <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
                 </a>
                 {/if}
               {/if}
               {if !empty($ban.steam)}
               {* #1308: NO `onclick="event.stopPropagation()"` here. The
-                 sibling row-action <a> tags carry it as defensive copy-paste,
-                 but they survive on native href navigation regardless. This
-                 <button>'s ONLY wiring is the document-level [data-copy]
-                 click delegate in theme.js — stopPropagation kills it
-                 silently (no toast, no clipboard write, no console error).
-                 The desktop row's drawer trigger is the player-name anchor
-                 in column 1 (data-drawer-href), not a row-level delegate,
-                 so a bubbling click here has nothing to confuse. *}
-              <button class="btn btn--ghost btn--sm" type="button"
+                 document-level [data-copy] click delegate in theme.js
+                 listens on bubble; stopPropagation kills it silently. *}
+              <button class="btn btn--ghost btn--icon btn--sm" type="button"
                       data-copy="{$ban.steam|escape}"
                       data-testid="row-action-copy-steam"
-                      aria-label="Copy SteamID"
-                      title="Copy SteamID">
-                  <i data-lucide="copy" style="width:13px;height:13px"></i>
-                  Copy
+                      data-tooltip="Copy SteamID"
+                      aria-label="Copy SteamID">
+                  <i data-lucide="copy" style="width:14px;height:14px"></i>
               </button>
               {/if}
               {if $ban.can_delete_ban}
               {* Hard-delete affordance. No JSON `bans.delete` action
                  exists yet — the canonical write path is the legacy
-                 GET handler `?p=banlist&a=delete&id=…&key=…` at the
-                 top of page.banlist.php (DeleteBan-gated, RCON
-                 cleanup + DELETE FROM :prefix_bans). The `data-action`
-                 hook routes through the inline page-tail JS's
-                 `bans-delete` branch, which `confirm()`-prompts and
-                 then navigates to `data-fallback-href`. Mirror of
-                 commslist's Remove button (page_comms.tpl line 299,
-                 `comms-delete` data-action) for visual + interaction
-                 parity. *}
+                 GET handler `?p=banlist&a=delete&id=…&key=…`. The
+                 `data-action` hook routes through the inline page-tail
+                 JS's `bans-delete` branch. *}
               <button type="button"
-                      class="btn btn--ghost btn--sm"
+                      class="btn btn--ghost btn--icon btn--sm"
                       data-testid="row-action-delete"
                       data-action="bans-delete"
                       data-bid="{$ban.bid}"
                       data-name="{$ban.name|escape}"
                       data-fallback-href="index.php?p=banlist&amp;a=delete&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
-                      style="color:var(--danger)">
-                  <i data-lucide="trash-2" style="width:13px;height:13px"></i>
-                  Remove
+                      data-tooltip="Remove"
+                      aria-label="Remove ban for {$ban.name|escape}">
+                  <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
               </button>
               {/if}
             </div>
@@ -689,58 +660,60 @@
           <span class="text-faint" aria-hidden="true">&rsaquo;</span>
         </a>
         {if $view_bans || !empty($ban.steam) || $ban.can_delete_ban}
-        <div class="row-actions ban-card__actions">
+        <div class="row-actions row-actions--icons ban-card__actions">
           {if $view_bans}
             {if $ban.can_edit_ban && $ban.state != 'unbanned'}
-            <a class="btn btn--ghost btn--sm" data-testid="row-action-edit-mobile"
-               href="index.php?p=admin&amp;c=bans&amp;o=edit&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}">
-                <i data-lucide="pencil" style="width:13px;height:13px"></i>
-                Edit
+            <a class="btn btn--ghost btn--icon btn--sm" data-testid="row-action-edit-mobile"
+               href="index.php?p=admin&amp;c=bans&amp;o=edit&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
+               data-tooltip="Edit"
+               aria-label="Edit ban for {$ban.name|escape}">
+                <i data-lucide="pencil" style="width:14px;height:14px"></i>
             </a>
             {/if}
             {if $ban.can_unban && $ban.state != 'unbanned' && $ban.state != 'expired'}
             <button type="button"
-                    class="btn btn--secondary btn--sm"
+                    class="btn btn--secondary btn--icon btn--sm"
                     data-testid="row-action-unban-mobile"
                     data-action="bans-unban"
                     data-bid="{$ban.bid}"
                     data-name="{$ban.name|escape}"
-                    data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}">
-                <i data-lucide="check" style="width:13px;height:13px"></i>
-                Unban
+                    data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
+                    data-tooltip="Unban"
+                    aria-label="Unban {$ban.name|escape}">
+                <i data-lucide="check" style="width:14px;height:14px"></i>
             </button>
             {/if}
             {* #1315 + this PR: same `has_active_sibling` gate as the
                desktop variant — see the rationale block above. *}
             {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned') && !$ban.has_active_sibling}
-            <a class="btn btn--secondary btn--sm" data-testid="row-action-reapply-mobile"
-               href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid={$ban.bid}&amp;key={$admin_postkey|escape}">
-                <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
-                Re-apply
+            <a class="btn btn--secondary btn--icon btn--sm" data-testid="row-action-reapply-mobile"
+               href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid={$ban.bid}&amp;key={$admin_postkey|escape}"
+               data-tooltip="Re-apply"
+               aria-label="Re-apply ban for {$ban.name|escape}">
+                <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
             </a>
             {/if}
           {/if}
           {if !empty($ban.steam)}
-          <button class="btn btn--ghost btn--sm" type="button"
+          <button class="btn btn--ghost btn--icon btn--sm" type="button"
                   data-copy="{$ban.steam|escape}"
                   data-testid="row-action-copy-steam-mobile"
-                  aria-label="Copy SteamID"
-                  title="Copy SteamID">
-              <i data-lucide="copy" style="width:13px;height:13px"></i>
-              Copy
+                  data-tooltip="Copy SteamID"
+                  aria-label="Copy SteamID">
+              <i data-lucide="copy" style="width:14px;height:14px"></i>
           </button>
           {/if}
           {if $ban.can_delete_ban}
           <button type="button"
-                  class="btn btn--ghost btn--sm"
+                  class="btn btn--ghost btn--icon btn--sm"
                   data-testid="row-action-delete-mobile"
                   data-action="bans-delete"
                   data-bid="{$ban.bid}"
                   data-name="{$ban.name|escape}"
                   data-fallback-href="index.php?p=banlist&amp;a=delete&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
-                  style="color:var(--danger)">
-              <i data-lucide="trash-2" style="width:13px;height:13px"></i>
-              Remove
+                  data-tooltip="Remove"
+                  aria-label="Remove ban for {$ban.name|escape}">
+              <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
           </button>
           {/if}
           {* #BANLIST-COMMENTS mobile mirror — at-a-glance count indicator

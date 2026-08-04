@@ -195,7 +195,7 @@
          see (#1363). Same chrome shape as `page_bans.tpl`. *}
     <div class="card" style="overflow:hidden">
         <div class="table-scroll">
-        <table class="table" data-testid="comms-table">
+        <table class="table table--compact" data-testid="comms-table">
             <thead>
                 <tr>
                     <th>Type</th>
@@ -227,7 +227,7 @@
                         <td>
                             <div class="flex items-center gap-3" style="min-width:0">
                                 <span class="avatar"
-                                      style="width:28px;height:28px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:10px">
+                                      style="width:22px;height:22px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:9px">
                                     {$comm.name|truncate:2:'':true|upper|escape}
                                 </span>
                                 <div style="min-width:0">
@@ -328,13 +328,14 @@
                             <span class="pill pill--{$comm.state}" style="text-transform:capitalize">{$comm.state|escape}</span>
                         </td>
                         <td class="col-actions">
-                            <div class="row-actions">
+                            <div class="row-actions row-actions--icons">
                                 {if $can_edit_comm}
-                                    <a class="btn btn--ghost btn--sm"
+                                    <a class="btn btn--ghost btn--icon btn--sm"
                                        href="{$comm.edit_url|escape}"
-                                       data-testid="row-action-edit">
-                                        <i data-lucide="pencil" style="width:13px;height:13px"></i>
-                                        Edit
+                                       data-testid="row-action-edit"
+                                       data-tooltip="Edit"
+                                       aria-label="Edit block for {$comm.name|escape}">
+                                        <i data-lucide="pencil" style="width:14px;height:14px"></i>
                                     </a>
                                 {/if}
                                 {if $can_unmute_gag && $comm.unmute_url}
@@ -345,56 +346,59 @@
                                        toast fires). The href fallback preserves the
                                        legacy GET path for no-JS callers + third-party
                                        themes that haven't migrated. *}
+                                    {if $comm.type == 'mute'}
+                                        {assign var=_lift_label value='Unmute'}
+                                    {elseif $comm.type == 'gag'}
+                                        {assign var=_lift_label value='Ungag'}
+                                    {else}
+                                        {assign var=_lift_label value='Lift block'}
+                                    {/if}
                                     <button type="button"
-                                            class="btn btn--secondary btn--sm"
+                                            class="btn btn--secondary btn--icon btn--sm"
                                             data-testid="row-action-unmute"
                                             data-action="comms-unblock"
                                             data-bid="{$comm.cid}"
                                             data-name="{$comm.name|escape}"
-                                            data-fallback-href="{$comm.unmute_url|escape}">
-                                        <i data-lucide="check" style="width:13px;height:13px"></i>
-                                        {if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}
+                                            data-fallback-href="{$comm.unmute_url|escape}"
+                                            data-tooltip="{$_lift_label|escape}"
+                                            aria-label="{$_lift_label|escape} {$comm.name|escape}">
+                                        <i data-lucide="check" style="width:14px;height:14px"></i>
                                     </button>
                                 {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired') && !$comm.has_active_sibling}
                                     {* #1207 ADM-6: when a row is no longer active, swap the
                                        lift action for Re-apply. Anchor goes through the
-                                       admin-comms add form's `rebanid` flow (which calls
-                                       comms.prepare_reblock to hydrate every field) so we
-                                       don't need a separate "re-block" handler. The
+                                       admin-comms add form's `rebanid` flow. The
                                        `!has_active_sibling` clause hides the affordance
                                        when the player already has an active block of the
-                                       same type — `comms.add` would 4xx as
-                                       `already_blocked` against the OTHER row, even
-                                       though this row visibly says unmuted/expired (same
-                                       shape as the banlist's `has_active_sibling` gate). *}
-                                    <a class="btn btn--secondary btn--sm"
+                                       same type. *}
+                                    <a class="btn btn--secondary btn--icon btn--sm"
                                        href="index.php?p=admin&amp;c=comms&amp;rebanid={$comm.cid}"
-                                       data-testid="row-action-reapply">
-                                        <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
-                                        Re-apply
+                                       data-testid="row-action-reapply"
+                                       data-tooltip="Re-apply"
+                                       aria-label="Re-apply block for {$comm.name|escape}">
+                                        <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
                                     </a>
                                 {/if}
                                 {if !empty($comm.steam)}
-                                <button class="btn btn--ghost btn--sm" type="button"
+                                <button class="btn btn--ghost btn--icon btn--sm" type="button"
                                         data-copy="{$comm.steam|escape}"
-                                        data-testid="row-action-copy-steam-mobile"
-                                        aria-label="Copy SteamID"
-                                        title="Copy SteamID">
-                                    <i data-lucide="copy" style="width:13px;height:13px"></i>
-                                    Copy
+                                        data-testid="row-action-copy-steam"
+                                        data-tooltip="Copy SteamID"
+                                        aria-label="Copy SteamID">
+                                    <i data-lucide="copy" style="width:14px;height:14px"></i>
                                 </button>
                                 {/if}
                                 {if $can_delete_comm}
                                     <button type="button"
-                                            class="btn btn--ghost btn--sm"
+                                            class="btn btn--ghost btn--icon btn--sm"
                                             data-testid="row-action-delete"
                                             data-action="comms-delete"
                                             data-bid="{$comm.cid}"
                                             data-name="{$comm.name|escape}"
                                             data-fallback-href="{$comm.delete_url|escape}"
-                                            style="color:var(--danger)">
-                                        <i data-lucide="trash-2" style="width:13px;height:13px"></i>
-                                        Remove
+                                            data-tooltip="Remove"
+                                            aria-label="Remove block for {$comm.name|escape}">
+                                        <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
                                     </button>
                                 {/if}
                             </div>
@@ -524,48 +528,67 @@
                         </div>
                         <i data-lucide="chevron-right"></i>
                     </a>
-                    {if $can_edit_comm || ($can_unmute_gag && $comm.unmute_url) || ($can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')) || $can_delete_comm}
-                    <div class="row-actions ban-card__actions">
+                    {if $can_edit_comm || ($can_unmute_gag && $comm.unmute_url) || ($can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')) || $can_delete_comm || !empty($comm.steam)}
+                    <div class="row-actions row-actions--icons ban-card__actions">
                         {if $can_edit_comm}
-                            <a class="btn btn--ghost btn--sm"
+                            <a class="btn btn--ghost btn--icon btn--sm"
                                href="{$comm.edit_url|escape}"
-                               data-testid="row-action-edit-mobile">
-                                <i data-lucide="pencil" style="width:13px;height:13px"></i>
-                                Edit
+                               data-testid="row-action-edit-mobile"
+                               data-tooltip="Edit"
+                               aria-label="Edit block for {$comm.name|escape}">
+                                <i data-lucide="pencil" style="width:14px;height:14px"></i>
                             </a>
                         {/if}
                         {if $can_unmute_gag && $comm.unmute_url}
+                            {if $comm.type == 'mute'}
+                                {assign var=_lift_label_m value='Unmute'}
+                            {elseif $comm.type == 'gag'}
+                                {assign var=_lift_label_m value='Ungag'}
+                            {else}
+                                {assign var=_lift_label_m value='Lift block'}
+                            {/if}
                             <button type="button"
-                                    class="btn btn--secondary btn--sm"
+                                    class="btn btn--secondary btn--icon btn--sm"
                                     data-testid="row-action-unmute-mobile"
                                     data-action="comms-unblock"
                                     data-bid="{$comm.cid}"
                                     data-name="{$comm.name|escape}"
-                                    data-fallback-href="{$comm.unmute_url|escape}">
-                                <i data-lucide="check" style="width:13px;height:13px"></i>
-                                {if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}
+                                    data-fallback-href="{$comm.unmute_url|escape}"
+                                    data-tooltip="{$_lift_label_m|escape}"
+                                    aria-label="{$_lift_label_m|escape} {$comm.name|escape}">
+                                <i data-lucide="check" style="width:14px;height:14px"></i>
                             </button>
                         {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired') && !$comm.has_active_sibling}
                             {* Same `has_active_sibling` gate as the desktop
                                variant — see the rationale block above. *}
-                            <a class="btn btn--secondary btn--sm"
+                            <a class="btn btn--secondary btn--icon btn--sm"
                                href="index.php?p=admin&amp;c=comms&amp;rebanid={$comm.cid}"
-                               data-testid="row-action-reapply-mobile">
-                                <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
-                                Re-apply
+                               data-testid="row-action-reapply-mobile"
+                               data-tooltip="Re-apply"
+                               aria-label="Re-apply block for {$comm.name|escape}">
+                                <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
                             </a>
+                        {/if}
+                        {if !empty($comm.steam)}
+                        <button class="btn btn--ghost btn--icon btn--sm" type="button"
+                                data-copy="{$comm.steam|escape}"
+                                data-testid="row-action-copy-steam-mobile"
+                                data-tooltip="Copy SteamID"
+                                aria-label="Copy SteamID">
+                            <i data-lucide="copy" style="width:14px;height:14px"></i>
+                        </button>
                         {/if}
                         {if $can_delete_comm}
                             <button type="button"
-                                    class="btn btn--ghost btn--sm"
+                                    class="btn btn--ghost btn--icon btn--sm"
                                     data-testid="row-action-delete-mobile"
                                     data-action="comms-delete"
                                     data-bid="{$comm.cid}"
                                     data-name="{$comm.name|escape}"
                                     data-fallback-href="{$comm.delete_url|escape}"
-                                    style="color:var(--danger)">
-                                <i data-lucide="trash-2" style="width:13px;height:13px"></i>
-                                Remove
+                                    data-tooltip="Remove"
+                                    aria-label="Remove block for {$comm.name|escape}">
+                                <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
                             </button>
                         {/if}
                     </div>
@@ -847,12 +870,15 @@
             row.querySelectorAll('[data-action="comms-unblock"]'),
             function (btn) {
                 var bid = btn.getAttribute('data-bid') || '';
+                var name = btn.getAttribute('data-name') || '';
                 var a = document.createElement('a');
-                a.className = 'btn btn--secondary btn--sm';
+                a.className = 'btn btn--secondary btn--icon btn--sm';
                 var isMobile = (btn.getAttribute('data-testid') || '').indexOf('mobile') !== -1;
                 a.setAttribute('data-testid', isMobile ? 'row-action-reapply-mobile' : 'row-action-reapply');
                 a.setAttribute('href', 'index.php?p=admin&c=comms&rebanid=' + encodeURIComponent(bid));
-                a.innerHTML = '<i data-lucide="rotate-ccw" style="width:13px;height:13px"></i> Re-apply';
+                a.setAttribute('data-tooltip', 'Re-apply');
+                a.setAttribute('aria-label', name ? ('Re-apply block for ' + name) : 'Re-apply');
+                a.innerHTML = '<i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>';
                 btn.parentNode.replaceChild(a, btn);
             }
         );

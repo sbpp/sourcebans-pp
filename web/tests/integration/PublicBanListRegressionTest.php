@@ -332,6 +332,33 @@ final class PublicBanListRegressionTest extends ApiTestCase
             );
         }
 
+        // Density chrome: icon-only buttons carry btn--icon +
+        // data-tooltip (admins-list contract). Visible text labels
+        // after the Lucide icon are gone. Lookaheads keep the
+        // assertion order-independent across class / testid / tooltip.
+        $densityExpectations = [
+            'row-action-edit'       => 'Edit',
+            'row-action-reapply'    => 'Re-apply',
+            'row-action-copy-steam' => 'Copy SteamID',
+        ];
+        foreach ($densityExpectations as $testid => $tooltip) {
+            $this->assertMatchesRegularExpression(
+                '#<(?:a|button)\b(?=[^>]*\bbtn--icon\b)(?=[^>]*data-testid="' . preg_quote($testid, '#') . '")(?=[^>]*data-tooltip="' . preg_quote($tooltip, '#') . '")[^>]*>#',
+                $html,
+                $testid . ' must be icon-only (btn--icon) with data-tooltip="' . $tooltip . '".',
+            );
+        }
+        $this->assertStringContainsString(
+            'row-actions row-actions--icons',
+            $html,
+            'Banlist row actions must use the row-actions--icons density wrapper.',
+        );
+        $this->assertMatchesRegularExpression(
+            '#<table\b[^>]*\btable--compact\b#',
+            $html,
+            'Banlist desktop table must use table--compact for dense row height.',
+        );
+
         // The four bare entity glyphs the v2.0 shape used as
         // affordance icons. None of them should appear inside the
         // rendered row-actions cell — the swap to Lucide is total.

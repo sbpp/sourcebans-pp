@@ -1356,8 +1356,9 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table tbody tr:hover { background: var(--bg-muted); }
 .table.table--clickable-rows tbody tr { cursor: pointer; }
 .table td { padding: 0.75rem; vertical-align: middle; }
-/* Dense row height for checkbox / permission grids where the default
-   0.75rem cell padding leaves too much vertical whitespace. */
+/* Dense row height for checkbox / permission grids and public
+   banlist / commslist desktop tables where the default 0.75rem
+   cell padding leaves too much vertical whitespace. */
 .table.table--compact {
   font-size: var(--fs-sm);
   margin: 0;
@@ -1374,6 +1375,12 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table.table--compact td:first-child { padding-left: 0.75rem; }
 .table.table--compact th:last-child,
 .table.table--compact td:last-child { padding-right: 0.75rem; }
+/* Icon actions in dense list rows: default btn--sm / btn--icon
+   (2rem / 2.25rem) would dominate the compacted cell height. */
+.table.table--compact .row-actions--icons .btn--icon.btn--sm {
+  width: 1.75rem;
+  height: 1.75rem;
+}
 
 /* Edit-admin Permissions: Web + Server cards side-by-side when wide. */
 .edit-perms-columns {
