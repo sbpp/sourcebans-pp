@@ -226,7 +226,11 @@
                             </span>
                         </td>
                         <td>
-                            <div class="flex items-center gap-3" style="min-width:0">
+                            {* items-start: keep the avatar top-aligned with the
+                               player name when the comment disclosure expands
+                               (items-center would pin it to the vertical middle
+                               of the tall cell). *}
+                            <div class="flex items-start gap-3" style="min-width:0">
                                 <span class="avatar"
                                       style="width:22px;height:22px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:9px">
                                     {$comm.name|truncate:2:'':true|upper|escape}

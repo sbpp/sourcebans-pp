@@ -320,7 +320,11 @@
         {foreach from=$ban_list item=ban}
         <tr class="ban-row ban-row--{$ban.state}" data-state="{$ban.state}" data-id="{$ban.bid}" data-testid="ban-row">
           <td>
-            <div class="flex items-center gap-3" style="min-width:0">
+            {* items-start: keep the avatar top-aligned with the
+               player name when the comment disclosure expands
+               (items-center would pin it to the vertical middle
+               of the tall cell). *}
+            <div class="flex items-start gap-3" style="min-width:0">
               {* Inlined avatar markup; the handoff partial is
                  design-only and Phase B can't add files under
                  themes/sbpp2026/{css,js,core}. Initials + hue come
