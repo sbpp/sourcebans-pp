@@ -87,6 +87,14 @@
             <table class="table" role="table" aria-label="Admins">
                 <thead>
                     <tr>
+                        {if $can_delete_admins || $can_edit_admins}
+                        <th scope="col" style="width:2.5rem">
+                            <input type="checkbox"
+                                   data-action="admins-select-all"
+                                   data-testid="admins-select-all"
+                                   aria-label="Select all admins on this page">
+                        </th>
+                        {/if}
                         <th scope="col">Name</th>
                         <th scope="col">Bans</th>
                         <th scope="col">Server group</th>
@@ -98,7 +106,27 @@
                 </thead>
                 <tbody>
                 {foreach $admins as $admin}
-                    <tr data-testid="admin-row" data-id="{$admin.aid}">
+                    <tr data-testid="admin-row"
+                        data-id="{$admin.aid}"
+                        data-enabled="{$admin.enabled|default:1}"
+                        data-name="{$admin.user|escape}">
+                        {if $can_delete_admins || $can_edit_admins}
+                        <td>
+                            {if (!empty($admin.is_owner)) || ($admin.aid == $current_aid)}
+                                <input type="checkbox"
+                                       disabled
+                                       aria-label="Cannot select {$admin.user|escape}"
+                                       data-testid="admin-row-select"
+                                       title="{if $admin.aid == $current_aid}You cannot select yourself{else}Owner cannot be selected{/if}">
+                            {else}
+                                <input type="checkbox"
+                                       data-action="admins-select-row"
+                                       data-aid="{$admin.aid}"
+                                       data-testid="admin-row-select"
+                                       aria-label="Select {$admin.user|escape}">
+                            {/if}
+                        </td>
+                        {/if}
                         <td>
                             <div class="flex items-center gap-3">
                                 <div class="avatar" style="width:1.75rem;height:1.75rem;background:var(--brand-600);font-size:var(--fs-xs)">
@@ -204,8 +232,27 @@
                rule. Same display dance as `.ban-cards` / `.log-cards`. *}
             <div class="admins-list-cards" data-testid="admins-list-cards">
                 {foreach $admins as $admin}
-                    <div class="admins-list-card" data-testid="admins-list-card" data-id="{$admin.aid}">
+                    <div class="admins-list-card"
+                         data-testid="admins-list-card"
+                         data-id="{$admin.aid}"
+                         data-enabled="{$admin.enabled|default:1}"
+                         data-name="{$admin.user|escape}">
                         <div class="admins-list-card__body flex items-center gap-3">
+                            {if $can_delete_admins || $can_edit_admins}
+                                {if (!empty($admin.is_owner)) || ($admin.aid == $current_aid)}
+                                    <input type="checkbox"
+                                           disabled
+                                           aria-label="Cannot select {$admin.user|escape}"
+                                           data-testid="admin-row-select-mobile"
+                                           title="{if $admin.aid == $current_aid}You cannot select yourself{else}Owner cannot be selected{/if}">
+                                {else}
+                                    <input type="checkbox"
+                                           data-action="admins-select-row"
+                                           data-aid="{$admin.aid}"
+                                           data-testid="admin-row-select-mobile"
+                                           aria-label="Select {$admin.user|escape}">
+                                {/if}
+                            {/if}
                             <div class="avatar" style="width:2.25rem;height:2.25rem;background:var(--brand-600);font-size:var(--fs-xs)">
                                 {$admin.user|truncate:1:'':true|upper|escape}
                             </div>
@@ -255,6 +302,27 @@
                                 </a>
                             {/if}
                             {if $can_delete_admins}
+                                    {if isset($admin.enabled) && $admin.enabled == 0}
+                                        <button type="button" class="btn btn--secondary btn--sm"
+                                                data-action="admins-reactivate"
+                                                data-aid="{$admin.aid}"
+                                                data-name="{$admin.user|escape}"
+                                                title="Reactivate admin"
+                                                aria-label="Reactivate admin {$admin.user|escape}"
+                                                data-testid="admin-action-reactivate-mobile">
+                                            <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
+                                        </button>
+                                    {else}
+                                        <button type="button" class="btn btn--ghost btn--icon btn--sm"
+                                                data-action="admins-deactivate"
+                                                data-aid="{$admin.aid}"
+                                                data-name="{$admin.user|escape}"
+                                                title="Deactivate admin"
+                                                aria-label="Deactivate admin {$admin.user|escape}"
+                                                data-testid="admin-action-deactivate-mobile">
+                                            <i data-lucide="user-x" style="width:14px;height:14px"></i>
+                                        </button>
+                                    {/if}
                                 <button type="button" class="btn btn--ghost btn--icon btn--sm"
                                         data-action="admins-delete"
                                         data-aid="{$admin.aid}"
@@ -273,6 +341,39 @@
             </div>
         </div>
     </div>
+
+    {if $can_delete_admins || $can_edit_admins}
+    <div class="admins-bulk-bar"
+         data-testid="admins-bulk-bar"
+         hidden
+         role="region"
+         aria-label="Bulk admin actions"
+         style="position:sticky;bottom:1rem;z-index:20;margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:0.75rem;background:var(--bg-elevated);box-shadow:var(--shadow-md)">
+        <span class="text-sm font-medium" data-testid="admins-bulk-count">0 selected</span>
+        <div class="flex gap-2" style="flex-wrap:wrap;margin-left:auto">
+            {if $can_delete_admins}
+            <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-deactivate" data-testid="admins-bulk-deactivate">
+                <i data-lucide="user-x" style="width:13px;height:13px"></i> Deactivate
+            </button>
+            <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-reactivate" data-testid="admins-bulk-reactivate">
+                <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
+            </button>
+            <button type="button" class="btn btn--danger btn--sm" data-action="admins-bulk-delete" data-testid="admins-bulk-delete">
+                <i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete
+            </button>
+            {/if}
+            {if $can_edit_admins}
+            <button type="button" class="btn btn--ghost btn--sm" data-action="admins-bulk-web-group" data-testid="admins-bulk-web-group">
+                <i data-lucide="shield" style="width:13px;height:13px"></i> Web group
+            </button>
+            <button type="button" class="btn btn--ghost btn--sm" data-action="admins-bulk-srv-group" data-testid="admins-bulk-srv-group">
+                <i data-lucide="server" style="width:13px;height:13px"></i> Server group
+            </button>
+            {/if}
+            <button type="button" class="btn btn--ghost btn--sm" data-action="admins-bulk-clear" data-testid="admins-bulk-clear">Clear</button>
+        </div>
+    </div>
+    {/if}
 
     {* ============================================================
        #1352 — admin-delete confirm + reason modal scaffold.
@@ -364,6 +465,115 @@
         </form>
     </dialog>
 
+    <dialog id="admins-bulk-deactivate-dialog"
+            class="palette"
+            aria-labelledby="admins-bulk-deactivate-dialog-title"
+            data-testid="admins-bulk-deactivate-dialog"
+            hidden
+            style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+        <form method="dialog" data-testid="admins-bulk-deactivate-form">
+            <h2 id="admins-bulk-deactivate-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Deactivate selected admins</h2>
+            <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+                You're about to deactivate <strong data-testid="admins-bulk-deactivate-target">0 admins</strong>.
+                They will lose panel login and in-game admin access.
+            </p>
+            <label class="label" for="admins-bulk-deactivate-reason">Reason (optional)</label>
+            <textarea class="textarea"
+                      id="admins-bulk-deactivate-reason"
+                      data-testid="admins-bulk-deactivate-reason"
+                      rows="3"
+                      aria-required="false"
+                      maxlength="255"
+                      autocomplete="off"
+                      placeholder="Audit-log only. Leave blank to skip."></textarea>
+            <p class="text-xs" data-testid="admins-bulk-deactivate-error" role="alert" hidden style="color:var(--danger);margin:0.25rem 0 0"></p>
+            <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+                <button type="button" class="btn btn--secondary" data-testid="admins-bulk-deactivate-cancel" value="cancel">Cancel</button>
+                <button type="submit" class="btn btn--primary" data-testid="admins-bulk-deactivate-submit" value="confirm">Deactivate</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="admins-bulk-delete-dialog"
+            class="palette"
+            aria-labelledby="admins-bulk-delete-dialog-title"
+            data-testid="admins-bulk-delete-dialog"
+            hidden
+            style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+        <form method="dialog" data-testid="admins-bulk-delete-form">
+            <h2 id="admins-bulk-delete-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Delete selected admins</h2>
+            <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+                You're about to permanently delete <strong data-testid="admins-bulk-delete-target">0 admins</strong>. This cannot be undone.
+            </p>
+            <label class="label" for="admins-bulk-delete-reason">Reason (optional)</label>
+            <textarea class="textarea"
+                      id="admins-bulk-delete-reason"
+                      data-testid="admins-bulk-delete-reason"
+                      rows="3"
+                      aria-required="false"
+                      maxlength="255"
+                      autocomplete="off"
+                      placeholder="Audit-log only. Leave blank to skip."></textarea>
+            <p class="text-xs" data-testid="admins-bulk-delete-error" role="alert" hidden style="color:var(--danger);margin:0.25rem 0 0"></p>
+            <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+                <button type="button" class="btn btn--secondary" data-testid="admins-bulk-delete-cancel" value="cancel">Cancel</button>
+                <button type="submit" class="btn btn--danger" data-testid="admins-bulk-delete-submit" value="confirm">Delete</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="admins-bulk-web-group-dialog"
+            class="palette"
+            aria-labelledby="admins-bulk-web-group-dialog-title"
+            data-testid="admins-bulk-web-group-dialog"
+            hidden
+            style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+        <form method="dialog" data-testid="admins-bulk-web-group-form">
+            <h2 id="admins-bulk-web-group-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Assign web group</h2>
+            <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+                Set the web group for <strong data-testid="admins-bulk-web-group-target">0 admins</strong>.
+            </p>
+            <label class="label" for="admins-bulk-web-group-select">Web group</label>
+            <select class="input" id="admins-bulk-web-group-select" data-testid="admins-bulk-web-group-select">
+                <option value="0">No web group</option>
+                {foreach $web_groups as $g}
+                    <option value="{$g.gid}">{$g.name|escape}</option>
+                {/foreach}
+            </select>
+            <p class="text-xs" data-testid="admins-bulk-web-group-error" role="alert" hidden style="color:var(--danger);margin:0.25rem 0 0"></p>
+            <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+                <button type="button" class="btn btn--secondary" data-testid="admins-bulk-web-group-cancel" value="cancel">Cancel</button>
+                <button type="submit" class="btn btn--primary" data-testid="admins-bulk-web-group-submit" value="confirm">Apply</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="admins-bulk-srv-group-dialog"
+            class="palette"
+            aria-labelledby="admins-bulk-srv-group-dialog-title"
+            data-testid="admins-bulk-srv-group-dialog"
+            hidden
+            style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+        <form method="dialog" data-testid="admins-bulk-srv-group-form">
+            <h2 id="admins-bulk-srv-group-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Assign server group</h2>
+            <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+                Set the SourceMod server group for <strong data-testid="admins-bulk-srv-group-target">0 admins</strong>.
+            </p>
+            <label class="label" for="admins-bulk-srv-group-select">Server group</label>
+            <select class="input" id="admins-bulk-srv-group-select" data-testid="admins-bulk-srv-group-select">
+                <option value="0">No server group</option>
+                {foreach $srv_groups as $g}
+                    <option value="{$g.id}">{$g.name|escape}</option>
+                {/foreach}
+            </select>
+            <p class="text-xs" data-testid="admins-bulk-srv-group-error" role="alert" hidden style="color:var(--danger);margin:0.25rem 0 0"></p>
+            <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+                <button type="button" class="btn btn--secondary" data-testid="admins-bulk-srv-group-cancel" value="cancel">Cancel</button>
+                <button type="submit" class="btn btn--primary" data-testid="admins-bulk-srv-group-submit" value="confirm">Apply</button>
+            </div>
+        </form>
+    </dialog>
+
     {* ============================================================
        #1352 — admins-delete row-action wiring (inline page-tail JS).
 
@@ -402,7 +612,7 @@
         }
         /**
          * @param {Element|null} btn
-         * @param {boolean} [busy] defaults to true
+         * @param {boolean} [busy]
          */
         function setBusy(btn, busy) {
             if (!btn) return;
@@ -431,8 +641,53 @@
             el.textContent = '(' + (n - 1).toLocaleString() + ')';
         }
 
+        /** @returns {number[]} */
+        function selectedAids() {
+            var boxes = document.querySelectorAll('[data-action="admins-select-row"]:checked');
+            var aids = [];
+            for (var i = 0; i < boxes.length; i++) {
+                var aid = Number(/** @type {HTMLElement} */ (boxes[i]).getAttribute('data-aid') || 0);
+                if (aid > 0 && aids.indexOf(aid) === -1) aids.push(aid);
+            }
+            return aids;
+        }
+
+        /** @returns {void} */
+        function syncBulkBar() {
+            var bar = document.querySelector('[data-testid="admins-bulk-bar"]');
+            var countEl = document.querySelector('[data-testid="admins-bulk-count"]');
+            var aids = selectedAids();
+            if (countEl) countEl.textContent = aids.length + ' selected';
+            if (!bar) return;
+            if (aids.length > 0) {
+                bar.removeAttribute('hidden');
+                /** @type {HTMLElement} */ (bar).style.display = 'flex';
+            } else {
+                bar.setAttribute('hidden', '');
+                /** @type {HTMLElement} */ (bar).style.display = 'none';
+            }
+            var all = document.querySelector('[data-action="admins-select-all"]');
+            if (all) {
+                var enabled = document.querySelectorAll('[data-action="admins-select-row"]:not(:disabled)');
+                var checked = document.querySelectorAll('[data-action="admins-select-row"]:checked');
+                /** @type {HTMLInputElement} */ (all).checked = enabled.length > 0 && checked.length === enabled.length;
+                /** @type {HTMLInputElement} */ (all).indeterminate = checked.length > 0 && checked.length < enabled.length;
+            }
+        }
+
+        /** @returns {void} */
+        function clearSelection() {
+            var boxes = document.querySelectorAll('[data-action="admins-select-row"]');
+            for (var i = 0; i < boxes.length; i++) {
+                /** @type {HTMLInputElement} */ (boxes[i]).checked = false;
+            }
+            syncBulkBar();
+        }
+
         /** @type {{aid: string, name: string, fallback: string, mode: string}|null} */
         var pending = null;
+        /** @type {string|null} */
+        var pendingBulkOp = null;
 
         /**
          * @param {string} prefix
@@ -502,6 +757,101 @@
             pending = null;
         }
 
+        /**
+         * @param {string} prefix
+         * @param {string} op
+         * @param {string} label
+         */
+        function openBulkDialog(prefix, op, label) {
+            var aids = selectedAids();
+            if (!aids.length) return;
+            pendingBulkOp = op;
+            var d = dialogBy(prefix);
+            if (!d) return;
+            var target = d.querySelector('[data-testid="' + prefix + '-target"]');
+            if (target) target.textContent = aids.length + ' ' + label;
+            var input = reasonBy(prefix);
+            if (input) input.value = '';
+            clearError(prefix);
+            d.removeAttribute('hidden');
+            try { d.showModal(); }
+            catch (_e) { d.setAttribute('open', ''); }
+        }
+
+        /** @param {string} prefix */
+        function closeBulkDialog(prefix) {
+            var d = dialogBy(prefix);
+            if (!d) return;
+            try { d.close(); } catch (_e) { /* ignore */ }
+            d.setAttribute('hidden', '');
+            pendingBulkOp = null;
+        }
+
+        /**
+         * @param {string} op
+         * @param {Record<string, any>} extra
+         * @param {HTMLButtonElement|null} submitBtn
+         * @param {string} prefix
+         */
+        function runBulk(op, extra, submitBtn, prefix) {
+            var a = api(), A = actions();
+            var aids = selectedAids();
+            if (!a || !A || !aids.length) {
+                setBusy(submitBtn, false);
+                return;
+            }
+            /** @type {Record<string, any>} */
+            var params = { op: op, aids: aids };
+            Object.keys(extra || {}).forEach(function (k) { params[k] = extra[k]; });
+            setBusy(submitBtn, true);
+            a.call(A.AdminsBulk, params).then(function (r) {
+                setBusy(submitBtn, false);
+                if (!r || r.ok === false) {
+                    var msg = (r && r.error && r.error.message) || 'Unknown error';
+                    if (prefix) showError(prefix, msg);
+                    toast('error', 'Bulk action failed', msg);
+                    return;
+                }
+                var data = r.data || {};
+                var applied = data.applied || [];
+                for (var i = 0; i < applied.length; i++) {
+                    if (op === 'remove' || op === 'deactivate') {
+                        var rows = rowsForAid(String(applied[i]));
+                        for (var j = 0; j < rows.length; j++) {
+                            var row = rows[j];
+                            if (row && row.parentNode) row.parentNode.removeChild(row);
+                        }
+                        decrementCount();
+                    }
+                }
+                if (prefix) closeBulkDialog(prefix);
+                clearSelection();
+                var title = (data.message && data.message.title) || 'Done';
+                var body = (data.message && data.message.body) || '';
+                toast(applied.length ? 'success' : 'error', title, body);
+                if (op === 'set_web_group' || op === 'set_srv_group' || op === 'reactivate') {
+                    window.location.reload();
+                }
+            });
+        }
+
+        document.addEventListener('change', function (e) {
+            var t = /** @type {Element|null} */ (e.target);
+            if (!t || !t.closest) return;
+            if (t.matches('[data-action="admins-select-all"]')) {
+                var on = /** @type {HTMLInputElement} */ (t).checked;
+                var boxes = document.querySelectorAll('[data-action="admins-select-row"]:not(:disabled)');
+                for (var i = 0; i < boxes.length; i++) {
+                    /** @type {HTMLInputElement} */ (boxes[i]).checked = on;
+                }
+                syncBulkBar();
+                return;
+            }
+            if (t.matches('[data-action="admins-select-row"]')) {
+                syncBulkBar();
+            }
+        });
+
         document.addEventListener('click', function (e) {
             var t = /** @type {Element|null} */ (e.target);
             if (!t || !t.closest) return;
@@ -514,6 +864,58 @@
             if (t.closest('[data-testid="admins-deactivate-cancel"]')) {
                 e.preventDefault();
                 closeDialog('admins-deactivate');
+                return;
+            }
+            if (t.closest('[data-testid="admins-bulk-deactivate-cancel"]')) {
+                e.preventDefault();
+                closeBulkDialog('admins-bulk-deactivate');
+                return;
+            }
+            if (t.closest('[data-testid="admins-bulk-delete-cancel"]')) {
+                e.preventDefault();
+                closeBulkDialog('admins-bulk-delete');
+                return;
+            }
+            if (t.closest('[data-testid="admins-bulk-web-group-cancel"]')) {
+                e.preventDefault();
+                closeBulkDialog('admins-bulk-web-group');
+                return;
+            }
+            if (t.closest('[data-testid="admins-bulk-srv-group-cancel"]')) {
+                e.preventDefault();
+                closeBulkDialog('admins-bulk-srv-group');
+                return;
+            }
+            if (t.closest('[data-action="admins-bulk-clear"]')) {
+                e.preventDefault();
+                clearSelection();
+                return;
+            }
+            if (t.closest('[data-action="admins-bulk-deactivate"]')) {
+                e.preventDefault();
+                openBulkDialog('admins-bulk-deactivate', 'deactivate', 'admins');
+                return;
+            }
+            if (t.closest('[data-action="admins-bulk-reactivate"]')) {
+                e.preventDefault();
+                var aR = api(), AR = actions();
+                if (!aR || !AR) return;
+                runBulk('reactivate', {}, /** @type {HTMLButtonElement|null} */ (t.closest('button')), '');
+                return;
+            }
+            if (t.closest('[data-action="admins-bulk-delete"]')) {
+                e.preventDefault();
+                openBulkDialog('admins-bulk-delete', 'remove', 'admins');
+                return;
+            }
+            if (t.closest('[data-action="admins-bulk-web-group"]')) {
+                e.preventDefault();
+                openBulkDialog('admins-bulk-web-group', 'set_web_group', 'admins');
+                return;
+            }
+            if (t.closest('[data-action="admins-bulk-srv-group"]')) {
+                e.preventDefault();
+                openBulkDialog('admins-bulk-srv-group', 'set_srv_group', 'admins');
                 return;
             }
 
@@ -532,8 +934,11 @@
                         toast('error', 'Reactivate failed', msg);
                         return;
                     }
-                    var row = rowForAid(rAid);
-                    if (row && row.parentNode) row.parentNode.removeChild(row);
+                    var rows = rowsForAid(rAid);
+                    for (var i = 0; i < rows.length; i++) {
+                        var row = rows[i];
+                        if (row && row.parentNode) row.parentNode.removeChild(row);
+                    }
                     decrementCount();
                     toast('success', 'Admin reactivated', rName + ' can log in again.');
                 });
@@ -569,6 +974,41 @@
         document.addEventListener('submit', function (e) {
             var form = /** @type {Element|null} */ (e.target);
             if (!form || !(/** @type {Element} */ (form)).closest) return;
+
+            if (form.matches('[data-testid="admins-bulk-deactivate-form"]')) {
+                e.preventDefault();
+                var reasonB = reasonBy('admins-bulk-deactivate');
+                var submitB = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="admins-bulk-deactivate-submit"]'));
+                /** @type {Record<string, any>} */
+                var extraB = {};
+                if (reasonB && reasonB.value.trim() !== '') extraB.ureason = reasonB.value.trim();
+                runBulk('deactivate', extraB, submitB, 'admins-bulk-deactivate');
+                return;
+            }
+            if (form.matches('[data-testid="admins-bulk-delete-form"]')) {
+                e.preventDefault();
+                var reasonD = reasonBy('admins-bulk-delete');
+                var submitD = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="admins-bulk-delete-submit"]'));
+                /** @type {Record<string, any>} */
+                var extraD = {};
+                if (reasonD && reasonD.value.trim() !== '') extraD.ureason = reasonD.value.trim();
+                runBulk('remove', extraD, submitD, 'admins-bulk-delete');
+                return;
+            }
+            if (form.matches('[data-testid="admins-bulk-web-group-form"]')) {
+                e.preventDefault();
+                var selW = /** @type {HTMLSelectElement|null} */ (document.getElementById('admins-bulk-web-group-select'));
+                var submitW = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="admins-bulk-web-group-submit"]'));
+                runBulk('set_web_group', { gid: Number(selW ? selW.value : 0) }, submitW, 'admins-bulk-web-group');
+                return;
+            }
+            if (form.matches('[data-testid="admins-bulk-srv-group-form"]')) {
+                e.preventDefault();
+                var selS = /** @type {HTMLSelectElement|null} */ (document.getElementById('admins-bulk-srv-group-select'));
+                var submitS = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="admins-bulk-srv-group-submit"]'));
+                runBulk('set_srv_group', { srv_group_id: Number(selS ? selS.value : 0) }, submitS, 'admins-bulk-srv-group');
+                return;
+            }
 
             var isDelete = form.matches('[data-testid="admins-delete-form"]');
             var isDeactivate = form.matches('[data-testid="admins-deactivate-form"]');
@@ -629,8 +1069,22 @@
             } else if (t.id === 'admins-deactivate-dialog') {
                 pending = null;
                 clearError('admins-deactivate');
+            } else if (t.id === 'admins-bulk-deactivate-dialog') {
+                pendingBulkOp = null;
+                clearError('admins-bulk-deactivate');
+            } else if (t.id === 'admins-bulk-delete-dialog') {
+                pendingBulkOp = null;
+                clearError('admins-bulk-delete');
+            } else if (t.id === 'admins-bulk-web-group-dialog') {
+                pendingBulkOp = null;
+                clearError('admins-bulk-web-group');
+            } else if (t.id === 'admins-bulk-srv-group-dialog') {
+                pendingBulkOp = null;
+                clearError('admins-bulk-srv-group');
             }
         });
+
+        syncBulkBar();
     })();
     </script>
     {/literal}

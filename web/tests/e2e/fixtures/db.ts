@@ -41,6 +41,10 @@ const SET_SETTING_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/set-setting-e2e.php';
 const ORPHAN_BAN_AID_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/orphan-ban-aid-e2e.php';
+const REASSIGN_BAN_ISSUER_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/reassign-ban-issuer-e2e.php';
+const SEED_WEB_GROUP_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/seed-web-group-e2e.php';
 const SEED_SERVER_GROUP_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-server-group-e2e.php';
 const DELETE_SERVER_INSIDE_CONTAINER =
@@ -466,6 +470,89 @@ export async function orphanBanAidE2e(bid: number, newAid = 99999): Promise<void
             ));
         });
     });
+}
+
+/**
+ * Point an existing ban at a disposable admin issuer and clear
+ * `admin_name` so the next `admins.remove` snapshot fills it.
+ */
+export async function reassignBanIssuerE2e(bid: number, aid: number): Promise<void> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [REASSIGN_BAN_ISSUER_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', REASSIGN_BAN_ISSUER_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify({ bid, aid }));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `reassign-ban-issuer-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
+}
+
+/**
+ * Insert a web group for bulk assign E2E coverage.
+ */
+export async function seedWebGroupE2e(name: string): Promise<{ gid: number; name: string }> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SEED_WEB_GROUP_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', SEED_WEB_GROUP_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify({ name }));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `seed-web-group-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
+
+    const parsed = JSON.parse(stdout.trim()) as { gid: number; name: string };
+    if (!parsed.gid || parsed.gid <= 0) {
+        throw new Error(`seed-web-group-e2e.php returned invalid payload: ${stdout}`);
+    }
+    return parsed;
 }
 
 /**

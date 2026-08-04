@@ -451,6 +451,7 @@ foreach ($admins as $admin) {
     $admin['server_flag_string'] = SmFlagsToSb((string) ($userbank->GetProperty("srv_flags", $admin['aid']) ?? ''));
     $admin['web_flag_string']    = BitToString((int) ($userbank->GetProperty("extraflags", $admin['aid']) ?? 0));
     $admin['enabled']            = (int) ($admin['enabled'] ?? 1);
+    $admin['is_owner']           = (((int) ($userbank->GetProperty("extraflags", $admin['aid']) ?? 0)) & ADMIN_OWNER) !== 0;
 
     $lastvisit = $userbank->GetProperty("lastvisit", $admin['aid']);
     if (!$lastvisit) {
@@ -513,6 +514,9 @@ if ($pages > 1) {
 
 $chipBase = 'index.php?p=admin&c=admins&section=admins' . $advSearchString;
 
+$bulkWebGroups = $GLOBALS['PDO']->query('SELECT gid, name FROM `:prefix_groups` WHERE type != 3 ORDER BY name')->resultset();
+$bulkSrvGroups = $GLOBALS['PDO']->query('SELECT id, name FROM `:prefix_srvgroups` ORDER BY name')->resultset();
+
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsListView(
     // We pass the can_* gates explicitly rather than splatting
     // ...Perms::for($userbank): the helper's @return array<string,bool>
@@ -529,4 +533,7 @@ $chipBase = 'index.php?p=admin&c=admins&section=admins' . $advSearchString;
     admins: $admin_list,
     active_view: $view,
     chip_base_link: $chipBase,
+    web_groups: $bulkWebGroups,
+    srv_groups: $bulkSrvGroups,
+    current_aid: (int) $userbank->GetAid(),
 ));

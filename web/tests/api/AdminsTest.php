@@ -510,4 +510,73 @@ final class AdminsTest extends ApiTestCase
         $this->assertNotNull($ban);
         $this->assertSame('SnapIssuer', $ban['admin_name']);
     }
+
+    public function testBulkDeactivateAppliesAndSkipsOwner(): void
+    {
+        $this->loginAsAdmin();
+        $a1 = $this->api('admins.add', $this->adminParams([
+            'name'  => 'BulkOne',
+            'steam' => 'STEAM_0:0:15101',
+            'email' => 'bulkone@kick.test',
+        ]));
+        $a2 = $this->api('admins.add', $this->adminParams([
+            'name'  => 'BulkTwo',
+            'steam' => 'STEAM_0:0:15102',
+            'email' => 'bulktwo@kick.test',
+        ]));
+        $this->assertTrue($a1['ok'], json_encode($a1));
+        $this->assertTrue($a2['ok'], json_encode($a2));
+        $aid1 = (int) $a1['data']['aid'];
+        $aid2 = (int) $a2['data']['aid'];
+        $ownerAid = Fixture::adminAid();
+
+        $env = $this->api('admins.bulk', [
+            'op'   => 'deactivate',
+            'aids' => [$aid1, $aid2, $ownerAid],
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame([$aid1, $aid2], $env['data']['applied']);
+        $this->assertContains(
+            ['aid' => $ownerAid, 'reason' => 'self'],
+            $env['data']['skipped'],
+        );
+        $this->assertSame(0, (int) $this->row('admins', ['aid' => $aid1])['enabled']);
+        $this->assertSame(0, (int) $this->row('admins', ['aid' => $aid2])['enabled']);
+        $this->assertSnapshot('admins/bulk_deactivate_partial', $env, ['data.applied', 'data.skipped', 'data.rehash']);
+    }
+
+    public function testBulkSetWebGroup(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'BulkGroup',
+            'steam' => 'STEAM_0:0:15103',
+            'email' => 'bulkgroup@kick.test',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+
+        $pdo = Fixture::rawPdo();
+        $pdo->exec(sprintf(
+            "INSERT INTO `%s_groups` (type, name, flags) VALUES (1, 'BulkWeb', 0)",
+            DB_PREFIX
+        ));
+        $gid = (int) $pdo->lastInsertId();
+
+        $env = $this->api('admins.bulk', [
+            'op'   => 'set_web_group',
+            'aids' => [$aid],
+            'gid'  => $gid,
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame([$aid], $env['data']['applied']);
+        $this->assertSame($gid, (int) $this->row('admins', ['aid' => $aid])['gid']);
+    }
+
+    public function testBulkRejectsEmptyAids(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('admins.bulk', ['op' => 'deactivate', 'aids' => []]);
+        $this->assertEnvelopeError($env, 'validation');
+    }
 }

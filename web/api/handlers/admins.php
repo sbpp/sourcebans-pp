@@ -117,7 +117,7 @@ function api_admins_remove(array $params): array
  * blocks panel login and SourceMod admin load via `enabled = 0`.
  *
  * @param array{aid?: int|string, ureason?: string} $params
- * @return array{aid: int, enabled: int, rehash: ?string, message: array{title: string, body: string, kind: string}}
+ * @return array{aid: int, enabled: int, rehash: string|null, message: array{title: string, body: string, kind: string}}
  */
 function api_admins_deactivate(array $params): array
 {
@@ -169,7 +169,7 @@ function api_admins_deactivate(array $params): array
  * Restore a soft-retired admin (`enabled = 1`).
  *
  * @param array{aid?: int|string, ureason?: string} $params
- * @return array{aid: int, enabled: int, rehash: ?string, message: array{title: string, body: string, kind: string}}
+ * @return array{aid: int, enabled: int, rehash: string|null, message: array{title: string, body: string, kind: string}}
  */
 function api_admins_reactivate(array $params): array
 {
@@ -212,6 +212,251 @@ function api_admins_reactivate(array $params): array
             'kind'  => 'green',
         ],
     ];
+}
+
+/**
+ * Apply one lifecycle / group op to many admin ids. Partial success:
+ * owner / self / not-found / already-* rows land in `skipped` and the
+ * rest still commit. Per-op permission is re-checked inside so a caller
+ * holding only EDIT_ADMINS cannot deactivate via this entry point.
+ *
+ * Inputs:
+ *   - `op`    (string, required) — `deactivate` | `reactivate` | `remove`
+ *     | `set_web_group` | `set_srv_group`
+ *   - `aids`  (list of int, required, max 100)
+ *   - `ureason` (string, optional) — deactivate / remove
+ *   - `gid`   (int, required for set_web_group) — 0 clears web group
+ *   - `srv_group_id` (int, required for set_srv_group) — 0 clears SM group
+ *
+ * @param array{
+ *     op?: string,
+ *     aids?: list<int|string>,
+ *     ureason?: string,
+ *     gid?: int|string,
+ *     srv_group_id?: int|string
+ * } $params
+ * @return array{
+ *     op: string,
+ *     applied: list<int>,
+ *     skipped: list<array{aid: int, reason: string}>,
+ *     rehash: string|null,
+ *     message: array{title: string, body: string, kind: string}
+ * }
+ */
+function api_admins_bulk(array $params): array
+{
+    global $userbank;
+
+    $op = trim((string) ($params['op'] ?? ''));
+    $allowedOps = ['deactivate', 'reactivate', 'remove', 'set_web_group', 'set_srv_group'];
+    if (!in_array($op, $allowedOps, true)) {
+        throw new ApiError('validation', 'Unknown bulk op.', 'op');
+    }
+
+    $rawAids = $params['aids'] ?? null;
+    if (!is_array($rawAids) || $rawAids === []) {
+        throw new ApiError('validation', 'Select at least one admin.', 'aids');
+    }
+    if (count($rawAids) > 100) {
+        throw new ApiError('validation', 'Bulk selection is limited to 100 admins.', 'aids');
+    }
+
+    $aids = [];
+    foreach ($rawAids as $raw) {
+        $aid = (int) $raw;
+        if ($aid > 0 && !in_array($aid, $aids, true)) {
+            $aids[] = $aid;
+        }
+    }
+    if ($aids === []) {
+        throw new ApiError('validation', 'Select at least one admin.', 'aids');
+    }
+
+    $isLifecycle = in_array($op, ['deactivate', 'reactivate', 'remove'], true);
+    if ($isLifecycle) {
+        if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteAdmins))) {
+            throw new ApiError('forbidden', 'You do not have permission to deactivate or delete admins.');
+        }
+    } else {
+        if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
+            throw new ApiError('forbidden', 'You do not have permission to edit admin groups.');
+        }
+    }
+
+    $ureason = trim((string) ($params['ureason'] ?? ''));
+    $actorAid = (int) $userbank->GetAid();
+    $gid = (int) ($params['gid'] ?? 0);
+    $srvGroupId = (int) ($params['srv_group_id'] ?? 0);
+
+    if ($op === 'set_web_group' && !array_key_exists('gid', $params)) {
+        throw new ApiError('validation', 'Web group is required.', 'gid');
+    }
+    if ($op === 'set_srv_group' && !array_key_exists('srv_group_id', $params)) {
+        throw new ApiError('validation', 'Server group is required.', 'srv_group_id');
+    }
+
+    $applied = [];
+    $skipped = [];
+    $rehashSids = [];
+
+    foreach ($aids as $aid) {
+        if ($isLifecycle && $aid === $actorAid && in_array($op, ['deactivate', 'remove'], true)) {
+            $skipped[] = ['aid' => $aid, 'reason' => 'self'];
+            continue;
+        }
+
+        try {
+            $result = match ($op) {
+                'deactivate' => api_admins_deactivate(['aid' => $aid, 'ureason' => $ureason]),
+                'reactivate' => api_admins_reactivate(['aid' => $aid, 'ureason' => $ureason]),
+                'remove' => api_admins_remove(['aid' => $aid, 'ureason' => $ureason]),
+                'set_web_group' => _api_admins_set_web_group($aid, $gid),
+                'set_srv_group' => _api_admins_set_srv_group($aid, $srvGroupId),
+            };
+            $applied[] = $aid;
+            if (!empty($result['rehash']) && is_string($result['rehash'])) {
+                foreach (explode(',', $result['rehash']) as $sid) {
+                    $sid = (int) $sid;
+                    if ($sid > 0 && !in_array($sid, $rehashSids, true)) {
+                        $rehashSids[] = $sid;
+                    }
+                }
+            }
+        } catch (ApiError $e) {
+            $skipped[] = ['aid' => $aid, 'reason' => $e->errorCode];
+        }
+    }
+
+    $appliedN = count($applied);
+    $skippedN = count($skipped);
+    $titles = [
+        'deactivate' => 'Admins deactivated',
+        'reactivate' => 'Admins reactivated',
+        'remove' => 'Admins deleted',
+        'set_web_group' => 'Web group updated',
+        'set_srv_group' => 'Server group updated',
+    ];
+    $verbs = [
+        'deactivate' => 'deactivated',
+        'reactivate' => 'reactivated',
+        'remove' => 'deleted',
+        'set_web_group' => 'updated',
+        'set_srv_group' => 'updated',
+    ];
+    $body = $appliedN . ' ' . $verbs[$op];
+    if ($skippedN > 0) {
+        $body .= ', ' . $skippedN . ' skipped';
+    }
+    $body .= '.';
+
+    return [
+        'op' => $op,
+        'applied' => $applied,
+        'skipped' => $skipped,
+        'rehash' => $rehashSids ? implode(',', $rehashSids) : null,
+        'message' => [
+            'title' => $titles[$op],
+            'body' => $body,
+            'kind' => $appliedN > 0 ? 'green' : 'red',
+        ],
+    ];
+}
+
+/**
+ * @return array{rehash: string|null}
+ */
+function _api_admins_set_web_group(int $aid, int $gid): array
+{
+    $admin = $GLOBALS['PDO']->query(
+        "SELECT aid, user, password, email, extraflags FROM `:prefix_admins` WHERE aid = :aid"
+    );
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $admin = $GLOBALS['PDO']->single();
+    if (!$admin) {
+        throw new ApiError('not_found', 'Admin not found.');
+    }
+
+    if ($gid > 0) {
+        $group = $GLOBALS['PDO']->query(
+            "SELECT gid FROM `:prefix_groups` WHERE gid = :gid AND type != 3"
+        );
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        if (!$GLOBALS['PDO']->single()) {
+            throw new ApiError('validation', 'Unknown web group.', 'gid');
+        }
+        $password = (string) ($admin['password'] ?? '');
+        $email = (string) ($admin['email'] ?? '');
+        if ($password === '' || $email === '') {
+            throw new ApiError(
+                'missing_credentials',
+                'Admins need a password and email before you can give them web permissions.',
+            );
+        }
+    }
+
+    $persistGid = max(0, $gid);
+    $GLOBALS['PDO']->query('UPDATE `:prefix_admins` SET `gid` = :gid WHERE `aid` = :aid');
+    $GLOBALS['PDO']->bind(':gid', $persistGid);
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
+
+    $allservers = _api_admins_rehash_sids($aid);
+    Log::add(
+        LogType::Message,
+        "Admin's Groups Updated",
+        "Admin ({$admin['user']}) web group has been updated.",
+    );
+
+    return ['rehash' => $allservers ? implode(',', $allservers) : null];
+}
+
+/**
+ * @return array{rehash: string|null}
+ */
+function _api_admins_set_srv_group(int $aid, int $srvGroupId): array
+{
+    $admin = $GLOBALS['PDO']->query(
+        "SELECT aid, user, extraflags FROM `:prefix_admins` WHERE aid = :aid"
+    );
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $admin = $GLOBALS['PDO']->single();
+    if (!$admin) {
+        throw new ApiError('not_found', 'Admin not found.');
+    }
+
+    $resolvedGroupName = '';
+    $persistId = 0;
+    if ($srvGroupId > 0) {
+        $GLOBALS['PDO']->query('SELECT id, name FROM `:prefix_srvgroups` WHERE id = :id');
+        $GLOBALS['PDO']->bind(':id', $srvGroupId);
+        $row = $GLOBALS['PDO']->single();
+        if (!$row) {
+            throw new ApiError('validation', 'Unknown server group.', 'srv_group_id');
+        }
+        $resolvedGroupName = (string) ($row['name'] ?? '');
+        $persistId = (int) $row['id'];
+    }
+
+    $GLOBALS['PDO']->query('UPDATE `:prefix_admins` SET `srv_group` = :name WHERE `aid` = :aid');
+    $GLOBALS['PDO']->bind(':name', $resolvedGroupName);
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
+
+    $GLOBALS['PDO']->query(
+        'UPDATE `:prefix_admins_servers_groups` SET `group_id` = :gid WHERE `admin_id` = :aid'
+    );
+    $GLOBALS['PDO']->bind(':gid', $persistId > 0 ? $persistId : -1);
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
+
+    $allservers = _api_admins_rehash_sids($aid);
+    Log::add(
+        LogType::Message,
+        "Admin's Groups Updated",
+        "Admin ({$admin['user']}) server group has been updated.",
+    );
+
+    return ['rehash' => $allservers ? implode(',', $allservers) : null];
 }
 
 /**
