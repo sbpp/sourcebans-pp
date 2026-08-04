@@ -323,12 +323,11 @@ test.describe('flow: comms list affordances (#1207 ADM-5/ADM-6)', () => {
             .textContent();
         const before = Number((countBefore || '').replace(/[^0-9]/g, ''));
 
-        // The inline JS prompts `window.confirm` before issuing the
-        // destructive call. Playwright dismisses dialogs by default;
-        // wire an accept handler so the click resolves the API path.
-        page.once('dialog', (d) => d.accept());
-
+        // The inline JS opens `#comms-delete-dialog` before issuing
+        // the destructive call. Confirm via the styled submit button.
         await row.locator('[data-testid="row-action-delete"]').click();
+        await expect(page.locator('[data-testid="comms-delete-dialog"]')).toBeVisible();
+        await page.locator('[data-testid="comms-delete-submit"]').click();
 
         // Row is removed from the DOM; the matching `comm-card`
         // mirror is removed too (the JS targets both via

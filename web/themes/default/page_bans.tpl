@@ -879,6 +879,30 @@
   </form>
 </dialog>
 
+{* Confirm-only delete modal (no reason field). Hard-delete has no
+   audit-reason surface on the legacy GET path; the dialog replaces
+   the native window.confirm() so banlist row actions share one chrome
+   with Unban. *}
+<dialog id="bans-delete-dialog"
+        class="palette"
+        aria-labelledby="bans-delete-dialog-title"
+        data-testid="bans-delete-dialog"
+        hidden
+        style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+  <form method="dialog" data-testid="bans-delete-form">
+    <h2 id="bans-delete-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Delete ban</h2>
+    <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+      Permanently delete the ban for <strong data-testid="bans-delete-target">this player</strong>? This cannot be undone.
+    </p>
+    <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+      <button type="button" class="btn btn--secondary" data-testid="bans-delete-cancel" value="cancel">Cancel</button>
+      <button type="submit" class="btn btn--danger" data-testid="bans-delete-submit" value="confirm">
+        <i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete ban
+      </button>
+    </div>
+  </form>
+</dialog>
+
 {* banlist.js wires both branches: the chip filter / copy buttons /
    skeleton hook on the listing branch, and the `#banlist-comment-form`
    submit -> sb.api.call(BansAddComment / BansEditComment) on the
@@ -999,8 +1023,12 @@
     }
 
     /** @returns {HTMLDialogElement|null} */
-    function dialog() {
+    function unbanDialog() {
         return /** @type {HTMLDialogElement|null} */ (document.getElementById('bans-unban-dialog'));
+    }
+    /** @returns {HTMLDialogElement|null} */
+    function deleteDialog() {
+        return /** @type {HTMLDialogElement|null} */ (document.getElementById('bans-delete-dialog'));
     }
     /** @returns {HTMLTextAreaElement|null} */
     function reasonInput() {
@@ -1008,7 +1036,7 @@
     }
     /** @returns {HTMLElement|null} */
     function errorEl() {
-        var d = dialog();
+        var d = unbanDialog();
         return d ? /** @type {HTMLElement|null} */ (d.querySelector('[data-testid="bans-unban-error"]')) : null;
     }
 
@@ -1027,7 +1055,9 @@
     }
 
     /** @type {{bid: string, name: string, fallback: string}|null} */
-    var pending = null;
+    var pendingUnban = null;
+    /** @type {{bid: string, name: string, fallback: string}|null} */
+    var pendingDelete = null;
 
     /**
      * Open the unban dialog for the supplied row data. We use the
@@ -1036,8 +1066,8 @@
      * @param {{bid: string, name: string, fallback: string}} ctx
      */
     function openUnbanDialog(ctx) {
-        pending = ctx;
-        var d = dialog();
+        pendingUnban = ctx;
+        var d = unbanDialog();
         if (!d) {
             // The dialog markup is in the template above; if it's
             // missing the page is in an inconsistent state. Fall back
@@ -1061,21 +1091,54 @@
     }
 
     function closeUnbanDialog() {
-        var d = dialog();
+        var d = unbanDialog();
         if (!d) return;
         try { d.close(); } catch (_e) { /* not opened modally */ }
         d.setAttribute('hidden', '');
-        pending = null;
+        pendingUnban = null;
+    }
+
+    /**
+     * @param {{bid: string, name: string, fallback: string}} ctx
+     */
+    function openDeleteDialog(ctx) {
+        pendingDelete = ctx;
+        var d = deleteDialog();
+        if (!d) {
+            if (ctx.fallback) window.location.href = ctx.fallback;
+            return;
+        }
+        var target = d.querySelector('[data-testid="bans-delete-target"]');
+        if (target) target.textContent = ctx.name || ('ban #' + ctx.bid);
+        d.removeAttribute('hidden');
+        try { d.showModal(); }
+        catch (_e) { d.setAttribute('open', ''); }
+        var submitBtn = /** @type {HTMLButtonElement|null} */ (d.querySelector('[data-testid="bans-delete-submit"]'));
+        if (submitBtn) {
+            try { submitBtn.focus(); } catch (_e) { /* focus may throw if hidden */ }
+        }
+    }
+
+    function closeDeleteDialog() {
+        var d = deleteDialog();
+        if (!d) return;
+        try { d.close(); } catch (_e) { /* not opened modally */ }
+        d.setAttribute('hidden', '');
+        pendingDelete = null;
     }
 
     document.addEventListener('click', function (e) {
         var t = /** @type {Element|null} */ (e.target);
         if (!t || !t.closest) return;
 
-        // Cancel button inside the dialog.
         if (t.closest('[data-testid="bans-unban-cancel"]')) {
             e.preventDefault();
             closeUnbanDialog();
+            return;
+        }
+        if (t.closest('[data-testid="bans-delete-cancel"]')) {
+            e.preventDefault();
+            closeDeleteDialog();
             return;
         }
 
@@ -1093,14 +1156,10 @@
             // No JSON `bans.delete` action exists yet — the canonical
             // write path is the legacy GET handler at the top of
             // page.banlist.php (DeleteBan-gated, RCON cleanup +
-            // hard-delete from :prefix_bans). Confirm + navigate is
-            // the simplest mirror of commslist's Remove flow without
-            // adding a new handler / snapshot / permission-matrix
-            // entry — the in-place row removal lands on the next
-            // page load.
+            // hard-delete from :prefix_bans). Confirm dialog + navigate
+            // mirrors the unban chrome without adding a new handler.
             if (!fallback) return;
-            if (!window.confirm('Permanently delete the ban for "' + name + '"? This cannot be undone.')) return;
-            window.location.href = fallback;
+            openDeleteDialog({ bid: bid, name: name, fallback: fallback });
             return;
         }
 
@@ -1120,9 +1179,20 @@
     document.addEventListener('submit', function (e) {
         var form = /** @type {Element|null} */ (e.target);
         if (!form || !(/** @type {Element} */ (form)).closest) return;
+
+        if (form.matches('[data-testid="bans-delete-form"]')) {
+            e.preventDefault();
+            if (!pendingDelete || !pendingDelete.fallback) return;
+            var delCtx = pendingDelete;
+            var delSubmit = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="bans-delete-submit"]'));
+            setBusy(delSubmit, true);
+            window.location.href = delCtx.fallback;
+            return;
+        }
+
         if (!form.matches('[data-testid="bans-unban-form"]')) return;
         e.preventDefault();
-        if (!pending) return;
+        if (!pendingUnban) return;
 
         var input = reasonInput();
         var reason = input ? input.value.trim() : '';
@@ -1137,7 +1207,7 @@
         }
         clearError();
 
-        var ctx = pending;
+        var ctx = pendingUnban;
         var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="bans-unban-submit"]'));
         setBusy(submitBtn, true);
 
@@ -1171,10 +1241,15 @@
     // so a subsequent click reopens cleanly with the next row's data.
     document.addEventListener('cancel', function (e) {
         var t = /** @type {Element|null} */ (e.target);
-        if (!t || t.id !== 'bans-unban-dialog') return;
-        // Let the native close fire too; we just reset our state.
-        pending = null;
-        clearError();
+        if (!t) return;
+        if (t.id === 'bans-unban-dialog') {
+            pendingUnban = null;
+            clearError();
+            return;
+        }
+        if (t.id === 'bans-delete-dialog') {
+            pendingDelete = null;
+        }
     });
 })();
 </script>

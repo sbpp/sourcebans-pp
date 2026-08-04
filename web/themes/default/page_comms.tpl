@@ -746,6 +746,26 @@
   </form>
 </dialog>
 
+<dialog id="comms-delete-dialog"
+        class="palette"
+        aria-labelledby="comms-delete-dialog-title"
+        data-testid="comms-delete-dialog"
+        hidden
+        style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+  <form method="dialog" data-testid="comms-delete-form">
+    <h2 id="comms-delete-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Delete block</h2>
+    <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+      Delete the block for <strong data-testid="comms-delete-target">this player</strong>? This cannot be undone.
+    </p>
+    <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+      <button type="button" class="btn btn--secondary" data-testid="comms-delete-cancel" value="cancel">Cancel</button>
+      <button type="submit" class="btn btn--danger" data-testid="comms-delete-submit" value="confirm">
+        <i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete block
+      </button>
+    </div>
+  </form>
+</dialog>
+
 {* ============================================================
    #1207 ADM-5/ADM-6 + #1301 — comms row-action wiring (inline
    page-tail JS).
@@ -902,8 +922,12 @@
     }
 
     /** @returns {HTMLDialogElement|null} */
-    function dialog() {
+    function unblockDialog() {
         return /** @type {HTMLDialogElement|null} */ (document.getElementById('comms-unblock-dialog'));
+    }
+    /** @returns {HTMLDialogElement|null} */
+    function deleteDialog() {
+        return /** @type {HTMLDialogElement|null} */ (document.getElementById('comms-delete-dialog'));
     }
     /** @returns {HTMLTextAreaElement|null} */
     function reasonInput() {
@@ -911,7 +935,7 @@
     }
     /** @returns {HTMLElement|null} */
     function errorEl() {
-        var d = dialog();
+        var d = unblockDialog();
         return d ? /** @type {HTMLElement|null} */ (d.querySelector('[data-testid="comms-unblock-error"]')) : null;
     }
     /** @param {string} msg */
@@ -919,7 +943,9 @@
     function clearError() { var e = errorEl(); if (!e) return; e.textContent = ''; e.hidden = true; }
 
     /** @type {{bid: string, name: string, fallback: string, type: string}|null} */
-    var pending = null;
+    var pendingUnblock = null;
+    /** @type {{bid: string, name: string, trigger: HTMLElement}|null} */
+    var pendingDelete = null;
 
     /**
      * @param {string} type
@@ -934,8 +960,8 @@
 
     /** @param {{bid: string, name: string, fallback: string, type: string}} ctx */
     function openUnblockDialog(ctx) {
-        pending = ctx;
-        var d = dialog();
+        pendingUnblock = ctx;
+        var d = unblockDialog();
         if (!d) {
             // Dialog markup missing — fall back to the legacy GET path
             // so the action still works (it now also requires
@@ -968,7 +994,7 @@
     }
 
     function closeUnblockDialog() {
-        var d = dialog();
+        var d = unblockDialog();
         if (!d) return;
         try { d.close(); } catch (_e) { /* not opened modally */ }
         d.setAttribute('hidden', '');
@@ -982,17 +1008,50 @@
             document.querySelectorAll('[data-action="comms-unblock"][disabled], [data-action="comms-unblock"][data-loading="true"]'),
             function (btn) { setBusy(btn, false); }
         );
-        pending = null;
+        pendingUnblock = null;
+    }
+
+    /**
+     * @param {{bid: string, name: string, trigger: HTMLElement}} ctx
+     */
+    function openDeleteDialog(ctx) {
+        pendingDelete = ctx;
+        var d = deleteDialog();
+        if (!d) {
+            toast('error', 'Delete failed', 'Confirm dialog is unavailable. Reload and try again.');
+            return;
+        }
+        var target = d.querySelector('[data-testid="comms-delete-target"]');
+        if (target) target.textContent = ctx.name || ('block #' + ctx.bid);
+        d.removeAttribute('hidden');
+        try { d.showModal(); }
+        catch (_e) { d.setAttribute('open', ''); }
+        var submitBtn = /** @type {HTMLButtonElement|null} */ (d.querySelector('[data-testid="comms-delete-submit"]'));
+        if (submitBtn) {
+            try { submitBtn.focus(); } catch (_e) { /* focus may throw */ }
+        }
+    }
+
+    function closeDeleteDialog() {
+        var d = deleteDialog();
+        if (!d) return;
+        try { d.close(); } catch (_e) { /* not opened modally */ }
+        d.setAttribute('hidden', '');
+        pendingDelete = null;
     }
 
     document.addEventListener('click', function (e) {
         var t = /** @type {Element|null} */ (e.target);
         if (!t || !t.closest) return;
 
-        // Cancel button inside the dialog.
         if (t.closest('[data-testid="comms-unblock-cancel"]')) {
             e.preventDefault();
             closeUnblockDialog();
+            return;
+        }
+        if (t.closest('[data-testid="comms-delete-cancel"]')) {
+            e.preventDefault();
+            closeDeleteDialog();
             return;
         }
 
@@ -1016,19 +1075,7 @@
         }
 
         if (act === 'comms-delete') {
-            if (!window.confirm('Delete the block for "' + name + '"?')) return;
-            setBusy(btn, true);
-            a.call(A.CommsDelete, { bid: Number(bid) }).then(function (r) {
-                if (!r || r.ok === false) {
-                    setBusy(btn, false);
-                    var msg = (r && r.error && r.error.message) || 'Unknown error';
-                    toast('error', 'Delete failed', msg);
-                    return;
-                }
-                rowsForBid(bid).forEach(removeRow);
-                decrementCount();
-                toast('success', 'Block removed', 'The block for ' + name + ' has been deleted.');
-            });
+            openDeleteDialog({ bid: bid, name: name, trigger: btn });
             return;
         }
 
@@ -1046,9 +1093,40 @@
     document.addEventListener('submit', function (e) {
         var form = /** @type {Element|null} */ (e.target);
         if (!form || !(/** @type {Element} */ (form)).closest) return;
+
+        if (form.matches('[data-testid="comms-delete-form"]')) {
+            e.preventDefault();
+            if (!pendingDelete) return;
+            var delCtx = pendingDelete;
+            var delSubmit = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="comms-delete-submit"]'));
+            setBusy(delSubmit, true);
+            setBusy(delCtx.trigger, true);
+            var aDel = api(), ADel = actions();
+            if (!aDel || !ADel) {
+                setBusy(delSubmit, false);
+                setBusy(delCtx.trigger, false);
+                toast('error', 'Delete failed', 'The API client is unavailable. Reload the page and try again.');
+                return;
+            }
+            aDel.call(ADel.CommsDelete, { bid: Number(delCtx.bid) }).then(function (r) {
+                if (!r || r.ok === false) {
+                    setBusy(delSubmit, false);
+                    setBusy(delCtx.trigger, false);
+                    var msg = (r && r.error && r.error.message) || 'Unknown error';
+                    toast('error', 'Delete failed', msg);
+                    return;
+                }
+                rowsForBid(delCtx.bid).forEach(removeRow);
+                decrementCount();
+                closeDeleteDialog();
+                toast('success', 'Block removed', 'The block for ' + delCtx.name + ' has been deleted.');
+            });
+            return;
+        }
+
         if (!form.matches('[data-testid="comms-unblock-form"]')) return;
         e.preventDefault();
-        if (!pending) return;
+        if (!pendingUnblock) return;
 
         var input = reasonInput();
         var reason = input ? input.value.trim() : '';
@@ -1063,7 +1141,7 @@
         }
         clearError();
 
-        var ctx = pending;
+        var ctx = pendingUnblock;
         var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="comms-unblock-submit"]'));
         setBusy(submitBtn, true);
 
@@ -1093,9 +1171,15 @@
 
     document.addEventListener('cancel', function (e) {
         var t = /** @type {Element|null} */ (e.target);
-        if (!t || t.id !== 'comms-unblock-dialog') return;
-        pending = null;
-        clearError();
+        if (!t) return;
+        if (t.id === 'comms-unblock-dialog') {
+            pendingUnblock = null;
+            clearError();
+            return;
+        }
+        if (t.id === 'comms-delete-dialog') {
+            pendingDelete = null;
+        }
     });
 })();
 </script>
