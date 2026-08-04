@@ -80,7 +80,7 @@
     intentionally kept so the heading still gets its bottom gap to
     the first card.
 *}
-<div>
+<div class="page-section">
     <div class="mb-6">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
         <p class="text-sm text-muted m-0 mt-2">Site-wide configuration. Changes apply immediately.</p>

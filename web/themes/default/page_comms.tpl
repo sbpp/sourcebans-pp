@@ -30,7 +30,7 @@
                 of <span class="tabular-nums">{$total_bans|number_format}</span> blocks
             </p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 items-center">
             {* #1230: aria-pressed reflects whether inactive blocks
                are currently being hidden (binary state, not a
                one-shot action). Pair: .btn--secondary[aria-pressed="true"]
@@ -55,14 +55,15 @@
                aria-pressed="{if $is_active_only}true{else}false{/if}"
                href="{$hide_inactive_toggle_url|escape}"
                data-testid="toggle-hide-inactive">
-                <i data-lucide="{if $is_active_only}eye{else}eye-off{/if}"></i>
+                <i data-lucide="{if $is_active_only}eye{else}eye-off{/if}" style="width:14px;height:14px"></i>
                 {if $is_active_only}Show inactive{else}Hide inactive{/if}
             </a>
             {if $can_add_comm}
             <a class="btn btn--primary btn--sm"
                href="index.php?p=admin&amp;c=comms"
                data-testid="comms-add-button">
-                <i data-lucide="plus"></i> Add comm block
+                <i data-lucide="plus" style="width:14px;height:14px"></i>
+                Add block
             </a>
             {/if}
         </div>
@@ -195,16 +196,17 @@
          see (#1363). Same chrome shape as `page_bans.tpl`. *}
     <div class="card" style="overflow:hidden">
         <div class="table-scroll">
-        <table class="table" data-testid="comms-table">
+        <table class="table table--compact" data-testid="comms-table">
             <thead>
                 <tr>
                     <th>Type</th>
                     <th>Player</th>
                     <th>SteamID</th>
-                    <th class="col-length col-tier-3">Length</th>
+                    <th class="col-tier-2">Reason</th>
                     <th class="col-tier-2">Server</th>
                     <th class="col-admin col-tier-2">Admin</th>
-                    <th class="col-tier-3">Started</th>
+                    <th class="col-length col-tier-3">Length</th>
+                    <th class="col-tier-3">Invoked on</th>
                     <th class="col-status">Status</th>
                     <th class="col-actions" aria-label="Actions"></th>
                 </tr>
@@ -224,93 +226,76 @@
                             </span>
                         </td>
                         <td>
-                            <div class="flex items-center gap-3" style="min-width:0">
+                            {* items-start: keep the avatar top-aligned with the
+                               player name when the comment disclosure expands
+                               (items-center would pin it to the vertical middle
+                               of the tall cell). *}
+                            <div class="flex items-start gap-3" style="min-width:0">
                                 <span class="avatar"
-                                      style="width:28px;height:28px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:10px">
+                                      style="width:22px;height:22px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:9px">
                                     {$comm.name|truncate:2:'':true|upper|escape}
                                 </span>
-                                <div style="min-width:0">
-                                    {* Drawer parity with the banlist desktop row (#COMMS-DRAWER):
-                                       wrap the player nickname in an anchor whose `data-drawer-cid`
-                                       opens the player-detail drawer (theme.js click delegate). The
-                                       `href` is the JS-off fallback: navigates back to the unfiltered
-                                       commslist (Smarty already preserves the `?p=commslist&id=…`
-                                       shape on the URL bar but the page handler doesn't focus the
-                                       row — same documented degradation as the banlist's
-                                       `?p=banlist&id=…` fallback). NO `onclick="event.stopPropagation()"`:
-                                       the drawer click delegate listens on bubble, so stopping
-                                       propagation would silently fall through to native href
-                                       navigation and bypass the drawer entirely (#1124 Slice 6
-                                       found this on the banlist; same shape applies here). *}
-                                    <a class="font-medium truncate"
-                                       href="?p=commslist&amp;id={$comm.cid}"
-                                       data-drawer-cid="{$comm.cid}"
-                                       data-testid="drawer-trigger">{if $comm.name}{$comm.name|escape}{else}<i class="text-faint">no nickname</i>{/if}</a>
+                                <div style="min-width:0;flex:1">
+                                    {* Player name + comment chip share one line
+                                       (`.ban-player-cell__head`) so comment presence does
+                                       not add a second line of row height. Drawer parity
+                                       with the banlist desktop row (#COMMS-DRAWER):
+                                       `data-drawer-cid` opens the player-detail drawer.
+                                       NO `onclick="event.stopPropagation()"` — the drawer
+                                       click delegate listens on bubble. *}
+                                    <div class="ban-player-cell__head">
+                                        <a class="font-medium ban-player-cell__name"
+                                           href="?p=commslist&amp;id={$comm.cid}"
+                                           data-drawer-cid="{$comm.cid}"
+                                           data-testid="drawer-trigger">{if $comm.name}{$comm.name|escape}{else}<i class="text-faint">no nickname</i>{/if}</a>
+                                        {if $view_comments && $comm.commentdata != "None" && isset($comm.commentdata) && $comm.commentdata|@count > 0}
+                                        <details class="ban-comments-inline"
+                                                 data-testid="comm-comments-inline"
+                                                 data-cid="{$comm.cid}">
+                                          <summary class="ban-comments-inline__summary"
+                                                   data-testid="comm-comments-toggle"
+                                                   title="{$comm.commentdata|@count} comment{if $comm.commentdata|@count != 1}s{/if}"
+                                                   aria-label="{$comm.commentdata|@count} comment{if $comm.commentdata|@count != 1}s{/if}">
+                                            <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
+                                            <span class="tabular-nums">{$comm.commentdata|@count}</span>
+                                          </summary>
+                                          <ul class="ban-comments-inline__list" data-testid="comm-comments-list">
+                                            {foreach from=$comm.commentdata item=com}
+                                            <li class="ban-comments-inline__item" data-testid="comm-comment-item">
+                                              <div class="ban-comments-inline__meta">
+                                                {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the unban-meta gate below). *}
+                                                {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.comname)}<strong>{$com.comname|escape}</strong>{else}<i class="text-faint">deleted admin</i>{/if}
+                                                <span class="text-faint">&middot;</span>
+                                                <span class="text-xs text-faint tabular-nums">{$com.added}</span>
+                                              </div>
+                                              {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.commslist.php $commentres loop. Same provenance + safety as the banlist disclosure. *}
+                                              <div class="ban-comments-inline__text" data-testid="comm-comment-text">{$com.commenttxt nofilter}</div>
+                                              {if !empty($com.edittime)}
+                                              <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
+                                              {/if}
+                                            </li>
+                                            {/foreach}
+                                          </ul>
+                                        </details>
+                                        {/if}
+                                    </div>
                                     {* #1315: surface unban-reason / removed-by line below the
                                        player nickname when the row was lifted by an admin
-                                       (state == 'unmuted'). Higher-priority than the banlist
-                                       equivalent because the commslist has no drawer to fall
-                                       back to (no `data-drawer-href` on `<tr data-testid="comm-row">`).
-                                       Gated on $hideadminname so anonymous viewers under a
-                                       hidden-admins config don't get the admin name leaked
-                                       here either. *}
+                                       (state == 'unmuted'). Stays below the name+chip head
+                                       so lift meta does not fight the comment chip. Gated
+                                       on $hideadminname so anonymous viewers under a
+                                       hidden-admins config don't get the admin name leaked. *}
                                     {if $comm.state == 'unmuted' && !$hideadminname && (!empty($comm.ureason) || !empty($comm.removedby))}
                                         <div class="text-xs text-faint mt-1" data-testid="comm-unban-meta">
                                             {if !empty($comm.removedby)}Lifted by <span class="font-medium">{$comm.removedby|escape}</span>{if !empty($comm.ureason)}: {/if}{/if}
-                                            {* `title=` carries the full lift-reason so a long
-                                               reason that was cropped on the desktop table reads
-                                               in full on hover. Same shape as banlist's
-                                               ban-unban-reason span (issue 5). *}
                                             {if !empty($comm.ureason)}<span data-testid="comm-unban-reason" title="{$comm.ureason|escape}">{$comm.ureason|escape}</span>{/if}
                                         </div>
-                                    {/if}
-                                    {* #BANLIST-COMMENTS sister-fix for commslist: this surface
-                                       has the SAME regression as the banlist (page handler
-                                       builds `commentdata` per row but the v2.0 rewrite of
-                                       this template never re-rendered it — see the
-                                       `commslist`-side rationale in AGENTS.md "Per-ban
-                                       comments visibility"). The commslist regression is
-                                       worse than the banlist's because there's no drawer
-                                       fallback (no `data-drawer-href` on `<tr data-testid="comm-row">`),
-                                       so the disclosure here is the ONLY on-page way for
-                                       admins to see the comment text. Same structure +
-                                       gating contract as the banlist disclosure. *}
-                                    {if $view_comments && $comm.commentdata != "None" && isset($comm.commentdata) && $comm.commentdata|@count > 0}
-                                    <details class="ban-comments-inline mt-1"
-                                             data-testid="comm-comments-inline"
-                                             data-cid="{$comm.cid}">
-                                      <summary class="ban-comments-inline__summary"
-                                               data-testid="comm-comments-toggle"
-                                               title="{$comm.commentdata|@count} comment{if $comm.commentdata|@count != 1}s{/if} on this comm-block">
-                                        <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
-                                        <span class="tabular-nums">{$comm.commentdata|@count}</span>
-                                        <span class="ban-comments-inline__label">comment{if $comm.commentdata|@count != 1}s{/if}</span>
-                                      </summary>
-                                      <ul class="ban-comments-inline__list" data-testid="comm-comments-list">
-                                        {foreach from=$comm.commentdata item=com}
-                                        <li class="ban-comments-inline__item" data-testid="comm-comment-item">
-                                          <div class="ban-comments-inline__meta">
-                                            {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the unban-meta gate above). *}
-                                            {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.comname)}<strong>{$com.comname|escape}</strong>{else}<i class="text-faint">deleted admin</i>{/if}
-                                            <span class="text-faint">&middot;</span>
-                                            <span class="text-xs text-faint tabular-nums">{$com.added}</span>
-                                          </div>
-                                          {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.commslist.php $commentres loop. Same provenance + safety as the banlist disclosure (template comment up-thread). *}
-                                          <div class="ban-comments-inline__text" data-testid="comm-comment-text">{$com.commenttxt nofilter}</div>
-                                          {if !empty($com.edittime)}
-                                          <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
-                                          {/if}
-                                        </li>
-                                        {/foreach}
-                                      </ul>
-                                    </details>
                                     {/if}
                                 </div>
                             </div>
                         </td>
                         <td class="font-mono text-xs text-muted">{$comm.steam|escape}</td>
-                        <td class="col-length col-tier-3 tabular-nums text-muted"
-                            {if !empty($comm.length_human)}title="{$comm.length_human|escape}"{/if}>{$comm.length_human|escape}</td>
+                        <td class="col-tier-2 text-muted">{if !empty($comm.reason)}{$comm.reason|escape}{else}<span class="text-faint">—</span>{/if}</td>
                         <td class="col-tier-2 text-muted">{$comm.sname|escape}</td>
                         <td class="col-admin col-tier-2 text-muted">
                             {if $comm.admin}
@@ -319,6 +304,8 @@
                                 <span class="text-faint">Unknown</span>
                             {/if}
                         </td>
+                        <td class="col-length col-tier-3 tabular-nums text-muted"
+                            {if !empty($comm.length_human)}title="{$comm.length_human|escape}"{/if}>{$comm.length_human|escape}</td>
                         <td class="col-tier-3 text-muted text-xs">
                             <time datetime="{$comm.started_iso|escape}">{$comm.started_human|escape}</time>
                         </td>
@@ -326,13 +313,14 @@
                             <span class="pill pill--{$comm.state}" style="text-transform:capitalize">{$comm.state|escape}</span>
                         </td>
                         <td class="col-actions">
-                            <div class="row-actions">
+                            <div class="row-actions row-actions--icons">
                                 {if $can_edit_comm}
-                                    <a class="btn btn--ghost btn--sm"
+                                    <a class="btn btn--ghost btn--icon btn--sm"
                                        href="{$comm.edit_url|escape}"
-                                       data-testid="row-action-edit">
-                                        <i data-lucide="pencil" style="width:13px;height:13px"></i>
-                                        Edit
+                                       data-testid="row-action-edit"
+                                       data-tooltip="Edit"
+                                       aria-label="Edit block for {$comm.name|escape}">
+                                        <i data-lucide="pencil" style="width:14px;height:14px"></i>
                                     </a>
                                 {/if}
                                 {if $can_unmute_gag && $comm.unmute_url}
@@ -343,46 +331,59 @@
                                        toast fires). The href fallback preserves the
                                        legacy GET path for no-JS callers + third-party
                                        themes that haven't migrated. *}
+                                    {if $comm.type == 'mute'}
+                                        {assign var=_lift_label value='Unmute'}
+                                    {elseif $comm.type == 'gag'}
+                                        {assign var=_lift_label value='Ungag'}
+                                    {else}
+                                        {assign var=_lift_label value='Lift block'}
+                                    {/if}
                                     <button type="button"
-                                            class="btn btn--secondary btn--sm"
+                                            class="btn btn--secondary btn--icon btn--sm"
                                             data-testid="row-action-unmute"
                                             data-action="comms-unblock"
                                             data-bid="{$comm.cid}"
                                             data-name="{$comm.name|escape}"
-                                            data-fallback-href="{$comm.unmute_url|escape}">
-                                        <i data-lucide="check" style="width:13px;height:13px"></i>
-                                        {if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}
+                                            data-fallback-href="{$comm.unmute_url|escape}"
+                                            data-tooltip="{$_lift_label|escape}"
+                                            aria-label="{$_lift_label|escape} {$comm.name|escape}">
+                                        <i data-lucide="check" style="width:14px;height:14px"></i>
                                     </button>
                                 {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired') && !$comm.has_active_sibling}
                                     {* #1207 ADM-6: when a row is no longer active, swap the
                                        lift action for Re-apply. Anchor goes through the
-                                       admin-comms add form's `rebanid` flow (which calls
-                                       comms.prepare_reblock to hydrate every field) so we
-                                       don't need a separate "re-block" handler. The
+                                       admin-comms add form's `rebanid` flow. The
                                        `!has_active_sibling` clause hides the affordance
                                        when the player already has an active block of the
-                                       same type — `comms.add` would 4xx as
-                                       `already_blocked` against the OTHER row, even
-                                       though this row visibly says unmuted/expired (same
-                                       shape as the banlist's `has_active_sibling` gate). *}
-                                    <a class="btn btn--secondary btn--sm"
+                                       same type. *}
+                                    <a class="btn btn--secondary btn--icon btn--sm"
                                        href="index.php?p=admin&amp;c=comms&amp;rebanid={$comm.cid}"
-                                       data-testid="row-action-reapply">
-                                        <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
-                                        Re-apply
+                                       data-testid="row-action-reapply"
+                                       data-tooltip="Re-apply"
+                                       aria-label="Re-apply block for {$comm.name|escape}">
+                                        <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
                                     </a>
+                                {/if}
+                                {if !empty($comm.steam)}
+                                <button class="btn btn--ghost btn--icon btn--sm" type="button"
+                                        data-copy="{$comm.steam|escape}"
+                                        data-testid="row-action-copy-steam"
+                                        data-tooltip="Copy SteamID"
+                                        aria-label="Copy SteamID">
+                                    <i data-lucide="copy" style="width:14px;height:14px"></i>
+                                </button>
                                 {/if}
                                 {if $can_delete_comm}
                                     <button type="button"
-                                            class="btn btn--ghost btn--sm"
+                                            class="btn btn--ghost btn--icon btn--sm"
                                             data-testid="row-action-delete"
                                             data-action="comms-delete"
                                             data-bid="{$comm.cid}"
                                             data-name="{$comm.name|escape}"
                                             data-fallback-href="{$comm.delete_url|escape}"
-                                            style="color:var(--danger)">
-                                        <i data-lucide="trash-2" style="width:13px;height:13px"></i>
-                                        Remove
+                                            data-tooltip="Remove"
+                                            aria-label="Remove block for {$comm.name|escape}">
+                                        <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
                                     </button>
                                 {/if}
                             </div>
@@ -397,7 +398,7 @@
                        `can_add_comm`); otherwise it stays "Clear filters". *}
                     <tr>
                         {if $is_filtered}
-                        <td colspan="9"
+                        <td colspan="10"
                             style="padding:0"
                             data-testid="comms-empty"
                             data-filtered="true">
@@ -418,7 +419,7 @@
                             </div>
                         </td>
                         {else}
-                        <td colspan="9"
+                        <td colspan="10"
                             style="padding:0"
                             data-testid="comms-empty"
                             data-filtered="false">
@@ -512,48 +513,67 @@
                         </div>
                         <i data-lucide="chevron-right"></i>
                     </a>
-                    {if $can_edit_comm || ($can_unmute_gag && $comm.unmute_url) || ($can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')) || $can_delete_comm}
-                    <div class="row-actions ban-card__actions">
+                    {if $can_edit_comm || ($can_unmute_gag && $comm.unmute_url) || ($can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')) || $can_delete_comm || !empty($comm.steam)}
+                    <div class="row-actions row-actions--icons ban-card__actions">
                         {if $can_edit_comm}
-                            <a class="btn btn--ghost btn--sm"
+                            <a class="btn btn--ghost btn--icon btn--sm"
                                href="{$comm.edit_url|escape}"
-                               data-testid="row-action-edit-mobile">
-                                <i data-lucide="pencil" style="width:13px;height:13px"></i>
-                                Edit
+                               data-testid="row-action-edit-mobile"
+                               data-tooltip="Edit"
+                               aria-label="Edit block for {$comm.name|escape}">
+                                <i data-lucide="pencil" style="width:14px;height:14px"></i>
                             </a>
                         {/if}
                         {if $can_unmute_gag && $comm.unmute_url}
+                            {if $comm.type == 'mute'}
+                                {assign var=_lift_label_m value='Unmute'}
+                            {elseif $comm.type == 'gag'}
+                                {assign var=_lift_label_m value='Ungag'}
+                            {else}
+                                {assign var=_lift_label_m value='Lift block'}
+                            {/if}
                             <button type="button"
-                                    class="btn btn--secondary btn--sm"
+                                    class="btn btn--secondary btn--icon btn--sm"
                                     data-testid="row-action-unmute-mobile"
                                     data-action="comms-unblock"
                                     data-bid="{$comm.cid}"
                                     data-name="{$comm.name|escape}"
-                                    data-fallback-href="{$comm.unmute_url|escape}">
-                                <i data-lucide="check" style="width:13px;height:13px"></i>
-                                {if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}
+                                    data-fallback-href="{$comm.unmute_url|escape}"
+                                    data-tooltip="{$_lift_label_m|escape}"
+                                    aria-label="{$_lift_label_m|escape} {$comm.name|escape}">
+                                <i data-lucide="check" style="width:14px;height:14px"></i>
                             </button>
                         {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired') && !$comm.has_active_sibling}
                             {* Same `has_active_sibling` gate as the desktop
                                variant — see the rationale block above. *}
-                            <a class="btn btn--secondary btn--sm"
+                            <a class="btn btn--secondary btn--icon btn--sm"
                                href="index.php?p=admin&amp;c=comms&amp;rebanid={$comm.cid}"
-                               data-testid="row-action-reapply-mobile">
-                                <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
-                                Re-apply
+                               data-testid="row-action-reapply-mobile"
+                               data-tooltip="Re-apply"
+                               aria-label="Re-apply block for {$comm.name|escape}">
+                                <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
                             </a>
+                        {/if}
+                        {if !empty($comm.steam)}
+                        <button class="btn btn--ghost btn--icon btn--sm" type="button"
+                                data-copy="{$comm.steam|escape}"
+                                data-testid="row-action-copy-steam-mobile"
+                                data-tooltip="Copy SteamID"
+                                aria-label="Copy SteamID">
+                            <i data-lucide="copy" style="width:14px;height:14px"></i>
+                        </button>
                         {/if}
                         {if $can_delete_comm}
                             <button type="button"
-                                    class="btn btn--ghost btn--sm"
+                                    class="btn btn--ghost btn--icon btn--sm"
                                     data-testid="row-action-delete-mobile"
                                     data-action="comms-delete"
                                     data-bid="{$comm.cid}"
                                     data-name="{$comm.name|escape}"
                                     data-fallback-href="{$comm.delete_url|escape}"
-                                    style="color:var(--danger)">
-                                <i data-lucide="trash-2" style="width:13px;height:13px"></i>
-                                Remove
+                                    data-tooltip="Remove"
+                                    aria-label="Remove block for {$comm.name|escape}">
+                                <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
                             </button>
                         {/if}
                     </div>
@@ -710,6 +730,26 @@
   </form>
 </dialog>
 
+<dialog id="comms-delete-dialog"
+        class="palette"
+        aria-labelledby="comms-delete-dialog-title"
+        data-testid="comms-delete-dialog"
+        hidden
+        style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+  <form method="dialog" data-testid="comms-delete-form">
+    <h2 id="comms-delete-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Delete block</h2>
+    <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+      Delete the block for <strong data-testid="comms-delete-target">this player</strong>? This cannot be undone.
+    </p>
+    <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+      <button type="button" class="btn btn--secondary" data-testid="comms-delete-cancel" value="cancel">Cancel</button>
+      <button type="submit" class="btn btn--danger" data-testid="comms-delete-submit" value="confirm">
+        <i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete block
+      </button>
+    </div>
+  </form>
+</dialog>
+
 {* ============================================================
    #1207 ADM-5/ADM-6 + #1301 — comms row-action wiring (inline
    page-tail JS).
@@ -835,12 +875,15 @@
             row.querySelectorAll('[data-action="comms-unblock"]'),
             function (btn) {
                 var bid = btn.getAttribute('data-bid') || '';
+                var name = btn.getAttribute('data-name') || '';
                 var a = document.createElement('a');
-                a.className = 'btn btn--secondary btn--sm';
+                a.className = 'btn btn--secondary btn--icon btn--sm';
                 var isMobile = (btn.getAttribute('data-testid') || '').indexOf('mobile') !== -1;
                 a.setAttribute('data-testid', isMobile ? 'row-action-reapply-mobile' : 'row-action-reapply');
                 a.setAttribute('href', 'index.php?p=admin&c=comms&rebanid=' + encodeURIComponent(bid));
-                a.innerHTML = '<i data-lucide="rotate-ccw" style="width:13px;height:13px"></i> Re-apply';
+                a.setAttribute('data-tooltip', 'Re-apply');
+                a.setAttribute('aria-label', name ? ('Re-apply block for ' + name) : 'Re-apply');
+                a.innerHTML = '<i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>';
                 btn.parentNode.replaceChild(a, btn);
             }
         );
@@ -863,8 +906,12 @@
     }
 
     /** @returns {HTMLDialogElement|null} */
-    function dialog() {
+    function unblockDialog() {
         return /** @type {HTMLDialogElement|null} */ (document.getElementById('comms-unblock-dialog'));
+    }
+    /** @returns {HTMLDialogElement|null} */
+    function deleteDialog() {
+        return /** @type {HTMLDialogElement|null} */ (document.getElementById('comms-delete-dialog'));
     }
     /** @returns {HTMLTextAreaElement|null} */
     function reasonInput() {
@@ -872,7 +919,7 @@
     }
     /** @returns {HTMLElement|null} */
     function errorEl() {
-        var d = dialog();
+        var d = unblockDialog();
         return d ? /** @type {HTMLElement|null} */ (d.querySelector('[data-testid="comms-unblock-error"]')) : null;
     }
     /** @param {string} msg */
@@ -880,7 +927,9 @@
     function clearError() { var e = errorEl(); if (!e) return; e.textContent = ''; e.hidden = true; }
 
     /** @type {{bid: string, name: string, fallback: string, type: string}|null} */
-    var pending = null;
+    var pendingUnblock = null;
+    /** @type {{bid: string, name: string, trigger: HTMLElement}|null} */
+    var pendingDelete = null;
 
     /**
      * @param {string} type
@@ -895,8 +944,8 @@
 
     /** @param {{bid: string, name: string, fallback: string, type: string}} ctx */
     function openUnblockDialog(ctx) {
-        pending = ctx;
-        var d = dialog();
+        pendingUnblock = ctx;
+        var d = unblockDialog();
         if (!d) {
             // Dialog markup missing — fall back to the legacy GET path
             // so the action still works (it now also requires
@@ -929,7 +978,7 @@
     }
 
     function closeUnblockDialog() {
-        var d = dialog();
+        var d = unblockDialog();
         if (!d) return;
         try { d.close(); } catch (_e) { /* not opened modally */ }
         d.setAttribute('hidden', '');
@@ -943,17 +992,50 @@
             document.querySelectorAll('[data-action="comms-unblock"][disabled], [data-action="comms-unblock"][data-loading="true"]'),
             function (btn) { setBusy(btn, false); }
         );
-        pending = null;
+        pendingUnblock = null;
+    }
+
+    /**
+     * @param {{bid: string, name: string, trigger: HTMLElement}} ctx
+     */
+    function openDeleteDialog(ctx) {
+        pendingDelete = ctx;
+        var d = deleteDialog();
+        if (!d) {
+            toast('error', 'Delete failed', 'Confirm dialog is unavailable. Reload and try again.');
+            return;
+        }
+        var target = d.querySelector('[data-testid="comms-delete-target"]');
+        if (target) target.textContent = ctx.name || ('block #' + ctx.bid);
+        d.removeAttribute('hidden');
+        try { d.showModal(); }
+        catch (_e) { d.setAttribute('open', ''); }
+        var submitBtn = /** @type {HTMLButtonElement|null} */ (d.querySelector('[data-testid="comms-delete-submit"]'));
+        if (submitBtn) {
+            try { submitBtn.focus(); } catch (_e) { /* focus may throw */ }
+        }
+    }
+
+    function closeDeleteDialog() {
+        var d = deleteDialog();
+        if (!d) return;
+        try { d.close(); } catch (_e) { /* not opened modally */ }
+        d.setAttribute('hidden', '');
+        pendingDelete = null;
     }
 
     document.addEventListener('click', function (e) {
         var t = /** @type {Element|null} */ (e.target);
         if (!t || !t.closest) return;
 
-        // Cancel button inside the dialog.
         if (t.closest('[data-testid="comms-unblock-cancel"]')) {
             e.preventDefault();
             closeUnblockDialog();
+            return;
+        }
+        if (t.closest('[data-testid="comms-delete-cancel"]')) {
+            e.preventDefault();
+            closeDeleteDialog();
             return;
         }
 
@@ -977,19 +1059,7 @@
         }
 
         if (act === 'comms-delete') {
-            if (!window.confirm('Delete the block for "' + name + '"?')) return;
-            setBusy(btn, true);
-            a.call(A.CommsDelete, { bid: Number(bid) }).then(function (r) {
-                if (!r || r.ok === false) {
-                    setBusy(btn, false);
-                    var msg = (r && r.error && r.error.message) || 'Unknown error';
-                    toast('error', 'Delete failed', msg);
-                    return;
-                }
-                rowsForBid(bid).forEach(removeRow);
-                decrementCount();
-                toast('success', 'Block removed', 'The block for ' + name + ' has been deleted.');
-            });
+            openDeleteDialog({ bid: bid, name: name, trigger: btn });
             return;
         }
 
@@ -1007,9 +1077,40 @@
     document.addEventListener('submit', function (e) {
         var form = /** @type {Element|null} */ (e.target);
         if (!form || !(/** @type {Element} */ (form)).closest) return;
+
+        if (form.matches('[data-testid="comms-delete-form"]')) {
+            e.preventDefault();
+            if (!pendingDelete) return;
+            var delCtx = pendingDelete;
+            var delSubmit = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="comms-delete-submit"]'));
+            setBusy(delSubmit, true);
+            setBusy(delCtx.trigger, true);
+            var aDel = api(), ADel = actions();
+            if (!aDel || !ADel) {
+                setBusy(delSubmit, false);
+                setBusy(delCtx.trigger, false);
+                toast('error', 'Delete failed', 'The API client is unavailable. Reload the page and try again.');
+                return;
+            }
+            aDel.call(ADel.CommsDelete, { bid: Number(delCtx.bid) }).then(function (r) {
+                if (!r || r.ok === false) {
+                    setBusy(delSubmit, false);
+                    setBusy(delCtx.trigger, false);
+                    var msg = (r && r.error && r.error.message) || 'Unknown error';
+                    toast('error', 'Delete failed', msg);
+                    return;
+                }
+                rowsForBid(delCtx.bid).forEach(removeRow);
+                decrementCount();
+                closeDeleteDialog();
+                toast('success', 'Block removed', 'The block for ' + delCtx.name + ' has been deleted.');
+            });
+            return;
+        }
+
         if (!form.matches('[data-testid="comms-unblock-form"]')) return;
         e.preventDefault();
-        if (!pending) return;
+        if (!pendingUnblock) return;
 
         var input = reasonInput();
         var reason = input ? input.value.trim() : '';
@@ -1024,7 +1125,7 @@
         }
         clearError();
 
-        var ctx = pending;
+        var ctx = pendingUnblock;
         var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="comms-unblock-submit"]'));
         setBusy(submitBtn, true);
 
@@ -1054,9 +1155,15 @@
 
     document.addEventListener('cancel', function (e) {
         var t = /** @type {Element|null} */ (e.target);
-        if (!t || t.id !== 'comms-unblock-dialog') return;
-        pending = null;
-        clearError();
+        if (!t) return;
+        if (t.id === 'comms-unblock-dialog') {
+            pendingUnblock = null;
+            clearError();
+            return;
+        }
+        if (t.id === 'comms-delete-dialog') {
+            pendingDelete = null;
+        }
     });
 })();
 </script>

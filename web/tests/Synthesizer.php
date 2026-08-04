@@ -70,49 +70,52 @@ final class Synthesizer
      */
     public const SCALES = [
         'small' => [
-            'players'     => 80,
-            'bans'        => 30,
-            'comms'       => 10,
-            'servers'     => 5,
-            'admins'      => 5,
-            'groups'      => 3,
-            'banlog'      => 50,
-            'submissions' => 10,
-            'protests'    => 5,
-            'comments'    => 30,
-            'demos'       => 15,
-            'notes'       => 15,
-            'audit'       => 80,
+            'players'            => 80,
+            'bans'               => 30,
+            'comms'              => 10,
+            'servers'            => 5,
+            'admins'             => 5,
+            'groups'             => 3,
+            'server_org_groups'  => 3,
+            'banlog'             => 50,
+            'submissions'        => 10,
+            'protests'           => 5,
+            'comments'           => 30,
+            'demos'              => 15,
+            'notes'              => 15,
+            'audit'              => 80,
         ],
         'medium' => [
-            'players'     => 400,
-            'bans'        => 200,
-            'comms'       => 100,
-            'servers'     => 8,
-            'admins'      => 8,
-            'groups'      => 4,
-            'banlog'      => 400,
-            'submissions' => 60,
-            'protests'    => 25,
-            'comments'    => 200,
-            'demos'       => 80,
-            'notes'       => 120,
-            'audit'       => 600,
+            'players'            => 400,
+            'bans'               => 200,
+            'comms'              => 100,
+            'servers'            => 8,
+            'admins'             => 8,
+            'groups'             => 4,
+            'server_org_groups'  => 4,
+            'banlog'             => 400,
+            'submissions'        => 60,
+            'protests'           => 25,
+            'comments'           => 200,
+            'demos'              => 80,
+            'notes'              => 120,
+            'audit'              => 600,
         ],
         'large' => [
-            'players'     => 3000,
-            'bans'        => 2000,
-            'comms'       => 800,
-            'servers'     => 12,
-            'admins'      => 12,
-            'groups'      => 5,
-            'banlog'      => 4000,
-            'submissions' => 400,
-            'protests'    => 150,
-            'comments'    => 1500,
-            'demos'       => 800,
-            'notes'       => 800,
-            'audit'       => 5000,
+            'players'            => 3000,
+            'bans'               => 2000,
+            'comms'              => 800,
+            'servers'            => 12,
+            'admins'             => 12,
+            'groups'             => 5,
+            'server_org_groups'  => 5,
+            'banlog'             => 4000,
+            'submissions'        => 400,
+            'protests'           => 150,
+            'comments'           => 1500,
+            'demos'              => 800,
+            'notes'              => 800,
+            'audit'              => 5000,
         ],
     ];
 
@@ -153,8 +156,16 @@ final class Synthesizer
     private array $adminAids = [];
     /** @var list<int> */
     private array $groupGids = [];
+    /** Type=3 org groups in `:prefix_groups` (Server groups UI). @var list<int> */
+    private array $serverOrgGids = [];
     /** @var list<int> */
     private array $srvGroupIds = [];
+    /** Parallel to `$srvGroupIds` — `:prefix_srvgroups.name` for admins.srv_group. @var list<string> */
+    private array $srvGroupNames = [];
+    /** @var list<string> */
+    private array $srvGroupFlags = [];
+    /** Baseline `admin/admin` aid (usually 1). */
+    private int $ownerAid = 0;
     /** @var list<int> */
     private array $serverSids = [];
     /** @var list<int> */
@@ -247,6 +258,7 @@ final class Synthesizer
 
         $counts = [];
         $counts['groups']                = $this->insertGroups();
+        $counts['server_org_groups']     = $this->insertServerOrgGroups();
         $counts['srvgroups']             = $this->insertSrvGroups();
         $counts['admins']                = $this->insertAdmins();
         $counts['servers']               = $this->insertServers();
@@ -328,6 +340,7 @@ final class Synthesizer
             DB_PREFIX
         ));
         $stmt->execute(['admin', 'STEAM_0:0:0', $hash, 'admin@example.test', 16777216]);
+        $this->ownerAid = (int) $this->pdo->lastInsertId();
     }
 
     private function loadModIds(): void
@@ -554,30 +567,68 @@ final class Synthesizer
         return $count;
     }
 
+    private function insertServerOrgGroups(): int
+    {
+        // Server groups (`:prefix_groups` WHERE type = 3) — the
+        // "Server groups" admin UI section. Distinct from
+        // `:prefix_srvgroups` (SourceMod flag groups) and type=1 web
+        // groups. `servers_groups.group_id` points here.
+        $defs = [
+            ['name' => 'EU Cluster',   'flags' => 0],
+            ['name' => 'NA Cluster',   'flags' => 0],
+            ['name' => 'Competitive',  'flags' => 0],
+            ['name' => 'Scrim / Pub',  'flags' => 0],
+            ['name' => 'Event / LAN',  'flags' => 0],
+        ];
+        $want = min((int) ($this->scale['server_org_groups'] ?? 3), count($defs));
+        $stmt = $this->pdo->prepare(sprintf(
+            'INSERT INTO `%s_groups` (`type`, `name`, `flags`) VALUES (3, ?, ?)',
+            DB_PREFIX
+        ));
+        for ($i = 0; $i < $want; $i++) {
+            $stmt->execute([$defs[$i]['name'], $defs[$i]['flags']]);
+            $this->serverOrgGids[] = (int) $this->pdo->lastInsertId();
+        }
+        return $want;
+    }
+
     private function insertSrvGroups(): int
     {
         $defs = [
-            ['name' => 'sm_root',   'flags' => 'z',  'immunity' => 100],
-            ['name' => 'sm_admin',  'flags' => 'bcdefijklmpq', 'immunity' => 50],
-            ['name' => 'sm_mod',    'flags' => 'bdjkm', 'immunity' => 25],
+            ['name' => 'sm_root',   'flags' => 'z',  'immunity' => 100, 'immune' => ''],
+            ['name' => 'sm_admin',  'flags' => 'bcdefijklmpq', 'immunity' => 50, 'immune' => 'sm_mod'],
+            ['name' => 'sm_mod',    'flags' => 'bdjkm', 'immunity' => 25, 'immune' => ''],
         ];
         $stmt = $this->pdo->prepare(sprintf(
             'INSERT INTO `%s_srvgroups` (`immunity`, `flags`, `name`, `groups_immune`) VALUES (?, ?, ?, ?)',
             DB_PREFIX
         ));
         foreach ($defs as $g) {
-            $stmt->execute([$g['immunity'], $g['flags'], $g['name'], ' ']);
-            $this->srvGroupIds[] = (int) $this->pdo->lastInsertId();
+            $immune = $g['immune'] !== '' ? $g['immune'] : ' ';
+            $stmt->execute([$g['immunity'], $g['flags'], $g['name'], $immune]);
+            $this->srvGroupIds[]   = (int) $this->pdo->lastInsertId();
+            $this->srvGroupNames[] = $g['name'];
+            $this->srvGroupFlags[] = $g['flags'];
         }
         return count($defs);
     }
 
     private function insertAdmins(): int
     {
-        // Synth admins beyond the seeded admin/admin row. Each one gets a
-        // tapered group + a small extraflags bonus so the admin list
-        // shows mixed perm masks. All passwords are bcrypt of "admin"
-        // so a dev can log in as any of them with the same password.
+        // Owner is always an actor so bans/comms/audit show the logged-in
+        // admin's name on a realistic share of rows.
+        if ($this->ownerAid > 0) {
+            $this->adminAids[] = $this->ownerAid;
+            if ($this->srvGroupNames !== []) {
+                $upd = $this->pdo->prepare(sprintf(
+                    'UPDATE `%s_admins` SET `srv_group` = ?, `srv_flags` = ?, `immunity` = 100 WHERE `aid` = ?',
+                    DB_PREFIX
+                ));
+                $upd->execute([$this->srvGroupNames[0], $this->srvGroupFlags[0], $this->ownerAid]);
+            }
+        }
+
+        // Synth admins beyond admin/admin. Passwords are bcrypt of "admin".
         $names = [
             'sentinel',
             'fragmaster',
@@ -596,8 +647,9 @@ final class Synthesizer
         $count = min($this->scale['admins'], count($names));
         $stmt  = $this->pdo->prepare(sprintf(
             'INSERT INTO `%s_admins`
-                (`user`, `authid`, `password`, `gid`, `email`, `validate`, `extraflags`, `immunity`, `lastvisit`)
-             VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?)',
+                (`user`, `authid`, `password`, `gid`, `email`, `validate`, `extraflags`,
+                 `immunity`, `srv_group`, `srv_flags`, `lastvisit`)
+             VALUES (?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)',
             DB_PREFIX
         ));
         $hash = password_hash('admin', PASSWORD_BCRYPT);
@@ -605,6 +657,13 @@ final class Synthesizer
         for ($i = 0; $i < $count; $i++) {
             $name      = $names[$i];
             $gid       = $this->groupGids[$i % count($this->groupGids)];
+            $sgIdx     = $this->srvGroupNames === [] ? -1 : ($i % count($this->srvGroupNames));
+            $srvGroup  = $sgIdx >= 0 ? $this->srvGroupNames[$sgIdx] : null;
+            $srvFlags  = $sgIdx >= 0 ? $this->srvGroupFlags[$sgIdx] : null;
+            // ~1 in 4 carry individual SM flags on top of the group.
+            if ($srvFlags !== null && mt_rand(0, 3) === 0) {
+                $srvFlags .= 'o';
+            }
             $extra     = mt_rand(0, 3) === 0 ? 16777216 : 0; // ~25% Owner-flagged
             $immunity  = mt_rand(0, 99);
             $lastvisit = $this->now - mt_rand(60, 60 * 60 * 24 * 30);
@@ -616,6 +675,8 @@ final class Synthesizer
                 "$name@example.test",
                 $extra,
                 $immunity,
+                $srvGroup,
+                $srvFlags,
                 $lastvisit,
             ]);
             $this->adminAids[] = (int) $this->pdo->lastInsertId();
@@ -644,7 +705,7 @@ final class Synthesizer
 
     private function insertServersGroups(): int
     {
-        if ($this->serverSids === [] || $this->srvGroupIds === []) {
+        if ($this->serverSids === [] || $this->serverOrgGids === []) {
             return 0;
         }
         $stmt = $this->pdo->prepare(sprintf(
@@ -652,12 +713,23 @@ final class Synthesizer
             DB_PREFIX
         ));
         $n = 0;
-        foreach ($this->serverSids as $sid) {
-            // Each server lives in exactly one srvgroup so the admin
-            // server-group page renders multiple memberships.
-            $gid = $this->srvGroupIds[mt_rand(0, count($this->srvGroupIds) - 1)];
-            $stmt->execute([$sid, $gid]);
+        foreach ($this->serverSids as $i => $sid) {
+            // Every server joins one org group; ~30% also join a second
+            // so Server groups cards show multi-server + multi-group.
+            $primary = $this->serverOrgGids[$i % count($this->serverOrgGids)];
+            $stmt->execute([$sid, $primary]);
             $n++;
+            if (count($this->serverOrgGids) > 1 && mt_rand(0, 9) < 3) {
+                $secondary = $this->serverOrgGids[mt_rand(0, count($this->serverOrgGids) - 1)];
+                if ($secondary !== $primary) {
+                    try {
+                        $stmt->execute([$sid, $secondary]);
+                        $n++;
+                    } catch (\PDOException) {
+                        // UNIQUE (server_id, group_id) — ignore collision.
+                    }
+                }
+            }
         }
         return $n;
     }
@@ -672,14 +744,29 @@ final class Synthesizer
             DB_PREFIX
         ));
         $n = 0;
-        foreach ($this->adminAids as $aid) {
-            // Bind each admin to ~half the servers across a mix of srvgroups
-            // so the admin-server-group matrix isn't trivial.
-            $bindings = max(1, intdiv(count($this->serverSids), 2));
-            for ($j = 0; $j < $bindings; $j++) {
-                $sid    = $this->serverSids[mt_rand(0, count($this->serverSids) - 1)];
-                $sgid   = $this->srvGroupIds === [] ? 0 : $this->srvGroupIds[mt_rand(0, count($this->srvGroupIds) - 1)];
-                $stmt->execute([$aid, 0, $sgid, $sid]);
+        foreach ($this->adminAids as $aidIdx => $aid) {
+            // Match api_admins_add shape:
+            //   single server: (aid, srvgroups.id, -1, sid)
+            //   org group:     (aid, srvgroups.id, type3.gid, -1)
+            $smGroupId = $this->srvGroupIds === []
+                ? -1
+                : $this->srvGroupIds[$aidIdx % count($this->srvGroupIds)];
+
+            $singleBindings = max(1, intdiv(count($this->serverSids), 2));
+            $usedSids = [];
+            for ($j = 0; $j < $singleBindings; $j++) {
+                $sid = $this->serverSids[mt_rand(0, count($this->serverSids) - 1)];
+                if (isset($usedSids[$sid])) {
+                    continue;
+                }
+                $usedSids[$sid] = true;
+                $stmt->execute([$aid, $smGroupId, -1, $sid]);
+                $n++;
+            }
+
+            if ($this->serverOrgGids !== [] && mt_rand(0, 1) === 0) {
+                $orgGid = $this->serverOrgGids[mt_rand(0, count($this->serverOrgGids) - 1)];
+                $stmt->execute([$aid, $smGroupId, $orgGid, -1]);
                 $n++;
             }
         }
@@ -723,11 +810,18 @@ final class Synthesizer
     private function insertOverrides(): int
     {
         $defs = [
-            ['type' => 'command', 'name' => 'sm_kick',     'flags' => 'd'],
-            ['type' => 'command', 'name' => 'sm_slay',     'flags' => 'e'],
-            ['type' => 'command', 'name' => 'sm_ban',      'flags' => 'd'],
-            ['type' => 'command', 'name' => 'sm_admin',    'flags' => 'a'],
-            ['type' => 'group',   'name' => 'sm_root',     'flags' => 'z'],
+            ['type' => 'command', 'name' => 'sm_kick',      'flags' => 'd'],
+            ['type' => 'command', 'name' => 'sm_slay',      'flags' => 'e'],
+            ['type' => 'command', 'name' => 'sm_ban',       'flags' => 'd'],
+            ['type' => 'command', 'name' => 'sm_admin',     'flags' => 'a'],
+            ['type' => 'command', 'name' => 'sm_map',       'flags' => 'g'],
+            ['type' => 'command', 'name' => 'sm_cvar',      'flags' => 'h'],
+            ['type' => 'command', 'name' => 'sm_rcon',      'flags' => 'm'],
+            ['type' => 'command', 'name' => 'sm_reloadadmins', 'flags' => 'z'],
+            ['type' => 'command', 'name' => 'sm_who',       'flags' => 'b'],
+            ['type' => 'group',   'name' => 'sm_root',      'flags' => 'z'],
+            ['type' => 'group',   'name' => 'sm_ban',       'flags' => 'd'],
+            ['type' => 'group',   'name' => 'sm_chat',      'flags' => 'j'],
         ];
         $stmt = $this->pdo->prepare(sprintf(
             'INSERT INTO `%s_overrides` (`type`, `name`, `flags`) VALUES (?, ?, ?)',
@@ -794,18 +888,17 @@ final class Synthesizer
             $identityKey   = $isIpOnly ? 'ip:' . $player['ip'] : 'auth:' . $player['steam'];
             $alreadyActive = isset($activeIdentities[$identityKey]);
 
-            // State distribution: 60% active (incl. permanent), 25% expired,
-            // 15% admin-removed (RemoveType U/D + RemovedBy + ureason).
+            // State distribution: 55% active, 20% naturally expired
+            // (RemoveType=E + RemovedBy=0, PruneBans shape), 10% expired
+            // pre-migration (RemoveType NULL), 15% admin-removed (U/D).
             // Subsequent active rolls for an already-banned identity
-            // collapse into the expired branch (forced timed + ends < now)
-            // so the player accumulates a realistic "lifted-then-rebanned"
-            // history without violating the at-most-one-active invariant.
+            // collapse into the expired branch.
             $roll       = mt_rand(0, 99);
             $removeType = null;
             $removedBy  = null;
             $removedOn  = null;
             $ureason    = '';
-            if ($roll < 60 && !$alreadyActive) {
+            if ($roll < 55 && !$alreadyActive) {
                 // Active. Force ends > now if timed.
                 if ($length !== 0 && $ends < $this->now) {
                     $created = $this->now - mt_rand(0, $length - 60 * 60 * 24);
@@ -821,6 +914,13 @@ final class Synthesizer
                 if ($ends > $this->now) {
                     $created = $this->now - $length - mt_rand(60, 60 * 60 * 24 * 7);
                     $ends    = $created + $length;
+                }
+                // ~2/3 of expired rows carry the post-prune RemoveType=E
+                // shape so ?state=expired exercises both arms.
+                if (!$alreadyActive && mt_rand(0, 2) !== 0) {
+                    $removeType = \BanRemoval::Expired->value;
+                    $removedBy  = 0;
+                    $removedOn  = $ends;
                 }
             } else {
                 // Admin-removed (~15%).
@@ -917,7 +1017,10 @@ final class Synthesizer
             $length  = mt_rand(0, 3) === 0 ? 0 : mt_rand(60 * 30, 60 * 60 * 24 * 14);
             $ends    = $length === 0 ? 0 : $created + $length;
 
-            $commType      = mt_rand(1, 2); // 1 = mute, 2 = gag
+            // 1=mute, 2=gag, 3=silence (~15% silence so the Silence chip
+            // and mute_kind export path are non-empty).
+            $typeRoll = mt_rand(0, 99);
+            $commType = $typeRoll < 15 ? 3 : ($typeRoll < 55 ? 1 : 2);
             $identityKey   = 'auth:' . $player['steam'] . ':type:' . $commType;
             $alreadyActive = isset($activeIdentities[$identityKey]);
 
@@ -995,7 +1098,9 @@ final class Synthesizer
         $protestShare = max(0, $total - $banShare - $commShare - $subShare);
 
         $stmt = $this->pdo->prepare(sprintf(
-            'INSERT INTO `%s_comments` (`bid`, `type`, `aid`, `commenttxt`, `added`) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO `%s_comments`
+                (`bid`, `type`, `aid`, `commenttxt`, `added`, `editaid`, `edittime`)
+             VALUES (?, ?, ?, ?, ?, ?, ?)',
             DB_PREFIX
         ));
 
@@ -1029,7 +1134,15 @@ final class Synthesizer
             $parent = $parentIds[mt_rand(0, count($parentIds) - 1)];
             $aid    = $this->randomAdminAid();
             $body   = $bodies[mt_rand(0, count($bodies) - 1)];
-            $stmt->execute([$parent, $type, $aid, $body, $this->now - mt_rand(60, 60 * 60 * 24 * 60)]);
+            $added  = $this->now - mt_rand(60, 60 * 60 * 24 * 60);
+            // ~10% edited so banlist/commslist "last edit" chrome paints.
+            $editaid  = null;
+            $edittime = null;
+            if (mt_rand(0, 9) === 0) {
+                $editaid  = $this->randomAdminAid();
+                $edittime = min($this->now, $added + mt_rand(60, 60 * 60 * 24 * 7));
+            }
+            $stmt->execute([$parent, $type, $aid, $body, $added, $editaid, $edittime]);
             $n++;
         }
         return $n;

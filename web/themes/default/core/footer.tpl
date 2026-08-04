@@ -53,8 +53,10 @@
         live in web/scripts/sourcebans.js; the new theme drops that
         bulk file (#1123 D1) so the calls would error. B3 will
         re-implement the live-server widget via sb.api.call.
-      - sb.ready/tabs.init/tooltip: legacy MooTools-flavored helpers
-        replaced by theme.js's vanilla wiring.
+      - sb.ready/tabs.init: legacy MooTools-flavored helpers
+        replaced by theme.js's vanilla wiring. Tooltips live in
+        sb.js (`data-tooltip` / legacy `.tip`) and boot via event
+        delegation — no footer init call.
     Footer credits ($version + $git) are kept — pure display, no JS.
 *}
     </main>{* /.page *}

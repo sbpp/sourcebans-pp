@@ -33,6 +33,7 @@
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
+import { openMobileSidebar } from '../../fixtures/sidebar.ts';
 import { AdminAdminsPage } from '../../pages/admin/AdminAdmins.ts';
 
 test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', () => {
@@ -78,16 +79,15 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         const p = new AdminAdminsPage(page);
         await p.goto();
         await expect(p.pageMounted).toBeVisible();
+
+        // Accordion links live in `#sidebar`, off-canvas until the
+        // hamburger opens the drawer (#1490).
+        await openMobileSidebar(page);
         await expect(p.toc).toBeVisible();
 
-        // The mobile chrome is `<details open>` so the link list is
-        // visible without an extra tap. The summary contains the
-        // configured sidebar label ("Admin sections" — assigned by
-        // admin.admins.php's `new AdminTabs(...)` call).
-        const summary = p.toc.locator('summary');
+        const summary = page.locator('[data-testid="nav-admin-admins"]');
         await expect(summary).toBeVisible();
 
-        // Tap "Add admin" — page navigates to its dedicated URL.
         await p.tocLink('add-admin').click();
         await expect(page).toHaveURL(/section=add-admin(?:&|$)/);
         await expect(p.tocLink('add-admin')).toHaveAttribute('aria-current', 'page');
@@ -124,12 +124,12 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         await p.searchToggle.click();
 
         // Two filters at once: a deliberately not-matching login
-        // ("zzznoadminmatchesthis") + a steam_match=1 (partial). The
-        // login filter narrows the result list to zero — locking the
+        // ("zzznoadminmatchesthis") + a steamid substring. The login
+        // filter narrows the result list to zero — locking the
         // server-side AND contract — while still emitting both
         // filters on the wire so we can assert two-param submission.
         await p.searchInput('name').fill('zzznoadminmatchesthis');
-        await page.locator('[data-testid="search-admins-steam-match"]').selectOption('1');
+        await p.searchInput('steamid').fill('STEAM_0:0:0');
 
         // Single submit → single document navigation. Capture every
         // document-level request kicked off after we click submit so
@@ -146,7 +146,8 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
 
         const url = new URL(page.url());
         expect(url.searchParams.get('name')).toBe('zzznoadminmatchesthis');
-        expect(url.searchParams.get('steam_match')).toBe('1');
+        expect(url.searchParams.get('steamid')).toBe('STEAM_0:0:0');
+        expect(url.searchParams.get('steam_match')).toBeNull();
         // #1275 — the form carries `<input type="hidden" name="section" value="admins">`
         // so the post-submit URL keeps the user on the admins section.
         expect(url.searchParams.get('section')).toBe('admins');
@@ -171,15 +172,14 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         test.skip(testInfo.project.name !== 'chromium', 'Pre-fill contract is project-agnostic; pinning to desktop for runtime.');
 
         const p = new AdminAdminsPage(page);
-        await page.goto('/index.php?p=admin&c=admins&section=admins&name=admin&steamid=STEAM_0:0:0&steam_match=1');
+        await page.goto('/index.php?p=admin&c=admins&section=admins&name=admin&steamid=STEAM_0:0:0');
         await expect(p.pageMounted).toBeVisible();
 
         // The form re-paints from `$active_filter_*` on the View
         // DTO; values land in the inputs without JS assistance.
         await expect(p.searchInput('name')).toHaveValue('admin');
         await expect(p.searchInput('steamid')).toHaveValue('STEAM_0:0:0');
-        const matchSelect = page.locator('[data-testid="search-admins-steam-match"]');
-        await expect(matchSelect).toHaveValue('1');
+        await expect(page.locator('[data-testid="search-admins-steam-match"]')).toHaveCount(0);
     });
 
     // ----- ADM-4 — Clear filters resets form state --------------------
@@ -196,20 +196,18 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         await expect(p.searchInput('name')).toHaveValue('');
     });
 
-    // ----- ADM-3 (#1275) — Add admin CTA navigates to its section -----
+    // ----- ADM-3 (#1490) — Add admin lives in the main sidebar accordion -----
 
-    test('ADM-3: header "Add admin" CTA navigates to the add-admin section', async ({ page }, testInfo) => {
-        test.skip(testInfo.project.name !== 'chromium', 'In-page CTA is project-agnostic; pinning to desktop for runtime.');
+    test('ADM-3: sidebar "Add admin" link navigates to the add-admin section', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'chromium', 'Sidebar accordion is project-agnostic; pinning to desktop for runtime.');
 
         const p = new AdminAdminsPage(page);
         await p.goto();
 
-        const cta = page.locator('[data-testid="admin-add-cta"]');
-        await expect(cta).toBeVisible();
-        // Pre-#1275 this was `#add-admin` (anchor scroll within the
-        // long-scroll page); now it's a Pattern A URL.
-        await expect(cta).toHaveAttribute('href', /section=add-admin/);
-        await cta.click();
+        const link = p.tocLink('add-admin');
+        await expect(link).toBeVisible();
+        await expect(link).toHaveAttribute('href', /section=add-admin/);
+        await link.click();
 
         await expect(page).toHaveURL(/section=add-admin/);
         await expect(p.tocLink('add-admin')).toHaveAttribute('aria-current', 'page');

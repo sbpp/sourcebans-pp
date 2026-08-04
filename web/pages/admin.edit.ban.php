@@ -190,13 +190,15 @@ if (isset($_POST['name'])) {
         $_POST['steam'] = \SteamID\SteamID::toSteam2($rawSteam);
     }
 
-    if ($error === 0 && empty($_POST['ip']) && $postBanType === BanType::Ip) {
-        // Didn't type an IP
-        $error++;
-        $validationErrors['ip'] = 'You must type an IP';
-    } elseif ($error === 0 && $postBanType === BanType::Ip && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
-        $error++;
-        $validationErrors['ip'] = 'You must type a valid IP';
+    if ($postBanType === BanType::Ip) {
+        if ($error === 0 && empty($_POST['ip'])) {
+            // Didn't type an IP
+            $error++;
+            $validationErrors['ip'] = 'You must type an IP';
+        } elseif ($error === 0 && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
+            $error++;
+            $validationErrors['ip'] = 'You must type a valid IP';
+        }
     }
 
     // Didn't type a custom reason
@@ -209,6 +211,11 @@ if (isset($_POST['name'])) {
     PruneBans();
 
     if ($error == 0) {
+        // Re-read from POST so PHPStan does not carry the narrowed type
+        // inferred by the validation branches above into this independent
+        // duplicate-check block. The value is identical at runtime.
+        $postBanType = BanType::tryFrom((int) $_POST['type']) ?? BanType::Steam;
+
         // Check if the new steamid is already banned. Surface the
         // conflicting bid so the admin can investigate the OTHER
         // active row that's blocking this edit (mirrors the same

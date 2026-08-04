@@ -56,7 +56,12 @@ global $userbank, $theme;
  */
 
 /** @var bool $canListAdmins */
-$canListAdmins   = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListAdmins));
+$canListAdmins   = $userbank->HasAccess(WebPermission::mask(
+    WebPermission::Owner,
+    WebPermission::ListAdmins,
+    WebPermission::EditAdmins,
+    WebPermission::DeleteAdmins,
+));
 /** @var bool $canAddAdmins */
 $canAddAdmins    = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddAdmins));
 /** @var bool $canEditAdmins */
@@ -65,47 +70,12 @@ $canEditAdmins   = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner
 $canDeleteAdmins = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteAdmins));
 
 /*
- * #1275 — `$sections` array drives the new vertical sidebar via
- * AdminTabs. Each entry carries `slug` + `name` + `permission` +
- * `url` + `icon` (Lucide). Icons follow the Pattern A vocabulary
- * already in `admin.servers.php` / `admin.groups.php` / etc.
- *
- * `permission` filters happen inside AdminTabs (it skips entries
- * the current user can't reach), so an admin without LIST_ADMINS
- * sees the Add admin / Overrides sidebar links but not Admins.
+ * #1275 / #1490 — `$sections` comes from AdminNavCatalog (main
+ * sidebar accordion). Permission filters happen in
+ * AdminNavCatalog::filterForUser when the navbar builds children.
  */
-/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
-$sections = [
-    [
-        'slug'       => 'admins',
-        'name'       => 'Admins',
-        'permission' => ADMIN_OWNER | ADMIN_LIST_ADMINS,
-        'url'        => 'index.php?p=admin&c=admins&section=admins',
-        'icon'       => 'users',
-    ],
-    [
-        'slug'       => 'add-admin',
-        'name'       => 'Add admin',
-        'permission' => ADMIN_OWNER | ADMIN_ADD_ADMINS,
-        'url'        => 'index.php?p=admin&c=admins&section=add-admin',
-        'icon'       => 'user-plus',
-    ],
-    [
-        'slug'       => 'overrides',
-        'name'       => 'Overrides',
-        'permission' => ADMIN_OWNER | ADMIN_ADD_ADMINS,
-        'url'        => 'index.php?p=admin&c=admins&section=overrides',
-        'icon'       => 'shield',
-    ],
-];
-
-// Default to the first accessible section so the page never renders
-// a blank body when `?section=` is missing or carries an unknown
-// value. Admins → Add admin → Overrides; an admin without ADD_ADMINS
-// can't reach Add admin or Overrides, so they always land on Admins
-// (or the access-denied stub the View renders if they also lack
-// LIST_ADMINS).
-$validSlugs = ['admins', 'add-admin', 'overrides'];
+$sections = \Sbpp\View\AdminNavCatalog::sectionsFor('admins');
+$validSlugs = array_column($sections, 'slug');
 $section    = (string) ($_GET['section'] ?? '');
 if (!in_array($section, $validSlugs, true)) {
     if ($canListAdmins) {
@@ -116,11 +86,6 @@ if (!in_array($section, $validSlugs, true)) {
         $section = 'admins';
     }
 }
-
-// AdminTabs opens the sidebar shell + emits the <aside> + opens the
-// content column. Closing tags live AFTER each render branch below —
-// document the pairing so future edits don't strand an open <div>.
-new AdminTabs($sections, $userbank, $theme, $section, 'Admin sections');
 
 // ---------------------------------------------------------------- add-admin
 if ($section === 'add-admin') {
@@ -167,7 +132,6 @@ if ($section === 'add-admin') {
         // half; this is the visible-affordance half).
         can_grant_owner: $userbank->HasAccess(WebPermission::Owner),
     ));
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;
 }
 
@@ -179,7 +143,6 @@ if ($section === 'overrides') {
     // unchanged; this require keeps the existing POST URL
     // (`?p=admin&c=admins`) working for the form's submit.
     require(TEMPLATES_PATH . "/admin.overrides.php");
-    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;
 }
 
@@ -195,11 +158,12 @@ if (isset($_GET['page']) && $_GET['page'] > 0) {
  * combined filter form and AND the populated filters server-side.
  *
  * The new wire format reads each filter from its own query parameter
- * (`name`, `steamid`, `steam_match`, `admemail`, `webgroup`,
+ * (`name`, `steamid`, `admemail`, `webgroup`,
  * `srvadmgroup`, `srvgroup`, `admwebflag[]`, `admsrvflag[]`, `server`)
- * so a single GET submit carries the full filter snapshot. URL-shareable
- * searches are preserved by the legacy-shim block below: any incoming
- * `?advType=…&advSearch=…` is translated into the new shape so old
+ * so a single GET submit carries the full filter snapshot. Text filters
+ * always substring-match (`LIKE %…%`). URL-shareable searches are
+ * preserved by the legacy-shim block below: any incoming
+ * `?advType=…&advSearch=…` is translated into the modern shape so old
  * bookmarks and cross-page links keep working.
  *
  * Server-side filters are AND-combined: a request with two non-empty
@@ -238,10 +202,9 @@ if (isset($_GET['advType']) && isset($_GET['advSearch']) && $_GET['advSearch'] !
         case 'steam':
             // The legacy form distinguished exact (`steamid`) from
             // partial (`steam`) matches as two distinct advTypes. The
-            // modern form folds both onto `steamid` + `steam_match`.
+            // modern form folds both onto `steamid` (always partial).
             if (!isset($_GET['steamid']) || $_GET['steamid'] === '') {
-                $_GET['steamid']     = $legacyValue;
-                $_GET['steam_match'] = '1';
+                $_GET['steamid'] = $legacyValue;
             }
             break;
         case 'admwebflag':
@@ -253,52 +216,26 @@ if (isset($_GET['advType']) && isset($_GET['advSearch']) && $_GET['advSearch'] !
     }
 }
 
-// 1) Login name (exact or partial against ADM.user).
-//    `name_match` was added in #1231; default is partial ('1') so
-//    pre-#1231 URLs (`?name=alice` with no name_match) keep their
-//    substring semantics. `0` flips to exact.
+// 1) Login name (partial against ADM.user).
 if (!empty($_GET['name']) && is_string($_GET['name'])) {
-    $partialName = !isset($_GET['name_match']) || (string) $_GET['name_match'] !== '0';
-    if ($partialName) {
-        $where        .= " AND ADM.user LIKE ?";
-        $whereParams[] = '%' . $_GET['name'] . '%';
-    } else {
-        $where        .= " AND ADM.user = ?";
-        $whereParams[] = $_GET['name'];
-    }
-    $activeFilters['name']       = (string) $_GET['name'];
-    $activeFilters['name_match'] = $partialName ? '1' : '0';
+    $where                       .= " AND ADM.user LIKE ?";
+    $whereParams[]                = '%' . $_GET['name'] . '%';
+    $activeFilters['name']        = (string) $_GET['name'];
 }
 
-// 2) Steam ID (exact or partial against ADM.authid).
+// 2) Steam ID (partial against ADM.authid).
 if (!empty($_GET['steamid']) && is_string($_GET['steamid'])) {
-    $partial = isset($_GET['steam_match']) && (string) $_GET['steam_match'] === '1';
-    if ($partial) {
-        $where        .= " AND ADM.authid LIKE ?";
-        $whereParams[] = '%' . $_GET['steamid'] . '%';
-    } else {
-        $where        .= " AND ADM.authid = ?";
-        $whereParams[] = $_GET['steamid'];
-    }
-    $activeFilters['steamid']     = (string) $_GET['steamid'];
-    $activeFilters['steam_match'] = $partial ? '1' : '0';
+    $where                        .= " AND ADM.authid LIKE ?";
+    $whereParams[]                 = '%' . $_GET['steamid'] . '%';
+    $activeFilters['steamid']      = (string) $_GET['steamid'];
 }
 
-// 3) E-mail (exact or partial; `admemail_match` was added in #1231,
-//    same default-partial shape as `name_match`). Gated on the same
-//    flag the search box gates the input field on so URL forgery
-//    can't bypass the visibility gate.
+// 3) E-mail (partial). Gated on the same flag the search box gates
+//    the input field on so URL forgery can't bypass the visibility gate.
 if (!empty($_GET['admemail']) && is_string($_GET['admemail']) && $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
-    $partialEmail = !isset($_GET['admemail_match']) || (string) $_GET['admemail_match'] !== '0';
-    if ($partialEmail) {
-        $where        .= " AND ADM.email LIKE ?";
-        $whereParams[] = '%' . $_GET['admemail'] . '%';
-    } else {
-        $where        .= " AND ADM.email = ?";
-        $whereParams[] = $_GET['admemail'];
-    }
-    $activeFilters['admemail']       = (string) $_GET['admemail'];
-    $activeFilters['admemail_match'] = $partialEmail ? '1' : '0';
+    $where                         .= " AND ADM.email LIKE ?";
+    $whereParams[]                  = '%' . $_GET['admemail'] . '%';
+    $activeFilters['admemail']      = (string) $_GET['admemail'];
 }
 
 // 4) Web group (`:prefix_groups.gid` -> `:prefix_admins.gid`).
@@ -360,7 +297,9 @@ if (is_array($rawWebFlags)) {
     }
 }
 
-// 8) Server permission flags (multi).
+// 8) Server permission flags (multi). SM_* constants are single-char
+// strings (`SM_ROOT` = `z`); pass them to HasAccess as strings so the
+// srv_flags path runs. SM_ROOT implies every other server flag.
 $rawSrvFlags = $_GET['admsrvflag'] ?? null;
 if (is_string($rawSrvFlags)) {
     $rawSrvFlags = explode(',', $rawSrvFlags);
@@ -369,27 +308,29 @@ if (is_array($rawSrvFlags)) {
     /** @var list<string> $srvFlagNames */
     $srvFlagNames = [];
     foreach ($rawSrvFlags as $candidate) {
-        if (is_string($candidate) && preg_match('/^SM_[A-Z_]+$/', $candidate) && defined($candidate)) {
+        if (is_string($candidate) && preg_match('/^SM_[A-Z0-9_]+$/', $candidate) && defined($candidate)) {
             $srvFlagNames[] = $candidate;
         }
     }
     if (!empty($srvFlagNames)) {
-        $flagBits = array_map(fn(string $name): int => (int) constant($name), $srvFlagNames);
-        $alladmins = $GLOBALS['PDO']->query("SELECT aid, authid FROM `:prefix_admins` WHERE aid > 0")->resultset();
+        /** @var list<string> $flagChars */
+        $flagChars = array_map(fn(string $name): string => (string) constant($name), $srvFlagNames);
+        $alladmins = $GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE aid > 0")->resultset();
         $accessAids = [];
         foreach ($alladmins as $row) {
+            $aid = (int) $row['aid'];
             $matched = false;
-            foreach ($flagBits as $fla) {
-                if ($userbank->HasAccess($fla, $row['authid'])) {
+            foreach ($flagChars as $fla) {
+                if ($userbank->HasAccess($fla, $aid)) {
                     $matched = true;
                     break;
                 }
             }
-            if (!$matched && $userbank->HasAccess(SM_ROOT, $row['authid'])) {
+            if (!$matched && $userbank->HasAccess(SM_ROOT, $aid)) {
                 $matched = true;
             }
             if ($matched) {
-                $accessAids[] = (int) $row['aid'];
+                $accessAids[] = $aid;
             }
         }
         if (empty($accessAids)) {
@@ -490,10 +431,10 @@ foreach ($admins as $admin) {
     $admin['web_group']    = $userbank->GetProperty("group_name", $admin['aid']);
     $admin['server_group'] = $userbank->GetProperty("srv_groups", $admin['aid']);
     if (empty($admin['web_group']) || $admin['web_group'] == " ") {
-        $admin['web_group'] = "No Group/Individual Permissions";
+        $admin['web_group'] = "No groups";
     }
     if (empty($admin['server_group']) || $admin['server_group'] == " ") {
-        $admin['server_group'] = "No Group/Individual Permissions";
+        $admin['server_group'] = "No groups";
     }
     $GLOBALS['PDO']->query("SELECT count(authid) AS num FROM `:prefix_bans` WHERE aid = :aid");
     $GLOBALS['PDO']->bind(':aid', $admin['aid']);
@@ -581,7 +522,6 @@ $chipBase = 'index.php?p=admin&c=admins&section=admins' . $advSearchString;
     // the View itself still follows the can_* convention from
     // Sbpp\View\View's class-level docblock.
     can_list_admins: $canListAdmins,
-    can_add_admins: $canAddAdmins,
     can_edit_admins: $canEditAdmins,
     can_delete_admins: $canDeleteAdmins,
     admin_count: (int) $admin_count,
@@ -590,4 +530,3 @@ $chipBase = 'index.php?p=admin&c=admins&section=admins' . $advSearchString;
     active_view: $view,
     chip_base_link: $chipBase,
 ));
-echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';

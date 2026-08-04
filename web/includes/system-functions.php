@@ -36,10 +36,12 @@ if (!defined('IN_SB')) {
  * still build link strings server-side.
  *
  * NOTE: the `$tooltip`-bearing arm picks up the `tip` / `perm` CSS
- * class (legacy default theme); the bare arm has no class. The HTML
- * is whitespace-padded between the opening and closing tag for
- * legacy-template compatibility — the v1.x consumer relied on the
- * leading + trailing space when concatenating links inline.
+ * class (legacy default theme) and emits `data-tooltip` for the
+ * themed tip in `sb.js` (not the native `title=` bubble). The bare
+ * arm has no class. The HTML is whitespace-padded between the
+ * opening and closing tag for legacy-template compatibility — the
+ * v1.x consumer relied on the leading + trailing space when
+ * concatenating links inline.
  */
 function CreateLinkR(string $title, string $url, string $tooltip = '', string $target = '_self', bool $wide = false, string $onclick = ''): string
 {
@@ -50,7 +52,7 @@ function CreateLinkR(string $title, string $url, string $tooltip = '', string $t
     ];
     if ($hasTooltip) {
         $attrs['class'] = $wide ? 'perm' : 'tip';
-        $attrs['title'] = $tooltip;
+        $attrs['data-tooltip'] = $tooltip;
     } else {
         $attrs['onclick'] = $onclick;
     }

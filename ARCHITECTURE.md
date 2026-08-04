@@ -94,7 +94,8 @@ web/
 │   ├── Auth/openid.php       LightOpenID — third-party, intentionally global ns
 │   ├── Security/CSRF.php     Sbpp\Security\CSRF — token helpers
 │   ├── Security/Crypto.php   Sbpp\Security\Crypto — password / token crypto
-│   ├── View/AdminTabs.php    Sbpp\View\AdminTabs — Pattern A admin sub-section nav
+│   ├── View/AdminNavCatalog.php  Sbpp\View\AdminNavCatalog — Pattern A section catalogs for the main-sidebar accordion (#1490)
+│   ├── View/AdminTabs.php    Sbpp\View\AdminTabs — back-link chrome for edit-* admin pages (non-empty tabs are a no-op post-#1490)
 │   ├── View/                 Sbpp\View\* — typed Smarty view-model DTOs
 │   ├── View/Install/         Sbpp\View\Install\* — install-wizard step DTOs (#1332)
 │   ├── Markup/               Sbpp\Markup\IntroRenderer — admin Markdown -> safe HTML

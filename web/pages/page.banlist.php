@@ -620,21 +620,7 @@ if (isset($_GET['advSearch'])) {
             $where   = "WHERE BA.bid = ?";
             $advcrit = [$value];
             break;
-        case "steamid":
-            // #1130: match both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants;
-            // see SteamID::toSearchPattern() for rationale. The pre-switch
-            // normalisation block above has already canonicalised $value to
-            // STEAM_0 form, but the Y:Z tail is invariant so the pattern is
-            // the same either way.
-            $authidPattern = SteamID::toSearchPattern($value);
-            if ($authidPattern !== null) {
-                $where   = "WHERE BA.authid REGEXP ?";
-                $advcrit = [$authidPattern];
-            } else {
-                $where   = "WHERE BA.authid = ?";
-                $advcrit = [$value];
-            }
-            break;
+        case "steamid": // legacy exact-match URL; folded to always-partial
         case "steam":
             $where   = "WHERE BA.authid LIKE ?";
             $advcrit = ["%$value%"];
