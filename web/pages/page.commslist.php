@@ -497,18 +497,7 @@ if (isset($_GET['advSearch'])) {
             $where   = "WHERE CO.bid = ?";
             $advcrit = [$value];
             break;
-        case "steamid":
-            // #1130: match both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants;
-            // see SteamID::toSearchPattern() for rationale.
-            $authidPattern = SteamID::toSearchPattern($value);
-            if ($authidPattern !== null) {
-                $where   = "WHERE CO.authid REGEXP ?";
-                $advcrit = [$authidPattern];
-            } else {
-                $where   = "WHERE CO.authid = ?";
-                $advcrit = [$value];
-            }
-            break;
+        case "steamid": // legacy exact-match URL; folded to always-partial
         case "steam":
             $where   = "WHERE CO.authid LIKE ?";
             $advcrit = ["%$value%"];

@@ -6,10 +6,12 @@
  * ------------------
  *
  *  - **ADM-5 (P1)** — Edit / Unmute / Remove buttons on active comm
- *    rows render *visibly by default* (not hover-only). The pre-fix
- *    `.row-actions { opacity: 0 }` rule was removed from `theme.css`
- *    in this slice; the assertions below treat "visible without
- *    hover" as a contract by reading `getComputedStyle(...).opacity`.
+ *    rows render *visibly by default* (not hover-only). Labels are
+ *    icon-only via `data-tooltip` + `aria-label` (admins-list
+ *    density contract). The pre-fix `.row-actions { opacity: 0 }`
+ *    rule was removed from `theme.css` in this slice; the
+ *    assertions below treat "visible without hover" as a contract
+ *    by reading `getComputedStyle(...).opacity`.
  *  - **ADM-6 (P2)** — Lifting an active block updates the row
  *    *in-place* (no full reload): the wrapper's `data-state` flips
  *    to `unmuted`, the status pill swaps `pill--active` →
@@ -21,10 +23,10 @@
  *    `display:none` below 769px and the `.ban-cards` container
  *    takes over per `theme.css`'s responsive block).
  *  - Remove is a destructive action that goes through
- *    `Actions.CommsDelete` (slice introduces it), prompts a native
- *    `confirm()`, and on accept removes both the desktop `<tr>` and
- *    the mobile `<div>` mirrors of the row + decrements the visible
- *    count.
+ *    `Actions.CommsDelete` (slice introduces it), prompts a styled
+ *    `#comms-delete-dialog`, and on accept removes both the desktop
+ *    `<tr>` and the mobile `<div>` mirrors of the row + decrements
+ *    the visible count.
  *
  * Project gating
  * --------------
@@ -172,12 +174,13 @@ test.describe('flow: comms list affordances (#1207 ADM-5/ADM-6)', () => {
         await expect(editBtn).toBeVisible();
         await expect(unmuteBtn).toBeVisible();
         await expect(deleteBtn).toBeVisible();
-        // The visible label is part of the affordance — pre-fix
-        // these were icon-only links. Locking the text in catches
-        // a regression that drops the `<span>` while keeping the
-        // testid.
-        await expect(unmuteBtn).toContainText(/ungag|unmute|lift/i);
-        await expect(deleteBtn).toContainText(/remove/i);
+        // Icon-only row actions: labels live on data-tooltip +
+        // aria-label (admins-list contract), not visible text.
+        await expect(editBtn).toHaveAttribute('data-tooltip', 'Edit');
+        await expect(unmuteBtn).toHaveAttribute('data-tooltip', /^(Ungag|Unmute|Lift block)$/);
+        await expect(unmuteBtn).toHaveAttribute('aria-label', /ungag|unmute|lift/i);
+        await expect(deleteBtn).toHaveAttribute('data-tooltip', 'Remove');
+        await expect(deleteBtn).toHaveAttribute('aria-label', /remove/i);
 
         // ---- ADM-6: click Unmute → confirm modal → in-place flip + toast -
         // #1301: the Unmute button now opens
@@ -215,7 +218,8 @@ test.describe('flow: comms list affordances (#1207 ADM-5/ADM-6)', () => {
         await expect(row.locator('[data-testid="row-action-unmute"]')).toHaveCount(0);
         const reapply = row.locator('[data-testid="row-action-reapply"]');
         await expect(reapply).toBeVisible();
-        await expect(reapply).toContainText(/re-apply/i);
+        await expect(reapply).toHaveAttribute('data-tooltip', 'Re-apply');
+        await expect(reapply).toHaveAttribute('aria-label', /re-apply/i);
         // The Re-apply anchor goes through the existing
         // `comms.prepare_reblock` flow at `?p=admin&c=comms&rebanid=<bid>`.
         await expect(reapply).toHaveAttribute('href', /[?&]rebanid=\d+\b/);
@@ -323,12 +327,11 @@ test.describe('flow: comms list affordances (#1207 ADM-5/ADM-6)', () => {
             .textContent();
         const before = Number((countBefore || '').replace(/[^0-9]/g, ''));
 
-        // The inline JS prompts `window.confirm` before issuing the
-        // destructive call. Playwright dismisses dialogs by default;
-        // wire an accept handler so the click resolves the API path.
-        page.once('dialog', (d) => d.accept());
-
+        // The inline JS opens `#comms-delete-dialog` before issuing
+        // the destructive call. Confirm via the styled submit button.
         await row.locator('[data-testid="row-action-delete"]').click();
+        await expect(page.locator('[data-testid="comms-delete-dialog"]')).toBeVisible();
+        await page.locator('[data-testid="comms-delete-submit"]').click();
 
         // Row is removed from the DOM; the matching `comm-card`
         // mirror is removed too (the JS targets both via

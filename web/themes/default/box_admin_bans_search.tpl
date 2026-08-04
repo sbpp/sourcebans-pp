@@ -16,7 +16,9 @@
     page.banlist.php?advSearch=…&advType=… continues to parse the
     same `$_GET` shape):
         advType=name           advSearch=<text>           (nickname)
-        advType=steam|steamid  advSearch=<text>           (partial vs exact)
+        advType=steam|steamid  advSearch=<text>           (always partial / LIKE;
+                                                          steamid kept for legacy
+                                                          exact-match URLs)
         advType=ip             advSearch=<text>           (gated by !hideplayerips)
         advType=reason         advSearch=<text>
         advType=date           advSearch="<dd>,<mm>,<yyyy>"
@@ -51,8 +53,7 @@
     Testability hooks (per #1123 issue body, "search-<scope>-<…>"):
         data-testid="search-bans-form"           outer form
         data-testid="search-bans-name"           nickname <input>
-        data-testid="search-bans-steamid"        SteamID <input>
-        data-testid="search-bans-steam-match"    exact / partial match
+        data-testid="search-bans-steamid"        SteamID <input> (always partial)
         data-testid="search-bans-ip"             IP <input>     (gated)
         data-testid="search-bans-reason"         reason <input>
         data-testid="search-bans-date-day"       date triple, …-month, …-year
@@ -101,27 +102,17 @@
 
         <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
             <label class="label" for="search-bans-steamid" style="grid-column:1;align-self:end">Steam ID</label>
-            <div class="flex gap-2" style="flex-wrap:wrap">
-                <input class="input font-mono"
-                       id="search-bans-steamid"
-                       type="text"
-                       placeholder="STEAM_0:0:1234 or [U:1:1234]&hellip;"
-                       data-testid="search-bans-steamid"
-                       style="flex:1;min-width:14rem"
-                       autocomplete="off">
-                <select class="select"
-                        id="search-bans-steam-match"
-                        data-testid="search-bans-steam-match"
-                        style="width:9rem">
-                    <option value="0" selected>Exact match</option>
-                    <option value="1">Partial match</option>
-                </select>
-            </div>
+            <input class="input font-mono"
+                   id="search-bans-steamid"
+                   type="text"
+                   placeholder="Substring match against Steam ID&hellip;"
+                   data-testid="search-bans-steamid"
+                   autocomplete="off">
             <button type="submit"
                     class="btn btn--secondary btn--sm"
                     data-testid="search-bans-submit-steamid"
-                    data-search-key=""
-                    data-search-compose="steam">
+                    data-search-key="steam"
+                    data-search-from="search-bans-steamid">
                 <i data-lucide="search" style="width:14px;height:14px"></i> Search
             </button>
         </div>
@@ -412,13 +403,6 @@
      */
     function readPair(btn) {
         var compose = btn.getAttribute('data-search-compose');
-        if (compose === 'steam') {
-            var sid = document.getElementById('search-bans-steamid');
-            var match = document.getElementById('search-bans-steam-match');
-            var sval = (sid instanceof HTMLInputElement) ? sid.value.trim() : '';
-            var mval = (match instanceof HTMLSelectElement) ? match.value : '0';
-            return { key: (mval === '1' ? 'steam' : 'steamid'), value: sval };
-        }
         if (compose === 'date') {
             var keys = ['day', 'month', 'year'];
             var parts = keys.map(function (k) {
