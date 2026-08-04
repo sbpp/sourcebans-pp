@@ -70,8 +70,14 @@
     </div>
     <div class="flex gap-2 items-center">
       {if $can_export}
-      <a class="btn btn--secondary btn--sm" href="exportbans.php?type=steam" title="Export permanent SteamID bans">Export Steam</a>
-      <a class="btn btn--secondary btn--sm" href="exportbans.php?type=ip" title="Export permanent IP bans">Export IP</a>
+      <a class="btn btn--secondary btn--sm" href="exportbans.php?type=steam" title="Export permanent SteamID bans" data-testid="banlist-export-steam">
+        <i data-lucide="download" style="width:14px;height:14px"></i>
+        Export Steam
+      </a>
+      <a class="btn btn--secondary btn--sm" href="exportbans.php?type=ip" title="Export permanent IP bans" data-testid="banlist-export-ip">
+        <i data-lucide="download" style="width:14px;height:14px"></i>
+        Export IP
+      </a>
       {/if}
       {* #1230: aria-pressed mirrors whether inactive bans are
          currently being hidden ($hidetext == 'Show' means the
@@ -100,10 +106,16 @@
          role="button"
          aria-pressed="{if $hidetext == 'Show'}true{else}false{/if}"
          href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink}"
-         data-testid="toggle-hide-inactive">{$hidetext} inactive</a>
+         data-testid="toggle-hide-inactive">
+        <i data-lucide="{if $hidetext == 'Show'}eye{else}eye-off{/if}" style="width:14px;height:14px"></i>
+        {$hidetext} inactive
+      </a>
       {/if}
       {has_access flag=$smarty.const.ADMIN_ADD_BAN}
-      <a class="btn btn--primary btn--sm" href="index.php?p=admin&c=bans">Add ban</a>
+      <a class="btn btn--primary btn--sm" href="index.php?p=admin&c=bans" data-testid="banlist-add-button">
+        <i data-lucide="plus" style="width:14px;height:14px"></i>
+        Add ban
+      </a>
       {/has_access}
     </div>
   </div>

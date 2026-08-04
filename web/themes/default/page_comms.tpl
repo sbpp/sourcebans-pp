@@ -30,7 +30,7 @@
                 of <span class="tabular-nums">{$total_bans|number_format}</span> blocks
             </p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 items-center">
             {* #1230: aria-pressed reflects whether inactive blocks
                are currently being hidden (binary state, not a
                one-shot action). Pair: .btn--secondary[aria-pressed="true"]
@@ -55,14 +55,15 @@
                aria-pressed="{if $is_active_only}true{else}false{/if}"
                href="{$hide_inactive_toggle_url|escape}"
                data-testid="toggle-hide-inactive">
-                <i data-lucide="{if $is_active_only}eye{else}eye-off{/if}"></i>
+                <i data-lucide="{if $is_active_only}eye{else}eye-off{/if}" style="width:14px;height:14px"></i>
                 {if $is_active_only}Show inactive{else}Hide inactive{/if}
             </a>
             {if $can_add_comm}
             <a class="btn btn--primary btn--sm"
                href="index.php?p=admin&amp;c=comms"
                data-testid="comms-add-button">
-                <i data-lucide="plus"></i> Add comm block
+                <i data-lucide="plus" style="width:14px;height:14px"></i>
+                Add block
             </a>
             {/if}
         </div>
