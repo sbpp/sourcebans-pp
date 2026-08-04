@@ -109,7 +109,18 @@
                             <label class="label" for="password">Password <span class="text-faint" style="font-weight:400">(required for web access)</span></label>
                             <div class="flex gap-2">
                                 <input class="input" id="password" name="password" type="password"
-                                       tabindex="4" data-testid="admin-add-password" autocomplete="new-password">
+                                       tabindex="4" data-testid="admin-add-password" autocomplete="new-password"
+                                       style="flex:1;min-width:0">
+                                <button type="button" class="btn btn--ghost btn--icon"
+                                        title="Show password"
+                                        aria-label="Show password"
+                                        aria-pressed="false"
+                                        aria-controls="password password2"
+                                        data-action="toggle-password"
+                                        data-password-targets="password,password2"
+                                        data-testid="admin-add-password-toggle">
+                                    <i data-lucide="eye" style="width:14px;height:14px"></i>
+                                </button>
                                 {* #1402: data-action="admin-add-generate-password" replaces the
                                    dead `onclick="if (typeof LoadGeneratePassword === 'function')
                                    LoadGeneratePassword(); return false;"` guard. The page-tail
@@ -137,10 +148,22 @@
                                tabindex="6" data-testid="admin-add-useserverpass"
                                onclick="var el = document.getElementById('a_serverpass'); if (el) el.disabled = !this.checked;">
                         <label for="a_useserverpass" class="text-sm font-medium" style="margin:0">Set in-game admin password</label>
-                        <input class="input" id="a_serverpass" name="a_serverpass" type="password"
-                               style="max-width:14rem;margin-left:auto" disabled tabindex="7"
-                               data-testid="admin-add-serverpass" autocomplete="new-password"
-                               aria-label="In-game admin password">
+                        <div class="flex gap-2" style="max-width:16rem;margin-left:auto;flex:1;min-width:0">
+                            <input class="input" id="a_serverpass" name="a_serverpass" type="password"
+                                   style="flex:1;min-width:0" disabled tabindex="7"
+                                   data-testid="admin-add-serverpass" autocomplete="new-password"
+                                   aria-label="In-game admin password">
+                            <button type="button" class="btn btn--ghost btn--icon"
+                                    title="Show password"
+                                    aria-label="Show password"
+                                    aria-pressed="false"
+                                    aria-controls="a_serverpass"
+                                    data-action="toggle-password"
+                                    data-password-targets="a_serverpass"
+                                    data-testid="admin-add-serverpass-toggle">
+                                <i data-lucide="eye" style="width:14px;height:14px"></i>
+                            </button>
+                        </div>
                     </div>
                     <div id="a_serverpass.msg" class="text-xs" style="color:var(--danger)"></div>
                 </div>
@@ -675,6 +698,45 @@
                 return out.join(',');
             }
 
+            /**
+             * Sync a password-visibility toggle and every listed input.
+             * @param {HTMLElement} toggle
+             * @param {boolean} visible
+             * @returns {void}
+             */
+            function setPasswordGroupVisible(toggle, visible) {
+                var raw = toggle.getAttribute('data-password-targets') || '';
+                var ids = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+                ids.forEach(function (inputId) {
+                    var input = /** @type {HTMLInputElement|null} */ (document.getElementById(inputId));
+                    if (input && !input.disabled) input.type = visible ? 'text' : 'password';
+                });
+                toggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+                toggle.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+                toggle.setAttribute('title', visible ? 'Hide password' : 'Show password');
+                var icon = toggle.querySelector('[data-lucide]');
+                if (icon) {
+                    icon.setAttribute('data-lucide', visible ? 'eye-off' : 'eye');
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            }
+
+            // ---------- Show / hide password ----------
+            document.addEventListener('click', function (e) {
+                var t = /** @type {Element|null} */ (e.target);
+                if (!t || !t.closest) return;
+                var toggle = /** @type {HTMLElement|null} */ (t.closest('[data-action="toggle-password"]'));
+                if (!toggle) return;
+                e.preventDefault();
+                var raw = toggle.getAttribute('data-password-targets') || '';
+                var firstId = raw.split(',')[0] ? raw.split(',')[0].trim() : '';
+                var first = firstId
+                    ? /** @type {HTMLInputElement|null} */ (document.getElementById(firstId))
+                    : null;
+                if (!first || first.disabled) return;
+                setPasswordGroupVisible(toggle, first.type === 'password');
+            });
+
             // ---------- Generate password ----------
             document.addEventListener('click', function (e) {
                 var t = /** @type {Element|null} */ (e.target);
@@ -695,16 +757,12 @@
                     // #1402 adversarial review MEDIUM 5: leave the input
                     // types as `password` (matches v1.x `LoadGeneratePassword`
                     // — the legacy helper never flipped .type either).
-                    // The pre-fix `type='text'` change was a privacy /
-                    // shoulder-surf / screenshot leak: the freshly-
-                    // generated password sat in plaintext on the operator's
-                    // screen indefinitely after the click, even after the
-                    // operator left the field. Operators who genuinely
-                    // need to see the value can copy it into their
-                    // password manager from the password field's clipboard
-                    // (browsers + extensions both support this) or use
-                    // their browser's "show password" toggle on a per-
-                    // field basis.
+                    // Reset any open eye-toggle so a prior "show" click
+                    // does not leave the freshly generated value visible.
+                    var pwToggle = /** @type {HTMLElement|null} */ (
+                        document.querySelector('[data-testid="admin-add-password-toggle"]')
+                    );
+                    if (pwToggle) setPasswordGroupVisible(pwToggle, false);
                 }).catch(function (err) {
                     // sb.api.call only rejects on internal failures (it
                     // catches fetch / json errors and synthesises an
