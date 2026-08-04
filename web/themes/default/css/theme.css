@@ -944,6 +944,7 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
   position: absolute;
   z-index: 40;
   top: calc(100% + 0.25rem);
+  bottom: auto;
   left: 0;
   right: 0;
   max-height: 16rem;
@@ -953,6 +954,11 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
   background: var(--bg-surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-lg, 0 10px 30px rgb(0 0 0 / 0.18));
+}
+.msel[data-placement="top"] .msel__panel,
+.ssel[data-placement="top"] .ssel__panel {
+  top: auto;
+  bottom: calc(100% + 0.25rem);
 }
 .msel__panel[hidden], .ssel__panel[hidden] { display: none !important; }
 .msel__option, .ssel__option {

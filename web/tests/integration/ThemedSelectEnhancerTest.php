@@ -41,6 +41,8 @@ final class ThemedSelectEnhancerTest extends TestCase
         self::assertStringContainsString("data-lucide=\"chevron-down\" class=\"ssel__chevron\"", $js);
         self::assertStringContainsString('data-native-select', $js);
         self::assertStringContainsString("querySelectorAll('select.select')", $js);
+        self::assertStringContainsString('function positionSelectPanel(', $js);
+        self::assertStringContainsString("data-placement", $js);
     }
 
     public function testThemeJsSkipsMultiselectAndNativeOptOut(): void
@@ -64,6 +66,9 @@ final class ThemedSelectEnhancerTest extends TestCase
         self::assertStringContainsString('.msel__panel, .ssel__panel {', $css);
         self::assertStringContainsString('.ssel__option[aria-selected="true"]', $css);
         self::assertStringContainsString('.ssel__group', $css);
+        self::assertStringContainsString('.msel[data-placement="top"] .msel__panel', $css);
+        self::assertStringContainsString('.ssel[data-placement="top"] .ssel__panel', $css);
+        self::assertStringContainsString('bottom: calc(100% + 0.25rem)', $css);
     }
 
     public function testThemeCssDoesNotForceMinWidthOnSingleSelect(): void

@@ -1985,6 +1985,35 @@
   if (document.readyState !== 'loading') applyPlatformHints();
   else document.addEventListener('DOMContentLoaded', applyPlatformHints);
 
+  // ---- Themed select panel placement (msel + ssel) ------------
+  // Open downward by default; flip above the trigger when the panel
+  // would overflow the viewport and there is more room above.
+  /**
+   * @param {HTMLElement} wrap
+   * @param {HTMLElement} trigger
+   * @param {HTMLElement} panel
+   * @returns {void}
+   */
+  function positionSelectPanel(wrap, trigger, panel) {
+    panel.style.maxHeight = '';
+    wrap.setAttribute('data-placement', 'bottom');
+
+    const gap = 4;
+    const triggerRect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - triggerRect.bottom - gap;
+    const spaceAbove = triggerRect.top - gap;
+    const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const cssCap = 16 * rootFs;
+    const needed = Math.min(panel.scrollHeight, cssCap);
+    const openUp = needed > spaceBelow && spaceAbove > spaceBelow;
+    wrap.setAttribute('data-placement', openUp ? 'top' : 'bottom');
+
+    const available = openUp ? spaceAbove : spaceBelow;
+    if (available > 0 && available < cssCap) {
+      panel.style.maxHeight = Math.max(5 * rootFs, available) + 'px';
+    }
+  }
+
   // ---- MULTI-SELECT (select[data-multiselect]) ---------------
   // Progressive enhancement around a real <select multiple> so GET
   // submit and no-JS still work. After enhance, the native select is
@@ -2110,6 +2139,12 @@
       wrap.setAttribute('data-open', open ? 'true' : 'false');
       trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
       panel.hidden = !open;
+      if (open) {
+        positionSelectPanel(wrap, trigger, panel);
+      } else {
+        wrap.removeAttribute('data-placement');
+        panel.style.maxHeight = '';
+      }
     }
 
     buildPanel();
@@ -2269,10 +2304,14 @@
       trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
       panel.hidden = !open;
       if (open) {
+        positionSelectPanel(wrap, trigger, panel);
         const selected = /** @type {HTMLElement | null} */ (
           panel.querySelector('.ssel__option[aria-selected="true"]')
         );
         if (selected) selected.focus();
+      } else {
+        wrap.removeAttribute('data-placement');
+        panel.style.maxHeight = '';
       }
     }
 
