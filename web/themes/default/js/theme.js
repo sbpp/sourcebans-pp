@@ -2145,4 +2145,217 @@
   }
   if (document.readyState !== 'loading') initMultiselects();
   else document.addEventListener('DOMContentLoaded', initMultiselects);
+
+  // ---- SINGLE-SELECT (select.select, not multiple) ------------
+  // Sibling of data-multiselect. Progressive enhancement around a
+  // real single <select class="select"> so GET submit and no-JS still
+  // work, while closed + open chrome match the Lucide chevron used by
+  // .msel. Opt out with data-native-select. Skip size>1 listboxes and
+  // anything already claimed by data-multiselect.
+  /**
+   * @param {HTMLSelectElement} select
+   * @returns {void}
+   */
+  function enhanceSelect(select) {
+    if (select.dataset.sselReady === '1') return;
+    if (select.multiple) return;
+    if (select.hasAttribute('data-multiselect')) return;
+    if (select.hasAttribute('data-native-select')) return;
+    if (select.size > 1) return;
+    select.dataset.sselReady = '1';
+
+    const parent = select.parentNode;
+    if (!parent) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ssel';
+    wrap.setAttribute('data-ssel', 'true');
+    parent.insertBefore(wrap, select);
+    wrap.appendChild(select);
+
+    select.classList.add('visually-hidden');
+    select.setAttribute('aria-hidden', 'true');
+    select.tabIndex = -1;
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'ssel__trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.disabled = select.disabled;
+    if (select.id) trigger.setAttribute('aria-controls', select.id + '-ssel-panel');
+    trigger.innerHTML =
+      '<span class="ssel__trigger-label"></span>' +
+      '<i data-lucide="chevron-down" class="ssel__chevron" aria-hidden="true"></i>';
+
+    const panel = document.createElement('div');
+    panel.className = 'ssel__panel';
+    panel.setAttribute('role', 'listbox');
+    if (select.id) panel.id = select.id + '-ssel-panel';
+    panel.hidden = true;
+
+    wrap.insertBefore(trigger, select);
+    wrap.appendChild(panel);
+
+    const labelEl = /** @type {HTMLElement} */ (trigger.querySelector('.ssel__trigger-label'));
+
+    /**
+     * @param {HTMLOptionElement} opt
+     * @returns {HTMLButtonElement}
+     */
+    function makeOptionRow(opt) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'ssel__option';
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', opt.selected ? 'true' : 'false');
+      row.dataset.value = opt.value;
+      if (opt.disabled) row.dataset.disabled = 'true';
+      row.disabled = opt.disabled;
+      row.textContent = opt.textContent || opt.value;
+      row.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (opt.disabled) return;
+        select.value = opt.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        syncFromSelect();
+        setOpen(false);
+        trigger.focus();
+      });
+      return row;
+    }
+
+    /** @returns {void} */
+    function buildPanel() {
+      panel.textContent = '';
+      Array.prototype.forEach.call(select.children, (/** @type {Element} */ node) => {
+        if (node instanceof HTMLOptGroupElement) {
+          const group = document.createElement('div');
+          group.className = 'ssel__group';
+          group.textContent = node.label || '';
+          panel.appendChild(group);
+          Array.prototype.forEach.call(node.children, (/** @type {Element} */ child) => {
+            if (child instanceof HTMLOptionElement) panel.appendChild(makeOptionRow(child));
+          });
+          return;
+        }
+        if (node instanceof HTMLOptionElement) {
+          panel.appendChild(makeOptionRow(node));
+        }
+      });
+    }
+
+    /** @returns {void} */
+    function syncFromSelect() {
+      const opt = select.options[select.selectedIndex];
+      const hasValue = !!(opt && opt.value !== '');
+      wrap.setAttribute('data-has-value', hasValue ? 'true' : 'false');
+      if (labelEl) {
+        labelEl.textContent = opt ? (opt.textContent || opt.value || '') : '';
+      }
+      trigger.disabled = select.disabled;
+      panel.querySelectorAll('.ssel__option').forEach((/** @type {Element} */ el) => {
+        const row = /** @type {HTMLButtonElement} */ (el);
+        const selected = row.dataset.value === select.value;
+        row.setAttribute('aria-selected', selected ? 'true' : 'false');
+      });
+    }
+
+    /** @param {boolean} open */
+    function setOpen(open) {
+      if (open) buildPanel();
+      wrap.setAttribute('data-open', open ? 'true' : 'false');
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      panel.hidden = !open;
+      if (open) {
+        const selected = /** @type {HTMLElement | null} */ (
+          panel.querySelector('.ssel__option[aria-selected="true"]')
+        );
+        if (selected) selected.focus();
+      }
+    }
+
+    buildPanel();
+    syncFromSelect();
+
+    trigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (trigger.disabled) return;
+      setOpen(panel.hidden);
+    });
+
+    trigger.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (panel.hidden) setOpen(true);
+      }
+    });
+
+    panel.addEventListener('keydown', (e) => {
+      const rows = /** @type {HTMLButtonElement[]} */ (
+        Array.prototype.slice.call(panel.querySelectorAll('.ssel__option:not([data-disabled="true"])'))
+      );
+      if (rows.length === 0) return;
+      const active = document.activeElement;
+      const idx = rows.indexOf(/** @type {HTMLButtonElement} */ (active));
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = rows[Math.min(idx + 1, rows.length - 1)] || rows[0];
+        next.focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = rows[Math.max(idx - 1, 0)] || rows[rows.length - 1];
+        prev.focus();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        rows[0].focus();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        rows[rows.length - 1].focus();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+        trigger.focus();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(/** @type {Node} */ (e.target))) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden) {
+        setOpen(false);
+        trigger.focus();
+      }
+    });
+
+    select.addEventListener('change', syncFromSelect);
+    select.addEventListener('focus', () => {
+      trigger.focus();
+      if (panel.hidden && !trigger.disabled) setOpen(true);
+    });
+
+    // Option labels may update after enhance (e.g. server hostname
+    // hydrate rewriting option textContent). Keep the closed trigger
+    // in sync without requiring a reopen.
+    const mo = new MutationObserver(() => {
+      syncFromSelect();
+      if (!panel.hidden) buildPanel();
+    });
+    mo.observe(select, { subtree: true, childList: true, characterData: true, attributes: true });
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  /** @returns {void} */
+  function initSelects() {
+    document.querySelectorAll('select.select').forEach((el) => {
+      if (el instanceof HTMLSelectElement) enhanceSelect(el);
+    });
+  }
+  if (document.readyState !== 'loading') initSelects();
+  else document.addEventListener('DOMContentLoaded', initSelects);
 })();
