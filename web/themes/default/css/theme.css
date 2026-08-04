@@ -1203,14 +1203,37 @@ html.dark .pill--online    { color: #6ee7b7; }
    for the markup and AGENTS.md "Per-ban comments visibility"
    for the cross-surface contract.
 
-   The summary is laid out inline-flex so it sits as a chip-shaped
-   badge to the right of the player name (mirrors the visual weight
-   of the pre-fix `<span>[N]</span>` so the table column geometry
-   stays the same when the disclosure is collapsed). When opened the
-   <ul> body block-flows below the summary inside the same <td>; the
-   row grows to accommodate. No row-spanning trickery / no extra
-   <tr> / no width gymnastics — native <details> handles the toggle. */
-.ban-comments-inline { display: inline-block; margin-top: 0.125rem; }
+   Collapsed: the chip sits on the SAME line as the player name
+   (`.ban-player-cell__head`) so comment presence does not add a
+   second line of row height. The name truncates with ellipsis so
+   the icon+count never wrap alone. Opened: the details flexes to
+   full width below the name (`flex-basis: 100%`) and the <ul> body
+   grows the row — intentional for reading. No extra <tr> / no new
+   column. */
+.ban-player-cell__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.25rem;
+  row-gap: 0.25rem;
+  min-width: 0;
+}
+.ban-player-cell__name {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ban-comments-inline {
+  display: block;
+  flex: 0 0 auto;
+  margin: 0;
+  max-width: 100%;
+}
+.ban-comments-inline[open] {
+  flex: 1 1 100%;
+}
 .ban-comments-inline__summary {
   display: inline-flex;
   align-items: center;
@@ -1227,6 +1250,7 @@ html.dark .pill--online    { color: #6ee7b7; }
   user-select: none;
   border: 1px solid transparent;
   transition: background-color .15s, color .15s, border-color .15s;
+  flex-shrink: 0;
 }
 .ban-comments-inline__summary::-webkit-details-marker { display: none; }
 .ban-comments-inline__summary:hover {
@@ -1244,7 +1268,6 @@ html.dark .pill--online    { color: #6ee7b7; }
   color: var(--text);
   border-color: var(--border);
 }
-.ban-comments-inline__label { color: inherit; }
 .ban-comments-inline__list {
   display: flex;
   flex-direction: column;

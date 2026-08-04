@@ -231,81 +231,61 @@
                                       style="width:22px;height:22px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:9px">
                                     {$comm.name|truncate:2:'':true|upper|escape}
                                 </span>
-                                <div style="min-width:0">
-                                    {* Drawer parity with the banlist desktop row (#COMMS-DRAWER):
-                                       wrap the player nickname in an anchor whose `data-drawer-cid`
-                                       opens the player-detail drawer (theme.js click delegate). The
-                                       `href` is the JS-off fallback: navigates back to the unfiltered
-                                       commslist (Smarty already preserves the `?p=commslist&id=…`
-                                       shape on the URL bar but the page handler doesn't focus the
-                                       row — same documented degradation as the banlist's
-                                       `?p=banlist&id=…` fallback). NO `onclick="event.stopPropagation()"`:
-                                       the drawer click delegate listens on bubble, so stopping
-                                       propagation would silently fall through to native href
-                                       navigation and bypass the drawer entirely (#1124 Slice 6
-                                       found this on the banlist; same shape applies here). *}
-                                    <a class="font-medium truncate"
-                                       href="?p=commslist&amp;id={$comm.cid}"
-                                       data-drawer-cid="{$comm.cid}"
-                                       data-testid="drawer-trigger">{if $comm.name}{$comm.name|escape}{else}<i class="text-faint">no nickname</i>{/if}</a>
+                                <div style="min-width:0;flex:1">
+                                    {* Player name + comment chip share one line
+                                       (`.ban-player-cell__head`) so comment presence does
+                                       not add a second line of row height. Drawer parity
+                                       with the banlist desktop row (#COMMS-DRAWER):
+                                       `data-drawer-cid` opens the player-detail drawer.
+                                       NO `onclick="event.stopPropagation()"` — the drawer
+                                       click delegate listens on bubble. *}
+                                    <div class="ban-player-cell__head">
+                                        <a class="font-medium ban-player-cell__name"
+                                           href="?p=commslist&amp;id={$comm.cid}"
+                                           data-drawer-cid="{$comm.cid}"
+                                           data-testid="drawer-trigger">{if $comm.name}{$comm.name|escape}{else}<i class="text-faint">no nickname</i>{/if}</a>
+                                        {if $view_comments && $comm.commentdata != "None" && isset($comm.commentdata) && $comm.commentdata|@count > 0}
+                                        <details class="ban-comments-inline"
+                                                 data-testid="comm-comments-inline"
+                                                 data-cid="{$comm.cid}">
+                                          <summary class="ban-comments-inline__summary"
+                                                   data-testid="comm-comments-toggle"
+                                                   title="{$comm.commentdata|@count} comment{if $comm.commentdata|@count != 1}s{/if}"
+                                                   aria-label="{$comm.commentdata|@count} comment{if $comm.commentdata|@count != 1}s{/if}">
+                                            <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
+                                            <span class="tabular-nums">{$comm.commentdata|@count}</span>
+                                          </summary>
+                                          <ul class="ban-comments-inline__list" data-testid="comm-comments-list">
+                                            {foreach from=$comm.commentdata item=com}
+                                            <li class="ban-comments-inline__item" data-testid="comm-comment-item">
+                                              <div class="ban-comments-inline__meta">
+                                                {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the unban-meta gate below). *}
+                                                {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.comname)}<strong>{$com.comname|escape}</strong>{else}<i class="text-faint">deleted admin</i>{/if}
+                                                <span class="text-faint">&middot;</span>
+                                                <span class="text-xs text-faint tabular-nums">{$com.added}</span>
+                                              </div>
+                                              {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.commslist.php $commentres loop. Same provenance + safety as the banlist disclosure. *}
+                                              <div class="ban-comments-inline__text" data-testid="comm-comment-text">{$com.commenttxt nofilter}</div>
+                                              {if !empty($com.edittime)}
+                                              <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
+                                              {/if}
+                                            </li>
+                                            {/foreach}
+                                          </ul>
+                                        </details>
+                                        {/if}
+                                    </div>
                                     {* #1315: surface unban-reason / removed-by line below the
                                        player nickname when the row was lifted by an admin
-                                       (state == 'unmuted'). Higher-priority than the banlist
-                                       equivalent because the commslist has no drawer to fall
-                                       back to (no `data-drawer-href` on `<tr data-testid="comm-row">`).
-                                       Gated on $hideadminname so anonymous viewers under a
-                                       hidden-admins config don't get the admin name leaked
-                                       here either. *}
+                                       (state == 'unmuted'). Stays below the name+chip head
+                                       so lift meta does not fight the comment chip. Gated
+                                       on $hideadminname so anonymous viewers under a
+                                       hidden-admins config don't get the admin name leaked. *}
                                     {if $comm.state == 'unmuted' && !$hideadminname && (!empty($comm.ureason) || !empty($comm.removedby))}
                                         <div class="text-xs text-faint mt-1" data-testid="comm-unban-meta">
                                             {if !empty($comm.removedby)}Lifted by <span class="font-medium">{$comm.removedby|escape}</span>{if !empty($comm.ureason)}: {/if}{/if}
-                                            {* `title=` carries the full lift-reason so a long
-                                               reason that was cropped on the desktop table reads
-                                               in full on hover. Same shape as banlist's
-                                               ban-unban-reason span (issue 5). *}
                                             {if !empty($comm.ureason)}<span data-testid="comm-unban-reason" title="{$comm.ureason|escape}">{$comm.ureason|escape}</span>{/if}
                                         </div>
-                                    {/if}
-                                    {* #BANLIST-COMMENTS sister-fix for commslist: this surface
-                                       has the SAME regression as the banlist (page handler
-                                       builds `commentdata` per row but the v2.0 rewrite of
-                                       this template never re-rendered it — see the
-                                       `commslist`-side rationale in AGENTS.md "Per-ban
-                                       comments visibility"). The commslist regression is
-                                       worse than the banlist's because there's no drawer
-                                       fallback (no `data-drawer-href` on `<tr data-testid="comm-row">`),
-                                       so the disclosure here is the ONLY on-page way for
-                                       admins to see the comment text. Same structure +
-                                       gating contract as the banlist disclosure. *}
-                                    {if $view_comments && $comm.commentdata != "None" && isset($comm.commentdata) && $comm.commentdata|@count > 0}
-                                    <details class="ban-comments-inline mt-1"
-                                             data-testid="comm-comments-inline"
-                                             data-cid="{$comm.cid}">
-                                      <summary class="ban-comments-inline__summary"
-                                               data-testid="comm-comments-toggle"
-                                               title="{$comm.commentdata|@count} comment{if $comm.commentdata|@count != 1}s{/if} on this comm-block">
-                                        <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
-                                        <span class="tabular-nums">{$comm.commentdata|@count}</span>
-                                        <span class="ban-comments-inline__label">comment{if $comm.commentdata|@count != 1}s{/if}</span>
-                                      </summary>
-                                      <ul class="ban-comments-inline__list" data-testid="comm-comments-list">
-                                        {foreach from=$comm.commentdata item=com}
-                                        <li class="ban-comments-inline__item" data-testid="comm-comment-item">
-                                          <div class="ban-comments-inline__meta">
-                                            {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the unban-meta gate above). *}
-                                            {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.comname)}<strong>{$com.comname|escape}</strong>{else}<i class="text-faint">deleted admin</i>{/if}
-                                            <span class="text-faint">&middot;</span>
-                                            <span class="text-xs text-faint tabular-nums">{$com.added}</span>
-                                          </div>
-                                          {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.commslist.php $commentres loop. Same provenance + safety as the banlist disclosure (template comment up-thread). *}
-                                          <div class="ban-comments-inline__text" data-testid="comm-comment-text">{$com.commenttxt nofilter}</div>
-                                          {if !empty($com.edittime)}
-                                          <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
-                                          {/if}
-                                        </li>
-                                        {/foreach}
-                                      </ul>
-                                    </details>
                                     {/if}
                                 </div>
                             </div>

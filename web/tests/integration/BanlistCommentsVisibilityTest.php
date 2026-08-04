@@ -111,6 +111,16 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
             'the disclosure summary doubles as the count chip / clickable affordance',
         );
         $this->assertStringContainsString(
+            'ban-player-cell__head',
+            $html,
+            'comment chip must share the player-name head row (collapsed height stays one line)',
+        );
+        $this->assertStringNotContainsString(
+            'ban-comments-inline__label',
+            $html,
+            'summary is icon+count only; "comment(s)" text lives in title/aria-label',
+        );
+        $this->assertStringContainsString(
             'data-bid="' . $this->banWithCommentsBid . '"',
             $html,
             'the disclosure must carry the bid so future deeplinks / E2E selectors anchor on it',
@@ -428,6 +438,16 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
             'data-testid="comm-comments-toggle"',
             $html,
             'the disclosure summary doubles as the count chip / clickable affordance',
+        );
+        $this->assertStringContainsString(
+            'ban-player-cell__head',
+            $html,
+            'comment chip must share the player-name head row (collapsed height stays one line)',
+        );
+        $this->assertStringNotContainsString(
+            'ban-comments-inline__label',
+            $html,
+            'summary is icon+count only; "comment(s)" text lives in title/aria-label',
         );
         $this->assertStringContainsString(
             'data-cid="' . $this->commWithCommentsCid . '"',

@@ -328,79 +328,57 @@
                  precomputed in page.banlist.php so the template
                  doesn't depend on Smarty's `%` operator parsing. *}
               <span class="avatar" style="width:22px;height:22px;background:hsl({$ban.avatar_hue} 55% 45%);font-size:9px" aria-hidden="true">{$ban.avatar_initials|escape}</span>
-              {* No `onclick="event.stopPropagation()"` here even though
-                 the row's action buttons carry it. theme.js wires the
-                 drawer via a delegated `document.addEventListener('click',
-                 …)` on `[data-drawer-href]`; stopping bubble at the
-                 anchor would silently fall back to native href
-                 navigation and bypass the drawer entirely (#1124 Slice 6
-                 found this — tests asserted `[data-drawer-open=true]`
-                 after a row click, the page just navigated to the legacy
-                 `?id=N` href instead). The mobile `.ban-cards` branch
-                 below already follows this no-stopPropagation shape. *}
-              <a class="font-medium truncate" href="?p=banlist&amp;id={$ban.bid}" data-drawer-href="?p=banlist&amp;c=details&amp;id={$ban.bid}" data-testid="drawer-trigger">{if empty($ban.name)}<i class="text-faint">no nickname</i>{else}{$ban.name|escape}{/if}</a>
+              {* Player name + comment chip share one line
+                 (`.ban-player-cell__head`) so comment presence does
+                 not add a second line of row height. No
+                 `onclick="event.stopPropagation()"` on the name
+                 anchor — theme.js wires the drawer via a delegated
+                 click on `[data-drawer-href]`; stopping bubble would
+                 fall through to native href navigation (#1124 Slice 6). *}
+              <div class="ban-player-cell__head" style="flex:1;min-width:0">
+                <a class="font-medium ban-player-cell__name" href="?p=banlist&amp;id={$ban.bid}" data-drawer-href="?p=banlist&amp;c=details&amp;id={$ban.bid}" data-testid="drawer-trigger">{if empty($ban.name)}<i class="text-faint">no nickname</i>{else}{$ban.name|escape}{/if}</a>
+                {* #BANLIST-COMMENTS: native <details> disclosure. Summary
+                   is icon+count only (GitHub/Linear shape); body lists
+                   comments when opened. Drawer Overview still mirrors
+                   the same data via api_bans_detail. *}
+                {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
+                <details class="ban-comments-inline"
+                         data-testid="ban-comments-inline"
+                         data-bid="{$ban.bid}">
+                  <summary class="ban-comments-inline__summary"
+                           data-testid="ban-comments-toggle"
+                           title="{$ban.commentdata|@count} comment{if $ban.commentdata|@count != 1}s{/if}"
+                           aria-label="{$ban.commentdata|@count} comment{if $ban.commentdata|@count != 1}s{/if}">
+                    <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
+                    <span class="tabular-nums">{$ban.commentdata|@count}</span>
+                  </summary>
+                  <ul class="ban-comments-inline__list" data-testid="ban-comments-list">
+                    {foreach from=$ban.commentdata item=com}
+                    <li class="ban-comments-inline__item" data-testid="ban-comment-item">
+                      <div class="ban-comments-inline__meta">
+                        {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the unban-meta gate below). *}
+                        {if $hideadminname}
+                          <i class="text-faint">Hidden</i>
+                        {elseif !empty($com.comname)}
+                          <strong>{$com.comname|escape}</strong>
+                        {else}
+                          <i class="text-faint">deleted admin</i>
+                        {/if}
+                        <span class="text-faint">&middot;</span>
+                        <span class="text-xs text-faint tabular-nums">{$com.added}</span>
+                      </div>
+                      {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.banlist.php $commentres loop. Same provenance + safety as the existing comment-edit-mode block at the top of this template. *}
+                      <div class="ban-comments-inline__text" data-testid="ban-comment-text">{$com.commenttxt nofilter}</div>
+                      {if !empty($com.edittime)}
+                      <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
+                      {/if}
+                    </li>
+                    {/foreach}
+                  </ul>
+                </details>
+                {/if}
+              </div>
             </div>
-            {* #BANLIST-COMMENTS: inline <details> disclosure restoring
-               the per-row comment visibility v1.x shipped (the
-               mooaccordion sliding-panel surface that was deleted with
-               sourcebans.js at #1123 D1). The v2.0 redesign moved the
-               comments off the page and into the right-side drawer
-               (Overview pane → "Comments" section), but the page-level
-               affordance was a silent <span>[N]</span> with no click
-               handler, so users reading the row had no on-page way to
-               see *what* the comments said and no visual cue that the
-               drawer was their new home. The disclosure restores
-               on-page comment text via native <details> semantics: the
-               <summary> is the clickable count badge, the body lists
-               each comment inline so readers don't have to leave the
-               row. The drawer's comments section in `theme.js`
-               `renderOverviewPane` continues to render the SAME data
-               via `api_bans_detail` for users who open the player
-               drawer (clicking the player-name anchor above) — the two
-               surfaces share the gating contract
-               (`Config::getBool('config.enablepubliccomments') ||
-               $userbank->is_admin()`).
-
-               The disclosure stays default-collapsed so a banlist with
-               comment-heavy rows doesn't blow out the table height on
-               first paint; the count is visible inside the summary so
-               admins can scan the list at a glance. *}
-            {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
-            <details class="ban-comments-inline"
-                     data-testid="ban-comments-inline"
-                     data-bid="{$ban.bid}">
-              <summary class="ban-comments-inline__summary"
-                       data-testid="ban-comments-toggle"
-                       title="{$ban.commentdata|@count} comment{if $ban.commentdata|@count != 1}s{/if} on this ban">
-                <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
-                <span class="tabular-nums">{$ban.commentdata|@count}</span>
-                <span class="ban-comments-inline__label">comment{if $ban.commentdata|@count != 1}s{/if}</span>
-              </summary>
-              <ul class="ban-comments-inline__list" data-testid="ban-comments-list">
-                {foreach from=$ban.commentdata item=com}
-                <li class="ban-comments-inline__item" data-testid="ban-comment-item">
-                  <div class="ban-comments-inline__meta">
-                    {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the unban-meta gate below). *}
-                    {if $hideadminname}
-                      <i class="text-faint">Hidden</i>
-                    {elseif !empty($com.comname)}
-                      <strong>{$com.comname|escape}</strong>
-                    {else}
-                      <i class="text-faint">deleted admin</i>
-                    {/if}
-                    <span class="text-faint">&middot;</span>
-                    <span class="text-xs text-faint tabular-nums">{$com.added}</span>
-                  </div>
-                  {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.banlist.php $commentres loop. Same provenance + safety as the existing comment-edit-mode block at the top of this template. *}
-                  <div class="ban-comments-inline__text" data-testid="ban-comment-text">{$com.commenttxt nofilter}</div>
-                  {if !empty($com.edittime)}
-                  <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
-                  {/if}
-                </li>
-                {/foreach}
-              </ul>
-            </details>
-            {/if}
           </td>
           <td class="font-mono text-xs text-muted">
             {if empty($ban.steam)}
