@@ -346,6 +346,9 @@ test.describe('flow: admin deactivate + bulk (#1509)', () => {
         const dialog = page.locator('[data-testid="admins-bulk-web-group-dialog"]');
         await expect(dialog).toBeVisible();
         await expect(dialog.locator('[data-ssel="true"]')).toBeVisible();
+        await expect
+            .poll(async () => dialog.evaluate((el) => getComputedStyle(el).overflow))
+            .toBe('visible');
         await dialog.locator('[data-testid="admins-bulk-web-group-select"]').selectOption(String(group.gid));
 
         const bulkResp = page.waitForResponse(

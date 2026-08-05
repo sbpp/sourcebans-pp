@@ -77,6 +77,7 @@ final class ThemedSelectEnhancerTest extends TestCase
         self::assertStringContainsString('.msel[data-placement="top"] .msel__panel', $css);
         self::assertStringContainsString('.ssel[data-placement="top"] .ssel__panel', $css);
         self::assertStringContainsString('bottom: calc(100% + 0.25rem)', $css);
+        self::assertStringContainsString('dialog.palette:not(#palette-root) { overflow: visible; }', $css);
     }
 
     public function testThemeCssDoesNotForceMinWidthOnSingleSelect(): void
