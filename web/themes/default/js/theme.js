@@ -2218,6 +2218,13 @@
     const wrap = document.createElement('div');
     wrap.className = 'ssel';
     wrap.setAttribute('data-ssel', 'true');
+    // Native filters often set width/min-width on the <select>
+    // (banlist/commslist use width:auto). Those styles stay on the
+    // visually-hidden select; mirror them onto the wrap so .ssel's
+    // default width:100% does not stretch the chrome.
+    if (select.style.width) wrap.style.width = select.style.width;
+    if (select.style.minWidth) wrap.style.minWidth = select.style.minWidth;
+    if (select.style.maxWidth) wrap.style.maxWidth = select.style.maxWidth;
     parent.insertBefore(wrap, select);
     wrap.appendChild(select);
 
