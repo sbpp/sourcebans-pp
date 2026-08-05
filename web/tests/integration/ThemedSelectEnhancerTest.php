@@ -95,4 +95,33 @@ final class ThemedSelectEnhancerTest extends TestCase
             $afterShared,
         );
     }
+
+    public function testAdminsBulkGroupDialogsUseThemedSelectClass(): void
+    {
+        $path = dirname(__DIR__, 2) . '/themes/default/page_admin_admins_list.tpl';
+        self::assertFileExists($path);
+        $src = file_get_contents($path);
+        self::assertNotFalse($src);
+
+        self::assertStringContainsString(
+            'id="admins-bulk-web-group-select"',
+            $src,
+        );
+        self::assertStringContainsString(
+            '<select class="select" id="admins-bulk-web-group-select"',
+            $src,
+        );
+        self::assertStringContainsString(
+            '<select class="select" id="admins-bulk-srv-group-select"',
+            $src,
+        );
+        self::assertStringNotContainsString(
+            '<select class="input" id="admins-bulk-web-group-select"',
+            $src,
+        );
+        self::assertStringNotContainsString(
+            '<select class="input" id="admins-bulk-srv-group-select"',
+            $src,
+        );
+    }
 }

@@ -534,7 +534,7 @@
                 Set the web group for <strong data-testid="admins-bulk-web-group-target">0 admins</strong>.
             </p>
             <label class="label" for="admins-bulk-web-group-select">Web group</label>
-            <select class="input" id="admins-bulk-web-group-select" data-testid="admins-bulk-web-group-select">
+            <select class="select" id="admins-bulk-web-group-select" data-testid="admins-bulk-web-group-select">
                 <option value="0">No web group</option>
                 {foreach $web_groups as $g}
                     <option value="{$g.gid}">{$g.name|escape}</option>
@@ -560,7 +560,7 @@
                 Set the SourceMod server group for <strong data-testid="admins-bulk-srv-group-target">0 admins</strong>.
             </p>
             <label class="label" for="admins-bulk-srv-group-select">Server group</label>
-            <select class="input" id="admins-bulk-srv-group-select" data-testid="admins-bulk-srv-group-select">
+            <select class="select" id="admins-bulk-srv-group-select" data-testid="admins-bulk-srv-group-select">
                 <option value="0">No server group</option>
                 {foreach $srv_groups as $g}
                     <option value="{$g.id}">{$g.name|escape}</option>
