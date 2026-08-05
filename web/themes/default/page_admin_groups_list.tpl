@@ -228,8 +228,8 @@
                     <article class="card" data-testid="server-admin-group-row" data-id="{$group.id}">
                         <div class="card__header">
                             <div>
-                                <h3>{$group.name|escape}</h3>
-                                <p>{$server_admins[$smarty.foreach.server_admin_group.index]} member{if $server_admins[$smarty.foreach.server_admin_group.index] != 1}s{/if} &middot; immunity {$group.immunity}</p>
+                                <h3 style="font-size:var(--fs-lg);font-weight:600;margin:0">{$group.name|escape}</h3>
+                                <p class="text-sm text-muted m-0 mt-1">{$server_admins[$smarty.foreach.server_admin_group.index]} member{if $server_admins[$smarty.foreach.server_admin_group.index] != 1}s{/if} &middot; immunity {$group.immunity}</p>
                             </div>
                             <div class="flex gap-1">
                                 {if $permission_editgroup}
@@ -252,7 +252,7 @@
                                 {/if}
                             </div>
                         </div>
-                        <div class="card__body space-y-3">
+                        <div class="card__body space-y-0">
                             <div>
                                 <div class="text-xs font-semibold text-muted mb-2">Permissions</div>
                                 {if $group.permissions}
@@ -266,32 +266,51 @@
                                 {/if}
                             </div>
                             {if $server_admins_list[$smarty.foreach.server_admin_group.index]}
-                                <div>
+                                <div style="border-top:1px solid var(--border);padding-top:0.75rem;margin-top:0.75rem">
                                     <div class="text-xs font-semibold text-muted mb-2">Members</div>
-                                    <ul style="list-style:none;padding:0;margin:0" class="space-y-3">
-                                        {foreach from=$server_admins_list[$smarty.foreach.server_admin_group.index] item="server_admin"}
-                                            <li class="flex items-center justify-between gap-2 text-sm">
-                                                <span class="truncate">{$server_admin.user|escape}</span>
-                                                {if $permission_editadmin}
-                                                    <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=admins&o=editgroup&id={$server_admin.aid|escape:'url'}">Edit</a>
-                                                {/if}
-                                            </li>
-                                        {/foreach}
-                                    </ul>
+                                    <table class="table table--compact" style="margin:0">
+                                        <thead>
+                                            <tr>
+                                                <th>User</th>
+                                                {if $permission_editadmin}<th style="width:5rem"></th>{/if}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {foreach from=$server_admins_list[$smarty.foreach.server_admin_group.index] item="server_admin"}
+                                                <tr>
+                                                    <td class="truncate">{$server_admin.user|escape}</td>
+                                                    {if $permission_editadmin}
+                                                        <td class="text-right">
+                                                            <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=admins&o=editgroup&id={$server_admin.aid|escape:'url'}">Edit</a>
+                                                        </td>
+                                                    {/if}
+                                                </tr>
+                                            {/foreach}
+                                        </tbody>
+                                    </table>
                                 </div>
                             {/if}
                             {if $server_overrides_list[$smarty.foreach.server_admin_group.index]}
-                                <div>
+                                <div style="border-top:1px solid var(--border);padding-top:0.75rem;margin-top:0.75rem">
                                     <div class="text-xs font-semibold text-muted mb-2">Overrides</div>
-                                    <ul style="list-style:none;padding:0;margin:0" class="space-y-3 text-xs">
-                                        {foreach from=$server_overrides_list[$smarty.foreach.server_admin_group.index] item="override"}
-                                            <li class="flex items-center justify-between gap-2">
-                                                <span class="font-mono">{$override.type|escape}</span>
-                                                <span class="truncate">{$override.name|escape}</span>
-                                                <span class="font-mono text-muted">{$override.access|escape}</span>
-                                            </li>
-                                        {/foreach}
-                                    </ul>
+                                    <table class="table table--compact" style="margin:0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:4.5rem">Type</th>
+                                                <th>Name</th>
+                                                <th style="width:5rem">Access</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {foreach from=$server_overrides_list[$smarty.foreach.server_admin_group.index] item="override"}
+                                                <tr>
+                                                    <td class="font-mono text-xs">{$override.type|escape}</td>
+                                                    <td class="truncate font-mono text-xs">{$override.name|escape}</td>
+                                                    <td class="font-mono text-xs text-muted">{$override.access|escape}</td>
+                                                </tr>
+                                            {/foreach}
+                                        </tbody>
+                                    </table>
                                 </div>
                             {/if}
                         </div>
@@ -342,8 +361,8 @@
                     <article class="card" data-testid="server-group-row" data-id="{$group.gid}">
                         <div class="card__header">
                             <div>
-                                <h3>{$group.name|escape}</h3>
-                                <p>{$server_counts[$smarty.foreach.server_group.index]} server{if $server_counts[$smarty.foreach.server_group.index] != 1}s{/if}</p>
+                                <h3 style="font-size:var(--fs-lg);font-weight:600;margin:0">{$group.name|escape}</h3>
+                                <p class="text-sm text-muted m-0 mt-1">{$server_counts[$smarty.foreach.server_group.index]} server{if $server_counts[$smarty.foreach.server_group.index] != 1}s{/if}</p>
                             </div>
                             <div class="flex gap-1">
                                 {if $permission_editgroup}
