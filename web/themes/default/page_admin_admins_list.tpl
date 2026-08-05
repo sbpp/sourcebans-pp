@@ -82,6 +82,46 @@
             {$admin_nav nofilter}
         </div>
 
+        {if $can_delete_admins || $can_edit_admins}
+        <div class="admins-bulk-bar"
+             data-testid="admins-bulk-bar"
+             hidden
+             role="region"
+             aria-label="Bulk admin actions">
+            <span class="admins-bulk-bar__count text-sm font-medium" data-testid="admins-bulk-count">0 selected</span>
+            <div class="admins-bulk-bar__actions">
+                {if $can_delete_admins}
+                <div class="admins-bulk-bar__group" role="group" aria-label="Lifecycle">
+                    <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-deactivate" data-testid="admins-bulk-deactivate">
+                        <i data-lucide="user-x" style="width:13px;height:13px"></i> Deactivate
+                    </button>
+                    <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-reactivate" data-testid="admins-bulk-reactivate">
+                        <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
+                    </button>
+                </div>
+                {/if}
+                {if $can_edit_admins}
+                <div class="admins-bulk-bar__group" role="group" aria-label="Groups">
+                    <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-web-group" data-testid="admins-bulk-web-group">
+                        <i data-lucide="shield" style="width:13px;height:13px"></i> Web group
+                    </button>
+                    <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-srv-group" data-testid="admins-bulk-srv-group">
+                        <i data-lucide="server" style="width:13px;height:13px"></i> Server group
+                    </button>
+                </div>
+                {/if}
+                <div class="admins-bulk-bar__group" role="group" aria-label="Destructive and clear">
+                    {if $can_delete_admins}
+                    <button type="button" class="btn btn--danger btn--sm" data-action="admins-bulk-delete" data-testid="admins-bulk-delete">
+                        <i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete
+                    </button>
+                    {/if}
+                    <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-clear" data-testid="admins-bulk-clear">Clear</button>
+                </div>
+            </div>
+        </div>
+        {/if}
+
         <div class="card" style="overflow:hidden">
             <div class="table-scroll">
             <table class="table" role="table" aria-label="Admins">
@@ -231,6 +271,17 @@
                `@media (max-width: 768px) { .table { display: none } }`
                rule. Same display dance as `.ban-cards` / `.log-cards`. *}
             <div class="admins-list-cards" data-testid="admins-list-cards">
+                {if $can_delete_admins || $can_edit_admins}
+                <div class="admins-list-select-all" data-testid="admins-select-all-mobile-wrap">
+                    <label class="admins-list-select-all__label">
+                        <input type="checkbox"
+                               data-action="admins-select-all"
+                               data-testid="admins-select-all-mobile"
+                               aria-label="Select all admins on this page">
+                        <span>Select all on this page</span>
+                    </label>
+                </div>
+                {/if}
                 {foreach $admins as $admin}
                     <div class="admins-list-card"
                          data-testid="admins-list-card"
@@ -341,46 +392,6 @@
             </div>
         </div>
     </div>
-
-    {if $can_delete_admins || $can_edit_admins}
-    <div class="admins-bulk-bar"
-         data-testid="admins-bulk-bar"
-         hidden
-         role="region"
-         aria-label="Bulk admin actions">
-        <span class="admins-bulk-bar__count text-sm font-medium" data-testid="admins-bulk-count">0 selected</span>
-        <div class="admins-bulk-bar__actions">
-            {if $can_delete_admins}
-            <div class="admins-bulk-bar__group" role="group" aria-label="Lifecycle">
-                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-deactivate" data-testid="admins-bulk-deactivate">
-                    <i data-lucide="user-x" style="width:13px;height:13px"></i> Deactivate
-                </button>
-                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-reactivate" data-testid="admins-bulk-reactivate">
-                    <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
-                </button>
-            </div>
-            {/if}
-            {if $can_edit_admins}
-            <div class="admins-bulk-bar__group" role="group" aria-label="Groups">
-                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-web-group" data-testid="admins-bulk-web-group">
-                    <i data-lucide="shield" style="width:13px;height:13px"></i> Web group
-                </button>
-                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-srv-group" data-testid="admins-bulk-srv-group">
-                    <i data-lucide="server" style="width:13px;height:13px"></i> Server group
-                </button>
-            </div>
-            {/if}
-            <div class="admins-bulk-bar__group" role="group" aria-label="Destructive and clear">
-                {if $can_delete_admins}
-                <button type="button" class="btn btn--danger btn--sm" data-action="admins-bulk-delete" data-testid="admins-bulk-delete">
-                    <i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete
-                </button>
-                {/if}
-                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-clear" data-testid="admins-bulk-clear">Clear</button>
-            </div>
-        </div>
-    </div>
-    {/if}
 
     {* ============================================================
        #1352 — admin-delete confirm + reason modal scaffold.
@@ -659,6 +670,35 @@
             return aids;
         }
 
+        /** @returns {number[]} */
+        function enabledAids() {
+            var boxes = document.querySelectorAll('[data-action="admins-select-row"]:not(:disabled)');
+            var aids = [];
+            for (var i = 0; i < boxes.length; i++) {
+                var aid = Number(/** @type {HTMLElement} */ (boxes[i]).getAttribute('data-aid') || 0);
+                if (aid > 0 && aids.indexOf(aid) === -1) aids.push(aid);
+            }
+            return aids;
+        }
+
+        /**
+         * Keep desktop-table and mobile-card checkboxes for the same
+         * aid in lockstep (both surfaces stay in the DOM; only one is
+         * visible per viewport).
+         * @param {string} aid
+         * @param {boolean} on
+         * @returns {void}
+         */
+        function setRowChecked(aid, on) {
+            if (!aid) return;
+            var boxes = document.querySelectorAll('[data-action="admins-select-row"][data-aid="' + aid + '"]');
+            for (var i = 0; i < boxes.length; i++) {
+                var box = /** @type {HTMLInputElement} */ (boxes[i]);
+                if (box.disabled) continue;
+                box.checked = on;
+            }
+        }
+
         /** @returns {void} */
         function syncBulkBar() {
             var bar = document.querySelector('[data-testid="admins-bulk-bar"]');
@@ -673,12 +713,13 @@
                 bar.setAttribute('hidden', '');
                 /** @type {HTMLElement} */ (bar).style.display = 'none';
             }
-            var all = document.querySelector('[data-action="admins-select-all"]');
-            if (all) {
-                var enabled = document.querySelectorAll('[data-action="admins-select-row"]:not(:disabled)');
-                var checked = document.querySelectorAll('[data-action="admins-select-row"]:checked');
-                /** @type {HTMLInputElement} */ (all).checked = enabled.length > 0 && checked.length === enabled.length;
-                /** @type {HTMLInputElement} */ (all).indeterminate = checked.length > 0 && checked.length < enabled.length;
+            var enabled = enabledAids();
+            var allOn = enabled.length > 0 && aids.length === enabled.length;
+            var allSome = aids.length > 0 && aids.length < enabled.length;
+            var allBoxes = document.querySelectorAll('[data-action="admins-select-all"]');
+            for (var ai = 0; ai < allBoxes.length; ai++) {
+                /** @type {HTMLInputElement} */ (allBoxes[ai]).checked = allOn;
+                /** @type {HTMLInputElement} */ (allBoxes[ai]).indeterminate = allSome;
             }
         }
 
@@ -879,6 +920,8 @@
                 return;
             }
             if (t.matches('[data-action="admins-select-row"]')) {
+                var row = /** @type {HTMLInputElement} */ (t);
+                setRowChecked(row.getAttribute('data-aid') || '', row.checked);
                 syncBulkBar();
             }
         });

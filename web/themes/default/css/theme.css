@@ -421,14 +421,15 @@ html.dark .btn--secondary[aria-pressed="true"] {
 .btn--danger { --btn-bg: var(--danger); --btn-color: white; --btn-bg-hover: #b91c1c; }
 .btn--sm { height: 2rem; padding: 0 0.75rem; font-size: var(--fs-xs); }
 
-/* Sticky bulk-action bar on admin-admins list. Groups related actions
-   with a hairline separator so lifecycle / group / destructive stay
-   visually ordered; every non-destructive control shares btn--secondary. */
+/* Sticky bulk-action bar on admin-admins list (above the table).
+   Groups related actions with a hairline separator so lifecycle /
+   group / destructive stay visually ordered; every non-destructive
+   control shares btn--secondary. */
 .admins-bulk-bar {
   position: sticky;
-  bottom: 1rem;
+  top: 0.75rem;
   z-index: 20;
-  margin-top: 1rem;
+  margin-bottom: 1.25rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -436,8 +437,8 @@ html.dark .btn--secondary[aria-pressed="true"] {
   padding: 0.75rem 1rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  background: var(--bg-elevated);
-  box-shadow: var(--shadow-md);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
 }
 .admins-bulk-bar[hidden] { display: none !important; }
 .admins-bulk-bar__count { flex: 0 0 auto; }
@@ -457,6 +458,36 @@ html.dark .btn--secondary[aria-pressed="true"] {
 .admins-bulk-bar__group + .admins-bulk-bar__group {
   padding-left: 0.75rem;
   border-left: 1px solid var(--border);
+}
+@media (max-width: 768px) {
+  .admins-bulk-bar {
+    position: sticky;
+    top: 0.5rem;
+    margin-bottom: 1.25rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    max-height: min(40vh, 16rem);
+    overflow-y: auto;
+  }
+  .admins-bulk-bar__actions {
+    margin-left: 0;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .admins-bulk-bar__group {
+    width: 100%;
+  }
+  .admins-bulk-bar__group + .admins-bulk-bar__group {
+    padding-left: 0;
+    border-left: none;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .admins-bulk-bar__group .btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    justify-content: center;
+  }
 }
 .btn--icon { width: 2.25rem; padding: 0; }
 /* .btn--xs sizes an icon-only button down to 1.5rem so it can sit
@@ -2220,6 +2251,21 @@ details.queue-row > summary > .row-actions {
 .admins-list-card { border-bottom: 1px solid var(--border); }
 .admins-list-card:last-child { border-bottom: none; }
 .admins-list-card__body { padding: 0.75rem 1rem 0.25rem; }
+.admins-list-select-all {
+  display: none;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-muted);
+}
+.admins-list-select-all__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
 
 /* ---- Responsive ---- */
 [data-mobile-menu] { display: none; }
@@ -2239,6 +2285,7 @@ details.queue-row > summary > .row-actions {
      dance as `.ban-cards` — hidden at desktop, block at mobile. */
   .log-cards { display: block; }
   .admins-list-cards { display: block; }
+  .admins-list-select-all { display: block; }
   /* #1181: filter chip rows wrap onto multiple lines on mobile
      instead of horizontal-scrolling, so every chip is reachable
      without a swipe. The .scroll-x desktop affordance is the
