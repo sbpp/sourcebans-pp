@@ -626,6 +626,65 @@ if ($BansEnd > $BanCount) {
 
 $view_comments = false;
 $bans          = [];
+
+$removedByAdminIds = [];
+foreach ($res as $row) {
+    if ($row['RemovedBy'] !== null) {
+        $removedByAdminIds[(int) $row['RemovedBy']] = true;
+    }
+}
+$removedByNames = [];
+if ($removedByAdminIds !== []) {
+    $ids          = array_keys($removedByAdminIds);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $adminRows    = $GLOBALS['PDO']->query(
+        "SELECT aid, user FROM `:prefix_admins` WHERE aid IN ($placeholders)"
+    )->resultset($ids);
+    foreach ($adminRows as $adminRow) {
+        $removedByNames[(int) $adminRow['aid']] = $adminRow['user'];
+    }
+}
+
+$bidList              = [];
+$siblingAuthidsToCheck = [];
+foreach ($res as $row) {
+    $bidList[] = (int) $row['ban_id'];
+
+    $effectiveSteamId = (string) $row['authid'];
+    if (!SteamID::isValidID($effectiveSteamId)) {
+        $effectiveSteamId = 'STEAM_0:0:00000000';
+    }
+    $siblingAuthidsToCheck[$effectiveSteamId] = true;
+}
+
+$activeSiblingCounts = [];
+if ($siblingAuthidsToCheck !== []) {
+    $authids      = array_keys($siblingAuthidsToCheck);
+    $placeholders = implode(',', array_fill(0, count($authids), '?'));
+    $countRows    = $GLOBALS['PDO']->query(
+        "SELECT authid, type, COUNT(bid) as cnt FROM `:prefix_comms` WHERE authid IN ($placeholders) AND RemovedBy IS NULL AND (length = 0 OR ends > UNIX_TIMESTAMP()) GROUP BY authid, type"
+    )->resultset($authids);
+    foreach ($countRows as $countRow) {
+        $activeSiblingCounts[$countRow['authid'] . '|' . (int) $countRow['type']] = (int) $countRow['cnt'];
+    }
+}
+
+$commentsByBidComm   = [];
+$viewCommentsEnabled = Config::getBool('config.enablepubliccomments') || $userbank->is_admin();
+if ($viewCommentsEnabled && $bidList !== []) {
+    $placeholders = implode(',', array_fill(0, count($bidList), '?'));
+    $cRows        = $GLOBALS['PDO']->query(
+        "SELECT bid, cid, aid, commenttxt, added, edittime,
+			(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+			(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+			FROM `:prefix_comments` AS C
+			WHERE C.type = 'C' AND bid IN ($placeholders) ORDER BY bid, added desc"
+    )->resultset($bidList);
+    foreach ($cRows as $cRow) {
+        $commentsByBidComm[(int) $cRow['bid']][] = $cRow;
+    }
+}
+
 foreach ($res as $row) {
     $data = [];
 
@@ -711,12 +770,10 @@ foreach ($res as $row) {
         if (isset($row['unban_reason']))
             $data['ureason'] = stripslashes($row['unban_reason']);
 
-        $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
-        $GLOBALS['PDO']->bind(':aid', $row['RemovedBy']);
-        $removedby         = $GLOBALS['PDO']->single();
-        $data['removedby'] = "";
-        if (!empty($removedby['user']) && $data['admin']) {
-            $data['removedby'] = $removedby['user'];
+        $removedByUser      = $removedByNames[(int) $row['RemovedBy']] ?? '';
+        $data['removedby']  = "";
+        if ($removedByUser !== '' && $data['admin']) {
+            $data['removedby'] = $removedByUser;
         }
     } else if ($data['ban_length'] == 'Permanent') {
         $data['class'] = "listtable_1_permanent";
@@ -733,13 +790,7 @@ foreach ($res as $row) {
     // Re-gag affordance must hide when the player already has an
     // active block of the same type (the duplicate-check in
     // `comms.add` would 4xx as `already_blocked`).
-    $GLOBALS['PDO']->query("SELECT count(bid) as count FROM `:prefix_comms` WHERE authid = :authid AND RemovedBy IS NULL AND type = :type AND (length = 0 OR ends > UNIX_TIMESTAMP())");
-    $GLOBALS['PDO']->bindMultiple([
-        ':authid' => $data['steamid'],
-        ':type'   => $data['type'],
-    ]);
-    $alrdybnd         = $GLOBALS['PDO']->single();
-    $hasActiveSibling = (int) $alrdybnd['count'] > 0;
+    $hasActiveSibling = ($activeSiblingCounts[$data['steamid'] . '|' . (int) $data['type']] ?? 0) > 0;
     $data['has_active_sibling'] = $hasActiveSibling;
     if (!$hasActiveSibling) {
         // #1275 — admin-comms is single-section Pattern A; the legacy
@@ -810,13 +861,7 @@ foreach ($res as $row) {
         // third-party theme that renders the name directly can't re-leak it
         // (parity with the focal admin-name gate above).
         $commentsHideAdmin = Config::getBool('banlist.hideadminname') && !$userbank->is_admin();
-        $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
-											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
-											(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
-											FROM `:prefix_comments` AS C
-											WHERE C.type = 'C' AND bid = :bid ORDER BY added desc");
-        $GLOBALS['PDO']->bind(':bid', $data['ban_id']);
-        $commentres    = $GLOBALS['PDO']->resultset();
+        $commentres    = $commentsByBidComm[(int) $data['ban_id']] ?? [];
 
         if (count($commentres) > 0) {
             if ($mute_count > 0 || $gag_count > 0) {

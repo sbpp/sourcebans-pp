@@ -65,8 +65,22 @@ final class UserManager
 
         // Always cache the row — admin list / GetProperty need inactive
         // profiles (#1509). Permission gates refuse enabled=0 via HasAccess.
+        $user = $this->mapAdminRow($aid, $res);
+        $this->admins[$aid] = $user;
+        return $user;
+    }
+
+    /**
+     * Shared row-to-user-array mapping for {@see GetUserArray()} and
+     * {@see GetAllAdmins()} so the two call sites can't drift on the
+     * shape of the cached admin array.
+     *
+     * @param array<string, mixed> $res
+     * @return array<string, mixed>
+     */
+    private function mapAdminRow(int $aid, array $res): array
+    {
         $user = [];
-        //$user['user'] = stripslashes($res[0]);
         $user['aid'] = $aid; //immediately obvious
         $user['user'] = $res['user'];
         $user['authid'] = $res['authid'];
@@ -88,7 +102,7 @@ final class UserManager
         $user['srv_flags'] = (string) ($res['srv_flags'] ?? '') . (string) ($res['sgflags'] ?? '');
         $user['group_name'] = $res['wgname'];
         $user['lastvisit'] = $res['lastvisit'];
-        $this->admins[$aid] = $user;
+
         return $user;
     }
 
@@ -199,13 +213,31 @@ final class UserManager
     }
 
 
+    /**
+     * Loads every admin row in one query (the same JOIN `GetUserArray()`
+     * uses, minus the `WHERE aid = :aid` filter) and warms the in-memory
+     * admin cache.
+     */
     public function GetAllAdmins(): array
     {
-        $this->dbh->query('SELECT aid FROM `:prefix_admins`');
-        $res = $this->dbh->resultset();
-        foreach ($res as $admin) {
-            $this->GetUserArray($admin['aid']);
+        $this->dbh->query(
+            "SELECT adm.aid aid, adm.user user, adm.authid authid, adm.password password, adm.gid gid, adm.email email, adm.validate validate, adm.extraflags extraflags,
+							adm.immunity admimmunity,sg.immunity sgimmunity, adm.srv_password srv_password, adm.srv_group srv_group, adm.srv_flags srv_flags,sg.flags sgflags,
+							wg.flags wgflags, wg.name wgname, adm.lastvisit lastvisit
+							FROM `:prefix_admins` AS adm
+							LEFT JOIN `:prefix_groups` AS wg ON adm.gid = wg.gid
+							LEFT JOIN `:prefix_srvgroups` AS sg ON adm.srv_group = sg.name"
+        );
+        $rows = $this->dbh->resultset();
+
+        foreach ($rows as $res) {
+            $aid = (int) $res['aid'];
+            if ($aid <= 0) {
+                continue;
+            }
+            $this->admins[$aid] = $this->mapAdminRow($aid, $res);
         }
+
         return $this->admins;
     }
 
