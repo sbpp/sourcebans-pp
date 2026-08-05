@@ -10,6 +10,7 @@ global $theme;
 
 require_once('Updater.php');
 $updater = new Updater($GLOBALS['PDO']);
+\Sbpp\Auth\AdminsSchema::clearCache();
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\UpdaterView(
     updates: array_values(array_map('strval', $updater->getMessageStack())),

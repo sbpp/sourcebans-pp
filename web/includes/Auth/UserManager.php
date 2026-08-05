@@ -44,10 +44,14 @@ final class UserManager
         if (isset($this->admins[$aid]) && !empty($this->admins[$aid])) {
             return $this->admins[$aid];
         }
-        // Not in the manager, so we need to get them from DB
+        // Not in the manager, so we need to get them from DB.
+        // `enabled` is optional until migration 811 — see AdminsSchema.
+        $enabledSelect = AdminsSchema::hasEnabledColumn($this->dbh)
+            ? ', adm.enabled enabled'
+            : '';
         $this->dbh->query("SELECT adm.user user, adm.authid authid, adm.password password, adm.gid gid, adm.email email, adm.validate validate, adm.extraflags extraflags,
 							adm.immunity admimmunity,sg.immunity sgimmunity, adm.srv_password srv_password, adm.srv_group srv_group, adm.srv_flags srv_flags,sg.flags sgflags,
-							wg.flags wgflags, wg.name wgname, adm.lastvisit lastvisit
+							wg.flags wgflags, wg.name wgname, adm.lastvisit lastvisit{$enabledSelect}
 							FROM `:prefix_admins` AS adm
 							LEFT JOIN `:prefix_groups` AS wg ON adm.gid = wg.gid
 							LEFT JOIN `:prefix_srvgroups` AS sg ON adm.srv_group = sg.name
@@ -59,6 +63,8 @@ final class UserManager
             return false;  // ohnoes some type of db error
         }
 
+        // Always cache the row — admin list / GetProperty need inactive
+        // profiles (#1509). Permission gates refuse enabled=0 via HasAccess.
         $user = $this->mapAdminRow($aid, $res);
         $this->admins[$aid] = $user;
         return $user;
@@ -83,6 +89,7 @@ final class UserManager
         $user['email'] = $res['email'];
         $user['validate'] = $res['validate'];
         $user['extraflags'] = ((int) $res['extraflags'] | (int) $res['wgflags']);
+        $user['enabled'] = (int) ($res['enabled'] ?? 1);
 
         $user['srv_immunity'] = (int) $res['sgimmunity'];
 
@@ -92,7 +99,7 @@ final class UserManager
 
         $user['srv_password'] = $res['srv_password'];
         $user['srv_groups'] = $res['srv_group'];
-        $user['srv_flags'] = $res['srv_flags'] . $res['sgflags'];
+        $user['srv_flags'] = (string) ($res['srv_flags'] ?? '') . (string) ($res['sgflags'] ?? '');
         $user['group_name'] = $res['wgname'];
         $user['lastvisit'] = $res['lastvisit'];
 
@@ -134,6 +141,16 @@ final class UserManager
 
         if (!isset($this->admins[$aid])) {
             $this->GetUserArray($aid);
+        }
+
+        if (!isset($this->admins[$aid])) {
+            return false;
+        }
+
+        // Soft-retired admins keep a display profile but grant no flags
+        // (covers a still-valid JWT after admins.deactivate).
+        if ((int) ($this->admins[$aid]['enabled'] ?? 1) === 0) {
+            return false;
         }
 
         if (is_numeric($flags)) {

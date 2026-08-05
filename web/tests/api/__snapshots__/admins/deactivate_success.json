@@ -1,0 +1,13 @@
+{
+    "ok": true,
+    "data": {
+        "aid": "<*>",
+        "enabled": 0,
+        "rehash": "<*>",
+        "message": {
+            "title": "Admin deactivated",
+            "body": "DeactivateMe can no longer log in or use in-game admin. Ban history still shows their name.",
+            "kind": "green"
+        }
+    }
+}

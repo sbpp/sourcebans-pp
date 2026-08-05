@@ -115,7 +115,7 @@ $ActiveBanCount = (int) $GLOBALS['PDO']
                AND (length = 0 OR ends > UNIX_TIMESTAMP())")
     ->single()['cnt'];
 
-$rows = $GLOBALS['PDO']->query("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, ad.user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, ba.RemoveType, ba.type
+$rows = $GLOBALS['PDO']->query("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, COALESCE(NULLIF(ba.admin_name, ''), ad.user) AS user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, ba.RemoveType, ba.type
 			    				FROM `:prefix_bans` AS ba
 			    				LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
 			    				LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid
@@ -203,7 +203,7 @@ foreach ($rows as $row) {
 
 $CommCount = (int) $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_comms`")->single()['cnt'];
 
-$rows = $GLOBALS['PDO']->query("SELECT bid, ba.authid, ba.type, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, ad.user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, ba.RemoveType
+$rows = $GLOBALS['PDO']->query("SELECT bid, ba.authid, ba.type, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, COALESCE(NULLIF(ba.admin_name, ''), ad.user) AS user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, ba.RemoveType
 				    				FROM `:prefix_comms` AS ba
 				    				LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
 				    				LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid

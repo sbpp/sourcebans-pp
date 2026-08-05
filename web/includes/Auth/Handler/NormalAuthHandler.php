@@ -64,9 +64,16 @@ final class NormalAuthHandler
 
     private function getInfosFromDatabase(string $username): mixed
     {
-        $this->dbs->query("SELECT aid, password FROM `:prefix_admins` WHERE user = :user");
+        $enabledSelect = \Sbpp\Auth\AdminsSchema::hasEnabledColumn($this->dbs)
+            ? ', enabled'
+            : '';
+        $this->dbs->query("SELECT aid, password{$enabledSelect} FROM `:prefix_admins` WHERE user = :user");
         $this->dbs->bind(':user', $username);
-        return $this->dbs->single();
+        $row = $this->dbs->single();
+        if (!is_array($row) || (int) ($row['enabled'] ?? 1) === 0) {
+            return false;
+        }
+        return $row;
     }
 }
 

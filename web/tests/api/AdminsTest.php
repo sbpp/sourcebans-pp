@@ -417,4 +417,166 @@ final class AdminsTest extends ApiTestCase
         $env = $this->api('admins.generate_password', []);
         $this->assertEnvelopeError($env, 'forbidden');
     }
+
+    public function testDeactivateSetsEnabledZero(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'DeactivateMe',
+            'steam' => 'STEAM_0:0:15091',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+
+        $env = $this->api('admins.deactivate', ['aid' => $aid, 'ureason' => 'left team']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(0, (int) $env['data']['enabled']);
+        $row = $this->row('admins', ['aid' => $aid]);
+        $this->assertNotNull($row);
+        $this->assertSame(0, (int) $row['enabled']);
+        $this->assertSame(
+            'Admin (DeactivateMe) has been deactivated. Reason: left team',
+            $this->latestLogMessage('Admin Deactivated'),
+        );
+        $this->assertSnapshot('admins/deactivate_success', $env, ['data.aid', 'data.rehash']);
+    }
+
+    public function testDeactivateRefusesOwner(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('admins.deactivate', ['aid' => Fixture::adminAid()]);
+        $this->assertEnvelopeError($env, 'cannot_deactivate_owner');
+        $this->assertSnapshot('admins/deactivate_owner_blocked', $env);
+    }
+
+    public function testDeactivateRefusesAlreadyInactive(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'AlreadyOff',
+            'steam' => 'STEAM_0:0:15092',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+        $this->assertTrue($this->api('admins.deactivate', ['aid' => $aid])['ok']);
+
+        $env = $this->api('admins.deactivate', ['aid' => $aid]);
+        $this->assertEnvelopeError($env, 'already_inactive');
+    }
+
+    public function testReactivateSetsEnabledOne(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'ReactivateMe',
+            'steam' => 'STEAM_0:0:15093',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+        $this->assertTrue($this->api('admins.deactivate', ['aid' => $aid])['ok']);
+
+        $env = $this->api('admins.reactivate', ['aid' => $aid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(1, (int) $env['data']['enabled']);
+        $row = $this->row('admins', ['aid' => $aid]);
+        $this->assertNotNull($row);
+        $this->assertSame(1, (int) $row['enabled']);
+        $this->assertSnapshot('admins/reactivate_success', $env, ['data.aid', 'data.rehash']);
+    }
+
+    public function testRemoveSnapshotsAdminNameOnBans(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'SnapIssuer',
+            'steam' => 'STEAM_0:0:15094',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp, admin_name)
+             VALUES (UNIX_TIMESTAMP(), 0, "", ?, ?, UNIX_TIMESTAMP(), 0, ?, ?, "127.0.0.1", "")',
+            DB_PREFIX
+        ))->execute(['STEAM_0:1:15094', 'Target', 'for snapshot', $aid]);
+        $bid = (int) $pdo->lastInsertId();
+
+        $env = $this->api('admins.remove', ['aid' => $aid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertNull($this->row('admins', ['aid' => $aid]));
+
+        $ban = $this->row('bans', ['bid' => $bid]);
+        $this->assertNotNull($ban);
+        $this->assertSame('SnapIssuer', $ban['admin_name']);
+    }
+
+    public function testBulkDeactivateAppliesAndSkipsOwner(): void
+    {
+        $this->loginAsAdmin();
+        $a1 = $this->api('admins.add', $this->adminParams([
+            'name'  => 'BulkOne',
+            'steam' => 'STEAM_0:0:15101',
+            'email' => 'bulkone@kick.test',
+        ]));
+        $a2 = $this->api('admins.add', $this->adminParams([
+            'name'  => 'BulkTwo',
+            'steam' => 'STEAM_0:0:15102',
+            'email' => 'bulktwo@kick.test',
+        ]));
+        $this->assertTrue($a1['ok'], json_encode($a1));
+        $this->assertTrue($a2['ok'], json_encode($a2));
+        $aid1 = (int) $a1['data']['aid'];
+        $aid2 = (int) $a2['data']['aid'];
+        $ownerAid = Fixture::adminAid();
+
+        $env = $this->api('admins.bulk', [
+            'op'   => 'deactivate',
+            'aids' => [$aid1, $aid2, $ownerAid],
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame([$aid1, $aid2], $env['data']['applied']);
+        $this->assertContains(
+            ['aid' => $ownerAid, 'reason' => 'self'],
+            $env['data']['skipped'],
+        );
+        $this->assertSame(0, (int) $this->row('admins', ['aid' => $aid1])['enabled']);
+        $this->assertSame(0, (int) $this->row('admins', ['aid' => $aid2])['enabled']);
+        $this->assertSnapshot('admins/bulk_deactivate_partial', $env, ['data.applied', 'data.skipped', 'data.rehash']);
+    }
+
+    public function testBulkSetWebGroup(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'BulkGroup',
+            'steam' => 'STEAM_0:0:15103',
+            'email' => 'bulkgroup@kick.test',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int) $add['data']['aid'];
+
+        $pdo = Fixture::rawPdo();
+        $pdo->exec(sprintf(
+            "INSERT INTO `%s_groups` (type, name, flags) VALUES (1, 'BulkWeb', 0)",
+            DB_PREFIX
+        ));
+        $gid = (int) $pdo->lastInsertId();
+
+        $env = $this->api('admins.bulk', [
+            'op'   => 'set_web_group',
+            'aids' => [$aid],
+            'gid'  => $gid,
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame([$aid], $env['data']['applied']);
+        $this->assertSame($gid, (int) $this->row('admins', ['aid' => $aid])['gid']);
+    }
+
+    public function testBulkRejectsEmptyAids(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('admins.bulk', ['op' => 'deactivate', 'aids' => []]);
+        $this->assertEnvelopeError($env, 'validation');
+    }
 }

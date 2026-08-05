@@ -1743,11 +1743,11 @@ public void Query_ProcessQueue(Database db, DBResultSet results, const char[] er
 		// all blocks should be entered into db!
 
 		FormatEx(query, sizeof(query),
-			"INSERT INTO	 %s_comms (authid, name, created, ends, length, reason, aid, adminIp, sid, type) \
+			"INSERT INTO	 %s_comms (authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid, type) \
 				VALUES		 ('%s', '%s', %d, %d, %d, '%s', \
 								IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '0'), \
-								'%s', %d, %d)",
-			DatabasePrefix, sAuthEscaped, banName, startTime, (startTime + (time * 60)), (time * 60), banReason, DatabasePrefix, sAdmAuthEscaped, sAdmAuthYZEscaped, adminIp, serverID, type);
+								'%s', IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), %d, %d)",
+			DatabasePrefix, sAuthEscaped, banName, startTime, (startTime + (time * 60)), (time * 60), banReason, DatabasePrefix, sAdmAuthEscaped, sAdmAuthYZEscaped, adminIp, DatabasePrefix, sAdmAuthEscaped, sAdmAuthYZEscaped, serverID, type);
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "Query_ProcessQueue. QUERY: %s", query);
 		#endif
@@ -3180,19 +3180,24 @@ stock void SavePunishment(int admin = 0, int target, int type, int length = -1, 
 			"IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), 0)",
 			DatabasePrefix, sAdminAuthIdEscaped, sAdminAuthIdYZEscaped);
 
+		char sQueryAdmName[512];
+		FormatEx(sQueryAdmName, sizeof(sQueryAdmName),
+			"IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '')",
+			DatabasePrefix, sAdminAuthIdEscaped, sAdminAuthIdYZEscaped);
+
 		if (length >= 0)
 		{
-			// authid name, created, ends, length, reason, aid, adminIp, sid
+			// authid name, created, ends, length, reason, aid, adminIp, admin_name, sid
 			FormatEx(sQueryVal, sizeof(sQueryVal),
-				"'%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', %s, '%s', %d",
-				sAuthidEscaped, banName, length * 60, length * 60, banReason, sQueryAdm, adminIp, serverID);
+				"'%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', %s, '%s', %s, %d",
+				sAuthidEscaped, banName, length * 60, length * 60, banReason, sQueryAdm, adminIp, sQueryAdmName, serverID);
 		}
 		else // Session mutes
 		{
-			// authid name, created, ends, length, reason, aid, adminIp, sid
+			// authid name, created, ends, length, reason, aid, adminIp, admin_name, sid
 			FormatEx(sQueryVal, sizeof(sQueryVal),
-				"'%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', %s, '%s', %d",
-				sAuthidEscaped, banName, SESSION_MUTE_FALLBACK, -1, banReason, sQueryAdm, adminIp, serverID);
+				"'%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', %s, '%s', %s, %d",
+				sAuthidEscaped, banName, SESSION_MUTE_FALLBACK, -1, banReason, sQueryAdm, adminIp, sQueryAdmName, serverID);
 		}
 
 		switch (type)
@@ -3210,7 +3215,7 @@ stock void SavePunishment(int admin = 0, int target, int type, int length = -1, 
 
 		// litle magic - one query for all actions (mute, gag or silence)
 		FormatEx(sQuery, sizeof(sQuery),
-			"INSERT INTO %s_comms (authid, name, created, ends, length, reason, aid, adminIp, sid, type) VALUES %s%s%s",
+			"INSERT INTO %s_comms (authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid, type) VALUES %s%s%s",
 			DatabasePrefix, sQueryMute, type == TYPE_SILENCE ? ", " : "", sQueryGag);
 
 		#if defined LOG_QUERIES

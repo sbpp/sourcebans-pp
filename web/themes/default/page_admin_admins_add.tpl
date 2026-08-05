@@ -109,7 +109,18 @@
                             <label class="label" for="password">Password <span class="text-faint" style="font-weight:400">(required for web access)</span></label>
                             <div class="flex gap-2">
                                 <input class="input" id="password" name="password" type="password"
-                                       tabindex="4" data-testid="admin-add-password" autocomplete="new-password">
+                                       tabindex="4" data-testid="admin-add-password" autocomplete="new-password"
+                                       style="flex:1;min-width:0">
+                                <button type="button" class="btn btn--ghost btn--icon"
+                                        title="Show password"
+                                        aria-label="Show password"
+                                        aria-pressed="false"
+                                        aria-controls="password password2"
+                                        data-action="toggle-password"
+                                        data-password-targets="password,password2"
+                                        data-testid="admin-add-password-toggle">
+                                    <i data-lucide="eye" style="width:14px;height:14px"></i>
+                                </button>
                                 {* #1402: data-action="admin-add-generate-password" replaces the
                                    dead `onclick="if (typeof LoadGeneratePassword === 'function')
                                    LoadGeneratePassword(); return false;"` guard. The page-tail
@@ -137,10 +148,22 @@
                                tabindex="6" data-testid="admin-add-useserverpass"
                                onclick="var el = document.getElementById('a_serverpass'); if (el) el.disabled = !this.checked;">
                         <label for="a_useserverpass" class="text-sm font-medium" style="margin:0">Set in-game admin password</label>
-                        <input class="input" id="a_serverpass" name="a_serverpass" type="password"
-                               style="max-width:14rem;margin-left:auto" disabled tabindex="7"
-                               data-testid="admin-add-serverpass" autocomplete="new-password"
-                               aria-label="In-game admin password">
+                        <div class="flex gap-2" style="max-width:16rem;margin-left:auto;flex:1;min-width:0">
+                            <input class="input" id="a_serverpass" name="a_serverpass" type="password"
+                                   style="flex:1;min-width:0" disabled tabindex="7"
+                                   data-testid="admin-add-serverpass" autocomplete="new-password"
+                                   aria-label="In-game admin password">
+                            <button type="button" class="btn btn--ghost btn--icon"
+                                    title="Show password"
+                                    aria-label="Show password"
+                                    aria-pressed="false"
+                                    aria-controls="a_serverpass"
+                                    data-action="toggle-password"
+                                    data-password-targets="a_serverpass"
+                                    data-testid="admin-add-serverpass-toggle">
+                                <i data-lucide="eye" style="width:14px;height:14px"></i>
+                            </button>
+                        </div>
                     </div>
                     <div id="a_serverpass.msg" class="text-xs" style="color:var(--danger)"></div>
                 </div>
@@ -158,101 +181,50 @@
                         <p class="text-sm text-muted m-0"><em>No servers or server groups have been added yet.</em></p>
                     {else}
                         {if $group_list}
-                            <div class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Server groups</div>
-                            <div class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(14rem,1fr))">
-                                {foreach $group_list as $group}
-                                    <label class="flex items-center gap-2 p-3"
-                                           style="border:1px solid var(--border);border-radius:var(--radius-md)">
-                                        <input type="checkbox" id="add-server-group-{$group.gid}" name="group[]" value="g{$group.gid}"
-                                               data-testid="admin-add-server-group">
-                                        <span class="text-sm">{$group.name|escape}</span>
-                                    </label>
-                                {/foreach}
+                            <div>
+                                <label class="label" for="admin-add-server-groups">Server groups</label>
+                                <select class="select"
+                                        id="admin-add-server-groups"
+                                        name="group[]"
+                                        multiple
+                                        data-multiselect
+                                        data-placeholder="Select server groups&hellip;"
+                                        data-testid="admin-add-server-groups">
+                                    {foreach $group_list as $group}
+                                        <option value="g{$group.gid}"
+                                                data-testid="admin-add-server-group">{$group.name|escape}</option>
+                                    {/foreach}
+                                </select>
                             </div>
                         {/if}
                         {if $server_list}
-                            <div class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-top:0.5rem">Individual servers</div>
                             {*
-                                #1405 — per-row hostname hydration. The
-                                `data-server-hydrate="auto"` wrapper opts
-                                this grid into the shared
-                                `web/scripts/server-tile-hydrate.js`
-                                helper (the same one driving
-                                `page_servers.tpl` / `page_admin_servers_list.tpl`
-                                / `page_dashboard.tpl`'s Servers widget).
-                                The helper auto-runs on first paint,
-                                walks every `[data-testid="server-tile"]`
-                                child, and fires
-                                `Actions.ServersHostPlayers` per row to
-                                patch the live hostname into the inner
-                                `[data-testid="server-host"]` slot via
-                                `sb.setHTML`. SourceQueryCache (~30s TTL
-                                per `(ip, port)`) coalesces back-to-back
-                                probes server-side.
-
-                                Mirrors the dashboard widget's minimal-
-                                integration shape: the only optional
-                                testid we ship is `server-host` — every
-                                other cell hook (`server-status` /
-                                `server-map` / `server-players` /
-                                `server-players-bar` / `server-map-img`)
-                                is intentionally omitted, and the
-                                helper's feature-detection branches
-                                no-op for the missing ones. The Add
-                                Admin form is the editor for per-server
-                                access, not a player-row table; status
-                                pills / player counts would only add
-                                visual noise to the checkbox grid.
-
-                                `data-trunchostname="40"` caps the live
-                                hostname server-side: this grid's per-row
-                                card is a FIXED ~18rem wide, so a small
-                                fixed cap keeps a long hostname from
-                                tripping `truncate`'s ellipsis. (The
-                                dashboard widget dropped its cap to `0`
-                                in #1487 because its column is fluid and
-                                CSS sizes the cut to the rendered width;
-                                this grid's column is fixed, so the cap
-                                stays.) The number forwards to
-                                `api_servers_host_players` as the
-                                SourceQuery truncation hint (cheaper
-                                server-side than a JS-side trim because
-                                the handler also htmlspecialchars()'s the
-                                truncated string for `sb.setHTML`).
-
-                                Pre-#1405 (post-#1404 cleanup) the row
-                                shipped `<span id="sa{$server.sid}">IP:port</span>`
-                                with the legacy v1.4.11 `<script>LoadServerHost(...)</script>`
-                                feeder. `LoadServerHost` was deleted
-                                with `sourcebans.js` at #1123 D1; #1404
-                                dropped the dead feeder + the orphan
-                                `$server_script` View property. This is
-                                the additive replacement that restores
-                                live hostname hydration without
-                                reintroducing any of the deleted
-                                helpers. The bare `IP:port` text inside
-                                the `[data-testid="server-host"]` span
-                                stays as the no-JS / cache-cold
-                                fallback; `data-fallback` lets the
-                                helper re-paint it after a UDP probe
-                                failure so the row never goes blank.
+                                Individual-server access rides a
+                                data-multiselect. Option labels start as
+                                "Loading… (ip:port)" and the page-tail
+                                script rewrites them via
+                                Actions.ServersHostPlayers (same shape as
+                                box_admin_admins_search.tpl). Wire values
+                                stay s{sid} for api_admins_add.
                             *}
-                            <div class="grid gap-2"
-                                 style="grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))"
-                                 data-server-hydrate="auto"
-                                 data-trunchostname="40">
-                                {foreach $server_list as $server}
-                                    <label class="flex items-center gap-2 p-3"
-                                           style="border:1px solid var(--border);border-radius:var(--radius-md)"
-                                           data-testid="server-tile"
-                                           data-id="{$server.sid}">
-                                        <input type="checkbox" id="servers[]" name="servers[]" value="s{$server.sid}"
-                                               data-testid="admin-add-server">
-                                        <span class="text-sm font-mono"
-                                              data-testid="server-host"
-                                              data-fallback="{$server.ip}:{$server.port}">{$server.ip}:{$server.port}</span>
-                                    </label>
-                                {/foreach}
+                            <div>
+                                <label class="label" for="admin-add-servers">Individual servers</label>
+                                <select class="select"
+                                        id="admin-add-servers"
+                                        name="servers[]"
+                                        multiple
+                                        data-multiselect
+                                        data-placeholder="Select servers&hellip;"
+                                        data-testid="admin-add-servers">
+                                    {foreach $server_list as $server}
+                                        <option value="s{$server.sid}"
+                                                data-sid="{$server.sid}"
+                                                data-ip="{$server.ip}"
+                                                data-port="{$server.port}"
+                                                data-server-host
+                                                data-testid="admin-add-server">Loading&hellip; ({$server.ip}:{$server.port})</option>
+                                    {/foreach}
+                                </select>
                             </div>
                         {/if}
                     {/if}
@@ -411,16 +383,9 @@
             the orphan `$server_script` View property + the per-row
             `id="sa{$server.sid}"` span hook it targeted.
 
-            #1405 — additive replacement: the per-row span above carries
-            `[data-testid="server-host"]` + `data-fallback="<ip>:<port>"`
-            and the wrapping grid div opts in via
-            `data-server-hydrate="auto"` + `data-trunchostname="40"`. The
-            shared helper (`<script src>` below, same one driving the
-            public servers list / admin Server Management list / dashboard
-            Servers widget) fires `Actions.ServersHostPlayers` per row
-            and patches the live hostname via `sb.setHTML`. SourceQueryCache
-            (~30s TTL per `(ip, port)`) coalesces the per-row probes
-            server-side. *}
+            Hostname labels on Individual servers now hydrate via the
+            page-tail `option[data-server-host]` loop (same shape as
+            box_admin_admins_search.tpl), not server-tile-hydrate.js. *}
 
         {* ============================================================
            #1402 — Add-admin constructive form wiring.
@@ -646,34 +611,73 @@
             }
 
             /**
+             * Collect selected option values from a multi-select as CSV.
+             * @param {string} id
+             * @returns {string}
+             */
+            function collectMultiSelectValues(id) {
+                var sel = document.getElementById(id);
+                if (!(sel instanceof HTMLSelectElement)) return '';
+                /** @type {string[]} */
+                var out = [];
+                Array.prototype.forEach.call(sel.selectedOptions, function (opt) {
+                    if (opt.value) out.push(opt.value);
+                });
+                return out.join(',');
+            }
+            /**
              * Collect comma-separated `g<gid>` server-group selections.
-             * `name="group[]"` was the legacy form's shape (post-v1.4.11)
-             * — we collect to the same csv format api_admins_add expects
-             * on its `servers` param.
              * @returns {string}
              */
             function collectServerGroups() {
-                /** @type {string[]} */
-                var out = [];
-                document.querySelectorAll('input[name="group[]"]').forEach(function (cb) {
-                    var el = /** @type {HTMLInputElement} */ (cb);
-                    if (el.checked) out.push(el.value);
-                });
-                return out.join(',');
+                return collectMultiSelectValues('admin-add-server-groups');
             }
             /**
              * Collect comma-separated `s<sid>` individual-server selections.
              * @returns {string}
              */
             function collectSingleServers() {
-                /** @type {string[]} */
-                var out = [];
-                document.querySelectorAll('input[name="servers[]"]').forEach(function (cb) {
-                    var el = /** @type {HTMLInputElement} */ (cb);
-                    if (el.checked) out.push(el.value);
-                });
-                return out.join(',');
+                return collectMultiSelectValues('admin-add-servers');
             }
+
+            /**
+             * Sync a password-visibility toggle and every listed input.
+             * @param {HTMLElement} toggle
+             * @param {boolean} visible
+             * @returns {void}
+             */
+            function setPasswordGroupVisible(toggle, visible) {
+                var raw = toggle.getAttribute('data-password-targets') || '';
+                var ids = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+                ids.forEach(function (inputId) {
+                    var input = /** @type {HTMLInputElement|null} */ (document.getElementById(inputId));
+                    if (input && !input.disabled) input.type = visible ? 'text' : 'password';
+                });
+                toggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+                toggle.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+                toggle.setAttribute('title', visible ? 'Hide password' : 'Show password');
+                var icon = toggle.querySelector('[data-lucide]');
+                if (icon) {
+                    icon.setAttribute('data-lucide', visible ? 'eye-off' : 'eye');
+                    if (window.lucide) window.lucide.createIcons();
+                }
+            }
+
+            // ---------- Show / hide password ----------
+            document.addEventListener('click', function (e) {
+                var t = /** @type {Element|null} */ (e.target);
+                if (!t || !t.closest) return;
+                var toggle = /** @type {HTMLElement|null} */ (t.closest('[data-action="toggle-password"]'));
+                if (!toggle) return;
+                e.preventDefault();
+                var raw = toggle.getAttribute('data-password-targets') || '';
+                var firstId = raw.split(',')[0] ? raw.split(',')[0].trim() : '';
+                var first = firstId
+                    ? /** @type {HTMLInputElement|null} */ (document.getElementById(firstId))
+                    : null;
+                if (!first || first.disabled) return;
+                setPasswordGroupVisible(toggle, first.type === 'password');
+            });
 
             // ---------- Generate password ----------
             document.addEventListener('click', function (e) {
@@ -695,16 +699,12 @@
                     // #1402 adversarial review MEDIUM 5: leave the input
                     // types as `password` (matches v1.x `LoadGeneratePassword`
                     // — the legacy helper never flipped .type either).
-                    // The pre-fix `type='text'` change was a privacy /
-                    // shoulder-surf / screenshot leak: the freshly-
-                    // generated password sat in plaintext on the operator's
-                    // screen indefinitely after the click, even after the
-                    // operator left the field. Operators who genuinely
-                    // need to see the value can copy it into their
-                    // password manager from the password field's clipboard
-                    // (browsers + extensions both support this) or use
-                    // their browser's "show password" toggle on a per-
-                    // field basis.
+                    // Reset any open eye-toggle so a prior "show" click
+                    // does not leave the freshly generated value visible.
+                    var pwToggle = /** @type {HTMLElement|null} */ (
+                        document.querySelector('[data-testid="admin-add-password-toggle"]')
+                    );
+                    if (pwToggle) setPasswordGroupVisible(pwToggle, false);
                 }).catch(function (err) {
                     // sb.api.call only rejects on internal failures (it
                     // catches fetch / json errors and synthesises an
@@ -861,31 +861,43 @@
             // current `<select>` values (e.g., a server-bounced re-render
             // that pre-selected "Custom permissions").
             try { updateServer(); updateWeb(); } catch (_e) { /* defensive */ }
+
+            // Hostname hydrate for Individual servers options
+            // (mirrors box_admin_admins_search.tpl).
+            if (typeof sb !== 'undefined' && sb && sb.api && typeof Actions !== 'undefined') {
+                var serverSel = document.getElementById('admin-add-servers');
+                if (serverSel instanceof HTMLSelectElement) {
+                    Array.prototype.forEach.call(
+                        serverSel.querySelectorAll('option[data-server-host]'),
+                        function (opt) {
+                            var sid = Number(opt.getAttribute('data-sid'));
+                            var ip = opt.getAttribute('data-ip') || '';
+                            var port = opt.getAttribute('data-port') || '';
+                            if (!sid) return;
+                            sb.api.call(Actions.ServersHostPlayers, {
+                                sid: sid,
+                                trunchostname: 70,
+                            }).then(function (r) {
+                                if (!r || !r.ok || !r.data) {
+                                    opt.textContent = 'Offline (' + ip + ':' + port + ')';
+                                    return;
+                                }
+                                var d = r.data;
+                                if (d.error === 'connect') {
+                                    opt.textContent = 'Offline (' + ip + ':' + port + ')';
+                                    return;
+                                }
+                                opt.textContent = (d.hostname || (ip + ':' + port))
+                                    + ' (' + ip + ':' + port + ')';
+                            }, function () {
+                                opt.textContent = 'Offline (' + ip + ':' + port + ')';
+                            });
+                        },
+                    );
+                }
+            }
         })();
         </script>
         {/literal}
-
-        {*
-            #1405 — per-tile A2S hydration for the "Individual servers"
-            grid above. The shared helper auto-runs on first paint for
-            every `[data-server-hydrate="auto"]` container, fires
-            `Actions.ServersHostPlayers` per tile, and patches the live
-            hostname into the row's `[data-testid="server-host"]` slot.
-            This template only consumes the hostname cell — the rest of
-            the helper's hydration surface (status pill / map / players
-            bar / map-img / refresh / toggle / players panel) is
-            feature-detected and silently no-ops on tiles that don't
-            ship those testid hooks. Same mounting shape as
-            `page_dashboard.tpl`'s Servers widget.
-
-            `defer` lets the rest of the page paint before the helper
-            boots; auto-run still fires once it does (the helper
-            branches on `document.readyState`). The script ships under
-            web/scripts/ so all four surfaces (public servers list,
-            admin Server Management list, dashboard Servers widget, this
-            Add Admin per-server access grid) share one helper file —
-            never copy-paste the hydration code into a new template.
-        *}
-        <script src="./scripts/server-tile-hydrate.js" defer></script>
     {/if}
 </div>

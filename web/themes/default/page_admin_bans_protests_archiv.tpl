@@ -252,21 +252,30 @@
         if (archiv === '2') msg = 'Restore the ban protest for "' + key + '" from the archive?';
         else if (archiv === '1') msg = 'Move the ban protest for "' + key + '" to the archive?';
         else msg = 'Delete the ban protest for "' + key + '"?';
-        if (!window.confirm(msg)) return;
-        var a = api(), A = actions();
-        if (!a || !A || !Number.isFinite(pid)) return;
-        setBusy(btn, true);
-        a.call(A.ProtestsRemove, { pid: pid, archiv: archiv }).then(function (r) {
-            if (!r || r.ok === false) {
-                setBusy(btn, false);
-                toast('error', 'Action failed', (r && r.error && r.error.message) || 'Unknown error');
-                return;
-            }
-            var node = document.getElementById('apid_' + pid);
-            if (node && node.parentNode) node.parentNode.removeChild(node);
-            var counter = document.getElementById('protcountarchiv');
-            if (counter) counter.textContent = String(Math.max(0, Number(counter.textContent) - 1));
-            toast('success', 'Done', 'Archive updated.');
+        var S = window.SBPP;
+        if (!S || typeof S.confirm !== 'function') return;
+        S.confirm({
+            title: archiv === '0' ? 'Delete protest' : (archiv === '2' ? 'Restore protest' : 'Archive protest'),
+            body: msg,
+            confirmLabel: archiv === '0' ? 'Delete' : (archiv === '2' ? 'Restore' : 'Archive'),
+            danger: archiv === '0',
+        }).then(function (ok) {
+            if (!ok) return;
+            var a = api(), A = actions();
+            if (!a || !A || !Number.isFinite(pid)) return;
+            setBusy(btn, true);
+            a.call(A.ProtestsRemove, { pid: pid, archiv: archiv }).then(function (r) {
+                if (!r || r.ok === false) {
+                    setBusy(btn, false);
+                    toast('error', 'Action failed', (r && r.error && r.error.message) || 'Unknown error');
+                    return;
+                }
+                var node = document.getElementById('apid_' + pid);
+                if (node && node.parentNode) node.parentNode.removeChild(node);
+                var counter = document.getElementById('protcountarchiv');
+                if (counter) counter.textContent = String(Math.max(0, Number(counter.textContent) - 1));
+                toast('success', 'Done', 'Archive updated.');
+            });
         });
     });
 })();

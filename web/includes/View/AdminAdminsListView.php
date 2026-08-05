@@ -32,7 +32,12 @@ final class AdminAdminsListView extends View
      *     `:prefix_admins` augmented by admin.admins.php with display
      *     fields (`user`, `name`, `aid`, `bancount`, `nodemocount`,
      *     `web_group`, `server_group`, `web_flag_string`,
-     *     `server_flag_string`, `immunity`, `lastvisit`).
+     *     `server_flag_string`, `immunity`, `lastvisit`, `enabled`).
+     * @param string $active_view One of `active` / `inactive` / `all`
+     * @param string $chip_base_link Base href for the Active/Inactive/All chips
+     *     (search filters preserved; `view=` appended per chip)
+     * @param list<array{gid: int|string, name: string}> $web_groups
+     * @param list<array{id: int|string, name: string}> $srv_groups
      */
     public function __construct(
         public readonly bool $can_list_admins,
@@ -41,6 +46,11 @@ final class AdminAdminsListView extends View
         public readonly int $admin_count,
         public readonly string $admin_nav,
         public readonly array $admins,
+        public readonly string $active_view = 'active',
+        public readonly string $chip_base_link = 'index.php?p=admin&c=admins&section=admins',
+        public readonly array $web_groups = [],
+        public readonly array $srv_groups = [],
+        public readonly int $current_aid = 0,
     ) {
     }
 }

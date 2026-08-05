@@ -157,6 +157,21 @@ records every admin action (bans, unbans, settings changes) with
 timestamp and admin name. It's the first place to look if something
 unexpected changed.
 
+## Deactivate vs delete
+
+Under **Admin Panel → Admins**:
+
+- **Deactivate** retires access without removing the account. The admin
+  cannot log in or load as an in-game admin after the next rehash. Their
+  username stays on bans and blocks they issued. Use this when someone
+  leaves the team but you want history to stay readable.
+- **Delete** permanently removes the account. Ban and block rows keep a
+  frozen copy of their username (`admin_name`). The list never shows
+  "admin deleted" for those rows.
+
+Deactivated accounts still reserve their username and SteamID. Free
+those by deleting the row or editing the account details first.
+
 ## Removing an admin
 
 Under **Admin Panel → Admins**, find the row and click the trash icon.
@@ -164,7 +179,7 @@ You'll be asked for a reason. It goes into the audit log alongside
 the removal.
 
 Removed admins lose panel access immediately. In-game admin status
-clears on the next map change.
+clears on the next map change. Issuer names on existing bans stay.
 
 ## Common pitfalls
 

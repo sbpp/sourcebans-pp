@@ -432,7 +432,7 @@
           <td class="col-tier-2 text-muted truncate" style="max-width:12rem" title="{$ban.sname|escape}">{$ban.sname|escape}</td>
           {if !$hideadminname}
           <td class="col-admin col-tier-2 text-muted">
-            {if empty($ban.aname)}<i class="text-faint">deleted</i>{else}{$ban.aname|escape}{/if}
+            {if empty($ban.aname)}<i class="text-faint">Unknown</i>{else}{$ban.aname|escape}{/if}
           </td>
           {/if}
           {* #1363: title= surfaces the full SecondsToString breakdown

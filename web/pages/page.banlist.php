@@ -543,7 +543,7 @@ if (isset($_GET['searchText'])) {
     }
 
     $res = $GLOBALS['PDO']->query("SELECT BA.bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
-			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
+			SE.ip server_ip, COALESCE(NULLIF(BA.admin_name, ''), AD.user) AS admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 			(SELECT count(*) FROM `:prefix_demos` as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
             (SELECT (SELECT count(*) FROM `:prefix_bans` as BH WHERE (BH.type = BA.type AND BH.type = 0 AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL)) + (SELECT count(*) FROM `:prefix_bans` as BH WHERE (BH.type = BA.type AND BH.type = 1 AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL))) as history_count
@@ -577,7 +577,7 @@ if (isset($_GET['searchText'])) {
         : $publicFilterWheren;
 
     $res = $GLOBALS['PDO']->query("SELECT bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
-			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
+			SE.ip server_ip, COALESCE(NULLIF(BA.admin_name, ''), AD.user) AS admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 			(SELECT count(*) FROM `:prefix_demos` as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
 			(SELECT (SELECT count(*) FROM `:prefix_bans` as BH WHERE (BH.type = BA.type AND BH.type = 0 AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL)) + (SELECT count(*) FROM `:prefix_bans` as BH WHERE (BH.type = BA.type AND BH.type = 1 AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL))) as history_count
@@ -728,7 +728,7 @@ if (isset($_GET['advSearch'])) {
     $publicFilterBranch3 = $branch3HasWhere ? $publicFilterAnd : $publicFilterWheren;
 
     $res = $GLOBALS['PDO']->query("SELECT BA.bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
-			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
+			SE.ip server_ip, COALESCE(NULLIF(BA.admin_name, ''), AD.user) AS admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 			(SELECT count(*) FROM `:prefix_demos` as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
             (SELECT (SELECT count(*) FROM `:prefix_bans` as BH WHERE (BH.type = BA.type AND BH.type = 0 AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL)) + (SELECT count(*) FROM `:prefix_bans` as BH WHERE (BH.type = BA.type AND BH.type = 1 AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL))) as history_count

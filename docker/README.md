@@ -21,6 +21,12 @@ up on the next request — no rebuilds needed.
 - Docker 24+ with the Compose plugin (`docker compose`, not `docker-compose`)
 - Ports `8080`, `8081`, `8025`, `1025`, `3307` free on the host (override in `.env`)
 
+`./sbpp.sh` is a bash wrapper. On **Windows PowerShell**, skip it and run
+the underlying `docker compose` commands from `sbpp.sh` directly (see
+`AGENTS.md` → Dev commands for the PHPUnit / seed env overrides; those
+`-e DB_NAME=…` flags are required so tests never wipe the seeded panel
+DB).
+
 ## Quick start
 
 ```sh

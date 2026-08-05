@@ -975,13 +975,13 @@ in dev/CI). Major tables:
 
 | Table                       | Purpose                                       |
 | --------------------------- | --------------------------------------------- |
-| `sb_admins`                 | Web admins + bcrypt password + lockout state. |
+| `sb_admins`                 | Web admins + bcrypt password + lockout state + `enabled` soft-retire flag. |
 | `sb_groups`                 | Web admin groups (permission bitmasks).       |
 | `sb_srvgroups`              | SourceMod admin groups (char flags).          |
 | `sb_admins_servers_groups`  | Admin × server × group mapping.               |
 | `sb_servers` / `sb_servers_groups` | Game servers + server-group membership. |
-| `sb_bans`                   | The bans themselves.                          |
-| `sb_comms`                  | Mutes / gags / blocks.                        |
+| `sb_bans`                   | The bans themselves (+ `admin_name` issuer snapshot). |
+| `sb_comms`                  | Mutes / gags / blocks (+ `admin_name` issuer snapshot). |
 | `sb_banlog`                 | Per-server enforcement events (dashboard).    |
 | `sb_comments`               | Threaded comments on a ban.                   |
 | `sb_demos`                  | Uploaded demo metadata.                       |

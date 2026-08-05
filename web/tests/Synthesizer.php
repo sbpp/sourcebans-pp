@@ -156,6 +156,8 @@ final class Synthesizer
     private array $adminAids = [];
     /** @var list<int> */
     private array $groupGids = [];
+    /** First web group insert is always Owner (`insertWebGroups`). */
+    private int $ownerWebGid = 0;
     /** Type=3 org groups in `:prefix_groups` (Server groups UI). @var list<int> */
     private array $serverOrgGids = [];
     /** @var list<int> */
@@ -562,7 +564,11 @@ final class Synthesizer
         $count = min($this->scale['groups'], count($defs));
         for ($i = 0; $i < $count; $i++) {
             $stmt->execute([$defs[$i]['name'], $defs[$i]['flags']]);
-            $this->groupGids[] = (int) $this->pdo->lastInsertId();
+            $gid = (int) $this->pdo->lastInsertId();
+            $this->groupGids[] = $gid;
+            if ($defs[$i]['name'] === 'Owner') {
+                $this->ownerWebGid = $gid;
+            }
         }
         return $count;
     }
@@ -664,7 +670,12 @@ final class Synthesizer
             if ($srvFlags !== null && mt_rand(0, 3) === 0) {
                 $srvFlags .= 'o';
             }
-            $extra     = mt_rand(0, 3) === 0 ? 16777216 : 0; // ~25% Owner-flagged
+            // Personal ADMIN_OWNER only when the admin is in the Owner web
+            // group. Random Owner bits on Trial/Moderator/etc. made bulk
+            // select look broken (grey checkbox while the group column
+            // said something else). Owner-group members stay unselectable
+            // either via this bit or via GetProperty's group-flag OR.
+            $extra     = ($this->ownerWebGid > 0 && $gid === $this->ownerWebGid) ? 16777216 : 0;
             $immunity  = mt_rand(0, 99);
             $lastvisit = $this->now - mt_rand(60, 60 * 60 * 24 * 30);
             $stmt->execute([

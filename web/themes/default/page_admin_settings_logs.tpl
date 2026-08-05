@@ -283,11 +283,20 @@
      * Truncate the log table by hitting the legacy `?log_clear=true`
      * endpoint on this page (admin.settings.php's TRUNCATE branch). We
      * full-page nav so the freshly-empty list paints without a JSON dance.
-     * Confirm() so a misclick on the danger button doesn't nuke history.
+     * Confirm dialog so a misclick on the danger button doesn't nuke history.
      */
     window.clearLogs = function () {
-        if (!window.confirm('Clear the entire system log? This cannot be undone.')) return;
-        window.location.href = 'index.php?p=admin&c=settings&section=logs&log_clear=true';
+        var S = window.SBPP;
+        if (!S || typeof S.confirm !== 'function') return;
+        S.confirm({
+            title: 'Clear system log',
+            body: 'Clear the entire system log? This cannot be undone.',
+            confirmLabel: 'Clear log',
+            danger: true,
+        }).then(function (ok) {
+            if (!ok) return;
+            window.location.href = 'index.php?p=admin&c=settings&section=logs&log_clear=true';
+        });
     };
 })();
 {/literal}

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_admins` (
   `lastvisit` int(11) NULL,
   `attempts` int(11) NOT NULL default '0',
   `lockout_until` datetime default NULL,
+  `enabled` tinyint(1) NOT NULL default '1',
   PRIMARY KEY  (`aid`),
   UNIQUE KEY `user` (`user`)
 ) ENGINE=InnoDB  DEFAULT CHARSET={charset};
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_bans` (
   `reason` text character set {charset} NOT NULL,
   `aid` int(6) NOT NULL default '0',
   `adminIp` varchar(128) NOT NULL default '',
+  `admin_name` varchar(64) NOT NULL default '',
   `sid` int(6) NOT NULL default '0',
   `country` varchar(4) default NULL,
   `RemovedBy` int(8) NULL,
@@ -224,6 +226,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_comms` (
   `reason` text NOT NULL,
   `aid` int(6) NOT NULL DEFAULT '0',
   `adminIp` varchar(128) NOT NULL DEFAULT '',
+  `admin_name` varchar(64) NOT NULL DEFAULT '',
   `sid` int(6) NOT NULL DEFAULT '0',
   `RemovedBy` int(8) DEFAULT NULL,
   `RemoveType` varchar(3) DEFAULT NULL,
