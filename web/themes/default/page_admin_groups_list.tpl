@@ -111,7 +111,11 @@
                             <button type="button"
                                     class="btn btn--ghost btn--sm"
                                     data-testid="group-delete"
-                                    onclick="SbppGroupsDelete({$selected_group.gid}, '{$selected_group.name|escape:'javascript'}', this);">Delete group</button>
+                                    style="color:var(--danger)"
+                                    onclick="SbppGroupsDelete({$selected_group.gid}, '{$selected_group.name|escape:'javascript'}', this);">
+                                <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                                Delete group
+                            </button>
                         {/if}
                     </div>
                     <div class="card__body space-y-4">
@@ -229,10 +233,22 @@
                             </div>
                             <div class="flex gap-1">
                                 {if $permission_editgroup}
-                                    <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id|escape:'url'}">Edit</a>
+                                    <a class="btn btn--ghost btn--sm"
+                                       href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id|escape:'url'}"
+                                       data-testid="server-admin-group-edit">
+                                        <i data-lucide="pencil" style="width:13px;height:13px"></i>
+                                        Edit
+                                    </a>
                                 {/if}
                                 {if $permission_deletegroup}
-                                    <button type="button" class="btn btn--ghost btn--sm" onclick="SbppServerGroupsDelete({$group.id}, '{$group.name|escape:'javascript'}', 'srv', this);">Delete</button>
+                                    <button type="button"
+                                            class="btn btn--ghost btn--sm"
+                                            data-testid="server-admin-group-delete"
+                                            style="color:var(--danger)"
+                                            onclick="SbppServerGroupsDelete({$group.id}, '{$group.name|escape:'javascript'}', 'srv', this);">
+                                        <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                                        Delete
+                                    </button>
                                 {/if}
                             </div>
                         </div>
@@ -331,10 +347,22 @@
                             </div>
                             <div class="flex gap-1">
                                 {if $permission_editgroup}
-                                    <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid|escape:'url'}">Edit</a>
+                                    <a class="btn btn--ghost btn--sm"
+                                       href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid|escape:'url'}"
+                                       data-testid="server-group-edit">
+                                        <i data-lucide="pencil" style="width:13px;height:13px"></i>
+                                        Edit
+                                    </a>
                                 {/if}
                                 {if $permission_deletegroup}
-                                    <button type="button" class="btn btn--ghost btn--sm" onclick="SbppServerGroupsDelete({$group.gid}, '{$group.name|escape:'javascript'}', 'server', this);">Delete</button>
+                                    <button type="button"
+                                            class="btn btn--ghost btn--sm"
+                                            data-testid="server-group-delete"
+                                            style="color:var(--danger)"
+                                            onclick="SbppServerGroupsDelete({$group.gid}, '{$group.name|escape:'javascript'}', 'server', this);">
+                                        <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                                        Delete
+                                    </button>
                                 {/if}
                             </div>
                         </div>
