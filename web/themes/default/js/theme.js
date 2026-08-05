@@ -1904,6 +1904,129 @@
     }
   }
 
+  /**
+   * Shared confirm `<dialog>` (replaces `window.confirm`). Injected
+   * once; subsequent calls reuse the same element.
+   *
+   * @typedef {{
+   *   title: string,
+   *   body?: string,
+   *   confirmLabel?: string,
+   *   cancelLabel?: string,
+   *   danger?: boolean,
+   * }} SbppConfirmOpts
+   */
+
+  /** @type {((ok: boolean) => void) | null} */
+  let confirmResolve = null;
+
+  /** @returns {HTMLDialogElement} */
+  function ensureConfirmDialog() {
+    const existing = /** @type {HTMLDialogElement | null} */ (document.getElementById('sbpp-confirm-dialog'));
+    if (existing) return existing;
+
+    const d = document.createElement('dialog');
+    d.id = 'sbpp-confirm-dialog';
+    d.className = 'palette';
+    d.setAttribute('aria-labelledby', 'sbpp-confirm-dialog-title');
+    d.setAttribute('data-testid', 'sbpp-confirm-dialog');
+    d.setAttribute('hidden', '');
+    d.setAttribute('style', 'max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border);background:var(--bg-surface);color:var(--text)');
+    d.innerHTML =
+      '<form method="dialog" data-testid="sbpp-confirm-form">'
+      + '<h2 id="sbpp-confirm-dialog-title" data-testid="sbpp-confirm-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem"></h2>'
+      + '<p class="text-sm text-muted m-0" data-testid="sbpp-confirm-body" style="margin-bottom:0.75rem;white-space:pre-line"></p>'
+      + '<div class="flex gap-2 mt-4" style="justify-content:flex-end">'
+      + '<button type="button" class="btn btn--secondary" data-testid="sbpp-confirm-cancel" value="cancel">Cancel</button>'
+      + '<button type="submit" class="btn btn--primary" data-testid="sbpp-confirm-submit" value="confirm">Confirm</button>'
+      + '</div>'
+      + '</form>';
+    document.body.appendChild(d);
+
+    d.addEventListener('click', (/** @type {MouseEvent} */ e) => {
+      if (e.target === d) finishConfirm(false);
+    });
+    d.addEventListener('cancel', (/** @type {Event} */ e) => {
+      e.preventDefault();
+      finishConfirm(false);
+    });
+    const cancelBtn = d.querySelector('[data-testid="sbpp-confirm-cancel"]');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', (/** @type {Event} */ e) => {
+        e.preventDefault();
+        finishConfirm(false);
+      });
+    }
+    const form = d.querySelector('[data-testid="sbpp-confirm-form"]');
+    if (form) {
+      form.addEventListener('submit', (/** @type {Event} */ e) => {
+        e.preventDefault();
+        finishConfirm(true);
+      });
+    }
+    return d;
+  }
+
+  /**
+   * @param {boolean} ok
+   * @returns {void}
+   */
+  function finishConfirm(ok) {
+    const resolve = confirmResolve;
+    confirmResolve = null;
+    const d = /** @type {HTMLDialogElement | null} */ (document.getElementById('sbpp-confirm-dialog'));
+    if (d) {
+      try { d.close(); } catch (_e) { /* not opened modally */ }
+      d.setAttribute('hidden', '');
+    }
+    if (resolve) resolve(ok);
+  }
+
+  /**
+   * Open the shared confirm dialog. Resolves `true` on Confirm,
+   * `false` on Cancel / backdrop / Escape. Does not fall back to
+   * `window.confirm`.
+   *
+   * @param {SbppConfirmOpts} opts
+   * @returns {Promise<boolean>}
+   */
+  function confirmDialog(opts) {
+    return new Promise((resolve) => {
+      if (confirmResolve) {
+        const prev = confirmResolve;
+        confirmResolve = null;
+        prev(false);
+      }
+      const d = ensureConfirmDialog();
+      const titleEl = d.querySelector('[data-testid="sbpp-confirm-title"]');
+      const bodyEl = /** @type {HTMLElement | null} */ (d.querySelector('[data-testid="sbpp-confirm-body"]'));
+      const submitBtn = /** @type {HTMLButtonElement | null} */ (d.querySelector('[data-testid="sbpp-confirm-submit"]'));
+      const cancelBtn = /** @type {HTMLButtonElement | null} */ (d.querySelector('[data-testid="sbpp-confirm-cancel"]'));
+
+      if (titleEl) titleEl.textContent = opts.title || 'Confirm';
+      if (bodyEl) {
+        const body = opts.body || '';
+        bodyEl.textContent = body;
+        bodyEl.hidden = body === '';
+      }
+      if (cancelBtn) cancelBtn.textContent = opts.cancelLabel || 'Cancel';
+      if (submitBtn) {
+        submitBtn.textContent = opts.confirmLabel || 'Confirm';
+        submitBtn.className = opts.danger
+          ? 'btn btn--danger'
+          : 'btn btn--primary';
+      }
+
+      confirmResolve = resolve;
+      d.removeAttribute('hidden');
+      try { d.showModal(); }
+      catch (_e) { d.setAttribute('open', ''); }
+      if (submitBtn) {
+        try { submitBtn.focus(); } catch (_e) { /* focus may throw */ }
+      }
+    });
+  }
+
   // `SHOWTOAST_DEFAULT_DURATION` is exposed on the SBPP namespace
   // so E2E specs can read it at runtime instead of hardcoding
   // `6000` (or `6500` / `7500` derived literals) into per-spec
@@ -1918,6 +2041,7 @@
     openDrawer: openDrawer,
     closeDrawer: closeDrawer,
     setBusy: setBusy,
+    confirm: confirmDialog,
     SHOWTOAST_DEFAULT_DURATION: SHOWTOAST_DEFAULT_DURATION,
   };
 

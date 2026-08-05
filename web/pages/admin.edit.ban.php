@@ -545,29 +545,36 @@ $banIdJs = json_encode((int) $_GET['id'], JSON_THROW_ON_ERROR);
         var removeBtn = $id('removedemo');
         if (!removeBtn) return;
         removeBtn.addEventListener('click', function () {
-            if (!window.confirm('Remove the demo attached to this ban? This cannot be undone.')) {
-                return;
-            }
-            if (!window.sb || !window.sb.api || typeof window.sb.api.call !== 'function') {
-                toast('red', 'Error', 'Unable to remove demo — panel API unavailable.');
-                return;
-            }
-            setBusy(removeBtn, true);
-            window.sb.api.call(Actions.BansRemoveDemo, { bid: banId }).then(function (r) {
-                setBusy(removeBtn, false);
-                if (!r.ok) {
-                    var err = r.error && r.error.message ? r.error.message : 'Unable to remove demo.';
-                    toast('red', 'Demo NOT Removed', err);
+            var S = window.SBPP;
+            if (!S || typeof S.confirm !== 'function') return;
+            S.confirm({
+                title: 'Remove demo',
+                body: 'Remove the demo attached to this ban? This cannot be undone.',
+                confirmLabel: 'Remove demo',
+                danger: true,
+            }).then(function (ok) {
+                if (!ok) return;
+                if (!window.sb || !window.sb.api || typeof window.sb.api.call !== 'function') {
+                    toast('red', 'Error', 'Unable to remove demo — panel API unavailable.');
                     return;
                 }
-                var msg = $id('demo.msg');
-                if (msg) msg.textContent = '';
-                var did = $id('did');
-                var dname = $id('dname');
-                if (did) did.value = '';
-                if (dname) dname.value = '';
-                removeBtn.hidden = true;
-                toast('green', 'Demo removed', 'The demo has been deleted from this ban.');
+                setBusy(removeBtn, true);
+                window.sb.api.call(Actions.BansRemoveDemo, { bid: banId }).then(function (r) {
+                    setBusy(removeBtn, false);
+                    if (!r.ok) {
+                        var err = r.error && r.error.message ? r.error.message : 'Unable to remove demo.';
+                        toast('red', 'Demo NOT Removed', err);
+                        return;
+                    }
+                    var msg = $id('demo.msg');
+                    if (msg) msg.textContent = '';
+                    var did = $id('did');
+                    var dname = $id('dname');
+                    if (did) did.value = '';
+                    if (dname) dname.value = '';
+                    removeBtn.hidden = true;
+                    toast('green', 'Demo removed', 'The demo has been deleted from this ban.');
+                });
             });
         });
     });

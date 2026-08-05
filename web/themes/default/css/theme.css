@@ -1826,6 +1826,13 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 }
 
 .drawer-backdrop { position: fixed; inset: 0; background: rgb(9 9 11 / 0.4); backdrop-filter: blur(2px); z-index: 50; }
+/* Native <dialog showModal()> backdrop — same blur/darken as the
+   player-drawer overlay so confirm modals and the command palette
+   match the rest of the chrome instead of the browser default. */
+dialog::backdrop {
+  background: rgb(9 9 11 / 0.4);
+  backdrop-filter: blur(2px);
+}
 .drawer { position: fixed; right: 0; top: 0; height: 100%; width: min(35rem, 100vw); background: var(--bg-page); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg); z-index: 51; display: flex; flex-direction: column; animation: slide-in .25s ease; }
 
 /* #1207 CC-2 + DET-1: mobile drawer rescue.
