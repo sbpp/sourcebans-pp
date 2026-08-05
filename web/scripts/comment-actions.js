@@ -32,6 +32,10 @@
      - `data-ctype="<B|C|S|P>"` — required
      - `data-page="<int>"`  — optional, defaults to -1
 
+   Confirm chrome is a single shared `<dialog>` (injected once)
+   matching the banlist / commslist delete modals — not
+   `window.confirm()`.
+
    This file lives at panel scope so any future page that needs
    comment-delete just adds the `data-action="comment-delete"`
    attribute + the three data hooks and includes this script.
@@ -65,9 +69,129 @@
         }
     }
 
+    /** @type {{cid: number, ctype: string, page: number, trigger: HTMLElement}|null} */
+    var pending = null;
+
+    /** @returns {HTMLDialogElement} */
+    function ensureDialog() {
+        var existing = /** @type {HTMLDialogElement|null} */ (document.getElementById('comment-delete-dialog'));
+        if (existing) return existing;
+
+        var d = document.createElement('dialog');
+        d.id = 'comment-delete-dialog';
+        d.className = 'palette';
+        d.setAttribute('aria-labelledby', 'comment-delete-dialog-title');
+        d.setAttribute('data-testid', 'comment-delete-dialog');
+        d.setAttribute('hidden', '');
+        d.setAttribute('style', 'max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)');
+        d.innerHTML =
+            '<form method="dialog" data-testid="comment-delete-form">'
+            + '<h2 id="comment-delete-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Delete comment</h2>'
+            + '<p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">'
+            + 'Delete this comment? This cannot be undone.'
+            + '</p>'
+            + '<div class="flex gap-2 mt-4" style="justify-content:flex-end">'
+            + '<button type="button" class="btn btn--secondary" data-testid="comment-delete-cancel" value="cancel">Cancel</button>'
+            + '<button type="submit" class="btn btn--danger" data-testid="comment-delete-submit" value="confirm">'
+            + '<i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete comment'
+            + '</button>'
+            + '</div>'
+            + '</form>';
+        document.body.appendChild(d);
+        var lucide = /** @type {any} */ (window).lucide;
+        if (lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+        return d;
+    }
+
+    /**
+     * @param {{cid: number, ctype: string, page: number, trigger: HTMLElement}} ctx
+     */
+    function openDeleteDialog(ctx) {
+        pending = ctx;
+        var d = ensureDialog();
+        d.removeAttribute('hidden');
+        try { d.showModal(); }
+        catch (_e) { d.setAttribute('open', ''); }
+        var submitBtn = /** @type {HTMLButtonElement|null} */ (d.querySelector('[data-testid="comment-delete-submit"]'));
+        if (submitBtn) {
+            try { submitBtn.focus(); } catch (_e) { /* focus may throw */ }
+        }
+    }
+
+    function closeDeleteDialog() {
+        var d = /** @type {HTMLDialogElement|null} */ (document.getElementById('comment-delete-dialog'));
+        if (!d) return;
+        try { d.close(); } catch (_e) { /* not opened modally */ }
+        d.setAttribute('hidden', '');
+        pending = null;
+    }
+
+    /**
+     * @param {{cid: number, ctype: string, page: number, trigger: HTMLElement}} ctx
+     */
+    function runDelete(ctx) {
+        var a = api(), A = actions();
+        if (!a || !A) {
+            toast('error', 'Delete failed', 'The API client is unavailable. Reload the page and try again.');
+            return;
+        }
+
+        var submitBtn = /** @type {HTMLButtonElement|null} */ (
+            document.querySelector('#comment-delete-dialog [data-testid="comment-delete-submit"]')
+        );
+        setBusy(submitBtn, true);
+        setBusy(ctx.trigger, true);
+        a.call(A.BansRemoveComment, {
+            cid:   ctx.cid,
+            ctype: ctx.ctype,
+            page:  ctx.page,
+        }).then(function (r) {
+            // sb.api.call follows r.redirect natively when the envelope
+            // sets it; on success api_bans_remove_comment surfaces a
+            // `message.redir` field that drives the navigation back to
+            // the same paginated view. Mirror SbppGroupsAdd's shape.
+            if (!r) {
+                setBusy(submitBtn, false);
+                setBusy(ctx.trigger, false);
+                return;
+            }
+            if (r.redirect) return;
+            if (r.ok === false) {
+                setBusy(submitBtn, false);
+                setBusy(ctx.trigger, false);
+                var em = (r.error && r.error.message) || 'Failed to delete comment.';
+                toast('error', 'Delete failed', em);
+                return;
+            }
+            var data = r.data || {};
+            var msg = data.message || {};
+            closeDeleteDialog();
+            toast('success', msg.title || 'Comment Deleted', msg.body || 'The comment was deleted.');
+            // Honour the handler's redir envelope (sb.api.call only
+            // auto-redirects on r.redirect, NOT on data.message.redir).
+            // Match SbppGroupsAdd's 1.2-1.5s pause so the toast is
+            // visible before the navigation.
+            setTimeout(function () {
+                if (msg.redir) window.location.href = msg.redir;
+                else window.location.reload();
+            }, 1200);
+        }).catch(function (err) {
+            setBusy(submitBtn, false);
+            setBusy(ctx.trigger, false);
+            toast('error', 'Delete failed', String(err && err.message ? err.message : err));
+        });
+    }
+
     document.addEventListener('click', function (e) {
         var t = /** @type {Element|null} */ (e.target);
         if (!t) return;
+
+        if (t.closest && t.closest('[data-testid="comment-delete-cancel"]')) {
+            e.preventDefault();
+            closeDeleteDialog();
+            return;
+        }
+
         var trigger = /** @type {HTMLElement|null} */ (t.closest && t.closest('[data-action="comment-delete"]'));
         if (!trigger) return;
         e.preventDefault();
@@ -81,63 +205,21 @@
             return;
         }
 
-        // Confirm prompt — comment deletion is irreversible and the
-        // legacy helper used the native confirm() too. We keep it as
-        // a native `confirm()` rather than a `<dialog>` because the
-        // trash-can appears in dense threads (potentially 10+ per
-        // page) and the dialog scaffolding noise per row would
-        // dwarf the affordance.
-        if (!window.confirm('Are you sure you want to delete this comment?')) {
-            return;
-        }
+        openDeleteDialog({ cid: cid, ctype: ctype, page: page, trigger: trigger });
+    });
 
-        var a = api(), A = actions();
-        if (!a || !A) {
-            toast('error', 'Delete failed', 'The API client is unavailable. Reload the page and try again.');
-            return;
-        }
+    document.addEventListener('submit', function (e) {
+        var form = /** @type {Element|null} */ (e.target);
+        if (!form || !(/** @type {Element} */ (form)).closest) return;
+        if (!form.matches('[data-testid="comment-delete-form"]')) return;
+        e.preventDefault();
+        if (!pending) return;
+        runDelete(pending);
+    });
 
-        setBusy(trigger, true);
-        a.call(A.BansRemoveComment, {
-            cid:   cid,
-            ctype: ctype,
-            page:  page,
-        }).then(function (r) {
-            // sb.api.call follows r.redirect natively when the envelope
-            // sets it; on success api_bans_remove_comment surfaces a
-            // `message.redir` field that drives the navigation back to
-            // the same paginated view. Mirror SbppGroupsAdd's shape.
-            if (!r) { setBusy(trigger, false); return; }
-            if (r.redirect) return;
-            if (r.ok === false) {
-                setBusy(trigger, false);
-                var em = (r.error && r.error.message) || 'Failed to delete comment.';
-                toast('error', 'Delete failed', em);
-                return;
-            }
-            var data = r.data || {};
-            var msg = data.message || {};
-            toast('success', msg.title || 'Comment Deleted', msg.body || 'The comment was deleted.');
-            // Honour the handler's redir envelope (sb.api.call only
-            // auto-redirects on r.redirect, NOT on data.message.redir).
-            // Match SbppGroupsAdd's 1.2-1.5s pause so the toast is
-            // visible before the navigation.
-            setTimeout(function () {
-                if (msg.redir) window.location.href = msg.redir;
-                else window.location.reload();
-            }, 1200);
-        }).catch(function (err) {
-            // #1402 adversarial review MEDIUM 4: defensive .catch() arm
-            // so a throw inside the success callback (or a sb.api.call
-            // internal failure) doesn't leave the trash-can stuck in
-            // its busy state. The trash-can appears in dense threads
-            // (potentially 10+ per page) and a stuck row reads as a
-            // broken affordance — the operator clicks again, gets the
-            // confirm prompt, and the second click stays no-op'd
-            // because the bubble-phase delegate sees `aria-busy` and
-            // the dispatch silently re-fires.
-            setBusy(trigger, false);
-            toast('error', 'Delete failed', String(err && err.message ? err.message : err));
-        });
+    document.addEventListener('cancel', function (e) {
+        var t = /** @type {Element|null} */ (e.target);
+        if (!t || t.id !== 'comment-delete-dialog') return;
+        pending = null;
     });
 })();
