@@ -2218,13 +2218,22 @@
     const wrap = document.createElement('div');
     wrap.className = 'ssel';
     wrap.setAttribute('data-ssel', 'true');
-    // Native filters often set width/min-width on the <select>
-    // (banlist/commslist use width:auto). Those styles stay on the
-    // visually-hidden select; mirror them onto the wrap so .ssel's
-    // default width:100% does not stretch the chrome.
-    if (select.style.width) wrap.style.width = select.style.width;
-    if (select.style.minWidth) wrap.style.minWidth = select.style.minWidth;
-    if (select.style.maxWidth) wrap.style.maxWidth = select.style.maxWidth;
+    // Native layouts often put width / min-width / flex on the <select>
+    // (banlist filters use width:auto; advanced-search length uses
+    // width:5rem + flex:1). Those styles stay on the visually-hidden
+    // select; mirror them onto the wrap so .ssel's default width:100%
+    // does not stretch the chrome or force flex siblings onto a new row.
+    const st = select.style;
+    if (st.width) wrap.style.width = st.width;
+    if (st.minWidth) wrap.style.minWidth = st.minWidth;
+    if (st.maxWidth) wrap.style.maxWidth = st.maxWidth;
+    if (st.flex) wrap.style.flex = st.flex;
+    if (st.flexGrow) wrap.style.flexGrow = st.flexGrow;
+    if (st.flexShrink) wrap.style.flexShrink = st.flexShrink;
+    if (st.flexBasis) wrap.style.flexBasis = st.flexBasis;
+    if ((st.flex || st.flexGrow) && !st.width) {
+      wrap.style.width = 'auto';
+    }
     parent.insertBefore(wrap, select);
     wrap.appendChild(select);
 

@@ -45,8 +45,10 @@ final class ThemedSelectEnhancerTest extends TestCase
         self::assertStringContainsString("data-placement", $js);
         self::assertStringContainsString("getAttribute('data-placeholder')", $js);
         self::assertStringContainsString('new MutationObserver', $js);
-        self::assertStringContainsString('if (select.style.width) wrap.style.width = select.style.width;', $js);
-        self::assertStringContainsString('if (select.style.minWidth) wrap.style.minWidth = select.style.minWidth;', $js);
+        self::assertStringContainsString('if (st.width) wrap.style.width = st.width;', $js);
+        self::assertStringContainsString('if (st.minWidth) wrap.style.minWidth = st.minWidth;', $js);
+        self::assertStringContainsString('if (st.flex) wrap.style.flex = st.flex;', $js);
+        self::assertStringContainsString("wrap.style.width = 'auto'", $js);
         $mselStart = strpos($js, 'function enhanceMultiselect(select)');
         self::assertNotFalse($mselStart);
         $mselChunk = substr($js, $mselStart, 8000);
