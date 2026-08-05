@@ -201,6 +201,9 @@ final class AdminsDeleteDialogTest extends ApiTestCase
             'from api-contract.js), not a string literal.');
         $this->assertStringContainsString('A.AdminsDeactivate', $html);
         $this->assertStringContainsString('A.AdminsReactivate', $html);
+        $this->assertStringContainsString('A.SystemRehashAdmins', $html,
+            'Deactivate / reactivate / bulk must chain SystemRehashAdmins when the handler returns rehash SIDs.');
+        $this->assertStringContainsString('fireRehashIfNeeded', $html);
         // Sanity-check: we should NOT find the raw dotted string.
         $this->assertStringNotContainsString("'admins.remove'", $html,
             'String literal action names are forbidden — see AGENTS.md anti-patterns.');

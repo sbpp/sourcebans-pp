@@ -188,6 +188,146 @@ test.describe('flow: admin deactivate + bulk (#1509)', () => {
         await expect(row2).toBeHidden();
     });
 
+    test('deactivate success chains SystemRehashAdmins when handler returns rehash sids', async ({ page }) => {
+        await page.goto('/');
+        const aid = await addAdmin(page, {
+            name: 'e2e-rehash-deact',
+            steam: 'STEAM_0:0:150906',
+            email: 'e2e-rehash-deact@test.local',
+        });
+
+        const apiCalls: Array<{ action: string; params?: Record<string, unknown> }> = [];
+        await page.route((url) => url.pathname.endsWith('/api.php'), async (route) => {
+            const req = route.request();
+            if (req.method() !== 'POST') {
+                await route.continue();
+                return;
+            }
+            let body: { action?: string; params?: Record<string, unknown> } = {};
+            try {
+                body = JSON.parse(req.postData() ?? '{}');
+            } catch {
+                await route.continue();
+                return;
+            }
+            if (body.action === 'admins.deactivate') {
+                apiCalls.push({ action: body.action, params: body.params });
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({
+                        ok: true,
+                        data: {
+                            aid,
+                            enabled: 0,
+                            rehash: '11,22',
+                            message: {
+                                title: 'Admin deactivated',
+                                body: 'stub',
+                                kind: 'green',
+                            },
+                        },
+                    }),
+                });
+                return;
+            }
+            if (body.action === 'system.rehash_admins') {
+                apiCalls.push({ action: body.action, params: body.params });
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({ ok: true, data: { results: [] } }),
+                });
+                return;
+            }
+            await route.continue();
+        });
+
+        await page.goto(ADMIN_ADMINS_ROUTE);
+        const row = page.locator(`[data-testid="admin-row"][data-id="${aid}"]`);
+        await expect(row).toBeVisible();
+        await row.locator('[data-testid="admin-action-deactivate"]').click();
+        const dialog = page.locator('[data-testid="admins-deactivate-dialog"]');
+        await dialog.locator('[data-testid="admins-deactivate-submit"]').click();
+
+        await expect.poll(() => apiCalls.map((c) => c.action)).toEqual([
+            'admins.deactivate',
+            'system.rehash_admins',
+        ]);
+        const rehashCall = apiCalls.find((c) => c.action === 'system.rehash_admins');
+        expect(rehashCall?.params?.servers).toBe('11,22');
+    });
+
+    test('bulk deactivate chains SystemRehashAdmins when handler returns rehash sids', async ({ page }) => {
+        await page.goto('/');
+        const aid = await addAdmin(page, {
+            name: 'e2e-rehash-bulk',
+            steam: 'STEAM_0:0:150907',
+            email: 'e2e-rehash-bulk@test.local',
+        });
+
+        const apiCalls: Array<{ action: string; params?: Record<string, unknown> }> = [];
+        await page.route((url) => url.pathname.endsWith('/api.php'), async (route) => {
+            const req = route.request();
+            if (req.method() !== 'POST') {
+                await route.continue();
+                return;
+            }
+            let body: { action?: string; params?: Record<string, unknown> } = {};
+            try {
+                body = JSON.parse(req.postData() ?? '{}');
+            } catch {
+                await route.continue();
+                return;
+            }
+            if (body.action === 'admins.bulk') {
+                apiCalls.push({ action: body.action, params: body.params });
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({
+                        ok: true,
+                        data: {
+                            op: 'deactivate',
+                            applied: [aid],
+                            skipped: [],
+                            rehash: '33',
+                            message: {
+                                title: 'Admins deactivated',
+                                body: '1 deactivated.',
+                                kind: 'green',
+                            },
+                        },
+                    }),
+                });
+                return;
+            }
+            if (body.action === 'system.rehash_admins') {
+                apiCalls.push({ action: body.action, params: body.params });
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({ ok: true, data: { results: [] } }),
+                });
+                return;
+            }
+            await route.continue();
+        });
+
+        await page.goto(ADMIN_ADMINS_ROUTE);
+        const row = page.locator(`[data-testid="admin-row"][data-id="${aid}"]`);
+        await row.locator('[data-testid="admin-row-select"]').check();
+        await page.locator('[data-testid="admins-bulk-deactivate"]').click();
+        await page.locator('[data-testid="admins-bulk-deactivate-submit"]').click();
+
+        await expect.poll(() => apiCalls.map((c) => c.action)).toEqual([
+            'admins.bulk',
+            'system.rehash_admins',
+        ]);
+        const rehashCall = apiCalls.find((c) => c.action === 'system.rehash_admins');
+        expect(rehashCall?.params?.servers).toBe('33');
+    });
+
     test('bulk select → assign web group', async ({ page }) => {
         await page.goto('/');
         const aid = await addAdmin(page, {

@@ -675,6 +675,28 @@
             }
         }
 
+        /**
+         * Chain system.rehash_admins when the handler returned SIDs
+         * (config.enableadminrehashing). Same shape as Add Admin /
+         * _admin_edit_helpers fireRehash — never block the UI toast on
+         * a flaky rehash.
+         * @param {any} data
+         * @param {() => void} [then]
+         * @returns {void}
+         */
+        function fireRehashIfNeeded(data, then) {
+            var done = typeof then === 'function' ? then : function () {};
+            var a = api(), A = actions();
+            var rehashSids = ((data && data.rehash) || '').toString();
+            if (!a || !A || !A.SystemRehashAdmins || !rehashSids) {
+                done();
+                return;
+            }
+            a.call(A.SystemRehashAdmins, { servers: rehashSids })
+                .then(done)
+                .catch(done);
+        }
+
         /** @returns {void} */
         function clearSelection() {
             var boxes = document.querySelectorAll('[data-action="admins-select-row"]');
@@ -829,9 +851,11 @@
                 var title = (data.message && data.message.title) || 'Done';
                 var body = (data.message && data.message.body) || '';
                 toast(applied.length ? 'success' : 'error', title, body);
-                if (op === 'set_web_group' || op === 'set_srv_group' || op === 'reactivate') {
-                    window.location.reload();
-                }
+                fireRehashIfNeeded(data, function () {
+                    if (op === 'set_web_group' || op === 'set_srv_group' || op === 'reactivate') {
+                        window.location.reload();
+                    }
+                });
             });
         }
 
@@ -941,6 +965,7 @@
                     }
                     decrementCount();
                     toast('success', 'Admin reactivated', rName + ' can log in again.');
+                    fireRehashIfNeeded(r.data || {});
                 });
                 return;
             }
@@ -1057,6 +1082,7 @@
                 } else {
                     toast('success', 'Admin deactivated', ctx.name + ' can no longer log in.');
                 }
+                fireRehashIfNeeded(r.data || {});
             });
         });
 
