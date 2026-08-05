@@ -27,7 +27,18 @@
     template variable — no MooTools-era `$('enabled').checked = …`
     re-paint script.
 *}
-<div class="page-section">
+<div class="page-section" data-testid="editmod-section" style="max-width:48rem">
+    <div class="mb-6">
+        {* nofilter: name is htmlspecialchars'd on store in admin.edit.mod.php;
+           auto-escaping here would double-encode (#1108 / #1113). *}
+        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0" data-testid="editmod-title">
+            Edit mod · {$name nofilter}
+        </h1>
+        <p class="text-sm text-muted m-0 mt-2">
+            Update the configuration for this game mod.
+        </p>
+    </div>
+
 <form method="post"
       action=""
       enctype="multipart/form-data"
@@ -35,13 +46,7 @@
       data-testid="editmod-form">
     {csrf_field}
     <div class="card">
-        <div class="card__header">
-            <div>
-                <h3>Edit Mod</h3>
-                <p>Update the configuration for this game mod.</p>
-            </div>
-        </div>
-        <div class="card__body space-y-4" style="max-width:42rem">
+        <div class="card__body space-y-4">
             <input type="hidden" name="insert_type" value="add">
 
             {* nofilter: mod metadata is htmlspecialchars(strip_tags($_POST[…]))'d in admin.edit.mod.php before INSERT/UPDATE, so values pulled back out of `:prefix_mods` are already entity-encoded; auto-escaping the value attribute would double-encode (#1113 audit). The id="icon_hid" element is the channel the popup uploader writes into via window.opener.icon(). *}
