@@ -51,11 +51,11 @@
         <p class="text-sm text-muted m-0 mt-2">Click an admin row's actions to edit details, permissions, or server access.</p>
     </div>
 
-    <div data-testid="admin-admins-section-search">
+    <div class="mb-3" data-testid="admin-admins-section-search">
         {load_template file="admin.admins.search"}
     </div>
 
-    <div class="chip-row mb-3" role="tablist" aria-label="Admin status filter" data-testid="admins-view-chips">
+    <div class="chip-row mb-4" role="tablist" aria-label="Admin status filter" data-testid="admins-view-chips">
         <a class="chip"
            href="{$chip_base_link|escape}&amp;view=active"
            data-testid="admins-view-active"
