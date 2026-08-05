@@ -14,10 +14,11 @@
     keeps the URL bar honest about which sub-page you're on; the
     data-testid hooks match the issue's edit-form-tabs contract.
 
-    The legacy template re-checked boxes via inline JS that drove
-    LoadServerHost(); the 2026 footer drops sourcebans.js, so this
-    template renders the persisted hostname server-side from $server_list
-    and pre-checks via Smarty {if} comparisons against $assigned_servers.
+    Server groups + individual servers ride data-multiselect (same
+    shape as page_admin_admins_add.tpl). Wire values stay g{gid} /
+    s{sid} so the native form POST to admin.edit.adminservers.php
+    is unchanged. Individual-server option labels hydrate via the
+    page-tail Actions.ServersHostPlayers loop.
 *}
 <div class="card-tab page-section" id="Edit Admin Server Access">
     <div class="mb-4">
@@ -65,17 +66,20 @@
                         </div>
                     </div>
                     <div class="card__body">
-                        <div class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(14rem,1fr))">
+                        <label class="label" for="edit-admin-server-groups">Server groups</label>
+                        <select class="select"
+                                id="edit-admin-server-groups"
+                                name="group[]"
+                                multiple
+                                data-multiselect
+                                data-placeholder="Select server groups&hellip;"
+                                data-testid="edit-admin-server-groups">
                             {foreach $group_list as $group}
-                                <label class="flex items-center gap-2 p-3"
-                                       style="border:1px solid var(--border);border-radius:var(--radius-md)">
-                                    <input type="checkbox" id="group_{$group.gid}" name="group[]" value="g{$group.gid}"
-                                           data-testid="edit-admin-server-group"
-                                           {foreach $assigned_servers as $asrv}{if $asrv.srv_group_id == $group.gid}checked{/if}{/foreach}>
-                                    <span class="text-sm">{$group.name|escape}</span>
-                                </label>
+                                <option value="g{$group.gid}"
+                                        data-testid="edit-admin-server-group"
+                                        {foreach $assigned_servers as $asrv}{if $asrv.srv_group_id == $group.gid}selected{/if}{/foreach}>{$group.name|escape}</option>
                             {/foreach}
-                        </div>
+                        </select>
                     </div>
                 </div>
             {/if}
@@ -89,17 +93,24 @@
                         </div>
                     </div>
                     <div class="card__body">
-                        <div class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))">
+                        <label class="label" for="edit-admin-servers">Individual servers</label>
+                        <select class="select"
+                                id="edit-admin-servers"
+                                name="servers[]"
+                                multiple
+                                data-multiselect
+                                data-placeholder="Select servers&hellip;"
+                                data-testid="edit-admin-servers">
                             {foreach $server_list as $server}
-                                <label class="flex items-center gap-2 p-3"
-                                       style="border:1px solid var(--border);border-radius:var(--radius-md)">
-                                    <input type="checkbox" id="server_{$server.sid}" name="servers[]" value="s{$server.sid}"
-                                           data-testid="edit-admin-server"
-                                           {foreach $assigned_servers as $asrv}{if $asrv.server_id == $server.sid}checked{/if}{/foreach}>
-                                    <span class="text-sm font-mono">{$server.ip|escape}:{$server.port|escape}</span>
-                                </label>
+                                <option value="s{$server.sid}"
+                                        data-sid="{$server.sid}"
+                                        data-ip="{$server.ip}"
+                                        data-port="{$server.port}"
+                                        data-server-host
+                                        data-testid="edit-admin-server"
+                                        {foreach $assigned_servers as $asrv}{if $asrv.server_id == $server.sid}selected{/if}{/foreach}>Loading&hellip; ({$server.ip}:{$server.port})</option>
                             {/foreach}
-                        </div>
+                        </select>
                     </div>
                 </div>
             {/if}
@@ -113,3 +124,43 @@
         </form>
     {/if}
 </div>
+
+<script>
+{literal}
+(function () {
+    'use strict';
+    if (typeof sb === 'undefined' || !sb || !sb.api || typeof Actions === 'undefined') {
+        return;
+    }
+    var serverSel = document.getElementById('edit-admin-servers');
+    if (!(serverSel instanceof HTMLSelectElement)) return;
+    Array.prototype.forEach.call(
+        serverSel.querySelectorAll('option[data-server-host]'),
+        function (opt) {
+            var sid = Number(opt.getAttribute('data-sid'));
+            var ip = opt.getAttribute('data-ip') || '';
+            var port = opt.getAttribute('data-port') || '';
+            if (!sid) return;
+            sb.api.call(Actions.ServersHostPlayers, {
+                sid: sid,
+                trunchostname: 70,
+            }).then(function (r) {
+                if (!r || !r.ok || !r.data) {
+                    opt.textContent = 'Offline (' + ip + ':' + port + ')';
+                    return;
+                }
+                var d = r.data;
+                if (d.error === 'connect') {
+                    opt.textContent = 'Offline (' + ip + ':' + port + ')';
+                    return;
+                }
+                opt.textContent = (d.hostname || (ip + ':' + port))
+                    + ' (' + ip + ':' + port + ')';
+            }, function () {
+                opt.textContent = 'Offline (' + ip + ':' + port + ')';
+            });
+        },
+    );
+})();
+{/literal}
+</script>

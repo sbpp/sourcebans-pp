@@ -24,10 +24,10 @@ final class EditAdminServersView extends View
      * @param list<array<string,mixed>> $group_list       Server groups
      *     (`:prefix_groups` rows where type = 3) selectable for the admin.
      * @param list<array<string,mixed>> $server_list      Per-server entries
-     *     (`:prefix_servers` rows) for the per-server access checkboxes.
+     *     (`:prefix_servers` rows) for the individual-servers multiselect.
      * @param list<array{server_id:string|int,srv_group_id:string|int}> $assigned_servers
      *     Existing assignments for the admin from
-     *     `:prefix_admins_servers_groups`, used to pre-check the boxes.
+     *     `:prefix_admins_servers_groups`, used to pre-select options.
      */
     public function __construct(
         public readonly int $row_count,
