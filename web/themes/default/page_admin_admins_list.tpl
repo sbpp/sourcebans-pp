@@ -347,30 +347,37 @@
          data-testid="admins-bulk-bar"
          hidden
          role="region"
-         aria-label="Bulk admin actions"
-         style="position:sticky;bottom:1rem;z-index:20;margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:0.75rem;background:var(--bg-elevated);box-shadow:var(--shadow-md)">
-        <span class="text-sm font-medium" data-testid="admins-bulk-count">0 selected</span>
-        <div class="flex gap-2" style="flex-wrap:wrap;margin-left:auto">
+         aria-label="Bulk admin actions">
+        <span class="admins-bulk-bar__count text-sm font-medium" data-testid="admins-bulk-count">0 selected</span>
+        <div class="admins-bulk-bar__actions">
             {if $can_delete_admins}
-            <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-deactivate" data-testid="admins-bulk-deactivate">
-                <i data-lucide="user-x" style="width:13px;height:13px"></i> Deactivate
-            </button>
-            <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-reactivate" data-testid="admins-bulk-reactivate">
-                <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
-            </button>
-            <button type="button" class="btn btn--danger btn--sm" data-action="admins-bulk-delete" data-testid="admins-bulk-delete">
-                <i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete
-            </button>
+            <div class="admins-bulk-bar__group" role="group" aria-label="Lifecycle">
+                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-deactivate" data-testid="admins-bulk-deactivate">
+                    <i data-lucide="user-x" style="width:13px;height:13px"></i> Deactivate
+                </button>
+                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-reactivate" data-testid="admins-bulk-reactivate">
+                    <i data-lucide="user-check" style="width:13px;height:13px"></i> Reactivate
+                </button>
+            </div>
             {/if}
             {if $can_edit_admins}
-            <button type="button" class="btn btn--ghost btn--sm" data-action="admins-bulk-web-group" data-testid="admins-bulk-web-group">
-                <i data-lucide="shield" style="width:13px;height:13px"></i> Web group
-            </button>
-            <button type="button" class="btn btn--ghost btn--sm" data-action="admins-bulk-srv-group" data-testid="admins-bulk-srv-group">
-                <i data-lucide="server" style="width:13px;height:13px"></i> Server group
-            </button>
+            <div class="admins-bulk-bar__group" role="group" aria-label="Groups">
+                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-web-group" data-testid="admins-bulk-web-group">
+                    <i data-lucide="shield" style="width:13px;height:13px"></i> Web group
+                </button>
+                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-srv-group" data-testid="admins-bulk-srv-group">
+                    <i data-lucide="server" style="width:13px;height:13px"></i> Server group
+                </button>
+            </div>
             {/if}
-            <button type="button" class="btn btn--ghost btn--sm" data-action="admins-bulk-clear" data-testid="admins-bulk-clear">Clear</button>
+            <div class="admins-bulk-bar__group" role="group" aria-label="Destructive and clear">
+                {if $can_delete_admins}
+                <button type="button" class="btn btn--danger btn--sm" data-action="admins-bulk-delete" data-testid="admins-bulk-delete">
+                    <i data-lucide="trash-2" style="width:13px;height:13px"></i> Delete
+                </button>
+                {/if}
+                <button type="button" class="btn btn--secondary btn--sm" data-action="admins-bulk-clear" data-testid="admins-bulk-clear">Clear</button>
+            </div>
         </div>
     </div>
     {/if}
