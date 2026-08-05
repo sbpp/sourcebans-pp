@@ -92,6 +92,25 @@ Quick rules:
 
 Run from the repo root. All commands are idempotent.
 
+**Host shell:** `./sbpp.sh` is a bash wrapper for Linux / macOS / Git
+Bash / WSL. On **Windows PowerShell**, do **not** invoke `./sbpp.sh`.
+Read the matching arm in `sbpp.sh` and run the underlying
+`docker compose` / `docker compose exec` line directly. Agents on a
+`win32` / PowerShell host MUST follow that rule.
+
+Critical PowerShell translations (env overrides are load-bearing;
+without `-e DB_NAME=sourcebans_test`, PHPUnit hits the seeded
+`sourcebans` panel DB because the web container's compose env wins
+over `phpunit.xml`):
+
+```powershell
+# PHPUnit (sourcebans_test only)
+docker compose exec -e DB_HOST=db -e DB_PORT=3306 -e DB_NAME=sourcebans_test -e DB_USER=sourcebans -e DB_PASS=sourcebans -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 web includes/vendor/bin/phpunit -c /var/www/html/web/phpunit.xml --testdox
+
+# Dev seed (sourcebans)
+docker compose exec -e DB_HOST=db -e DB_PORT=3306 -e DB_NAME=sourcebans -e DB_USER=sourcebans -e DB_PASS=sourcebans -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 web php /var/www/html/web/tests/scripts/seed-dev-db.php
+```
+
 ```sh
 ./sbpp.sh up                       # build + start (panel at :8080, admin/admin)
 ./sbpp.sh down                     # stop, keep volumes
@@ -127,8 +146,10 @@ URLs after `up`: panel `http://localhost:8080` (admin/admin), Adminer
 The web container bind-mounts `./web`, so PHP edits land on the next
 request — no restart. Restart only when:
 
-- `composer.json` changed → `./sbpp.sh composer install`
-- anything in `docker/` changed → `./sbpp.sh rebuild`
+- `composer.json` changed → `./sbpp.sh composer install` (or the
+  PowerShell `docker compose exec … composer` equivalent on Windows)
+- anything in `docker/` changed → `./sbpp.sh rebuild` (or
+  `docker compose build --no-cache web` on Windows)
 
 ## Parallel stacks (subagents / multiple worktrees)
 
