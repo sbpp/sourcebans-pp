@@ -43,15 +43,20 @@
         </div>
     </div>
 {else}
-    <div class="card">
-        <div class="card__header">
-            <div>
-                <h3>Server Mods</h3>
-                <p><span data-testid="mod-count">{$mod_count}</span> configured</p>
-            </div>
-        </div>
+    <div class="mb-4">
+        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0" data-testid="mods-list-title">
+            Mods
+            <span class="text-faint" style="font-weight:400;margin-left:0.375rem" data-testid="mod-count">({$mod_count})</span>
+        </h1>
+        <p class="text-sm text-muted m-0 mt-2">
+            Game mods that can be assigned to bans and servers.
+        </p>
+    </div>
+
+    <div class="card" style="overflow:hidden">
         {if $mod_count > 0}
-            <table class="table" data-testid="mods-table">
+            <div class="table-scroll">
+            <table class="table table--compact" data-testid="mods-table">
                 <thead>
                     <tr>
                         <th style="width:40%">Name</th>
@@ -67,11 +72,11 @@
                     {foreach from=$mod_list item=mod}
                         <tr id="mid_{$mod.mid}" data-testid="mod-row" data-id="{$mod.mid}">
                             <td>
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2">
                                     <img src="images/games/{$mod.icon}"
                                          alt=""
-                                         width="20"
-                                         height="20"
+                                         width="18"
+                                         height="18"
                                          loading="lazy"
                                          onerror="this.style.visibility='hidden'">
                                     <span class="font-medium">{$mod.name}</span>
@@ -87,12 +92,20 @@
                                 {/if}
                             </td>
                             {if $permission_editmods || $permission_deletemods}
-                                <td style="text-align:right">
-                                    <div class="flex justify-end gap-2">
+                                <td class="col-actions" style="text-align:right">
+                                    {* Icon-only row actions matching banlist / admins list:
+                                       Lucide icon + `data-tooltip` + `aria-label` inside
+                                       `.row-actions--icons`. Keep `data-testid` / `data-action`
+                                       / `data-fallback-href` wiring unchanged. *}
+                                    <div class="row-actions row-actions--icons">
                                         {if $permission_editmods}
-                                            <a class="btn btn--ghost btn--sm"
+                                            <a class="btn btn--ghost btn--icon btn--sm"
                                                href="index.php?p=admin&c=mods&o=edit&id={$mod.mid|escape:'url'}"
-                                               data-testid="editmod-link">Edit</a>
+                                               data-testid="editmod-link"
+                                               data-tooltip="Edit"
+                                               aria-label="Edit mod {$mod.name|escape}">
+                                                <i data-lucide="pencil" style="width:14px;height:14px"></i>
+                                            </a>
                                         {/if}
                                         {if $permission_deletemods}
                                             {* #1397: data-action wires the delete button to the inline
@@ -110,14 +123,17 @@
                                                beyond the bug; the fallback is a graceful degradation
                                                for the rare case where the JSON dispatcher itself is
                                                missing (e.g. third-party theme that stripped api.js). *}
-                                            <button class="btn btn--ghost btn--sm"
+                                            <button class="btn btn--ghost btn--icon btn--sm"
                                                     type="button"
                                                     data-action="mod-delete"
                                                     data-mid="{$mod.mid}"
                                                     data-name="{$mod.name|escape}"
                                                     data-fallback-href="index.php?p=admin&amp;c=mods"
                                                     data-testid="deletemod-btn"
-                                                    aria-label="Delete mod {$mod.name|escape}">Delete</button>
+                                                    data-tooltip="Delete"
+                                                    aria-label="Delete mod {$mod.name|escape}">
+                                                <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
+                                            </button>
                                         {/if}
                                     </div>
                                 </td>
@@ -126,6 +142,65 @@
                     {/foreach}
                 </tbody>
             </table>
+            </div>
+
+            {* Mobile cards — paired surface for the global
+               `@media (max-width: 768px) { .table { display: none } }`
+               rule. Same display dance as `.admins-list-cards`. *}
+            <div class="mods-list-cards" data-testid="mods-list-cards">
+                {foreach from=$mod_list item=mod}
+                    <div class="mods-list-card" data-testid="mods-list-card" data-id="{$mod.mid}">
+                        <div class="mods-list-card__body flex items-center gap-3">
+                            <img src="images/games/{$mod.icon}"
+                                 alt=""
+                                 width="28"
+                                 height="28"
+                                 loading="lazy"
+                                 onerror="this.style.visibility='hidden'">
+                            <div style="flex:1;min-width:0">
+                                <div class="font-medium text-sm truncate">{$mod.name}</div>
+                                <div class="text-xs text-muted truncate" style="margin-top:0.125rem">
+                                    <span class="font-mono">{$mod.modfolder}</span>
+                                    · SU {$mod.steam_universe}
+                                </div>
+                                <div style="margin-top:0.35rem">
+                                    {if $mod.enabled}
+                                        <span class="pill pill--online">Enabled</span>
+                                    {else}
+                                        <span class="pill pill--offline">Disabled</span>
+                                    {/if}
+                                </div>
+                            </div>
+                        </div>
+                        {if $permission_editmods || $permission_deletemods}
+                        <div class="row-actions row-actions--icons ban-card__actions">
+                            {if $permission_editmods}
+                                <a class="btn btn--ghost btn--icon btn--sm"
+                                   href="index.php?p=admin&amp;c=mods&amp;o=edit&amp;id={$mod.mid|escape:'url'}"
+                                   data-testid="editmod-link-mobile"
+                                   data-tooltip="Edit"
+                                   aria-label="Edit mod {$mod.name|escape}">
+                                    <i data-lucide="pencil" style="width:14px;height:14px"></i>
+                                </a>
+                            {/if}
+                            {if $permission_deletemods}
+                                <button class="btn btn--ghost btn--icon btn--sm"
+                                        type="button"
+                                        data-action="mod-delete"
+                                        data-mid="{$mod.mid}"
+                                        data-name="{$mod.name|escape}"
+                                        data-fallback-href="index.php?p=admin&amp;c=mods"
+                                        data-testid="deletemod-btn-mobile"
+                                        data-tooltip="Delete"
+                                        aria-label="Delete mod {$mod.name|escape}">
+                                    <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
+                                </button>
+                            {/if}
+                        </div>
+                        {/if}
+                    </div>
+                {/foreach}
+            </div>
         {else}
             <div class="card__body">
                 <p class="text-muted">No mods configured yet.</p>
@@ -258,10 +333,13 @@
 
         /**
          * @param {string} mid
-         * @returns {Element|null}
+         * @returns {NodeListOf<Element>}
          */
-        function rowForMid(mid) {
-            return document.querySelector('[data-testid="mod-row"][data-id="' + mid + '"]');
+        function rowsForMid(mid) {
+            return document.querySelectorAll(
+                '[data-testid="mod-row"][data-id="' + mid + '"],'
+                + '[data-testid="mods-list-card"][data-id="' + mid + '"]'
+            );
         }
 
         /**
@@ -276,7 +354,7 @@
             if (!el) return;
             var n = Number((el.textContent || '').replace(/[^0-9]/g, ''));
             if (!Number.isFinite(n) || n <= 0) return;
-            el.textContent = String(n - 1);
+            el.textContent = '(' + (n - 1).toLocaleString() + ')';
         }
 
         /** @returns {HTMLDialogElement|null} */
@@ -397,8 +475,11 @@
                     toast('error', 'Delete failed', msg);
                     return;
                 }
-                var row = rowForMid(ctx.mid);
-                if (row && row.parentNode) row.parentNode.removeChild(row);
+                var rows = rowsForMid(ctx.mid);
+                for (var i = 0; i < rows.length; i++) {
+                    var row = rows[i];
+                    if (row && row.parentNode) row.parentNode.removeChild(row);
+                }
                 decrementCount();
                 closeDeleteDialog();
                 toast('success', 'Mod deleted', ctx.name + ' has been removed.');
