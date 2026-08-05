@@ -52,20 +52,15 @@ $warnings = 0;
 // PHP requirements
 $phpRows = [];
 
-// PHPStan sees the analyser's PHP_VERSION as a fixed string (the
-// container is locked to 8.5+) so the `version_compare(...)` here
-// looks always-true to it. The check still has runtime value: a
-// self-hoster on PHP 8.4 hitting this surface is exactly who needs
-// the "you're on too old a version" feedback.
+// Runtime gate for self-hosters below the PHP 8.5 floor. The analyser
+// environment is locked to 8.5+, so this branch is not exercised there.
 $phpVersionOk = version_compare(PHP_VERSION, '8.5', '>=');
 $phpRows[] = [
     'label'    => 'PHP version',
     'required' => '8.5 or newer',
-    // @phpstan-ignore ternary.alwaysTrue
     'status'   => $phpVersionOk ? 'ok' : 'err',
     'detail'   => PHP_VERSION,
 ];
-// @phpstan-ignore booleanNot.alwaysFalse
 if (!$phpVersionOk) {
     $errors++;
 }
