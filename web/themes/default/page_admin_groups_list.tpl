@@ -104,15 +104,17 @@
                     <input type="hidden" name="type" value="web">
                     <div class="card__header">
                         <div>
-                            <h3>{$selected_group.name|escape}</h3>
-                            <p>{$selected_group.member_count} member{if $selected_group.member_count != 1}s{/if}</p>
+                            <h3 data-testid="group-detail-name">{$selected_group.name|escape}</h3>
+                            <p data-testid="group-detail-members">{$selected_group.member_count} member{if $selected_group.member_count != 1}s{/if}</p>
                         </div>
                         {if $permission_deletegroup}
                             <button type="button"
                                     class="btn btn--ghost btn--sm"
                                     data-testid="group-delete"
+                                    data-gid="{$selected_group.gid}"
+                                    data-name="{$selected_group.name|escape}"
                                     style="color:var(--danger)"
-                                    onclick="SbppGroupsDelete({$selected_group.gid}, '{$selected_group.name|escape:'javascript'}', this);">
+                                    onclick="SbppGroupsDelete(this.dataset.gid, this.dataset.name, this);">
                                 <i data-lucide="trash-2" style="width:13px;height:13px"></i>
                                 Delete group
                             </button>
@@ -507,6 +509,9 @@
     </section>
 </div>
 
+{* nofilter: server-built JSON catalog (json_encode + JSON_HEX_*) for client-side master-detail selection *}
+<script type="application/json" id="web-groups-catalog" data-testid="web-groups-catalog">{$web_groups_catalog_json nofilter}</script>
+
 <script>
 {literal}
 // --- Master-detail save / delete (B12) ---
@@ -680,6 +685,147 @@ function SbppServerGroupsDelete(gid, name, type, btn) {
         if (!target || !target.matches || !target.matches('input[name="flags[]"]')) return;
 
         preview.textContent = SbppFoldFlags(grid) + ' bitmask';
+    });
+})();
+
+// --- Client-side master-detail selection ---
+// Left-rail clicks paint the right pane from `#web-groups-catalog`
+// without a full navigation. The `<a href="?gid=N">` stays as the
+// no-JS fallback. Dirty forms prompt before discard.
+(function () {
+    'use strict';
+
+    var catalogEl = document.getElementById('web-groups-catalog');
+    var list = document.querySelector('[data-testid="group-list"]');
+    var form = document.querySelector('[data-testid="group-detail"]');
+    if (!catalogEl || !list || !form) return;
+
+    var catalog;
+    try {
+        catalog = JSON.parse(catalogEl.textContent || '[]');
+    } catch (e) {
+        return;
+    }
+    if (!Array.isArray(catalog) || catalog.length === 0) return;
+
+    /** @type {Object<string, {gid: number, name: string, flags: number, member_count: number}>} */
+    var byGid = {};
+    for (var i = 0; i < catalog.length; i++) {
+        byGid[String(catalog[i].gid)] = catalog[i];
+    }
+
+    var dirty = false;
+    var nameInput = form.querySelector('[data-testid="group-name"]');
+    var gidInput = form.querySelector('input[name="gid"]');
+    var titleEl = form.querySelector('[data-testid="group-detail-name"]');
+    var membersEl = form.querySelector('[data-testid="group-detail-members"]');
+    var deleteBtn = form.querySelector('[data-testid="group-delete"]');
+    var flagGrid = form.querySelector('[data-testid="flag-grid"]');
+    var bitmaskEl = form.querySelector('[data-testid="flag-bitmask"]');
+
+    function markDirty() {
+        dirty = true;
+    }
+    form.addEventListener('input', markDirty);
+    form.addEventListener('change', markDirty);
+
+    function currentGid() {
+        return gidInput ? Number(gidInput.value) : 0;
+    }
+
+    function memberLabel(count) {
+        var n = Number(count) || 0;
+        return n + ' member' + (n === 1 ? '' : 's');
+    }
+
+    /**
+     * @param {{gid: number, name: string, flags: number, member_count: number}} group
+     * @param {boolean} [push]
+     */
+    function paintGroup(group, push) {
+        if (!group) return;
+
+        if (gidInput) gidInput.value = String(group.gid);
+        if (nameInput) nameInput.value = group.name;
+        if (titleEl) titleEl.textContent = group.name;
+        if (membersEl) membersEl.textContent = memberLabel(group.member_count);
+        form.setAttribute('action', '?p=admin&c=groups&gid=' + group.gid);
+
+        if (deleteBtn) {
+            deleteBtn.setAttribute('data-gid', String(group.gid));
+            deleteBtn.setAttribute('data-name', group.name);
+        }
+
+        var flags = (Number(group.flags) || 0) >>> 0;
+        if (flagGrid) {
+            var checks = flagGrid.querySelectorAll('input[name="flags[]"]');
+            for (var c = 0; c < checks.length; c++) {
+                var input = /** @type {HTMLInputElement} */ (checks[c]);
+                var val = Number(input.dataset.flagValue || input.value) >>> 0;
+                input.checked = (flags & val) === val;
+            }
+        }
+        if (bitmaskEl) {
+            bitmaskEl.textContent = flags + ' bitmask';
+        }
+
+        var rows = list.querySelectorAll('[data-testid="group-row"]');
+        for (var r = 0; r < rows.length; r++) {
+            var row = /** @type {HTMLElement} */ (rows[r]);
+            var isActive = Number(row.getAttribute('data-id')) === group.gid;
+            if (isActive) {
+                row.setAttribute('aria-current', 'true');
+                row.style.background = 'var(--bg-muted)';
+            } else {
+                row.removeAttribute('aria-current');
+                row.style.background = '';
+            }
+        }
+
+        dirty = false;
+
+        if (push) {
+            var url = '?p=admin&c=groups&gid=' + group.gid;
+            if (window.history && typeof window.history.pushState === 'function') {
+                window.history.pushState({ gid: group.gid }, '', url);
+            }
+        }
+    }
+
+    list.addEventListener('click', function (event) {
+        var target = /** @type {HTMLElement|null} */ (event.target);
+        if (!target || typeof target.closest !== 'function') return;
+        var row = target.closest('[data-testid="group-row"]');
+        if (!row || !list.contains(row)) return;
+
+        var gid = Number(row.getAttribute('data-id'));
+        var group = byGid[String(gid)];
+        if (!group) return;
+
+        if (gid === currentGid()) {
+            event.preventDefault();
+            return;
+        }
+
+        if (dirty && !window.confirm('Discard unsaved changes to this group?')) {
+            event.preventDefault();
+            return;
+        }
+
+        event.preventDefault();
+        paintGroup(group, true);
+    });
+
+    window.addEventListener('popstate', function () {
+        var params = new URLSearchParams(window.location.search);
+        var gid = Number(params.get('gid') || 0);
+        var group = byGid[String(gid)] || catalog[0];
+        if (!group) return;
+        if (dirty && !window.confirm('Discard unsaved changes to this group?')) {
+            paintGroup(byGid[String(currentGid())] || group, true);
+            return;
+        }
+        paintGroup(group, false);
     });
 })();
 {/literal}
