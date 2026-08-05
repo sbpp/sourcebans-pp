@@ -79,10 +79,8 @@ sbpp-export-<uuid>.zip
 `manifest.json` is always the first central-directory entry, so
 consumers can read it without slurping the whole bundle. Fields:
 
-- `format_version`: integer (currently `2`). Bumps trigger a
-  documented consumer-side migration. Version `2` adds
-  `admins.enabled` and `bans.admin_name` / `comms.admin_name`
-  (durable issuer snapshot).
+- `format_version`: integer (currently `1`). Bumps trigger a
+  documented consumer-side migration.
 - `bundle_id`: UUIDv4 string. Unique per attempt. Logged in the
   audit trail.
 - `created_at`: integer unix seconds (UTC).

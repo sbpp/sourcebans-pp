@@ -52,7 +52,7 @@ final class Manifest
      * Wire-format identifier. Bump on any breaking change to the
      * entity column layout, manifest shape, or per-field contracts.
      */
-    public const FORMAT_VERSION = 2;
+    public const FORMAT_VERSION = 1;
 
     /**
      * S3 single-PUT object-size ceiling (5 GiB). Every S3-API

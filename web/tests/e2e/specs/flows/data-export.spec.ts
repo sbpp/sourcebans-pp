@@ -40,7 +40,7 @@
  *      can parse the manifest by reading just the first
  *      central-directory entry without slurping the whole bundle).
  *
- *   5. The manifest carries `format_version: 2` and a non-empty
+ *   5. The manifest carries `format_version: 1` and a non-empty
  *      `row_counts` dictionary — the load-bearing fields the
  *      operator's pipeline keys off.
  *
@@ -161,7 +161,7 @@ test.describe('admin data export', () => {
         const manifestJson = await manifestFile!.async('text');
         const manifest = JSON.parse(manifestJson);
 
-        expect(manifest.format_version).toBe(2);
+        expect(manifest.format_version).toBe(1);
         expect(typeof manifest.bundle_id).toBe('string');
         expect(manifest.bundle_id).toMatch(
             /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
