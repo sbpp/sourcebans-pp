@@ -18,6 +18,36 @@ final class Database
 
     private ?PDOStatement $stmt = null;
 
+    /**
+     * Running count of `query()` calls, i.e. distinct SQL statements
+     * prepared since the last {@see resetQueryCount()}. Every call
+     * site in the codebase funnels through `query()` before it can
+     * `execute()` / `resultset()` / `single()` / `iterate()`, so this
+     * is a single choke point for counting logical database round
+     * trips regardless of which page handler, API handler, or helper
+     * issued the SQL.
+     *
+     * Static (not per-instance) because pages construct `Database`
+     * once per request via `$GLOBALS['PDO']`, but tests that build a
+     * fresh instance (e.g. to probe a specific query in isolation)
+     * still want the count visible from the same place. The counter
+     * is a single `int` increment per call: negligible on production
+     * request paths, and it exists so PHPUnit tests can assert a
+     * page/handler issues a bounded number of queries independent of
+     * row count, instead of relying on flaky wall-clock timing.
+     */
+    private static int $queryCount = 0;
+
+    public static function resetQueryCount(): void
+    {
+        self::$queryCount = 0;
+    }
+
+    public static function getQueryCount(): int
+    {
+        return self::$queryCount;
+    }
+
     public function __construct(string $host, int $port, string $dbname, string $user, string $password, string $prefix, string $charset = 'utf8')
     {
         $this->prefix = $prefix;
@@ -42,7 +72,23 @@ final class Database
         try {
             $this->dbh = new PDO($dsn, $user, $password, $options);
         } catch (PDOException $e) {
-            die($e->getMessage());
+            // `die($e->getMessage())` used to sit here. Two problems with
+            // that shape: (1) it leaks the raw PDO message — hostname,
+            // db name, sometimes the DSN — to whatever's reading the
+            // process output (a page visitor's browser on the web SAPI,
+            // or a shell script's captured stdout on the CLI SAPI); (2)
+            // `exit($string)` exits with status 0, not a failure code, so
+            // any caller checking the exit status (e.g. the production
+            // entrypoint's headless updater-migration runner) sees
+            // "succeeded" and continues booting against a DB it never
+            // actually reached.
+            error_log('[Sbpp\Db\Database] connection failed: ' . $e->getMessage());
+            if (PHP_SAPI === 'cli') {
+                fwrite(STDERR, "Database connection failed. See error log for detail.\n");
+                exit(1);
+            }
+            http_response_code(500);
+            die('Database connection failed. Please contact the site administrator.');
         }
     }
 
@@ -67,6 +113,7 @@ final class Database
      */
     public function query(string $query): self
     {
+        self::$queryCount++;
         $query = $this->setPrefix($query);
         $this->stmt = $this->dbh->prepare($query);
         return $this;

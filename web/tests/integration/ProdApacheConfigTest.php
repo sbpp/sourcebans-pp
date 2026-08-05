@@ -60,9 +60,9 @@ use PHPUnit\Framework\TestCase;
  *      regex + asset basename pair named in the message.
  *   2. {@see testFilesExactNamesDoNotShadowPublishedBrowserAssets}
  *      — sister gate for the `<Files "exact-name">` shape. The conf
- *      currently uses one (`<Files "config.php">`); a future
- *      contributor adding `<Files "api-contract.js">` directly would
- *      bypass the FilesMatch gate but hit this one.
+ *      may use zero or more exact-name denies; a future contributor
+ *      adding `<Files "api-contract.js">` would bypass the FilesMatch
+ *      gate but hit this one.
  *   3. {@see testHistoricalApiContractDenyPatternStaysOut} —
  *      forward-looking spot-check pinning the literal substring
  *      `api-contract` doesn't reappear inside any `<FilesMatch>` /
@@ -111,9 +111,9 @@ final class ProdApacheConfigTest extends TestCase
 
     /**
      * Pull every `<Files "exact-name">` block (literal basename match,
-     * not regex). The conf currently uses one — `<Files "config.php">`
-     * — but a future addition that lands an exact-name deny on a
-     * published asset basename would be the same bug class.
+     * not regex). Exact-name denies are optional (config.php backups
+     * ride a `<FilesMatch>`); this still catches a future contributor
+     * who lands `<Files "api-contract.js">` directly.
      *
      * @return list<string>
      */
@@ -238,9 +238,8 @@ final class ProdApacheConfigTest extends TestCase
     }
 
     /**
-     * Sister gate to (1) for the `<Files "exact-name">` shape. The
-     * conf today only carries `<Files "config.php">`; this test
-     * catches a future contributor who lands `<Files "api-contract.js">`
+     * Sister gate to (1) for the `<Files "exact-name">` shape. Catches
+     * a future contributor who lands `<Files "api-contract.js">`
      * directly (which would bypass the regex-based gate above).
      */
     public function testFilesExactNamesDoNotShadowPublishedBrowserAssets(): void
@@ -324,6 +323,10 @@ final class ProdApacheConfigTest extends TestCase
             'phpunit.xml.dist',
             'package.json',
             'tsconfig.json',
+            'config.php',
+            'config.php.bak',
+            'config.php.old',
+            'config.php.template',
         ];
 
         $missing = [];

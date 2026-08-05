@@ -47,6 +47,10 @@ services:
       # `web/../docker/...` resolves naturally there; this mount keeps
       # the local `./sbpp.sh test` runner symmetric with CI.
       - ./docker:/var/www/html/docker:ro
+      # `.dockerignore` lives at the repo root (Docker build context).
+      # Mount it so DockerIgnoreSecretsTest can read it the same way
+      # ProdApacheConfigTest reads `docker/apache/sbpp-prod.conf`.
+      - ./.dockerignore:/var/www/html/.dockerignore:ro
       # Read-only mounts of the docs tree + the two root-level markdown
       # files (AGENTS.md / CHANGELOG.md) for the same reason as the
       # docker/ mount above: file-shape integration tests under
