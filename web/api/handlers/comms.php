@@ -454,7 +454,7 @@ function api_comms_detail(array $params): array
     $row = $GLOBALS['PDO']->query(
         "SELECT C.bid AS cid, C.type, C.authid, C.name, C.created, C.ends, C.length,
                 C.reason, C.aid, C.sid, C.RemovedOn, C.RemovedBy, C.RemoveType, C.ureason,
-                COALESCE(NULLIF(CO.admin_name, ''), AD.user) AS admin_name,
+                COALESCE(NULLIF(C.admin_name, ''), AD.user) AS admin_name,
                 SE.ip AS server_ip, SE.port AS server_port,
                 MO.icon AS mod_icon, MO.name AS mod_name,
                 CAST(MID(C.authid, 9, 1) AS UNSIGNED)

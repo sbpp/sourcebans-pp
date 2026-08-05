@@ -314,7 +314,7 @@ function api_admins_bulk(array $params): array
                 'set_srv_group' => _api_admins_set_srv_group($aid, $srvGroupId),
             };
             $applied[] = $aid;
-            if (!empty($result['rehash']) && is_string($result['rehash'])) {
+            if (!empty($result['rehash'])) {
                 foreach (explode(',', $result['rehash']) as $sid) {
                     $sid = (int) $sid;
                     if ($sid > 0 && !in_array($sid, $rehashSids, true)) {

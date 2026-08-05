@@ -59,18 +59,21 @@
         <a class="chip"
            href="{$chip_base_link|escape}&amp;view=active"
            data-testid="admins-view-active"
+           role="tab"
            data-active="{if $active_view == 'active'}true{else}false{/if}"
            aria-selected="{if $active_view == 'active'}true{else}false{/if}"
            {if $active_view == 'active'}aria-current="true"{/if}>Active</a>
         <a class="chip"
            href="{$chip_base_link|escape}&amp;view=inactive"
            data-testid="admins-view-inactive"
+           role="tab"
            data-active="{if $active_view == 'inactive'}true{else}false{/if}"
            aria-selected="{if $active_view == 'inactive'}true{else}false{/if}"
            {if $active_view == 'inactive'}aria-current="true"{/if}>Inactive</a>
         <a class="chip"
            href="{$chip_base_link|escape}&amp;view=all"
            data-testid="admins-view-all"
+           role="tab"
            data-active="{if $active_view == 'all'}true{else}false{/if}"
            aria-selected="{if $active_view == 'all'}true{else}false{/if}"
            {if $active_view == 'all'}aria-current="true"{/if}>All</a>

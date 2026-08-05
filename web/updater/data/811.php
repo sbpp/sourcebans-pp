@@ -45,24 +45,15 @@ $ensureColumn = static function (\Database $dbs, string $tableSuffix, string $co
 };
 
 // @phpstan-ignore variable.undefined
-$ensureColumn(
-    $this->dbs,
-    'admins',
-    'enabled',
+$ensureColumn($this->dbs, 'admins', 'enabled',
     'ALTER TABLE `:prefix_admins` ADD COLUMN `enabled` TINYINT(1) NOT NULL DEFAULT 1'
 );
 // @phpstan-ignore variable.undefined
-$ensureColumn(
-    $this->dbs,
-    'bans',
-    'admin_name',
+$ensureColumn($this->dbs, 'bans', 'admin_name',
     'ALTER TABLE `:prefix_bans` ADD COLUMN `admin_name` VARCHAR(64) NOT NULL DEFAULT \'\''
 );
 // @phpstan-ignore variable.undefined
-$ensureColumn(
-    $this->dbs,
-    'comms',
-    'admin_name',
+$ensureColumn($this->dbs, 'comms', 'admin_name',
     'ALTER TABLE `:prefix_comms` ADD COLUMN `admin_name` VARCHAR(64) NOT NULL DEFAULT \'\''
 );
 
