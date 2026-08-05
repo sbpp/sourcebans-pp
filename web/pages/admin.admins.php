@@ -101,16 +101,10 @@ if ($section === 'add-admin') {
     // configured server with no visible effect (the `sa<SID>` <span>
     // already renders bare `IP:port` text from `$server_list`).
     //
-    // #1405 — the additive replacement: the template's per-server rows
-    // now ride the shared `web/scripts/server-tile-hydrate.js` helper
-    // (the same one driving the public servers list, admin Server
-    // Management list, and dashboard Servers widget). The View DTO
-    // does NOT carry a new property — hydration is purely client-side
-    // off the existing `$server_list` rows (each row already exposes
-    // `sid` / `ip` / `port`, which is all the helper needs to fire
-    // `Actions.ServersHostPlayers` per row and patch the live hostname
-    // into the `[data-testid="server-host"]` slot). See AGENTS.md
-    // "Hydrate server-tile cards…" for the per-surface contract.
+    // Individual-server access is a data-multiselect. Option labels
+    // hydrate client-side via Actions.ServersHostPlayers in the
+    // template page-tail (search-form shape), off the existing
+    // `$server_list` rows. No View property and no server-tile helper.
     $server_list = [];
     foreach ($servers as $server) {
         $info['sid']  = $server['sid'];

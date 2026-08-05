@@ -2066,6 +2066,7 @@
     wrap.appendChild(chips);
 
     const labelEl = /** @type {HTMLElement} */ (trigger.querySelector('.msel__trigger-label'));
+    const emptyLabel = select.getAttribute('data-placeholder') || 'Any';
 
     /** @returns {HTMLOptionElement[]} */
     function optionList() {
@@ -2078,7 +2079,9 @@
       const n = selected.length;
       wrap.setAttribute('data-has-value', n > 0 ? 'true' : 'false');
       if (labelEl) {
-        labelEl.textContent = n === 0 ? 'Any' : (n === 1 ? selected[0].textContent || selected[0].value : (n + ' selected'));
+        labelEl.textContent = n === 0
+          ? emptyLabel
+          : (n === 1 ? selected[0].textContent || selected[0].value : (n + ' selected'));
       }
       panel.querySelectorAll('input[type="checkbox"]').forEach((/** @type {Element} */ el) => {
         const input = /** @type {HTMLInputElement} */ (el);
@@ -2136,6 +2139,7 @@
 
     /** @param {boolean} open */
     function setOpen(open) {
+      if (open) buildPanel();
       wrap.setAttribute('data-open', open ? 'true' : 'false');
       trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
       panel.hidden = !open;
@@ -2168,6 +2172,15 @@
     });
 
     select.addEventListener('change', syncFromSelect);
+
+    // Option labels may update after enhance (e.g. server hostname
+    // hydrate rewriting option textContent). Keep chips + open panel
+    // in sync without requiring a reopen.
+    const mo = new MutationObserver(() => {
+      syncFromSelect();
+      if (!panel.hidden) buildPanel();
+    });
+    mo.observe(select, { subtree: true, childList: true, characterData: true, attributes: true });
 
     if (window.lucide) window.lucide.createIcons();
   }

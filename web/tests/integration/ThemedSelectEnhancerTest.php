@@ -43,6 +43,14 @@ final class ThemedSelectEnhancerTest extends TestCase
         self::assertStringContainsString("querySelectorAll('select.select')", $js);
         self::assertStringContainsString('function positionSelectPanel(', $js);
         self::assertStringContainsString("data-placement", $js);
+        self::assertStringContainsString("getAttribute('data-placeholder')", $js);
+        self::assertStringContainsString('new MutationObserver', $js);
+        $mselStart = strpos($js, 'function enhanceMultiselect(select)');
+        self::assertNotFalse($mselStart);
+        $mselChunk = substr($js, $mselStart, 8000);
+        self::assertStringContainsString('if (open) buildPanel();', $mselChunk);
+        self::assertStringContainsString('mo.observe(select', $mselChunk);
+        self::assertStringContainsString("getAttribute('data-placeholder')", $mselChunk);
     }
 
     public function testThemeJsSkipsMultiselectAndNativeOptOut(): void
