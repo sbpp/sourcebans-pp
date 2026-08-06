@@ -218,18 +218,17 @@ final class ModsDeleteDialogTest extends ApiTestCase
      * The mod count badge must carry `data-testid="mod-count"` so the
      * page-tail script can decrement it after a delete and the E2E
      * spec can read it as the pre / post-delete oracle. Without the
-     * testid the badge is unreachable in a theme-agnostic way (the
-     * surrounding `<p>… configured</p>` shape is too brittle to
-     * regex against).
+     * testid the badge is unreachable in a theme-agnostic way. The
+     * rendered text is `(N)` (same shape as the Admins list badge).
      */
     public function testCountBadgeCarriesTestid(): void
     {
         $html = $this->renderModsPage();
 
         $this->assertMatchesRegularExpression(
-            '/<span[^>]*data-testid="mod-count"[^>]*>\s*\d+\s*<\/span>/',
+            '/<span[^>]*data-testid="mod-count"[^>]*>\s*\(?\d+\)?\s*<\/span>/',
             $html,
-            'The mod count number must be wrapped in <span data-testid="mod-count">.'
+            'The mod count number must be wrapped in <span data-testid="mod-count"> (optionally parenthesised, matching the Admins list badge).'
         );
     }
 
