@@ -3,17 +3,16 @@
 namespace Sbpp\Auth;
 
 use DateTimeImmutable;
-use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Encoding\CannotDecodeContent;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
-use Lcobucci\JWT\Parser;
+use Lcobucci\JWT\Signer\InvalidKeyProvided;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token;
 use Lcobucci\JWT\Validation\Constraint\IdentifiedBy;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
 use Lcobucci\JWT\Validation\Constraint\PermittedFor;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
-use Lcobucci\JWT\ValidationData;
 
 final class JWT
 {
@@ -54,9 +53,72 @@ final class JWT
         return $config->validator()->validate($token, ...$constrains);
     }
 
+    /**
+     * Minimum decoded length for {@see SB_SECRET_KEY}. HMAC-SHA256
+     * needs a 256-bit key; shorter values decode as base64 but fail
+     * later inside Lcobucci's signer.
+     */
+    public const MIN_SECRET_BYTES = 32;
+
+    /**
+     * Decode an operator-supplied SB_SECRET_KEY into a signing key.
+     *
+     * Public so tests can pin the invalid-key operator message without
+     * redefining the SB_SECRET_KEY constant mid-process. Decodes once,
+     * then rejects keys shorter than {@see MIN_SECRET_BYTES}.
+     */
+    public static function signingKeyFromSecret(string $secret): InMemory
+    {
+        try {
+            $key = InMemory::base64Encoded($secret);
+        } catch (CannotDecodeContent|InvalidKeyProvided $e) {
+            self::failInvalidSecretKey($e);
+        }
+
+        if (strlen($key->contents()) < self::MIN_SECRET_BYTES) {
+            self::failInvalidSecretKey(new \InvalidArgumentException(
+                'decoded SB_SECRET_KEY is shorter than ' . self::MIN_SECRET_BYTES . ' bytes',
+            ));
+        }
+
+        return $key;
+    }
+
     private static function getConfig(): Configuration
     {
-        return Configuration::forSymmetricSigner(new Sha256(), InMemory::base64Encoded(SB_SECRET_KEY));
+        return Configuration::forSymmetricSigner(new Sha256(), self::signingKeyFromSecret(SB_SECRET_KEY));
+    }
+
+    /**
+     * Operator-facing abort when SB_SECRET_KEY cannot be used to sign.
+     *
+     * Covers non-base64 values (UUID / hex / random password) and
+     * base64 that decodes to fewer than {@see MIN_SECRET_BYTES}. Both
+     * used to surface as late Lcobucci exceptions on first login;
+     * surface the fix instead of the library stack.
+     */
+    private static function failInvalidSecretKey(\Throwable $cause): never
+    {
+        $message = "SB_SECRET_KEY must be base64 that decodes to at least "
+            . self::MIN_SECRET_BYTES . " bytes (256 bits for HMAC-SHA256).\n"
+            . "The panel's session cookies are signed with that value, so login cannot continue.\n"
+            . "\n"
+            . "Generate a valid key:\n"
+            . "  openssl rand -base64 47\n"
+            . "\n"
+            . "Then set SB_SECRET_KEY to that output (env var or config.php) and restart.\n"
+            . "Rotating the key logs every admin out.";
+
+        error_log('[Sbpp\Auth\JWT] invalid SB_SECRET_KEY: ' . $cause->getMessage());
+
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $message . "\n");
+            exit(1);
+        }
+
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        die($message);
     }
 }
 

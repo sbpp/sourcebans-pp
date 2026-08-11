@@ -19,8 +19,8 @@
  *      rather than `onclick="RemoveComment(...)"`.
  *   2. `web/scripts/comment-actions.js` (new file) carries the
  *      single document-level event delegate that consumes those
- *      data attributes, prompts via `window.confirm`, and dispatches
- *      to `Actions.BansRemoveComment` via `sb.api.call`.
+ *      data attributes, opens a styled `<dialog>` confirm, and
+ *      dispatches to `Actions.BansRemoveComment` via `sb.api.call`.
  *   3. The script is included globally in `core/footer.tpl` so the
  *      contract is symmetric across every page that renders a
  *      `delcomlink`.
@@ -34,8 +34,8 @@
  *
  *   - fires the click handler on a `[data-action="comment-delete"]`
  *     trigger (proving the dispatcher loaded + is listening),
- *   - shows a `window.confirm` prompt before calling the API
- *     (proving the destructive-action gate),
+ *   - paints `[data-testid="comment-delete-dialog"]` before calling
+ *     the API (proving the destructive-action gate),
  *   - sends the API call with cid + ctype + page extracted from
  *     the data attributes,
  *   - aborts when the user dismisses the confirm.
@@ -98,14 +98,6 @@ test.describe('flow: comment-delete dispatcher (#1402 — RemoveComment zombie)'
 
         await page.goto(ADMIN_BANS_PROTESTS_ROUTE);
 
-        // Auto-accept the window.confirm prompt the dispatcher
-        // raises before firing the API.
-        page.once('dialog', async (dialog) => {
-            expect(dialog.type()).toBe('confirm');
-            expect(dialog.message()).toMatch(/delete/i);
-            await dialog.accept();
-        });
-
         // Inject a synthetic trigger anywhere on the page. The
         // dispatcher is a document-level delegate, so the position
         // is irrelevant.
@@ -122,6 +114,8 @@ test.describe('flow: comment-delete dispatcher (#1402 — RemoveComment zombie)'
         });
 
         await page.locator('[data-testid="synth-delcomlink"]').click();
+        await expect(page.locator('[data-testid="comment-delete-dialog"]')).toBeVisible();
+        await page.locator('[data-testid="comment-delete-submit"]').click();
 
         // The API call must have landed with the values from the
         // data attributes.
@@ -151,11 +145,6 @@ test.describe('flow: comment-delete dispatcher (#1402 — RemoveComment zombie)'
 
         await page.goto(ADMIN_BANS_PROTESTS_ROUTE);
 
-        // Dismiss the prompt.
-        page.once('dialog', async (dialog) => {
-            await dialog.dismiss();
-        });
-
         await page.evaluate(() => {
             const a = document.createElement('a');
             a.setAttribute('href', '#');
@@ -169,14 +158,11 @@ test.describe('flow: comment-delete dispatcher (#1402 — RemoveComment zombie)'
         });
 
         await page.locator('[data-testid="synth-delcomlink-cancel"]').click();
+        await expect(page.locator('[data-testid="comment-delete-dialog"]')).toBeVisible();
+        await page.locator('[data-testid="comment-delete-cancel"]').click();
 
-        // The cancelled-confirm path returns synchronously from the
-        // dispatcher (window.confirm → false → return without
-        // touching the API). Playwright's click() awaits the click
-        // event's handlers, so by the time the awaited click resolves
-        // the dispatcher has already early-returned. No settle timer
-        // needed (AGENTS.md "Playwright E2E specifics" flags
-        // `waitForTimeout` for negative assertions as an anti-pattern).
+        // Cancel closes the dialog without touching the API.
+        await expect(page.locator('[data-testid="comment-delete-dialog"]')).toBeHidden();
         expect(apiCalls, 'cancelled confirm must NOT call the API').toBe(0);
     });
 

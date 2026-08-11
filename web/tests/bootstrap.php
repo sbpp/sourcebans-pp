@@ -95,6 +95,7 @@ foreach (json_decode((string)file_get_contents(ROOT . 'configs/permissions/sourc
 
 require_once __DIR__ . '/Fixture.php';
 require_once __DIR__ . '/ApiTestCase.php';
+require_once __DIR__ . '/QueryCountAssertions.php';
 
 // DB bring-up is lazy: ApiTestCase::setUp() calls Fixture::reset(),
 // which calls Fixture::install() the first time it's invoked. This

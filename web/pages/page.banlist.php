@@ -620,21 +620,7 @@ if (isset($_GET['advSearch'])) {
             $where   = "WHERE BA.bid = ?";
             $advcrit = [$value];
             break;
-        case "steamid":
-            // #1130: match both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants;
-            // see SteamID::toSearchPattern() for rationale. The pre-switch
-            // normalisation block above has already canonicalised $value to
-            // STEAM_0 form, but the Y:Z tail is invariant so the pattern is
-            // the same either way.
-            $authidPattern = SteamID::toSearchPattern($value);
-            if ($authidPattern !== null) {
-                $where   = "WHERE BA.authid REGEXP ?";
-                $advcrit = [$authidPattern];
-            } else {
-                $where   = "WHERE BA.authid = ?";
-                $advcrit = [$value];
-            }
-            break;
+        case "steamid": // legacy exact-match URL; folded to always-partial
         case "steam":
             $where   = "WHERE BA.authid LIKE ?";
             $advcrit = ["%$value%"];
@@ -783,6 +769,101 @@ if ($BansEnd > $BanCount) {
 $canEditComment = false;
 $view_comments = false;
 $bans          = [];
+
+$banIds = [];
+foreach ($res as $row) {
+    $banIds[] = (int) $row['ban_id'];
+}
+
+$removedByAdminIds = [];
+foreach ($res as $row) {
+    if ($row['RemovedBy'] !== null) {
+        $removedByAdminIds[(int) $row['RemovedBy']] = true;
+    }
+}
+$removedByNames = [];
+if ($removedByAdminIds !== []) {
+    $ids          = array_keys($removedByAdminIds);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $adminRows    = $GLOBALS['PDO']->query(
+        "SELECT aid, user FROM `:prefix_admins` WHERE aid IN ($placeholders)"
+    )->resultset($ids);
+    foreach ($adminRows as $adminRow) {
+        $removedByNames[(int) $adminRow['aid']] = $adminRow['user'];
+    }
+}
+
+$activeSteamCounts    = [];
+$activeIpCounts       = [];
+$steamAuthidsToCheck  = [];
+$ipsToCheck           = [];
+foreach ($res as $row) {
+    $effectiveSteamId = (string) $row['authid'];
+    if ($effectiveSteamId !== '' && !\SteamID\SteamID::isValidID($effectiveSteamId)) {
+        $effectiveSteamId = 'STEAM_0:0:00000000';
+    }
+    $rowBanTypeForCheck = BanType::tryFrom((int) $row['type']) ?? BanType::Steam;
+    if ($rowBanTypeForCheck === BanType::Steam) {
+        $steamAuthidsToCheck[$effectiveSteamId] = true;
+    } else {
+        $ipsToCheck[(string) $row['ban_ip']] = true;
+    }
+}
+if ($steamAuthidsToCheck !== []) {
+    $ids          = array_keys($steamAuthidsToCheck);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $countRows    = $GLOBALS['PDO']->query(
+        "SELECT authid, COUNT(bid) as cnt FROM `:prefix_bans` WHERE authid IN ($placeholders) AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' GROUP BY authid"
+    )->resultset($ids);
+    foreach ($countRows as $countRow) {
+        $activeSteamCounts[$countRow['authid']] = (int) $countRow['cnt'];
+    }
+}
+if ($ipsToCheck !== []) {
+    $ids          = array_keys($ipsToCheck);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $countRows    = $GLOBALS['PDO']->query(
+        "SELECT ip, COUNT(bid) as cnt FROM `:prefix_bans` WHERE ip IN ($placeholders) AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' GROUP BY ip"
+    )->resultset($ids);
+    foreach ($countRows as $countRow) {
+        $activeIpCounts[$countRow['ip']] = (int) $countRow['cnt'];
+    }
+}
+
+$banlogByBid = [];
+if ($banIds !== []) {
+    $placeholders = implode(',', array_fill(0, count($banIds), '?'));
+    $blRows       = $GLOBALS['PDO']->query(
+        "SELECT bl.bid, bl.time, bl.name, s.ip, s.port FROM `:prefix_banlog` AS bl LEFT JOIN `:prefix_servers` AS s ON s.sid = bl.sid WHERE bl.bid IN ($placeholders)"
+    )->resultset($banIds);
+    foreach ($blRows as $blRow) {
+        $banlogByBid[(int) $blRow['bid']][] = $blRow;
+    }
+}
+
+$viewCommentsEnabled = Config::getBool('config.enablepubliccomments') || $userbank->is_admin();
+$commentsByBid       = [];
+if ($viewCommentsEnabled && $banIds !== []) {
+    $placeholders = implode(',', array_fill(0, count($banIds), '?'));
+    $cRows        = $GLOBALS['PDO']->query(
+        "SELECT bid, cid, aid, editaid, commenttxt, added, edittime,
+			(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+			(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+			FROM `:prefix_comments` AS C
+			WHERE type = 'B' AND bid IN ($placeholders) ORDER BY bid, added desc"
+    )->resultset($banIds);
+    foreach ($cRows as $cRow) {
+        $commentsByBid[(int) $cRow['bid']][] = $cRow;
+    }
+    $view_comments = true;
+}
+
+// GeoIP lookups are done inline (no network round trip, MaxMind is a
+// local DB file), but the write-back that caches the resolved country
+// on `:prefix_bans` is queued here and flushed as ONE batched UPDATE
+// after the loop instead of one UPDATE per row.
+$pendingCountryUpdates = [];
+
 foreach ($res as $row) {
     $data = [];
 
@@ -793,11 +874,7 @@ foreach ($res as $row) {
             $data['country'] = '<img src="images/country/' . strtolower($row['ban_country']) . '.png" alt="' . $row['ban_country'] . '" border="0" align="absmiddle" />';
         } elseif (!Config::getBool('banlist.nocountryfetch')) {
             $country = FetchIp($row['ban_ip']);
-            $GLOBALS['PDO']->query("UPDATE `:prefix_bans` SET country = ?
-				                            WHERE bid = ?")->execute([
-                $country,
-                $row['ban_id'],
-            ]);
+            $pendingCountryUpdates[(int) $row['ban_id']] = $country;
 
             $countryFlag = empty($country) ? 'zz' : strtolower($country);
             $data['country'] = '<img src="images/country/' . $countryFlag . '.png" alt="' . $country . '" border="0" align="absmiddle" />';
@@ -873,12 +950,10 @@ foreach ($res as $row) {
 
         $data['ureason'] = stripslashes($row['unban_reason'] ?? '');
 
-        $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
-        $GLOBALS['PDO']->bind(':aid', $row['RemovedBy']);
-        $removedby         = $GLOBALS['PDO']->single();
-        $data['removedby'] = "";
-        if (!empty($removedby['user']) && $data['admin']) {
-            $data['removedby'] = $removedby['user'];
+        $removedByUser      = $removedByNames[(int) $row['RemovedBy']] ?? '';
+        $data['removedby']  = "";
+        if ($removedByUser !== '' && $data['admin']) {
+            $data['removedby'] = $removedByUser;
         }
     }
     // Don't need this stuff.
@@ -892,15 +967,6 @@ foreach ($res as $row) {
 
     $data['layer_id'] = 'layer_' . $row['ban_id'];
     $rowBanType = BanType::tryFrom((int) $data['type']) ?? BanType::Steam;
-    if ($rowBanType === BanType::Steam) {
-        $GLOBALS['PDO']->query("SELECT count(bid) as count FROM `:prefix_bans` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0'");
-        $GLOBALS['PDO']->bind(':authid', $data['steamid']);
-        $alrdybnd = $GLOBALS['PDO']->single();
-    } else {
-        $GLOBALS['PDO']->query("SELECT count(bid) as count FROM `:prefix_bans` WHERE ip = :ip AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1'");
-        $GLOBALS['PDO']->bind(':ip', $row['ban_ip']);
-        $alrdybnd = $GLOBALS['PDO']->single();
-    }
     // `has_active_sibling` is the v2.0 template's hook for hiding the
     // Re-apply affordance when the player is already actively banned by
     // another row (which the duplicate-check in `bans.add` would
@@ -911,7 +977,9 @@ foreach ($res as $row) {
     // states the row itself never matches the active-check predicate
     // (`(length=0 OR ends > now) AND RemovedBy IS NULL`), so this
     // count is "siblings only" without an explicit `bid !=` exclusion.
-    $hasActiveSibling = (int) $alrdybnd['count'] > 0;
+    $hasActiveSibling = $rowBanType === BanType::Steam
+        ? (($activeSteamCounts[$data['steamid']] ?? 0) > 0)
+        : (($activeIpCounts[(string) $row['ban_ip']] ?? 0) > 0);
     $data['has_active_sibling'] = $hasActiveSibling;
     if (!$hasActiveSibling) {
         // #1275 — admin-bans is Pattern A; the legacy `#^0` fragment
@@ -988,9 +1056,7 @@ foreach ($res as $row) {
 
     $data['server_id'] = $row['ban_server'];
 
-    $GLOBALS['PDO']->query("SELECT bl.time, bl.name, s.ip, s.port FROM `:prefix_banlog` AS bl LEFT JOIN `:prefix_servers` AS s ON s.sid = bl.sid WHERE bid = :bid");
-    $GLOBALS['PDO']->bind(':bid', $data['ban_id']);
-    $banlog             = $GLOBALS['PDO']->resultset();
+    $banlog             = $banlogByBid[(int) $data['ban_id']] ?? [];
     $data['blockcount'] = sizeof($banlog);
     $logstring          = "";
     foreach ($banlog as $logged) {
@@ -1003,20 +1069,14 @@ foreach ($res as $row) {
 
     //COMMENT STUFF
     //-----------------------------------
-    if (Config::getBool('config.enablepubliccomments') || $userbank->is_admin()) {
+    if ($viewCommentsEnabled) {
         $view_comments = true;
         // #1500: comment author/editor are admin usernames. Null them at the
         // data layer for public viewers when banlist.hideadminname is on, so a
         // third-party theme that renders the name directly can't re-leak it
         // (parity with the focal $data['admin'] = false gate above).
         $commentsHideAdmin = Config::getBool('banlist.hideadminname') && !$userbank->is_admin();
-        $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
-											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
-											(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
-											FROM `:prefix_comments` AS C
-											WHERE type = 'B' AND bid = :bid ORDER BY added desc");
-        $GLOBALS['PDO']->bind(':bid', $data['ban_id']);
-        $commentres    = $GLOBALS['PDO']->resultset();
+        $commentres    = $commentsByBid[(int) $data['ban_id']] ?? [];
 
         if (count($commentres) > 0) {
             $comment = [];
@@ -1162,6 +1222,28 @@ foreach ($res as $row) {
     $data['avatar_hue']      = ((int) $row['ban_id'] * 47) % 360;
 
     array_push($bans, $data);
+}
+
+// Flush the GeoIP country write-back queued during the loop above as a
+// single batched UPDATE (one round trip for the whole page) instead of
+// one UPDATE per row.
+if ($pendingCountryUpdates !== []) {
+    $caseParts    = [];
+    $whenArgs     = [];
+    $idPlaceholders = [];
+    $idArgs       = [];
+    foreach ($pendingCountryUpdates as $bid => $country) {
+        $caseParts[]      = "WHEN ? THEN ?";
+        $whenArgs[]       = $bid;
+        $whenArgs[]       = $country;
+        $idPlaceholders[] = "?";
+        $idArgs[]         = $bid;
+    }
+    $caseSql = implode(' ', $caseParts);
+    $idSql   = implode(',', $idPlaceholders);
+    $GLOBALS['PDO']->query(
+        "UPDATE `:prefix_bans` SET country = CASE bid $caseSql END WHERE bid IN ($idSql)"
+    )->execute(array_merge($whenArgs, $idArgs));
 }
 
 if (isset($_GET['advSearch'])) {

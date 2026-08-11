@@ -109,12 +109,6 @@ parameters:
 			path: includes/Auth/JWT.php
 
 		-
-			message: '#^Parameter \#1 \$contents of static method Lcobucci\\JWT\\Signer\\Key\\InMemory\:\:base64Encoded\(\) expects non\-empty\-string, '''' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: includes/Auth/JWT.php
-
-		-
 			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
 			identifier: method.notFound
 			count: 1
