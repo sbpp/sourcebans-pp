@@ -261,6 +261,25 @@ if (!empty($web_group_list)) {
     ];
 }
 
+$web_groups_catalog = [];
+foreach ($web_group_list as $g) {
+    $web_groups_catalog[] = [
+        'gid'          => (int) $g['gid'],
+        'name'         => (string) $g['name'],
+        'flags'        => (int) $g['flags'],
+        'member_count' => (int) $g['member_count'],
+    ];
+}
+$web_groups_catalog_json = json_encode(
+    $web_groups_catalog,
+    JSON_THROW_ON_ERROR
+    | JSON_HEX_TAG
+    | JSON_HEX_AMP
+    | JSON_HEX_APOS
+    | JSON_HEX_QUOT
+    | JSON_INVALID_UTF8_SUBSTITUTE,
+);
+
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsListView(
     permission_listgroups:    $canList,
     permission_editgroup:     $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditGroups)),
@@ -281,6 +300,7 @@ if (!empty($web_group_list)) {
     server_list:              $server_list,
     all_flags:                $all_flags,
     selected_group:           $selected_group,
+    web_groups_catalog_json:  $web_groups_catalog_json,
 ));
 
 ?>
