@@ -48,7 +48,6 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Add or rename a DB table, or change the schema substantively | `ARCHITECTURE.md` (Database schema table) + ensure `install/includes/sql/struc.sql` is the source of truth + paired `web/updater/data/<N>.php` registered in `store.json` |
 | Add or change a row in `install/includes/sql/data.sql` (e.g. new `sb_settings` key) | Paired migration in `web/updater/data/<N>.php` + register in `web/updater/store.json` (see "Updater migrations") |
 | Add or remove a quality gate / CI workflow                  | `ARCHITECTURE.md` (Quality gates) **and** `AGENTS.md` (Quality gates) |
-| Change the CLA text, the `web/**` paths filter on the CLA workflow, the allowlist, or the sign-comment phrase | `CLA.md` + `.github/workflows/cla.yml` + `CONTRIBUTING.md` (rationale / how-to-sign) + the "Contributor License Agreement gate" Conventions block in `AGENTS.md`. Sign-comment phrase is duplicated in three places (workflow `if:`, `custom-pr-sign-comment`, CLA.md §10) — keep them byte-identical. |
 | Change a `./sbpp.sh` command surface                        | `AGENTS.md` (Dev commands) + `docker/README.md`       |
 | Introduce a new convention or pattern (e.g. View DTOs)      | `AGENTS.md` (Conventions) + `ARCHITECTURE.md` if it's an architectural shift |
 | Remove a legacy pattern                                     | `AGENTS.md` (Anti-patterns) + `ARCHITECTURE.md` (Legacy patterns being phased out) |
@@ -1306,7 +1305,7 @@ Applies to:
 
 Does NOT apply to:
 
-- `AGENTS.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`, `CLA.md`,
+- `AGENTS.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`,
  `docker/README.md`, `docs/README.md` (contributor-facing).
 - PHP / JS / Smarty code comments and docblocks.
 - Audit-log entries (`Log::add(...)` bodies are diagnostic, not
@@ -2981,69 +2980,6 @@ the "tiers visible" arm) and
 at 1920px so the IP column — tier-3 — is visible). When you add a
 new tier-3 column to either list and it relies on visibility for
 the spec, target a 1920px viewport, not 1440px.
-
-### Contributor License Agreement gate (`web/**`)
-
-Pull requests that touch `web/**` are gated on a signed Contributor
-License Agreement. The web panel is dual-licensable (free under the
-Elastic License 2.0 for hobby / community / self-hosted use; separate
-commercial licence for game-server hosts offering the panel as a
-managed service to third parties — see [`LICENSE.txt`](LICENSE.txt)
-and the README "License" section for the contract details), and the
-CLA is the mechanism that lets the maintainer relicense future
-contributions without contacting every contributor individually.
-
-- Agreement text: [`CLA.md`](CLA.md). Ten sections, ~1 page. Contributor
-  keeps copyright; maintainer gets a perpetual, irrevocable, worldwide,
-  royalty-free, sublicensable licence with the **explicit right to
-  relicense under any terms, including proprietary or commercial**
-  (§3(b)). Same legal shape as GitLab / Discourse / Plex.
-- Workflow: [`.github/workflows/cla.yml`](.github/workflows/cla.yml).
-  Uses `contributor-assistant/github-action@v2.6.1`. Triggers:
-  `pull_request_target` with `paths: ['web/**', 'CLA.md',
-  '.github/workflows/cla.yml']`, plus `issue_comment` for the
-  "I have read the CLA Document and I hereby sign the CLA" sign flow.
-  Job-level `if:` gates execution so unrelated comments / non-web PRs
-  don't burn action minutes. Permissions: `actions: write`,
-  `contents: write`, `pull-requests: write`, `statuses: write` — all
-  load-bearing for writing to the signatures branch and posting the
-  PR comment / status check.
-- Signature storage: orphan branch `cla-signatures` in this repo at
-  `signatures/cla.json`. The action creates the branch on its first
-  successful run; do NOT precreate it manually. Each entry pins the
-  contributor's GitHub login, ID, the PR that recorded the signature,
-  and a timestamp.
-- Allowlist: the maintainer (`rumblefrog`) plus `*[bot]` (covers
-  Dependabot and any future GitHub App bot). The allowlist lives in
-  the workflow file's `allowlist:` field — single source of truth.
-  Onboarding an additional maintainer means adding their login there
-  in the same PR as any docs update naming them.
-- Scope is `web/**`. Plugin-only PRs (`game/addons/sourcemod/**`)
-  stay GPLv3 and intentionally skip the gate — copyleft already
-  blocks quiet relicensing, so layering a CLA on top would only add
-  friction. Mixed PRs (web/ + plugins) trigger the gate because of
-  the web/ half; one signature unblocks both.
-- The sign phrase ("I have read the CLA Document and I hereby sign
-  the CLA") is duplicated in three places: the workflow's job-level
-  `if:`, the workflow's `custom-pr-sign-comment:` field, and the
-  CLA.md §10 acceptance section. Keep all three byte-identical — the
-  action matches the contributor's comment against
-  `custom-pr-sign-comment`, the `if:` matches against the same string
-  to gate execution, and CLA.md §10 is what the contributor is told
-  to type. Drift between any two silently breaks the signing flow.
-- Historical-contributor coverage was the precondition for the
- ELv2 relicense and was resolved by the project's pre-CLA
- contribution audit: every pre-CLA `web/**` contribution of
- substance was authored by `rumblefrog`, who as the project
- maintainer is also the licensor under ELv2. The handful of small
- one-off external PRs from before the CLA workflow landed either
- (a) survived intact through the v2.0 panel rewrite (in which case
- the CLA's §3(b) relicense grant covers them going forward,
- pending sign-off), or (b) were removed during the v2.0 rewrite
- (in which case the question is moot). Future inbound PRs are
- covered by the workflow as designed. Retroactive sign-off for the
- surviving-author set is still an opt-in follow-up but is not on
- the critical path for the ELv2 relicense.
 
 ## Anti-patterns (do NOT reintroduce)
 
@@ -4984,5 +4920,4 @@ contributions without contacting every contributor individually.
 | Local dev stack details                | `docker/README.md`                                       |
 | Build / extend the production Docker image (multi-stage build, hardened runtime, entrypoint state machine, healthcheck) | `docker/Dockerfile.prod` (multi-stage: `builder` runs `composer install --no-dev` against `web/`; `runtime` carries pdo_mysql + intl + zip + mbstring + gmp ONLY — no nodejs / npm / git / dev-prepend) + `docker/php/prod-entrypoint.sh` (pure POSIX shell state machine: `*_FILE` secret resolution → DATABASE_URL parse → defaults → Apache config (PORT + mod_remoteip from `SBPP_TRUSTED_PROXIES`) → wait-for-DB → render config.php (only when missing) → first-boot install (schema + data + seed admin from `INITIAL_ADMIN_*` env vars) → headless updater migrations → strip install/ + updater/ from writable layer → ensure writable cache/templates_c/demos → `exec apache2-foreground`) + `docker/php/prod-php.ini` (production OPcache: `validate_timestamps=0`, `display_errors=Off`, `log_errors=On`, errors → `/dev/stderr`, UTC default, `expose_php=Off`) + `docker/apache/sbpp-prod.conf` (denies dotfiles + vendor/ + configs/ + includes/ + install/ + updater/ + cache/ + templates_c/ + config.php + composer.{json,lock}; `RemoteIPHeader X-Forwarded-For` for the trusted-proxy chain) + `web/health.php` (DB-aware unauthenticated healthcheck — `init.php` bootstraps the panel; `$GLOBALS['PDO']->query('SELECT 1')` returns 200 OK or 503 + plain-text reason; Cache-Control: no-store + X-Robots-Tag: noindex). The production image MUST NOT define `SBPP_DEV_KEEP_INSTALL`; the entrypoint's `strip_install_dirs` step is what makes the panel-runtime guard pass instead (#1381). |
 | Deploy / configure the production Docker stack (compose, env vars, reverse-proxy) | `docker-compose.prod.yml` (pulls `ghcr.io/sbpp/sourcebans-pp:${SBPP_IMAGE_TAG:-latest}` — NOT a build context; DB port NOT exposed by default; commented `caddy:` service block for opt-in TLS) + `.env.example.prod` (every supported env var grouped by required / recommended / first-boot / optional / advanced; documents the `*_FILE` Docker-secret pattern and the `SBPP_CONFIG_PATH` Docker-secret-mount pattern; uses `${VAR:?...}` compose syntax for required vars so a fresh-deploy operator who forgot `SB_SECRET_KEY` / `DB_PASS` / `DB_ROOT_PASS` gets a useful container-startup error) + `docker/caddy/Caddyfile.example` (one-line `reverse_proxy web:80` + zstd/gzip encode + static-asset cache headers). Three persistent volumes: `dbdata` + `demos` (MUST persist — DB rows + uploaded ban-evidence); `cache` + `smarty` (CAN be ephemeral — rebuild on demand). Operators run `docker compose -f docker-compose.prod.yml up -d` from a directory carrying both files; upgrades are `docker compose pull && up -d` (image is immutable, entrypoint runs idempotent migrations on every boot, named volumes survive the swap) (#1381). |
-| Honour `SBPP_CONFIG_PATH` so config.php can live outside the panel root (Docker-secret mount) | `sbpp_resolve_config_path()` in `web/init-recovery.php` is the single source of truth; `web/init.php` calls it to resolve the require-site. `web/install/already-installed.php`'s `sbpp_install_is_already_installed()` re-implements the env-var read inline (per its self-contained no-Composer docblock) so the wizard-side and runtime-side guards agree on the install-state sentinel path. Pre-#1381 both halves hard-coded the panel-root path; with a Docker-secret-mounted config the runtime would 302-to-/install/ while the wizard would happily start over. Regression tests: `testResolveConfigPathHonorsEnvVar` + `testWizardGuardHonorsConfigPathEnvVar` in `web/tests/integration/InstallGuardTest.php`. |
-| Change the Contributor License Agreement (text, scope, allowlist) or how the CLA bot gates `web/**` PRs | `CLA.md` (the agreement text — 10 sections, web/-scoped, explicit relicensing right in §3(b)) + `.github/workflows/cla.yml` (the `contributor-assistant/github-action` workflow — paths filter, allowlist, sign-comment text, custom not-signed PR comment) + `CONTRIBUTING.md` (rationale + how-to-sign for contributors). Signatures land on the orphan branch `cla-signatures` under `signatures/cla.json`; the action creates the branch on its first successful run. The maintainer plus all `*[bot]` accounts are allowlisted by default. See "Contributor License Agreement gate" in Conventions. |
+| Honour `SBPP_CONFIG_PATH` so config.php can live outside the panel root (Docker-secret mount) | `sbpp_resolve_config_path()` in `web/init-recovery.php` is the single source of truth; `web/init.php` calls it to resolve the require-site. `web/install/already-installed.php`'s `sbpp_install_is_already_installed()` re-implements the env-var read inline (per its self-contained no-Composer docblock) so the wizard-side and runtime-side guards agree on the install-state sentinel path. Pre-#1381 both halves hard-coded the panel-root path; with a Docker-secret-mounted config the runtime would 302-to-/install/ while the wizard would happily start over. Regression tests: `testResolveConfigPathHonorsEnvVar` + `testWizardGuardHonorsConfigPathEnvVar` in `web/tests/integration/InstallGuardTest.php`.

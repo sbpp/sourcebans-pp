@@ -42,7 +42,6 @@ plugins are stable and updated less often.
 ├── docs/                 Starlight docs site (install / upgrade / configure)
 ├── LICENSE.txt           Elastic License 2.0 (web panel)
 ├── LICENSE-plugins.txt   GPLv3 (SourceMod plugins)
-├── CLA.md                Contributor License Agreement (web/** PRs)
 └── THIRD-PARTY-NOTICES.txt
 ```
 
