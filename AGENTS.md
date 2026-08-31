@@ -970,9 +970,10 @@ fallback). This is a **separate product** from `POST /api.php`.
 - Writes reuse `Api::invoke()` where the RPC handler already exists
   (deactivate/reactivate/remove/rehash, bans.add/unban, comms.add/
   unblock/delete, servers.add/remove/send_rcon, notes.add/delete,
-  mods.add/remove). List/get, Steam64 upsert, and PATCH `/servers` are
-  dedicated `Sbpp\Rest\*` queries. Discard `__redirect` / chrome
-  envelopes.
+  mods.add/remove, protests.remove, submissions.remove,
+  bans.add_comment/edit_comment/remove_comment). List/get, Steam64
+  upsert, PATCH `/servers`, and GET/PATCH `/settings` are dedicated
+  `Sbpp\Rest\*` queries. Discard `__redirect` / chrome envelopes.
 - `{id}` on `/admins/{id}` is aid **or** a 17-digit Steam64 starting
   with 7 that round-trips through Steam2 (universe IDs at or above
   `76561197960265728`). Steam2/Steam3 in the path is 400. A 17-digit
@@ -991,6 +992,12 @@ fallback). This is a **separate product** from `POST /api.php`.
 - POST `/servers/{sid}/rcon` requires SourceMod RCON or Root **and**
   per-server mapping. GET `/notes` requires any web admin and
   `?steam=`. DELETE `/notes/{nid}` is author or Owner.
+- GET `/protests` and `/submissions` require the matching queue flags.
+  DELETE is hard-delete (`archiv=0`). GET comments on a ban or comm is
+  public and empty when `config.enablepubliccomments` is off (admins
+  still see them). DELETE `/comments/{id}` is Owner. GET/PATCH
+  `/settings` never returns or writes `smtp.pass` or
+  `telemetry.instance_id`.
 - OpenAPI (`web/api/openapi-v1.yaml`) lands in the **same PR** as the
   route. Operator docs: `docs/src/content/docs/configuring/rest-api.mdx`.
 - Forbidden GET fields match `EntityExporter` (`password`, `validate`,

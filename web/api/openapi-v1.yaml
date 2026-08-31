@@ -22,6 +22,10 @@ tags:
   - name: servers
   - name: notes
   - name: mods
+  - name: protests
+  - name: submissions
+  - name: comments
+  - name: settings
   - name: system
   - name: meta
 paths:
@@ -375,6 +379,50 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Error"
+  /bans/{bid}/comments:
+    parameters:
+      - $ref: "#/components/parameters/banId"
+    get:
+      tags: [comments]
+      security: []
+      summary: Comments on a ban
+      description: >
+        Public. Empty when public comments are off and the caller is not a
+        token admin. Author fields follow `banlist.hideadminname`.
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+      responses:
+        "200":
+          description: Comment list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentListEnvelope"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [comments]
+      summary: Add a comment on a ban
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentWrite"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /comms:
     get:
       tags: [comms]
@@ -491,6 +539,48 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Error"
+  /comms/{cid}/comments:
+    parameters:
+      - $ref: "#/components/parameters/commId"
+    get:
+      tags: [comments]
+      security: []
+      summary: Comments on a mute or gag
+      description: Same visibility rules as GET `/bans/{bid}/comments`.
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+      responses:
+        "200":
+          description: Comment list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentListEnvelope"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [comments]
+      summary: Add a comment on a mute or gag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentWrite"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /servers:
     get:
       tags: [servers]
@@ -774,6 +864,210 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /protests:
+    get:
+      tags: [protests]
+      summary: List ban protests
+      description: Current queue by default. Pass `archived=true` for the archive.
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+        - name: archived
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Paginated protest list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtestListEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /protests/{pid}:
+    parameters:
+      - name: pid
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [protests]
+      summary: Get one protest
+      responses:
+        "200":
+          description: Protest resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProtestEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [protests]
+      summary: Hard-delete a protest
+      responses:
+        "200":
+          description: Deleted id
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /submissions:
+    get:
+      tags: [submissions]
+      summary: List ban submissions
+      description: Current queue by default. Pass `archived=true` for the archive.
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+        - name: archived
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Paginated submission list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionListEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /submissions/{sid}:
+    parameters:
+      - name: sid
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Submission id (`subid`).
+    get:
+      tags: [submissions]
+      summary: Get one submission
+      responses:
+        "200":
+          description: Submission resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [submissions]
+      summary: Hard-delete a submission
+      responses:
+        "200":
+          description: Deleted id
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /comments/{cid}:
+    parameters:
+      - name: cid
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Comment id.
+    patch:
+      tags: [comments]
+      summary: Edit a comment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentWrite"
+      responses:
+        "200":
+          description: Updated comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [comments]
+      summary: Delete a comment
+      description: Owner only.
+      responses:
+        "200":
+          description: Deleted id
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /settings:
+    get:
+      tags: [settings]
+      summary: Panel settings
+      description: >
+        Flat key/value map. Never includes `smtp.pass` or
+        `telemetry.instance_id`.
+      responses:
+        "200":
+          description: Settings object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingsEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    patch:
+      tags: [settings]
+      summary: Update existing settings
+      description: >
+        Only keys that already exist. Unknown or forbidden keys are 400.
+        Never writes `smtp.pass` or `telemetry.instance_id`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Settings after update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettingsEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 components:
   securitySchemes:
     bearerAuth:
@@ -1361,6 +1655,174 @@ components:
               type: integer
             total:
               type: integer
+    Protest:
+      type: object
+      properties:
+        id:
+          type: integer
+        ban_id:
+          type: integer
+        submitted:
+          type: integer
+        reason:
+          type: string
+        email:
+          type: string
+        ip:
+          type: string
+        archived:
+          type: boolean
+        archived_by:
+          type: integer
+          nullable: true
+    ProtestEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Protest"
+    ProtestListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Protest"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    Submission:
+      type: object
+      properties:
+        id:
+          type: integer
+        steam:
+          type: string
+          nullable: true
+        steam64:
+          type: string
+          nullable: true
+        player_name:
+          type: string
+        email:
+          type: string
+        reason:
+          type: string
+        ip:
+          type: string
+        submitter_name:
+          type: string
+          nullable: true
+        submitter_ip:
+          type: string
+          nullable: true
+        server_id:
+          type: integer
+          nullable: true
+        mod_id:
+          type: integer
+          nullable: true
+        submitted:
+          type: integer
+        archived:
+          type: boolean
+        archived_by:
+          type: integer
+          nullable: true
+    SubmissionEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Submission"
+    SubmissionListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Submission"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        parent_id:
+          type: integer
+        type:
+          type: string
+          enum: [ban, comm, submission, protest]
+        body:
+          type: string
+        created:
+          type: integer
+        author:
+          type: string
+          nullable: true
+        author_aid:
+          type: integer
+          nullable: true
+        edited_at:
+          type: integer
+          nullable: true
+        editor_aid:
+          type: integer
+          nullable: true
+    CommentWrite:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+    CommentEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Comment"
+    CommentListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    SettingsEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            type: string
+          description: Setting key to stored string value. Never `smtp.pass` or `telemetry.instance_id`.
   responses:
     Error:
       description: Structured error

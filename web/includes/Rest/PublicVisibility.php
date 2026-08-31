@@ -27,7 +27,7 @@ final class PublicVisibility
         return Config::getBool('banlist.hideadminname') && !self::isAdmin();
     }
 
-    private static function isAdmin(): bool
+    public static function isAdmin(): bool
     {
         $userbank = $GLOBALS['userbank'] ?? null;
         return $userbank instanceof UserManager && $userbank->is_admin();

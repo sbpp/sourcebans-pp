@@ -150,16 +150,26 @@ A 429 includes `Retry-After`.
 | GET | `/mods`, `/mods/{mid}` | List / get |
 | POST | `/mods` | `name` + `folder` |
 | DELETE | `/mods/{mid}` | Optional `ureason` |
+| GET | `/protests`, `/protests/{pid}` | Current queue. `archived=true` for the archive |
+| DELETE | `/protests/{pid}` | Hard delete |
+| GET | `/submissions`, `/submissions/{sid}` | Current queue. `archived=true` for the archive |
+| DELETE | `/submissions/{sid}` | Hard delete |
+| GET | `/bans/{bid}/comments`, `/comms/{cid}/comments` | Public. Empty when public comments are off |
+| POST | `/bans/{bid}/comments`, `/comms/{cid}/comments` | `body`. Any web admin |
+| PATCH | `/comments/{cid}` | `body` |
+| DELETE | `/comments/{cid}` | Owner only |
+| GET | `/settings` | Flat key/value map. Never `smtp.pass` or `telemetry.instance_id` |
+| PATCH | `/settings` | Existing keys only. Same forbidden keys |
 | GET | `/openapi.yaml` | This spec |
-
-Protests, submissions, comments, and settings are a later slice.
 
 GET `/bans`, `/comms`, and `/servers` work without a token. Ban and comm
 GET apply the same hide-* settings as the public lists
 (`banlist.hideplayerips`, `banlist.hideadminname`). Send a valid PAT to
 see IPs and admin names. GET `/servers` never includes `rcon`, even with
 a PAT. A well-formed token that is revoked, expired, or unknown is 401
-even on those GETs.
+even on those GETs. GET comments on a ban or comm is also public (empty
+when public comments are off). GET `/protests`, `/submissions`, and
+`/settings` need a PAT.
 
 POST `/bans` `length` is minutes (0 = permanent), matching the panel form.
 GET responses use `length` in **seconds** (what is stored). Steam64 in JSON

@@ -30,6 +30,9 @@ final class RestPermissionMatrixTest extends TestCase
         $readMods = ADMIN_OWNER | ADMIN_LIST_MODS | ADMIN_ADD_MODS | ADMIN_EDIT_MODS;
         $addMod = ADMIN_OWNER | ADMIN_ADD_MODS;
         $deleteMod = ADMIN_OWNER | ADMIN_DELETE_MODS;
+        $protests = ADMIN_OWNER | ADMIN_BAN_PROTESTS;
+        $submissions = ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS;
+        $settings = ADMIN_OWNER | ADMIN_WEB_SETTINGS;
 
         return [
             ['method' => 'GET', 'path' => '/openapi.yaml', 'auth' => false, 'perm' => 0],
@@ -47,11 +50,15 @@ final class RestPermissionMatrixTest extends TestCase
             ['method' => 'POST', 'path' => '/bans', 'auth' => true, 'perm' => $addBan],
             ['method' => 'GET', 'path' => '/bans/{bid}', 'auth' => false, 'perm' => 0],
             ['method' => 'POST', 'path' => '/bans/{bid}/unban', 'auth' => true, 'perm' => $unban],
+            ['method' => 'GET', 'path' => '/bans/{bid}/comments', 'auth' => false, 'perm' => 0],
+            ['method' => 'POST', 'path' => '/bans/{bid}/comments', 'auth' => true, 'perm' => $anyAdmin],
             ['method' => 'GET', 'path' => '/comms', 'auth' => false, 'perm' => 0],
             ['method' => 'POST', 'path' => '/comms', 'auth' => true, 'perm' => $addBan],
             ['method' => 'GET', 'path' => '/comms/{cid}', 'auth' => false, 'perm' => 0],
             ['method' => 'POST', 'path' => '/comms/{cid}/unblock', 'auth' => true, 'perm' => $unban],
             ['method' => 'DELETE', 'path' => '/comms/{cid}', 'auth' => true, 'perm' => $deleteBan],
+            ['method' => 'GET', 'path' => '/comms/{cid}/comments', 'auth' => false, 'perm' => 0],
+            ['method' => 'POST', 'path' => '/comms/{cid}/comments', 'auth' => true, 'perm' => $anyAdmin],
             ['method' => 'GET', 'path' => '/servers', 'auth' => false, 'perm' => 0],
             ['method' => 'POST', 'path' => '/servers', 'auth' => true, 'perm' => $addServer],
             ['method' => 'GET', 'path' => '/servers/{sid}', 'auth' => false, 'perm' => 0],
@@ -65,6 +72,16 @@ final class RestPermissionMatrixTest extends TestCase
             ['method' => 'POST', 'path' => '/mods', 'auth' => true, 'perm' => $addMod],
             ['method' => 'GET', 'path' => '/mods/{mid}', 'auth' => true, 'perm' => $readMods],
             ['method' => 'DELETE', 'path' => '/mods/{mid}', 'auth' => true, 'perm' => $deleteMod],
+            ['method' => 'GET', 'path' => '/protests', 'auth' => true, 'perm' => $protests],
+            ['method' => 'GET', 'path' => '/protests/{pid}', 'auth' => true, 'perm' => $protests],
+            ['method' => 'DELETE', 'path' => '/protests/{pid}', 'auth' => true, 'perm' => $protests],
+            ['method' => 'GET', 'path' => '/submissions', 'auth' => true, 'perm' => $submissions],
+            ['method' => 'GET', 'path' => '/submissions/{sid}', 'auth' => true, 'perm' => $submissions],
+            ['method' => 'DELETE', 'path' => '/submissions/{sid}', 'auth' => true, 'perm' => $submissions],
+            ['method' => 'PATCH', 'path' => '/comments/{cid}', 'auth' => true, 'perm' => $anyAdmin],
+            ['method' => 'DELETE', 'path' => '/comments/{cid}', 'auth' => true, 'perm' => ADMIN_OWNER],
+            ['method' => 'GET', 'path' => '/settings', 'auth' => true, 'perm' => $settings],
+            ['method' => 'PATCH', 'path' => '/settings', 'auth' => true, 'perm' => $settings],
         ];
     }
 

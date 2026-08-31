@@ -95,6 +95,18 @@ test.describe('REST API v1', () => {
         const anonBody = await anon.json();
         expect(anonBody.data.admin_name).toBeNull();
 
+        const comment = await request.post(`/api/v1.php/bans/${bid}/comments`, {
+            headers: {
+                Authorization: `Bearer ${secret}`,
+                'Content-Type': 'application/json',
+            },
+            data: { body: 'e2e rest comment' },
+        });
+        expect(comment.status(), await comment.text()).toBe(201);
+        const commentBody = await comment.json();
+        expect(commentBody.data.body).toBe('e2e rest comment');
+        expect(commentBody.data.type).toBe('ban');
+
         const unban = await request.post(`/api/v1.php/bans/${bid}/unban`, {
             headers: {
                 Authorization: `Bearer ${secret}`,

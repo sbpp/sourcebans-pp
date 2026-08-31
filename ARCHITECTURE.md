@@ -87,7 +87,7 @@ web/
 │   ├── Log.php               Sbpp\Log — audit + error log (writes to sb_log)
 │   ├── Api/Api.php           Sbpp\Api\Api — JSON dispatcher
 │   ├── Api/ApiError.php      Sbpp\Api\ApiError — structured API error
-│   ├── Rest/                 Sbpp\Rest\* — REST /api/v1 (FrontController, Router, PatAuthenticator, RateLimiter, Envelope, AdminsService, BansService, CommsService, ServersService, NotesService, ModsService, Kicker)
+│   ├── Rest/                 Sbpp\Rest\* — REST /api/v1 (FrontController, Router, PatAuthenticator, RateLimiter, Envelope, AdminsService, BansService, CommsService, ServersService, NotesService, ModsService, ProtestsService, SubmissionsService, CommentsService, SettingsService, Kicker)
 │   ├── Auth/UserManager.php  Sbpp\Auth\UserManager (was CUserManager) — current admin + perms
 │   ├── Auth/Auth.php         Sbpp\Auth\Auth — login flow / cookie issue
 │   ├── Auth/JWT.php          Sbpp\Auth\JWT — token encode/decode
@@ -347,6 +347,14 @@ DELETE; any web admin), `/mods` (GET / POST / DELETE). Writes reuse
 `servers.add` / `servers.remove` / `servers.send_rcon`, `notes.add` /
 `notes.delete`, `mods.add` / `mods.remove`. PATCH `/servers` is dedicated
 (no RPC handler).
+
+Slice 3: `/protests` and `/submissions` (GET list/get, DELETE hard-delete
+via `protests.remove` / `submissions.remove` with `archiv=0`), nested
+comments on `/bans/{bid}/comments` and `/comms/{cid}/comments` (public GET
+honours `config.enablepubliccomments` and `banlist.hideadminname`; POST /
+PATCH reuse `bans.add_comment` / `bans.edit_comment`; DELETE is Owner via
+`bans.remove_comment`), `/settings` GET+PATCH (dedicated; never
+`smtp.pass` or `telemetry.instance_id`).
 
 ### Auth (`includes/Auth/` — `Sbpp\Auth\*`)
 

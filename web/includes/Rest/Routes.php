@@ -38,6 +38,9 @@ final class Routes
         $readMods = ADMIN_OWNER | ADMIN_LIST_MODS | ADMIN_ADD_MODS | ADMIN_EDIT_MODS;
         $addMod = ADMIN_OWNER | ADMIN_ADD_MODS;
         $deleteMod = ADMIN_OWNER | ADMIN_DELETE_MODS;
+        $protests = ADMIN_OWNER | ADMIN_BAN_PROTESTS;
+        $submissions = ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS;
+        $settings = ADMIN_OWNER | ADMIN_WEB_SETTINGS;
 
         return [
             [
@@ -147,6 +150,20 @@ final class Routes
             ],
             [
                 'method' => 'GET',
+                'path' => '/bans/{bid}/comments',
+                'auth' => false,
+                'perm' => 0,
+                'handler' => self::bansCommentsList(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/bans/{bid}/comments',
+                'auth' => true,
+                'perm' => $anyAdmin,
+                'handler' => self::bansCommentsCreate(...),
+            ],
+            [
+                'method' => 'GET',
                 'path' => '/comms',
                 'auth' => false,
                 'perm' => 0,
@@ -179,6 +196,20 @@ final class Routes
                 'auth' => true,
                 'perm' => $deleteBan,
                 'handler' => self::commsDelete(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/comms/{cid}/comments',
+                'auth' => false,
+                'perm' => 0,
+                'handler' => self::commsCommentsList(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/comms/{cid}/comments',
+                'auth' => true,
+                'perm' => $anyAdmin,
+                'handler' => self::commsCommentsCreate(...),
             ],
             [
                 'method' => 'GET',
@@ -270,6 +301,76 @@ final class Routes
                 'auth' => true,
                 'perm' => $deleteMod,
                 'handler' => self::modsDelete(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/protests',
+                'auth' => true,
+                'perm' => $protests,
+                'handler' => self::protestsList(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/protests/{pid}',
+                'auth' => true,
+                'perm' => $protests,
+                'handler' => self::protestsGet(...),
+            ],
+            [
+                'method' => 'DELETE',
+                'path' => '/protests/{pid}',
+                'auth' => true,
+                'perm' => $protests,
+                'handler' => self::protestsDelete(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/submissions',
+                'auth' => true,
+                'perm' => $submissions,
+                'handler' => self::submissionsList(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/submissions/{sid}',
+                'auth' => true,
+                'perm' => $submissions,
+                'handler' => self::submissionsGet(...),
+            ],
+            [
+                'method' => 'DELETE',
+                'path' => '/submissions/{sid}',
+                'auth' => true,
+                'perm' => $submissions,
+                'handler' => self::submissionsDelete(...),
+            ],
+            [
+                'method' => 'PATCH',
+                'path' => '/comments/{cid}',
+                'auth' => true,
+                'perm' => $anyAdmin,
+                'handler' => self::commentsPatch(...),
+            ],
+            [
+                'method' => 'DELETE',
+                'path' => '/comments/{cid}',
+                'auth' => true,
+                'perm' => ADMIN_OWNER,
+                'handler' => self::commentsDelete(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/settings',
+                'auth' => true,
+                'perm' => $settings,
+                'handler' => self::settingsGet(...),
+            ],
+            [
+                'method' => 'PATCH',
+                'path' => '/settings',
+                'auth' => true,
+                'perm' => $settings,
+                'handler' => self::settingsPatch(...),
             ],
         ];
     }
@@ -653,6 +754,166 @@ final class Routes
         $mid = self::positiveId($params['mid'] ?? '', 'mid');
         $ureason = trim((string) ($body['ureason'] ?? ''));
         return Envelope::ok((new ModsService())->delete($mid, $ureason));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function bansCommentsList(array $params, array $body, array $query): Response
+    {
+        $result = (new CommentsService())->listForParent(
+            self::positiveId($params['bid'] ?? '', 'bid'),
+            'B',
+            $query,
+        );
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function bansCommentsCreate(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok(
+            (new CommentsService())->create(self::positiveId($params['bid'] ?? '', 'bid'), 'B', $body),
+            [],
+            201,
+        );
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commsCommentsList(array $params, array $body, array $query): Response
+    {
+        $result = (new CommentsService())->listForParent(
+            self::positiveId($params['cid'] ?? '', 'cid'),
+            'C',
+            $query,
+        );
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commsCommentsCreate(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok(
+            (new CommentsService())->create(self::positiveId($params['cid'] ?? '', 'cid'), 'C', $body),
+            [],
+            201,
+        );
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commentsPatch(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new CommentsService())->update(self::positiveId($params['cid'] ?? '', 'cid'), $body));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commentsDelete(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new CommentsService())->delete(self::positiveId($params['cid'] ?? '', 'cid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function protestsList(array $params, array $body, array $query): Response
+    {
+        $result = (new ProtestsService())->list($query);
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function protestsGet(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new ProtestsService())->get(self::positiveId($params['pid'] ?? '', 'pid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function protestsDelete(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new ProtestsService())->delete(self::positiveId($params['pid'] ?? '', 'pid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function submissionsList(array $params, array $body, array $query): Response
+    {
+        $result = (new SubmissionsService())->list($query);
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function submissionsGet(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new SubmissionsService())->get(self::positiveId($params['sid'] ?? '', 'sid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function submissionsDelete(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new SubmissionsService())->delete(self::positiveId($params['sid'] ?? '', 'sid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function settingsGet(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new SettingsService())->get());
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function settingsPatch(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new SettingsService())->patch($body));
     }
 
     private static function positiveId(string $raw, string $field): int

@@ -86,7 +86,9 @@ final class Envelope
             'duplicate',
             'mod_exists',
             'conflict' => 409,
-            'delete_failed' => 500,
+            'delete_failed',
+            'archive_failed',
+            'restore_failed' => 500,
             default => 400,
         };
     }
