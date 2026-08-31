@@ -11,14 +11,12 @@ are present in this distribution and the attributions owed to their
 authors per their respective licences.
 
 Pre-Elastic-License-2.0 (CC-BY-NC-SA 3.0) history note: prior to
-v2.0.0, the web panel was distributed under CC BY-NC-SA 3.0. The
-relicense to ELv2 was made under the authority of the Contributor
-Licence Agreement (`CLA.md` §3(b)) and the project's pre-CLA
-contribution audit. The InterWave Studios + SourceBans Team /
-GameConnect attributions below ride that historical CC-BY-NC-SA 3.0
-lineage; they are preserved here as a matter of courtesy and to
-honour the spirit of CC BY-NC-SA 3.0 §4(c) as it applied to the
-panel at the time those upstreams were merged.
+v2.0.0, the web panel was distributed under CC BY-NC-SA 3.0.
+The InterWave Studios + SourceBans Team / GameConnect attributions
+below ride that historical CC-BY-NC-SA 3.0 lineage. They are
+preserved here as a matter of courtesy and to honour the spirit of
+CC BY-NC-SA 3.0 §4(c) as it applied to the panel at the time those
+upstreams were merged.
 
 If you are a downstream consumer (theme fork, distribution
 maintainer, vendor) and notice an attribution missing here, please
@@ -36,9 +34,8 @@ treat attribution drift as a bug.
                   (https://creativecommons.org/licenses/by-nc-sa/3.0/)
 
 SourceBans++ originated as a community fork of SourceBans 1.4.11 in
-2014 and has since been substantially rewritten; the project's
-pre-CLA contribution audit confirmed that the surviving v2.0 panel
-carries no substantive 1.4.11 source expression. However, the
+2014 and has since been substantially rewritten. The surviving v2.0
+panel carries no substantive 1.4.11 source expression. However, the
 project's continuous-through-line traces back to that codebase in a
 number of structural ways:
 

@@ -52,12 +52,6 @@ guide, [`AGENTS.md`](AGENTS.md) for conventions and the local Docker
 dev stack, and [`ARCHITECTURE.md`](ARCHITECTURE.md) for the codebase
 tour.
 
-PRs that touch the web panel (`web/**`) are covered by a Contributor
-License Agreement; see [`CLA.md`](CLA.md). The CLA bot leaves
-one-line sign instructions on your first such PR; you only need to
-sign once. Plugin-only PRs (`game/addons/sourcemod/**`) stay under
-GPLv3 and don't need a signature.
-
 Security issues: please open an issue with reproduction details, or
 contact a maintainer on Discord if the report needs to be private.
 
