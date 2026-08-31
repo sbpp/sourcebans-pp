@@ -42,6 +42,9 @@ final class YourAccountView extends View
      *     'Kick', 'Ban']`). Preserves `SmFlagsToSb()`'s legacy
      *     contract so the parallel admin-list / admin-edit surfaces
      *     keep their existing wire shape.
+     * @param list<array{id: int, name: string, token_prefix: string, created: int, last_used: int|null, expires_at: int|null}> $api_tokens
+     *     Active Personal Access Tokens for the REST API. Empty when
+     *     the admin has none. The plaintext secret is never listed.
      */
     public function __construct(
         public readonly bool $srvpwset,
@@ -50,6 +53,7 @@ final class YourAccountView extends View
         public readonly array $web_permissions_grouped,
         public readonly false|array $server_permissions,
         public readonly int $min_pass_len,
+        public readonly array $api_tokens,
     ) {
     }
 }

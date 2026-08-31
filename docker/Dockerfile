@@ -28,6 +28,9 @@ RUN apt-get update \
  && a2enmod rewrite \
  && rm -rf /var/lib/apt/lists/*
 
+COPY docker/apache/sbpp-dev-rewrite.conf /etc/apache2/conf-available/sbpp-dev-rewrite.conf
+RUN a2enconf sbpp-dev-rewrite
+
 # opcache is bundled into PHP 8.5 core (no longer a separate ext module);
 # `docker-php-ext-install opcache` fails on the 8.5 image with
 # "cp: cannot stat 'modules/*'" because there's no .so to copy. The

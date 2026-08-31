@@ -7,7 +7,8 @@ codebase; this file is the cheatsheet.
 ## Stack at a glance
 
 - `web/` — PHP 8.5 panel (Smarty 5, PDO/MariaDB, vanilla JS). Entry:
-  `web/index.php` (pages) and `web/api.php` (JSON API).
+  `web/index.php` (pages), `web/api.php` (panel JSON RPC), and
+  `web/api/v1.php` (external REST API, PAT auth).
 - All classes in `web/includes/` live under `Sbpp\…` namespaces (e.g.
   `Sbpp\Db\Database`, `Sbpp\Auth\UserManager`, `Sbpp\Log`,
   `Sbpp\Api\Api`, `Sbpp\View\AdminTabs`). The legacy global names
@@ -45,6 +46,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Add/rename/remove a top-level subsystem in `web/includes/`  | `ARCHITECTURE.md` (Web panel → Directory layout, and the relevant subsystem section) |
 | Change a request lifecycle (page or JSON API)               | `ARCHITECTURE.md` (the lifecycle section + any diagrams) |
 | Add an API handler **topic file** (new file in `api/handlers/`) | `ARCHITECTURE.md` (handler list under "Handler registration") |
+| Add or change a REST v1 route | `ARCHITECTURE.md` (REST API request lifecycle) + `web/api/openapi-v1.yaml` + `docs/src/content/docs/configuring/rest-api.mdx` |
 | Add or rename a DB table, or change the schema substantively | `ARCHITECTURE.md` (Database schema table) + ensure `install/includes/sql/struc.sql` is the source of truth + paired `web/updater/data/<N>.php` registered in `store.json` |
 | Add or change a row in `install/includes/sql/data.sql` (e.g. new `sb_settings` key) | Paired migration in `web/updater/data/<N>.php` + register in `web/updater/store.json` (see "Updater migrations") |
 | Add or remove a quality gate / CI workflow                  | `ARCHITECTURE.md` (Quality gates) **and** `AGENTS.md` (Quality gates) |
@@ -438,6 +440,7 @@ matching its directory. PSR-4 autoloads from `web/includes/` →
 | `Sbpp\Config`                            | settings cache                        |
 | `Sbpp\Api\Api`                           | JSON API dispatcher                   |
 | `Sbpp\Api\ApiError`                      | structured API error                  |
+| `Sbpp\Rest\*`                            | REST `/api/v1` front controller, PAT auth, router, envelope |
 | `Sbpp\View\AdminTabs`                    | edit-* Back-link mounter (empty tabs) |
 | `Sbpp\View\AdminNavCatalog`              | Pattern A section catalogs for the main-sidebar accordion (#1490) |
 | `Sbpp\View\BrandLogo`                    | `template.logo` resolver with `is_file()` fallback to `images/favicon.svg` — single source for the navbar + login chrome brand-mark renders; rejects path-traversal + null-bytes + the v1.x default (case-insensitive); fail-closed on missing `SB_THEMES` |
@@ -949,6 +952,39 @@ of the diff ship together or not at all.
   actionable `title="…"` as the JSON-flow add-form templates so
   the browser-native popover surfaces the same error message
   pre-flight.
+
+### REST API v1
+
+External clients (bots, website-next backends, scripts) use
+`web/api/v1.php` (`/api/v1/…` with rewrite, `/api/v1.php/…` PATH_INFO
+fallback). This is a **separate product** from `POST /api.php`.
+
+- Do **not** replace or wrap `api.php`. Panel JS stays on RPC (cookie
+  JWT + CSRF). REST uses Personal Access Tokens
+  (`Authorization: Bearer sbpp_pat_…`). Cookie JWT must **not**
+  authenticate REST (CSRF trap in browsers).
+- No CSRF on REST. Token lookup binds `$GLOBALS['userbank']` via
+  `UserManager(null, $aid)` so the cookie session is discarded.
+- Tokens inherit the admin's web flags. No extra scopes. Soft-retired
+  (`enabled = 0`) → 401. Password `lockout_until` does not apply.
+- Writes reuse `Api::invoke()` where the RPC handler already exists
+  (deactivate/reactivate/remove/rehash). List/get and Steam64 upsert
+  are dedicated `Sbpp\Rest\*` queries. Discard `__redirect` / chrome
+  envelopes.
+- `{id}` on `/admins/{id}` is aid **or** a 17-digit Steam64 starting
+  with 7 that round-trips through Steam2 (universe IDs at or above
+  `76561197960265728`). Steam2/Steam3 in the path is 400. A 17-digit
+  string that converts to a negative Z is 400. PUT + Steam64 upserts
+  (create or update + reactivate). PUT + aid 404s if missing.
+- After admin mutate, fire rehash server-side and put the result in
+  `meta.rehash`. Clients will forget.
+- OpenAPI (`web/api/openapi-v1.yaml`) lands in the **same PR** as the
+  route. Operator docs: `docs/src/content/docs/configuring/rest-api.mdx`.
+- Forbidden GET fields match `EntityExporter` (`password`, `validate`,
+  `attempts`, `lockout_until`, `srv_password`, `servers.rcon`,
+  `smtp.pass`, `telemetry.instance_id`). Steam64 in JSON is a string.
+- Registry: `Sbpp\Rest\Routes::all()`. Adding a write route requires a
+  row in `RestPermissionMatrixTest`.
 
 ### CSRF
 
@@ -4838,6 +4874,7 @@ the spec, target a 1920px viewport, not 1440px.
 | Edit a docs page or add a new one (the Astro + Starlight site published at sbpp.github.io) | `docs/src/content/docs/<group>/<slug>.md` (or `.mdx` when the page uses tabs / cards / asides — e.g. `getting-started/quickstart.mdx`, `setup/mariadb.mdx`). New pages also need a sidebar entry in `docs/astro.config.mjs` (the `sidebar:` array). Site config + theme tokens live in `docs/astro.config.mjs` + `docs/src/styles/sbpp.css`. The Starlight chrome ships from `@astrojs/starlight`; layout overrides land under `docs/src/components/` (see `ThemeProvider.astro` for the canonical override shape). Local dev: `cd docs && npm install && npm run dev`. CI gates: `.github/workflows/docs-build.yml` (per-PR build), `docs-deploy-trigger.yml` (no-op in this repo; no Pages sibling), `docs-screenshots.yml` (gated on the `affects-ui` label, runs `docs/scripts/capture.mjs`). Source of truth is the `docs/` tree. |
 | Refresh installer / panel screenshots used in docs pages | `docs/scripts/capture.mjs` (Playwright; `npm run capture` in `docs/`). Output lands under `docs/src/assets/auto/{install,panel}/<stable-slug>.png` so docs pages keep referencing the same path across runs. CI does this automatically on PRs labelled `affects-ui`; locally run after `./sbpp.sh up`. STEAM_API_KEY is the all-zero dummy `00000000000000000000000000000000`. |
 | Add a JSON action                      | `web/api/handlers/_register.php` + `web/api/handlers/<topic>.php` |
+| Add or change a REST v1 route          | `web/includes/Rest/Routes.php` + handler in `Sbpp\Rest\*`. Same-PR OpenAPI (`web/api/openapi-v1.yaml`) and a row in `web/tests/api/RestPermissionMatrixTest.php`. Operator docs: `docs/src/content/docs/configuring/rest-api.mdx`. Entry: `web/api/v1.php`. PAT mint UI: Your Account + `account.tokens_*` RPC. Do not authenticate REST with the panel cookie. |
 | Soft-retire / hard-delete admins, keep ban+comm issuer names, or bulk-select on the admins list (#1509) | Soft-retire: `admins.enabled` + `admins.deactivate` / `admins.reactivate` in `web/api/handlers/admins.php` (Active/Inactive chips + dialogs in `page_admin_admins_list.tpl`). Hard delete still snapshots `bans.admin_name` / `comms.admin_name` before DELETE (migration `811.php`). Issuer display: `COALESCE(NULLIF(*.admin_name, ''), AD.user)` → template paints **Unknown**, never "deleted admin" on the Admin cell (comments still say "deleted admin" per #1500). Bulk: `admins.bulk` (`op` = `deactivate` \| `reactivate` \| `remove` \| `set_web_group` \| `set_srv_group`, partial `applied`/`skipped`) + checkbox column / sticky bar in `page_admin_admins_list.tpl`. Guards: no self on deactivate/remove; owners skipped. Tests: `AdminsTest` + `AdminEnabledAttributionTest` + `admin-deactivate-bulk.spec.ts`. |
 | Add or audit a publicly-reachable, unauthenticated auth surface (anything in `web/api/handlers/auth.php` or sibling registered as `requireAuth: false`) without leaking per-account state | The reference shape is `api_auth_lost_password` + `_api_auth_lost_password_generic_response` in `web/api/handlers/auth.php` (#1456). All reachable branches MUST return the same envelope; operator-side toggles (e.g. `config.enablenormallogin`) MAY surface as a per-toggle error code because the value is the same for every caller. The pre-#1456 shape branched on `not_registered` / `mail_failed` and let an unauthenticated visitor enumerate registered admin emails one request at a time by reading the painted toast back. See "Public auth surfaces: response-shape uniformity" in Conventions for the full contract (audit-log discipline, DB-write gating, SMTP gating, the documented response-time residual risk) + the matching Anti-patterns entry. Regression guards: `web/tests/api/AuthTest.php::testLostPasswordResponseIsIdenticalForKnownAndUnknownEmail` (byte-for-byte wire assertion) + `web/tests/api/__snapshots__/auth/lost_password_generic.json` (locked envelope) + `web/tests/e2e/specs/flows/lostpassword-toast.spec.ts` (chrome-side parity: same painted toast for known + unknown emails). Sibling surfaces still subject to follow-up (documented under the convention): `api_auth_login` branches its `Api::redirect()` target on per-account state via `?m=…` flags. |
 | Resolve / override the JSON-API endpoint URL the client-side `sb.api.call(...)` POSTs to | `web/scripts/api.js` (`resolveEndpoint()` — runs once at script-load, computes `new URL('../api.php', document.currentScript.src).href`). The script lives at `/scripts/api.js` regardless of which page loads it, so resolving `../api.php` against the script's own URL lands on the panel-root `/api.php` for top-level page renders, iframe-routed surfaces (`pages/admin.kickit.php` / `pages/admin.blockit.php`), AND subdir installs (`https://host/sourcebans/` → script at `…/scripts/api.js` → endpoint at `…/api.php`). The endpoint stays writable on `sb.api` so callers can swap it; do not edit the resolver to a bare `'./api.php'` literal — that's the pre-#1433 regression shape that 404s every iframe round-trip (`./api.php` resolves against the iframe's document URL `/pages/admin.kickit.php` → `/pages/api.php`, no such route). **Load via static `<script src="…">` only** — `document.currentScript` is `null` when the script is appended programmatically (`document.createElement('script')`, `<script>document.write(...)</script>`, async loaders, ES-module `import()`), and a null `currentScript` collapses `SCRIPT_SRC` to the empty string and silently falls back to the bare-relative `./api.php` — i.e. the exact pre-#1433 bug. The three static load sites in the default theme are `core/header.tpl` (top-level panel chrome → `./scripts/api.js`), `page_kickit.tpl`, and `page_blockit.tpl` (iframe surfaces → `../scripts/api.js`); a theme fork that wants to lazy-load needs its own paired endpoint resolver. Pinned by `web/tests/integration/ApiJsEndpointResolutionTest.php` (static) + `web/tests/e2e/specs/flows/kickit-iframe.spec.ts` (runtime). |

@@ -49,6 +49,9 @@ final class PermissionMatrixTest extends TestCase
             'account.check_srv_password'  => ['perm' => 0, 'requireAdmin' => false, 'public' => false],
             'account.change_srv_password' => ['perm' => 0, 'requireAdmin' => false, 'public' => false],
             'account.change_email'        => ['perm' => 0, 'requireAdmin' => false, 'public' => false],
+            'account.tokens_list'         => ['perm' => 0, 'requireAdmin' => false, 'public' => false],
+            'account.tokens_create'       => ['perm' => 0, 'requireAdmin' => false, 'public' => false],
+            'account.tokens_revoke'       => ['perm' => 0, 'requireAdmin' => false, 'public' => false],
 
             // -- admins.
             'admins.add'                  => ['perm' => ADMIN_OWNER | ADMIN_ADD_ADMINS,    'requireAdmin' => false, 'public' => false],

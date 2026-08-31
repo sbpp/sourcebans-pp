@@ -80,6 +80,7 @@
             }
         ],
         "server_permissions": false,
-        "min_pass_len": 6
+        "min_pass_len": 6,
+        "api_tokens": []
     }
 }

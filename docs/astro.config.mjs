@@ -145,6 +145,7 @@ export default defineConfig({
           items: [
             { label: 'Project announcements', slug: 'configuring/announcements' },
             { label: 'Full data export', slug: 'configuring/data-export' },
+            { label: 'REST API', slug: 'configuring/rest-api' },
           ],
         },
         {

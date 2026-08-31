@@ -33,4 +33,5 @@ $webExtraFlags = (int) $userbank->GetProperty("extraflags");
     web_permissions_grouped: \Sbpp\View\PermissionCatalog::groupedDisplayFromMask($webExtraFlags),
     server_permissions:      SmFlagsToSb($userbank->GetProperty("srv_flags")),
     min_pass_len:            (int) MIN_PASS_LENGTH,
+    api_tokens:              \Sbpp\Rest\PatAuthenticator::listForAid((int) $userbank->GetAid()),
 ));

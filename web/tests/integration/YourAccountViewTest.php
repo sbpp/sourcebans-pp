@@ -68,6 +68,7 @@ final class YourAccountViewTest extends ApiTestCase
             web_permissions_grouped: PermissionCatalog::groupedDisplayFromMask($extraflags),
             server_permissions:      false,
             min_pass_len:            6,
+            api_tokens:              [],
         );
 
         // Pull the published shape exactly the way `Renderer::render`
@@ -107,6 +108,7 @@ final class YourAccountViewTest extends ApiTestCase
             web_permissions_grouped: PermissionCatalog::groupedDisplayFromMask($extraflags),
             server_permissions:      false,
             min_pass_len:            6,
+            api_tokens:              [],
         );
 
         $this->assertCount(
@@ -142,6 +144,7 @@ final class YourAccountViewTest extends ApiTestCase
             web_permissions_grouped: PermissionCatalog::groupedDisplayFromMask(0),
             server_permissions:      false,
             min_pass_len:            6,
+            api_tokens:              [],
         );
 
         $this->assertSame([], $view->web_permissions_grouped);

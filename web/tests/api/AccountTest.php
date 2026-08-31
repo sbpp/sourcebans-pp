@@ -254,4 +254,57 @@ final class AccountTest extends ApiTestCase
         ]);
         $this->assertEnvelopeError($env, 'forbidden');
     }
+
+    public function testTokensCreateReturnsSecretOnce(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('account.tokens_create', [
+            'name' => 'bot',
+            'expires_days' => 0,
+        ]);
+        $this->assertTrue($env['ok'] ?? false, json_encode($env));
+        $this->assertMatchesRegularExpression('/^sbpp_pat_[0-9a-f]{64}$/', $env['data']['token']);
+        $this->assertSnapshot(
+            'account/tokens_create',
+            $env,
+            ['data.id', 'data.token', 'data.token_prefix', 'data.created'],
+        );
+    }
+
+    public function testTokensListOmitsSecret(): void
+    {
+        $this->loginAsAdmin();
+        $this->api('account.tokens_create', ['name' => 'bot', 'expires_days' => 0]);
+        $env = $this->api('account.tokens_list');
+        $this->assertTrue($env['ok'] ?? false, json_encode($env));
+        $this->assertCount(1, $env['data']['tokens']);
+        $this->assertArrayNotHasKey('token', $env['data']['tokens'][0]);
+        $this->assertArrayNotHasKey('token_hash', $env['data']['tokens'][0]);
+        $this->assertSame('bot', $env['data']['tokens'][0]['name']);
+    }
+
+    public function testTokensRevokeRemovesFromList(): void
+    {
+        $this->loginAsAdmin();
+        $created = $this->api('account.tokens_create', ['name' => 'bot', 'expires_days' => 0]);
+        $id = (int) $created['data']['id'];
+        $env = $this->api('account.tokens_revoke', ['id' => $id]);
+        $this->assertTrue($env['ok'] ?? false, json_encode($env));
+        $list = $this->api('account.tokens_list');
+        $this->assertSame([], $list['data']['tokens']);
+    }
+
+    public function testTokensCreateRejectsAnonymous(): void
+    {
+        $env = $this->api('account.tokens_create', ['name' => 'bot']);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    public function testTokensCreateRejectsEmptyName(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('account.tokens_create', ['name' => '']);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('name', $env['error']['field'] ?? null);
+    }
 }

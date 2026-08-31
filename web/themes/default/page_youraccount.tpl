@@ -36,7 +36,7 @@
 
     <header data-testid="account-header">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Your account</h1>
-        <p class="text-sm text-muted m-0 mt-2">Permissions, password, server password, and email.</p>
+        <p class="text-sm text-muted m-0 mt-2">Permissions, password, server password, email, and API tokens.</p>
     </header>
 
     {*
@@ -301,6 +301,82 @@
                     <button class="btn btn--primary" type="submit" data-testid="account-email-save">Save</button>
                 </div>
             </form>
+        </div>
+    </section>
+
+    <section class="card" data-testid="account-tokens">
+        <div class="card__header">
+            <div>
+                <h3>API tokens</h3>
+                <p>Personal access tokens for the REST API. The secret is shown once when you create it.</p>
+            </div>
+        </div>
+        <div class="card__body space-y-4">
+            <div id="account-token-secret-wrap" hidden>
+                <p class="text-sm m-0">Copy this token now. You will not see it again.</p>
+                <code class="block mt-2" data-testid="account-token-secret"></code>
+                <button type="button" class="btn btn--secondary btn--sm mt-2" data-testid="account-token-copy" data-copy="">Copy token</button>
+            </div>
+            <form id="account-token-create-form" class="space-y-3">
+                {csrf_field}
+                <div>
+                    <label class="label" for="account-token-name">Name</label>
+                    <input class="input" type="text" id="account-token-name" name="name"
+                           data-testid="account-token-name" maxlength="64" required
+                           placeholder="discord-bot">
+                    <div id="account-token-name-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                <div>
+                    <label class="label" for="account-token-expiry">Expires</label>
+                    <select class="select" id="account-token-expiry" name="expires_days" data-testid="account-token-expiry">
+                        <option value="0">Never</option>
+                        <option value="30">30 days</option>
+                        <option value="90">90 days</option>
+                        <option value="365">365 days</option>
+                    </select>
+                </div>
+                <div class="flex justify-end">
+                    <button class="btn btn--primary" type="submit" data-testid="account-token-create">Create token</button>
+                </div>
+            </form>
+            {if $api_tokens}
+            <div class="table-scroll">
+                <table class="table table--compact">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Prefix</th>
+                            <th>Last used</th>
+                            <th>Expires</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {foreach from=$api_tokens item=token}
+                        <tr data-testid="account-token-row-{$token.id}">
+                            <td>{$token.name}</td>
+                            <td><code>{$token.token_prefix}</code></td>
+                            <td>{if $token.last_used}{$token.last_used|date_format:"%Y-%m-%d"}{else}Never{/if}</td>
+                            <td>{if $token.expires_at}{$token.expires_at|date_format:"%Y-%m-%d"}{else}Never{/if}</td>
+                            <td class="row-actions row-actions--icons">
+                                <button type="button" class="btn btn--ghost btn--icon btn--sm"
+                                        data-action="account-token-revoke"
+                                        data-id="{$token.id}"
+                                        data-name="{$token.name}"
+                                        data-testid="account-token-revoke"
+                                        data-tooltip="Revoke"
+                                        aria-label="Revoke token">
+                                    <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {/foreach}
+                    </tbody>
+                </table>
+            </div>
+            {else}
+            <p class="text-sm text-muted m-0" data-testid="account-tokens-empty">No tokens yet.</p>
+            {/if}
         </div>
     </section>
 
@@ -587,6 +663,82 @@
             });
         });
     }
+
+    var tokenForm = document.getElementById('account-token-create-form');
+    if (tokenForm) {
+        tokenForm.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            setMsg('account-token-name-msg', '');
+            var name = val('account-token-name');
+            var expiryEl = document.getElementById('account-token-expiry');
+            var days = expiryEl && 'value' in expiryEl ? parseInt(String(expiryEl.value), 10) : 0;
+            if (name.length === 0) {
+                setMsg('account-token-name-msg', 'Give this token a name.');
+                return;
+            }
+            var createBtn = tokenForm.querySelector('[data-testid="account-token-create"]');
+            setBusy(createBtn, true);
+            sb.api.call(Actions.AccountTokensCreate, {
+                name: name,
+                expires_days: days
+            }).then(function (env) {
+                setBusy(createBtn, false);
+                if (env && env.redirect) return;
+                if (showFieldError('account-token-', env && env.error, { name: 'name' })) return;
+                if (!env || !env.ok || !env.data) {
+                    flashFailure(env);
+                    return;
+                }
+                var wrap = document.getElementById('account-token-secret-wrap');
+                var secretEl = document.querySelector('[data-testid="account-token-secret"]');
+                var copyBtn = document.querySelector('[data-testid="account-token-copy"]');
+                if (wrap && secretEl) {
+                    secretEl.textContent = env.data.token || '';
+                    wrap.hidden = false;
+                }
+                if (copyBtn) copyBtn.setAttribute('data-copy', env.data.token || '');
+                if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+                    window.SBPP.showToast({
+                        kind: 'success',
+                        title: 'Token created',
+                        body: 'Copy the secret now. It will not be shown again.'
+                    });
+                }
+            });
+        });
+    }
+
+    document.addEventListener('click', function (ev) {
+        var target = ev.target;
+        if (!target || !target.closest) return;
+        var btn = target.closest('[data-action="account-token-revoke"]');
+        if (!btn) return;
+        ev.preventDefault();
+        var id = parseInt(btn.getAttribute('data-id') || '0', 10);
+        var tokenName = btn.getAttribute('data-name') || 'this token';
+        var confirmFn = window.SBPP && typeof window.SBPP.confirm === 'function'
+            ? window.SBPP.confirm
+            : null;
+        if (!confirmFn) return;
+        confirmFn({
+            title: 'Revoke token',
+            body: 'Revoke "' + tokenName + '"? Scripts using it will stop working.',
+            confirmLabel: 'Revoke',
+            danger: true
+        }).then(function (ok) {
+            if (!ok) return;
+            setBusy(btn, true);
+            sb.api.call(Actions.AccountTokensRevoke, { id: id }).then(function (env) {
+                if (env && env.ok) {
+                    var row = btn.closest('tr');
+                    if (row) row.remove();
+                    return;
+                }
+                setBusy(btn, false);
+                flashFailure(env);
+            });
+        });
+    });
 })();
 </script>
 {/literal}

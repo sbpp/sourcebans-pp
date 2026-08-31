@@ -30,6 +30,22 @@ CREATE TABLE IF NOT EXISTS `{prefix}_admins_servers_groups` (
 ) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
+CREATE TABLE IF NOT EXISTS `{prefix}_api_tokens` (
+  `id` int(10) UNSIGNED NOT NULL auto_increment,
+  `aid` int(6) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `token_prefix` varchar(16) NOT NULL,
+  `created` int(11) NOT NULL,
+  `last_used` int(11) NULL default NULL,
+  `expires_at` int(11) NULL default NULL,
+  `revoked_at` int(11) NULL default NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `token_hash` (`token_hash`),
+  KEY `aid` (`aid`)
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
+
+
 CREATE TABLE IF NOT EXISTS `{prefix}_banlog` (
   `sid` int(6) NOT NULL,
   `time` int(11) NOT NULL,

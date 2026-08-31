@@ -1,0 +1,457 @@
+openapi: 3.0.3
+info:
+  title: SourceBans++ REST API
+  version: 1.0.0
+  description: >
+    Versioned HTTP API for external clients (bots, website-next, scripts).
+    Authenticate with a Personal Access Token. The panel JavaScript continues
+    to use POST /api.php (cookie JWT + CSRF) and is not a client of this API.
+servers:
+  - url: /api/v1
+    description: Pretty URL (Apache rewrite)
+  - url: /api/v1.php
+    description: PATH_INFO fallback
+security:
+  - bearerAuth: []
+tags:
+  - name: me
+  - name: admins
+  - name: groups
+  - name: system
+  - name: meta
+paths:
+  /openapi.yaml:
+    get:
+      tags: [meta]
+      security: []
+      summary: OpenAPI 3 document for this API
+      responses:
+        "200":
+          description: YAML spec
+          content:
+            application/yaml:
+              schema:
+                type: string
+  /me:
+    get:
+      tags: [me]
+      summary: The admin bound to this token
+      responses:
+        "200":
+          description: Admin resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /admins:
+    get:
+      tags: [admins]
+      summary: List admins
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+      responses:
+        "200":
+          description: Paginated admin list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminListEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admins/{id}:
+    parameters:
+      - $ref: "#/components/parameters/adminId"
+    get:
+      tags: [admins]
+      summary: Get one admin by aid or Steam64
+      responses:
+        "200":
+          description: Admin resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [admins]
+      summary: Create or replace an admin
+      description: >
+        `{id}` as Steam64 upserts (201 create, 200 update, reactivates if
+        enabled=0). `{id}` as aid replaces an existing row (404 if missing).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEnvelope"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [admins]
+      summary: Merge-update an existing admin (never creates)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [admins]
+      summary: Hard-delete an admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
+  /admins/{id}/deactivate:
+    parameters:
+      - $ref: "#/components/parameters/adminId"
+    post:
+      tags: [admins]
+      summary: Soft-retire an admin (enabled=0)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Deactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
+  /admins/{id}/reactivate:
+    parameters:
+      - $ref: "#/components/parameters/adminId"
+    post:
+      tags: [admins]
+      summary: Restore a soft-retired admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Reactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
+  /groups:
+    get:
+      tags: [groups]
+      summary: List web groups and SourceMod server groups
+      responses:
+        "200":
+          description: Group catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupsEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /system/rehash:
+    post:
+      tags: [system]
+      summary: Run sm_rehash on game servers
+      description: >
+        If `sids` is omitted or empty, every enabled server is targeted.
+        Admin create/update/deactivate/reactivate already rehashes automatically.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        "200":
+          description: Rehash result
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Personal Access Token (`sbpp_pat_` + 64 hex chars). Minted on Your Account.
+  parameters:
+    adminId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Numeric aid, or a 17-digit Steam64 that round-trips through Steam2. Steam2/Steam3 is 400.
+    page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    perPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            field:
+              type: string
+    Admin:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        steam:
+          type: string
+          nullable: true
+        steam64:
+          type: string
+          nullable: true
+          description: Decimal string. Never a JSON number.
+        email:
+          type: string
+        enabled:
+          type: boolean
+        immunity:
+          type: integer
+        web_group_id:
+          type: integer
+          nullable: true
+        web_group_name:
+          type: string
+          nullable: true
+        server_group_id:
+          type: integer
+          nullable: true
+        server_group_name:
+          type: string
+          nullable: true
+        server_ids:
+          type: array
+          items:
+            type: integer
+        lastvisit:
+          type: integer
+          nullable: true
+    AdminWrite:
+      type: object
+      properties:
+        name:
+          type: string
+        steam:
+          type: string
+        email:
+          type: string
+        web_group_id:
+          type: integer
+          nullable: true
+        server_group_id:
+          type: integer
+          nullable: true
+        server_ids:
+          type: array
+          items:
+            type: integer
+        immunity:
+          type: integer
+        password:
+          type: string
+          description: Optional. Generated when omitted on create.
+    AdminEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Admin"
+        meta:
+          type: object
+          properties:
+            rehash:
+              type: object
+    AdminListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Admin"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    GroupsEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            web:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  flags:
+                    type: integer
+            server:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  flags:
+                    type: string
+                  immunity:
+                    type: integer
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid PAT
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Token admin lacks the required flag
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

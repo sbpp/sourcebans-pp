@@ -68,7 +68,7 @@ plugins are stable and updated less often.
 ```
 web/
 ├── index.php             Page entry point
-├── api.php               JSON API entry point
+├── api.php               Panel JSON RPC entry point (cookie + CSRF)
 ├── init.php              Bootstrap (constants, autoload, DB, Auth, CSRF, Smarty)
 ├── config.php            DB credentials etc. (generated; ignored by git)
 ├── config.php.template   Template the installer + dev entrypoint render
@@ -77,6 +77,8 @@ web/
 ├── getdemo.php           Demo file download
 │
 ├── api/handlers/         JSON API: one file per topic, _register.php wires them
+├── api/openapi-v1.yaml   REST v1 OpenAPI source of truth
+├── api/v1.php            REST v1 front controller (pretty URL /api/v1/… + PATH_INFO)
 ├── pages/                Page handlers (procedural .php, included by build())
 │   └── core/             header / navbar / title / footer chrome
 ├── includes/             Library code (PSR-4 Sbpp\ at this prefix; #1290 phase B)
@@ -85,6 +87,7 @@ web/
 │   ├── Log.php               Sbpp\Log — audit + error log (writes to sb_log)
 │   ├── Api/Api.php           Sbpp\Api\Api — JSON dispatcher
 │   ├── Api/ApiError.php      Sbpp\Api\ApiError — structured API error
+│   ├── Rest/                 Sbpp\Rest\* — REST /api/v1 (FrontController, Router, PatAuthenticator, RateLimiter, Envelope, AdminsService)
 │   ├── Auth/UserManager.php  Sbpp\Auth\UserManager (was CUserManager) — current admin + perms
 │   ├── Auth/Auth.php         Sbpp\Auth\Auth — login flow / cookie issue
 │   ├── Auth/JWT.php          Sbpp\Auth\JWT — token encode/decode
@@ -301,6 +304,34 @@ The `notes` topic was added with #1165 to back the player-detail
 drawer's admin-only Notes tab; `bans.player_history` and
 `comms.player_history` (live in their existing topic files) feed the
 drawer's History and Comms tabs.
+
+### REST API request lifecycle
+
+```
+Bearer PAT          ┌──────────────┐    ┌─────────────────────┐    ┌─────────────┐
+GET /api/v1/…  ->   │  api/v1.php  │ -> │ FrontController     │ -> │ Routes.php  │
+                    └──────────────┘    │ PatAuthenticator    │    └──────┬──────┘
+                                        │ RateLimiter         │           v
+                                        └─────────────────────┘    writes: Api::invoke
+                                                                   lists: Rest queries
+```
+
+1. `api/v1.php` registers a JSON exception handler, includes `init.php`
+   (no CSRF), and calls `FrontController::dispatch()`.
+2. The controller **replaces** `$GLOBALS['userbank']` with the PAT
+   identity or an anonymous `UserManager(null)`. The panel cookie is
+   ignored.
+3. Rate limit (file under `SB_CACHE/rest-rl/`, 60 req/min). Authenticated
+   by token id, anonymous by IP.
+4. `Router` matches method + path from `Routes::all()`. Writes that
+   already exist as RPC handlers go through `Api::invoke()`. List/get
+   and Steam64 upsert are dedicated queries.
+5. Envelope `{data, meta}` / `{error: {code, message, field?}}`. HTTP
+   status is load-bearing.
+
+Slice 0 resources: `/me`, `/admins/{id}` (aid or Steam64), deactivate /
+reactivate, `/groups`, `/system/rehash`. PATs are minted on Your Account
+via `account.tokens_*` (that UI is panel RPC, not REST).
 
 ### Auth (`includes/Auth/` — `Sbpp\Auth\*`)
 
@@ -978,6 +1009,7 @@ in dev/CI). Major tables:
 | `sb_groups`                 | Web admin groups (permission bitmasks).       |
 | `sb_srvgroups`              | SourceMod admin groups (char flags).          |
 | `sb_admins_servers_groups`  | Admin × server × group mapping.               |
+| `sb_api_tokens`             | REST PAT hashes (SHA-256). Never plaintext.   |
 | `sb_servers` / `sb_servers_groups` | Game servers + server-group membership. |
 | `sb_bans`                   | The bans themselves (+ `admin_name` issuer snapshot). |
 | `sb_comms`                  | Mutes / gags / blocks (+ `admin_name` issuer snapshot). |

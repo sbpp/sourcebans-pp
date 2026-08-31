@@ -1,0 +1,11 @@
+{
+    "ok": true,
+    "data": {
+        "id": "<*>",
+        "name": "bot",
+        "token": "<*>",
+        "token_prefix": "<*>",
+        "created": "<*>",
+        "expires_at": null
+    }
+}

@@ -19,11 +19,11 @@ final class UserManager
 
     private readonly Database $dbh;
 
-    public function __construct(?Token $token)
+    public function __construct(?Token $token, ?int $aidOverride = null)
     {
         $this->dbh = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
-        $this->aid = (int)($token?->claims()->get('aid') ?? -1);
+        $this->aid = $aidOverride ?? (int)($token?->claims()->get('aid') ?? -1);
 
         $this->GetUserArray($this->aid);
     }

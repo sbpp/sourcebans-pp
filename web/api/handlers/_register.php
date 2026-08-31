@@ -54,6 +54,9 @@ Api::register('account.change_password',    'api_account_change_password');
 Api::register('account.check_srv_password', 'api_account_check_srv_password');
 Api::register('account.change_srv_password','api_account_change_srv_password');
 Api::register('account.change_email',       'api_account_change_email');
+Api::register('account.tokens_list',        'api_account_tokens_list');
+Api::register('account.tokens_create',      'api_account_tokens_create');
+Api::register('account.tokens_revoke',      'api_account_tokens_revoke');
 
 // ---- admins -----------------------------------------------------------
 Api::register('admins.add',               'api_admins_add',               ADMIN_OWNER | ADMIN_ADD_ADMINS);

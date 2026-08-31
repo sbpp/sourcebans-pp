@@ -25,4 +25,20 @@ export class MyAccountPage extends BasePage {
     async goto(): Promise<void> {
         await super.goto(this.path);
     }
+
+    get tokensCard(): Locator {
+        return this.page.locator('[data-testid="account-tokens"]');
+    }
+
+    get tokenName(): Locator {
+        return this.page.locator('[data-testid="account-token-name"]');
+    }
+
+    get tokenCreate(): Locator {
+        return this.page.locator('[data-testid="account-token-create"]');
+    }
+
+    get tokenSecret(): Locator {
+        return this.page.locator('[data-testid="account-token-secret"]');
+    }
 }

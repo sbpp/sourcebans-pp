@@ -19,3 +19,8 @@ define('STEAMAPIKEY', ''); // Steam API Key for Shizz
 define('SB_EMAIL', '');
 define('SB_NEW_SALT', '$5$'); //Salt for passwords
 define('SB_SECRET_KEY', ''); //Secret for JWT
+
+// Optional: comma-separated origins allowed to call the REST API from a browser.
+// Leave undefined (or empty) to keep CORS off. Server-to-server callers
+// (website-next backend) do not need this.
+// define('SB_REST_CORS_ORIGINS', 'https://staff.example.com');

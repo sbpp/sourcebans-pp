@@ -36,6 +36,18 @@
  * @typedef {Object} ApiAccountCheckSrvPasswordResponse
  */
 /**
+ * @typedef {Object} ApiAccountTokensCreateRequest
+ * @typedef {{id: number, name: string, token: string, token_prefix: string, created: number, expires_at: number|null}} ApiAccountTokensCreateResponse
+ */
+/**
+ * @typedef {Object} ApiAccountTokensListRequest
+ * @typedef {{tokens: Array<{id: number, name: string, token_prefix: string, created: number, last_used: number|null, expires_at: number|null}>}} ApiAccountTokensListResponse
+ */
+/**
+ * @typedef {Object} ApiAccountTokensRevokeRequest
+ * @typedef {{revoked: number}} ApiAccountTokensRevokeResponse
+ */
+/**
  * @typedef {Object} ApiAdminsAddRequest
  * @typedef {Object} ApiAdminsAddResponse
  */
@@ -567,11 +579,11 @@
  */
 /**
  * Public action: report whether a newer SourceBans++ release is available.
- * Sources from `api.github.com/repos/srcdslab/sourcebans-pp/releases/latest` with
- * a 1-day on-disk cache + stale-while-error fallback (the cached payload is
- * served regardless of TTL when the upstream call fails) so a busy panel can't
- * blow through GitHub's 60 req/hr unauthenticated limit and a transient GitHub
- * blip doesn't paint the panel red.
+ * Sources from `api.github.com/repos/srcdslab/sourcebans-pp/releases/latest`
+ * with a 1-day on-disk cache + stale-while-error fallback (the cached payload
+ * is served regardless of TTL when the upstream call fails) so a busy panel
+ * can't blow through GitHub's 60 req/hr unauthenticated limit and a transient
+ * GitHub blip doesn't paint the panel red.
  *
  * @typedef {Object} ApiSystemCheckVersionRequest
  * @typedef {{release_latest: string, release_url: string, release_msg: string, release_update: boolean}} ApiSystemCheckVersionResponse
@@ -678,6 +690,9 @@ var Actions = Object.freeze({
     AccountChangeSrvPassword: 'account.change_srv_password',
     AccountCheckPassword: 'account.check_password',
     AccountCheckSrvPassword: 'account.check_srv_password',
+    AccountTokensCreate: 'account.tokens_create',
+    AccountTokensList: 'account.tokens_list',
+    AccountTokensRevoke: 'account.tokens_revoke',
     AdminsAdd: 'admins.add',
     AdminsBulk: 'admins.bulk',
     AdminsDeactivate: 'admins.deactivate',

@@ -1,0 +1,160 @@
+---
+title: REST API
+description: Personal Access Tokens and the versioned /api/v1 HTTP API for bots, scripts, and website backends.
+sidebar:
+  order: 3
+  label: REST API
+---
+
+import { Aside, Code, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The panel ships a versioned REST API at `/api/v1` for **external** clients.
+Mint a Personal Access Token on **Your account**, then send it as
+`Authorization: Bearer sbpp_pat_…`.
+
+The in-panel JavaScript does **not** use this API. It keeps talking to
+`POST /api.php` with the session cookie and a CSRF token.
+
+<Aside type="caution">
+Put the token on a **server** (your website backend, a bot host). Never
+embed it in browser JavaScript. Anyone who can read the token can act as
+that admin.
+</Aside>
+
+## Create a token
+
+1. Sign in to the panel.
+2. Open **Your account**.
+3. Under **API tokens**, give the token a name (for example `website-next`)
+   and an expiry (or Never).
+4. Copy the secret. It is shown once.
+
+The secret looks like `sbpp_pat_` plus 64 hex characters. The panel stores
+only a SHA-256 hash. Revoke the token from the same card if it leaks.
+
+The token inherits that admin's web flags. There are no extra scopes. A
+read-only bot is an admin with list flags, not a trimmed token.
+
+Soft-retired admins (`enabled = 0`) cannot use a token. Password lockout
+does not apply. Revoke is the kill switch.
+
+## Call the API
+
+Pretty URLs (production Docker image, and the dev image after rebuild):
+
+<Code lang="text" code="https://bans.example.com/api/v1/me" />
+
+PATH_INFO fallback (always works, including tarball installs without rewrite):
+
+<Code lang="text" code="https://bans.example.com/api/v1.php/me" />
+
+<Tabs>
+<TabItem label="curl">
+
+```bash
+TOKEN='sbpp_pat_…'
+
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  https://bans.example.com/api/v1.php/me
+```
+
+</TabItem>
+<TabItem label="upsert admin">
+
+```bash
+TOKEN='sbpp_pat_…'
+STEAM64='76561198000000000'
+
+curl -sS -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Moderator","web_group_id":2,"server_group_id":1}' \
+  "https://bans.example.com/api/v1.php/admins/$STEAM64"
+```
+
+</TabItem>
+</Tabs>
+
+Success bodies are `{ "data": …, "meta": … }`. Errors are
+`{ "error": { "code", "message", "field"? } }`. HTTP status is real
+(200, 201, 400, 401, 403, 404, 409, 429, 500), unlike `POST /api.php`
+which usually returns 200.
+
+Steam64 values in JSON are **strings**, not numbers. In `/admins/{id}`
+the `{id}` is a numeric aid or a 17-digit community ID (typically
+`7656119…`). Steam2 and Steam3 in the URL return 400.
+
+The OpenAPI document is at `GET /api/v1/openapi.yaml` (public).
+
+## website-next (staff hub)
+
+Use this API to grant or revoke in-game admin from your site. Discord
+roles stay in your bot. SourceBans does not know about Discord.
+
+1. Create an Owner (or Add/Edit/Delete Admins) account in the panel.
+2. Mint a PAT on that account.
+3. Store the PAT in the website-next **backend** environment.
+4. `PUT /admins/{steam64}` to create or update. A missing row is created.
+   An inactive row is reactivated.
+5. `POST /admins/{steam64}/deactivate` to demote. That is a soft retire,
+   not a hard delete, so ban history still shows the name.
+6. Create/update/deactivate already run `sm_rehash` when
+   `config.enableadminrehashing` is on. You can also `POST /system/rehash`.
+
+`GET /groups` returns web groups and SourceMod groups so you can map
+"Moderator" to a `gid`. Group create/edit is not in this version. Make
+the groups in the panel first.
+
+CORS is off by default. A backend-to-panel call does not need it. To
+allow a browser origin, set this in `config.php`:
+
+```php
+define('SB_REST_CORS_ORIGINS', 'https://staff.example.com');
+```
+
+## Rate limit
+
+Default 60 requests per minute. Anonymous callers (only `GET /openapi.yaml`
+in this version) are keyed by IP. Token callers are keyed by token.
+A 429 includes `Retry-After`.
+
+## Slice 0 routes
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/me` | Caller admin |
+| GET | `/admins` | Paginated list (`page`, `per_page`, cap 100) |
+| GET | `/admins/{id}` | `{id}` is aid or Steam64 |
+| PUT | `/admins/{id}` | Steam64 upserts. aid 404s if missing |
+| PATCH | `/admins/{id}` | Merge. Never creates |
+| POST | `/admins/{id}/deactivate` | Soft retire |
+| POST | `/admins/{id}/reactivate` | Restore |
+| DELETE | `/admins/{id}` | Hard delete |
+| GET | `/groups` | Web + SourceMod groups |
+| POST | `/system/rehash` | Optional `{ "sids": [1,2] }` |
+| GET | `/openapi.yaml` | This spec |
+
+Bans, comms, servers, notes, mods, protests, and settings are later
+slices. They are not in this version.
+
+## nginx snippet
+
+If you terminate TLS on nginx and proxy to Apache/PHP, you can also
+rewrite in nginx:
+
+```nginx
+location /api/v1 {
+    rewrite ^/api/v1$ /api/v1.php last;
+    rewrite ^/api/v1/(.*)$ /api/v1.php/$1 last;
+}
+```
+
+Pass `Authorization` through to PHP. Some Apache/PHP builds leave
+`$_SERVER['HTTP_AUTHORIZATION']` empty. The panel also reads the header
+via `getallheaders()`. For nginx + PHP-FPM:
+
+```nginx
+fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+```
+
+Tarball installs without rewrite should use `/api/v1.php/…`.
