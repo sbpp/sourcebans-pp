@@ -11,7 +11,7 @@ use Sbpp\Rest\Routes;
 final class RestPermissionMatrixTest extends TestCase
 {
     /**
-     * @return list<array{method: string, path: string, auth: bool, perm: int}>
+     * @return list<array{method: string, path: string, auth: bool, perm: int|string}>
      */
     public static function expectedRoutes(): array
     {
@@ -23,6 +23,13 @@ final class RestPermissionMatrixTest extends TestCase
         $addBan = ADMIN_OWNER | ADMIN_ADD_BAN;
         $unban = ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS;
         $deleteBan = ADMIN_OWNER | ADMIN_DELETE_BAN;
+        $addServer = ADMIN_OWNER | ADMIN_ADD_SERVER;
+        $editServer = ADMIN_OWNER | ADMIN_EDIT_SERVERS;
+        $deleteServer = ADMIN_OWNER | ADMIN_DELETE_SERVERS;
+        $anyAdmin = ALL_WEB;
+        $readMods = ADMIN_OWNER | ADMIN_LIST_MODS | ADMIN_ADD_MODS | ADMIN_EDIT_MODS;
+        $addMod = ADMIN_OWNER | ADMIN_ADD_MODS;
+        $deleteMod = ADMIN_OWNER | ADMIN_DELETE_MODS;
 
         return [
             ['method' => 'GET', 'path' => '/openapi.yaml', 'auth' => false, 'perm' => 0],
@@ -45,6 +52,19 @@ final class RestPermissionMatrixTest extends TestCase
             ['method' => 'GET', 'path' => '/comms/{cid}', 'auth' => false, 'perm' => 0],
             ['method' => 'POST', 'path' => '/comms/{cid}/unblock', 'auth' => true, 'perm' => $unban],
             ['method' => 'DELETE', 'path' => '/comms/{cid}', 'auth' => true, 'perm' => $deleteBan],
+            ['method' => 'GET', 'path' => '/servers', 'auth' => false, 'perm' => 0],
+            ['method' => 'POST', 'path' => '/servers', 'auth' => true, 'perm' => $addServer],
+            ['method' => 'GET', 'path' => '/servers/{sid}', 'auth' => false, 'perm' => 0],
+            ['method' => 'PATCH', 'path' => '/servers/{sid}', 'auth' => true, 'perm' => $editServer],
+            ['method' => 'DELETE', 'path' => '/servers/{sid}', 'auth' => true, 'perm' => $deleteServer],
+            ['method' => 'POST', 'path' => '/servers/{sid}/rcon', 'auth' => true, 'perm' => SM_RCON . SM_ROOT],
+            ['method' => 'GET', 'path' => '/notes', 'auth' => true, 'perm' => $anyAdmin],
+            ['method' => 'POST', 'path' => '/notes', 'auth' => true, 'perm' => $anyAdmin],
+            ['method' => 'DELETE', 'path' => '/notes/{nid}', 'auth' => true, 'perm' => $anyAdmin],
+            ['method' => 'GET', 'path' => '/mods', 'auth' => true, 'perm' => $readMods],
+            ['method' => 'POST', 'path' => '/mods', 'auth' => true, 'perm' => $addMod],
+            ['method' => 'GET', 'path' => '/mods/{mid}', 'auth' => true, 'perm' => $readMods],
+            ['method' => 'DELETE', 'path' => '/mods/{mid}', 'auth' => true, 'perm' => $deleteMod],
         ];
     }
 

@@ -67,7 +67,7 @@ final class FrontController
                 return Envelope::error($code, $message, $matched['error'], null, $headers);
             }
 
-            /** @var array{route: array{method: string, path: string, auth: bool, perm: int, handler: callable}, params: array<string, string>} $matched */
+            /** @var array{route: array{method: string, path: string, auth: bool, perm: int|string, handler: callable}, params: array<string, string>} $matched */
             $route = $matched['route'];
             $params = $matched['params'];
 
@@ -81,7 +81,7 @@ final class FrontController
                 if (!$userbank->is_logged_in()) {
                     return Envelope::error('unauthorized', 'A valid API token is required.', 401, null, $rlHeaders);
                 }
-                if ($route['perm'] !== 0 && !$userbank->HasAccess($route['perm'])) {
+                if ($route['perm'] !== 0 && $route['perm'] !== '' && !$userbank->HasAccess($route['perm'])) {
                     return Envelope::error('forbidden', 'No access', 403, null, $rlHeaders);
                 }
             }

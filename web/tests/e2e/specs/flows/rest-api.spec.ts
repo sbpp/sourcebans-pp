@@ -106,4 +106,54 @@ test.describe('REST API v1', () => {
         const unbanBody = await unban.json();
         expect(unbanBody.data.state).toBe('unbanned');
     });
+
+    test('POST /servers, anonymous GET omits rcon, DELETE', async ({ page, request }) => {
+        const account = new MyAccountPage(page);
+        await account.goto();
+        await expect(account.tokensCard).toBeVisible();
+
+        const tokenName = `e2e-rest-srv-${Date.now()}`;
+        await account.tokenName.fill(tokenName);
+        await account.tokenCreate.click();
+        await expect(account.tokenSecret).toHaveText(/^sbpp_pat_[0-9a-f]{64}$/);
+        const secret = (await account.tokenSecret.textContent()) ?? '';
+
+        const mods = await request.get('/api/v1.php/mods', {
+            headers: { Authorization: `Bearer ${secret}` },
+        });
+        expect(mods.status(), await mods.text()).toBe(200);
+        const modsBody = await mods.json();
+        const modId = modsBody.data.find((m: { id: number }) => m.id >= 1)?.id;
+        expect(modId).toBeGreaterThan(0);
+
+        const octet = (Date.now() % 200) + 10;
+        const ip = `203.0.113.${octet}`;
+        const port = 27000 + (Date.now() % 500);
+        const created = await request.post('/api/v1.php/servers', {
+            headers: {
+                Authorization: `Bearer ${secret}`,
+                'Content-Type': 'application/json',
+            },
+            data: { ip, port, mod: modId, enabled: true },
+        });
+        expect(created.status(), await created.text()).toBe(201);
+        const createdBody = await created.json();
+        const sid = createdBody.data.id;
+        expect(createdBody.data.ip).toBe(ip);
+        expect(createdBody.data).not.toHaveProperty('rcon');
+
+        const anon = await request.get(`/api/v1.php/servers/${sid}`);
+        expect(anon.status()).toBe(200);
+        const anonBody = await anon.json();
+        expect(anonBody.data.ip).toBe(ip);
+        expect(anonBody.data).not.toHaveProperty('rcon');
+        expect(JSON.stringify(anonBody)).not.toMatch(/rcon/i);
+
+        const deleted = await request.delete(`/api/v1.php/servers/${sid}`, {
+            headers: { Authorization: `Bearer ${secret}` },
+        });
+        expect(deleted.status(), await deleted.text()).toBe(200);
+        const deletedBody = await deleted.json();
+        expect(deletedBody.data.id).toBe(sid);
+    });
 });

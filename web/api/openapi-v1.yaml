@@ -19,6 +19,9 @@ tags:
   - name: groups
   - name: bans
   - name: comms
+  - name: servers
+  - name: notes
+  - name: mods
   - name: system
   - name: meta
 paths:
@@ -488,6 +491,289 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Error"
+  /servers:
+    get:
+      tags: [servers]
+      security: []
+      summary: List game servers
+      description: >
+        Public. A2S summary is in `query` (null when the probe fails).
+        Never includes `rcon`. Filter with `enabled=true|false`.
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+        - name: enabled
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Paginated server list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerListEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [servers]
+      summary: Add a game server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServerWrite"
+      responses:
+        "201":
+          description: Server created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Error"
+  /servers/{sid}:
+    parameters:
+      - $ref: "#/components/parameters/serverSid"
+    get:
+      tags: [servers]
+      security: []
+      summary: Get one game server
+      responses:
+        "200":
+          description: Server resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [servers]
+      summary: Update a game server
+      description: >
+        Omit `rcon` to keep the stored password. Sending `rcon` replaces it.
+        `group_ids` replaces membership when present.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServerWrite"
+      responses:
+        "200":
+          description: Server after update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [servers]
+      summary: Delete a game server
+      responses:
+        "200":
+          description: Deleted id
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /servers/{sid}/rcon:
+    parameters:
+      - $ref: "#/components/parameters/serverSid"
+    post:
+      tags: [servers]
+      summary: Send an RCON command
+      description: >
+        Requires SourceMod RCON or Root on the token admin, plus per-server
+        mapping. The stored RCON password is never returned.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+      responses:
+        "200":
+          description: Command result (`kind` is append, error, noop, or clear)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /notes:
+    get:
+      tags: [notes]
+      summary: List notes for a Steam ID
+      parameters:
+        - name: steam
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Steam2, Steam3, or Steam64. Canonicalised to Steam2.
+      responses:
+        "200":
+          description: Notes newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteListEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [notes]
+      summary: Add a note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [steam, body]
+              properties:
+                steam:
+                  type: string
+                body:
+                  type: string
+                  maxLength: 4000
+      responses:
+        "201":
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /notes/{nid}:
+    delete:
+      tags: [notes]
+      summary: Delete a note
+      description: Author or Owner only.
+      parameters:
+        - $ref: "#/components/parameters/noteId"
+      responses:
+        "200":
+          description: Deleted id
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /mods:
+    get:
+      tags: [mods]
+      summary: List game mods
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+      responses:
+        "200":
+          description: Paginated mod list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModListEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [mods]
+      summary: Add a game mod
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModWrite"
+      responses:
+        "201":
+          description: Mod created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Error"
+  /mods/{mid}:
+    parameters:
+      - $ref: "#/components/parameters/modId"
+    get:
+      tags: [mods]
+      summary: Get one game mod
+      responses:
+        "200":
+          description: Mod resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [mods]
+      summary: Delete a game mod
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ureason:
+                  type: string
+      responses:
+        "200":
+          description: Deleted id
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   securitySchemes:
     bearerAuth:
@@ -550,6 +836,27 @@ components:
         minimum: 1
     commId:
       name: cid
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    serverSid:
+      name: sid
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    noteId:
+      name: nid
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    modId:
+      name: mid
       in: path
       required: true
       schema:
@@ -864,6 +1171,187 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Comm"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    Server:
+      type: object
+      properties:
+        id:
+          type: integer
+        ip:
+          type: string
+        port:
+          type: integer
+        enabled:
+          type: boolean
+        mod:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            folder:
+              type: string
+        group_ids:
+          type: array
+          items:
+            type: integer
+        query:
+          type: object
+          nullable: true
+          description: A2S summary. Null when the probe fails. Never includes rcon.
+          properties:
+            hostname:
+              type: string
+            map:
+              type: string
+            players:
+              type: integer
+            maxplayers:
+              type: integer
+            secure:
+              type: boolean
+    ServerWrite:
+      type: object
+      properties:
+        ip:
+          type: string
+          description: IPv4, IPv6, or hostname. Alias `address`.
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        rcon:
+          type: string
+          description: On create, stored password. On PATCH, omit to keep the stored value.
+        rcon2:
+          type: string
+          description: Must match `rcon` when both are sent on create.
+        mod:
+          type: integer
+          description: Game mod id. Alias `mod_id`.
+        enabled:
+          type: boolean
+          description: Defaults to true on create when omitted.
+        group_ids:
+          type: array
+          items:
+            type: integer
+          description: On PATCH, replaces membership when present.
+    ServerEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Server"
+    ServerListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Server"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    Note:
+      type: object
+      properties:
+        id:
+          type: integer
+        steam:
+          type: string
+        steam64:
+          type: string
+          nullable: true
+          description: Decimal string. Never a JSON number.
+        body:
+          type: string
+        created:
+          type: integer
+        author:
+          type: string
+          nullable: true
+        author_aid:
+          type: integer
+    NoteEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Note"
+    NoteListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Note"
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+    Mod:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        folder:
+          type: string
+        icon:
+          type: string
+        steam_universe:
+          type: integer
+        enabled:
+          type: boolean
+    ModWrite:
+      type: object
+      required: [name, folder]
+      properties:
+        name:
+          type: string
+        folder:
+          type: string
+          description: Alias `modfolder`.
+        icon:
+          type: string
+        steam_universe:
+          type: integer
+        enabled:
+          type: boolean
+    ModEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Mod"
+    ModListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Mod"
         meta:
           type: object
           properties:

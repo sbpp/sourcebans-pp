@@ -969,8 +969,10 @@ fallback). This is a **separate product** from `POST /api.php`.
   (`enabled = 0`) → 401. Password `lockout_until` does not apply.
 - Writes reuse `Api::invoke()` where the RPC handler already exists
   (deactivate/reactivate/remove/rehash, bans.add/unban, comms.add/
-  unblock/delete). List/get and Steam64 upsert are dedicated
-  `Sbpp\Rest\*` queries. Discard `__redirect` / chrome envelopes.
+  unblock/delete, servers.add/remove/send_rcon, notes.add/delete,
+  mods.add/remove). List/get, Steam64 upsert, and PATCH `/servers` are
+  dedicated `Sbpp\Rest\*` queries. Discard `__redirect` / chrome
+  envelopes.
 - `{id}` on `/admins/{id}` is aid **or** a 17-digit Steam64 starting
   with 7 that round-trips through Steam2 (universe IDs at or above
   `76561197960265728`). Steam2/Steam3 in the path is 400. A 17-digit
@@ -979,12 +981,16 @@ fallback). This is a **separate product** from `POST /api.php`.
 - After admin mutate, fire rehash server-side and put the result in
   `meta.rehash`. Clients will forget.
 - GET `/bans` and `/comms` are public. Hide IP / admin name using the
-  same `is_admin()` + `banlist.hide*` gate as `api_bans_detail`. A
-  well-formed PAT that fails to resolve is 401. Cookie JWT never
-  authenticates REST (would leak IPs on public GET).
+  same `is_admin()` + `banlist.hide*` gate as `api_bans_detail`. GET
+  `/servers` is public with a trimmed A2S `query` and **never** returns
+  `rcon`. A well-formed PAT that fails to resolve is 401. Cookie JWT
+  never authenticates REST (would leak IPs on public GET).
 - POST `/bans` and `/comms` `length` is minutes (0 = permanent). GET
   `length` is seconds. Optional `kick: true` on POST `/bans` fans
   RCON (`meta.kick`). Unban/unblock require non-empty `ureason`.
+- POST `/servers/{sid}/rcon` requires SourceMod RCON or Root **and**
+  per-server mapping. GET `/notes` requires any web admin and
+  `?steam=`. DELETE `/notes/{nid}` is author or Owner.
 - OpenAPI (`web/api/openapi-v1.yaml`) lands in the **same PR** as the
   route. Operator docs: `docs/src/content/docs/configuring/rest-api.mdx`.
 - Forbidden GET fields match `EntityExporter` (`password`, `validate`,

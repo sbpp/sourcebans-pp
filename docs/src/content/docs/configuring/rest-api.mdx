@@ -115,10 +115,10 @@ define('SB_REST_CORS_ORIGINS', 'https://staff.example.com');
 ## Rate limit
 
 Default 60 requests per minute. Anonymous callers (OpenAPI spec, public
-ban/comms GET) are keyed by IP. Token callers are keyed by token.
+ban/comms/servers GET) are keyed by IP. Token callers are keyed by token.
 A 429 includes `Retry-After`.
 
-## Slice 0 and 1 routes
+## Routes
 
 | Method | Path | Notes |
 | --- | --- | --- |
@@ -139,14 +139,27 @@ A 429 includes `Retry-After`.
 | POST | `/comms` | `kind`: mute, gag, or silence |
 | POST | `/comms/{cid}/unblock` | Requires `ureason` |
 | DELETE | `/comms/{cid}` | Hard delete |
+| GET | `/servers`, `/servers/{sid}` | Public. A2S in `query`. Never returns `rcon` |
+| POST | `/servers` | `ip` / `address`, `port`, `mod`. `enabled` defaults to true |
+| PATCH | `/servers/{sid}` | Merge. Omit `rcon` to keep the stored password |
+| DELETE | `/servers/{sid}` | Hard delete |
+| POST | `/servers/{sid}/rcon` | SourceMod RCON or Root, plus per-server mapping |
+| GET | `/notes` | Requires `?steam=`. Any web admin |
+| POST | `/notes` | `steam` + `body` |
+| DELETE | `/notes/{nid}` | Author or Owner |
+| GET | `/mods`, `/mods/{mid}` | List / get |
+| POST | `/mods` | `name` + `folder` |
+| DELETE | `/mods/{mid}` | Optional `ureason` |
 | GET | `/openapi.yaml` | This spec |
 
-Servers, notes, mods, protests, and settings are later slices.
+Protests, submissions, comments, and settings are a later slice.
 
-GET `/bans` and `/comms` work without a token. The same hide-* settings as
-the public banlist apply (`banlist.hideplayerips`, `banlist.hideadminname`).
-Send a valid PAT to see IPs and admin names. A well-formed token that is
-revoked, expired, or unknown is 401 even on those GETs.
+GET `/bans`, `/comms`, and `/servers` work without a token. Ban and comm
+GET apply the same hide-* settings as the public lists
+(`banlist.hideplayerips`, `banlist.hideadminname`). Send a valid PAT to
+see IPs and admin names. GET `/servers` never includes `rcon`, even with
+a PAT. A well-formed token that is revoked, expired, or unknown is 401
+even on those GETs.
 
 POST `/bans` `length` is minutes (0 = permanent), matching the panel form.
 GET responses use `length` in **seconds** (what is stored). Steam64 in JSON

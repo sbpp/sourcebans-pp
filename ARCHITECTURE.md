@@ -87,7 +87,7 @@ web/
 │   ├── Log.php               Sbpp\Log — audit + error log (writes to sb_log)
 │   ├── Api/Api.php           Sbpp\Api\Api — JSON dispatcher
 │   ├── Api/ApiError.php      Sbpp\Api\ApiError — structured API error
-│   ├── Rest/                 Sbpp\Rest\* — REST /api/v1 (FrontController, Router, PatAuthenticator, RateLimiter, Envelope, AdminsService, BansService, CommsService, Kicker)
+│   ├── Rest/                 Sbpp\Rest\* — REST /api/v1 (FrontController, Router, PatAuthenticator, RateLimiter, Envelope, AdminsService, BansService, CommsService, ServersService, NotesService, ModsService, Kicker)
 │   ├── Auth/UserManager.php  Sbpp\Auth\UserManager (was CUserManager) — current admin + perms
 │   ├── Auth/Auth.php         Sbpp\Auth\Auth — login flow / cookie issue
 │   ├── Auth/JWT.php          Sbpp\Auth\JWT — token encode/decode
@@ -340,6 +340,13 @@ POST unblock, DELETE. GET list/get is public and applies the same hide-*
 as the panel. Writes require a PAT. POST `/bans` `length` is minutes;
 GET `length` is seconds. Optional `kick: true` fans RCON via
 `kickit.kick_player` and records `meta.kick`.
+
+Slice 2: `/servers` (public GET with A2S `query`, never `rcon`; POST /
+PATCH / DELETE; POST `/{sid}/rcon`), `/notes` (GET `?steam=`, POST,
+DELETE; any web admin), `/mods` (GET / POST / DELETE). Writes reuse
+`servers.add` / `servers.remove` / `servers.send_rcon`, `notes.add` /
+`notes.delete`, `mods.add` / `mods.remove`. PATCH `/servers` is dedicated
+(no RPC handler).
 
 ### Auth (`includes/Auth/` — `Sbpp\Auth\*`)
 

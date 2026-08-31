@@ -31,6 +31,13 @@ final class Routes
         $addBan = ADMIN_OWNER | ADMIN_ADD_BAN;
         $unban = ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS;
         $deleteBan = ADMIN_OWNER | ADMIN_DELETE_BAN;
+        $addServer = ADMIN_OWNER | ADMIN_ADD_SERVER;
+        $editServer = ADMIN_OWNER | ADMIN_EDIT_SERVERS;
+        $deleteServer = ADMIN_OWNER | ADMIN_DELETE_SERVERS;
+        $anyAdmin = ALL_WEB;
+        $readMods = ADMIN_OWNER | ADMIN_LIST_MODS | ADMIN_ADD_MODS | ADMIN_EDIT_MODS;
+        $addMod = ADMIN_OWNER | ADMIN_ADD_MODS;
+        $deleteMod = ADMIN_OWNER | ADMIN_DELETE_MODS;
 
         return [
             [
@@ -172,6 +179,97 @@ final class Routes
                 'auth' => true,
                 'perm' => $deleteBan,
                 'handler' => self::commsDelete(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/servers',
+                'auth' => false,
+                'perm' => 0,
+                'handler' => self::serversList(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/servers',
+                'auth' => true,
+                'perm' => $addServer,
+                'handler' => self::serversCreate(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/servers/{sid}',
+                'auth' => false,
+                'perm' => 0,
+                'handler' => self::serversGet(...),
+            ],
+            [
+                'method' => 'PATCH',
+                'path' => '/servers/{sid}',
+                'auth' => true,
+                'perm' => $editServer,
+                'handler' => self::serversPatch(...),
+            ],
+            [
+                'method' => 'DELETE',
+                'path' => '/servers/{sid}',
+                'auth' => true,
+                'perm' => $deleteServer,
+                'handler' => self::serversDelete(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/servers/{sid}/rcon',
+                'auth' => true,
+                'perm' => SM_RCON . SM_ROOT,
+                'handler' => self::serversRcon(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/notes',
+                'auth' => true,
+                'perm' => $anyAdmin,
+                'handler' => self::notesList(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/notes',
+                'auth' => true,
+                'perm' => $anyAdmin,
+                'handler' => self::notesCreate(...),
+            ],
+            [
+                'method' => 'DELETE',
+                'path' => '/notes/{nid}',
+                'auth' => true,
+                'perm' => $anyAdmin,
+                'handler' => self::notesDelete(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/mods',
+                'auth' => true,
+                'perm' => $readMods,
+                'handler' => self::modsList(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/mods',
+                'auth' => true,
+                'perm' => $addMod,
+                'handler' => self::modsCreate(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/mods/{mid}',
+                'auth' => true,
+                'perm' => $readMods,
+                'handler' => self::modsGet(...),
+            ],
+            [
+                'method' => 'DELETE',
+                'path' => '/mods/{mid}',
+                'auth' => true,
+                'perm' => $deleteMod,
+                'handler' => self::modsDelete(...),
             ],
         ];
     }
@@ -418,6 +516,143 @@ final class Routes
     private static function commsDelete(array $params, array $body, array $query): Response
     {
         return Envelope::ok((new CommsService())->delete(self::positiveId($params['cid'] ?? '', 'cid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function serversList(array $params, array $body, array $query): Response
+    {
+        $result = (new ServersService())->list($query);
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function serversGet(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new ServersService())->get(self::positiveId($params['sid'] ?? '', 'sid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function serversCreate(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new ServersService())->create($body), [], 201);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function serversPatch(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new ServersService())->update(self::positiveId($params['sid'] ?? '', 'sid'), $body));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function serversDelete(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new ServersService())->remove(self::positiveId($params['sid'] ?? '', 'sid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function serversRcon(array $params, array $body, array $query): Response
+    {
+        $sid = self::positiveId($params['sid'] ?? '', 'sid');
+        $command = (string) ($body['command'] ?? '');
+        return Envelope::ok((new ServersService())->rcon($sid, $command));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function notesList(array $params, array $body, array $query): Response
+    {
+        $result = (new NotesService())->list($query);
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function notesCreate(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new NotesService())->create($body), [], 201);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function notesDelete(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new NotesService())->delete(self::positiveId($params['nid'] ?? '', 'nid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function modsList(array $params, array $body, array $query): Response
+    {
+        $result = (new ModsService())->list($query);
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function modsGet(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new ModsService())->get(self::positiveId($params['mid'] ?? '', 'mid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function modsCreate(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new ModsService())->create($body), [], 201);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function modsDelete(array $params, array $body, array $query): Response
+    {
+        $mid = self::positiveId($params['mid'] ?? '', 'mid');
+        $ureason = trim((string) ($body['ureason'] ?? ''));
+        return Envelope::ok((new ModsService())->delete($mid, $ureason));
     }
 
     private static function positiveId(string $raw, string $field): int

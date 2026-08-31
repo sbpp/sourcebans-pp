@@ -83,7 +83,10 @@ final class Envelope
             'already_blocked',
             'not_active',
             'immune',
+            'duplicate',
+            'mod_exists',
             'conflict' => 409,
+            'delete_failed' => 500,
             default => 400,
         };
     }

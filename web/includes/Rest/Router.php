@@ -14,7 +14,7 @@ namespace Sbpp\Rest;
  *     method: string,
  *     path: string,
  *     auth: bool,
- *     perm: int,
+ *     perm: int|string,
  *     handler: callable
  * }
  */
