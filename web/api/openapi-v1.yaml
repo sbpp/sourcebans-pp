@@ -17,6 +17,8 @@ tags:
   - name: me
   - name: admins
   - name: groups
+  - name: bans
+  - name: comms
   - name: system
   - name: meta
 paths:
@@ -264,6 +266,228 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /bans:
+    get:
+      tags: [bans]
+      security: []
+      summary: List bans
+      description: >
+        Public. Anonymous callers follow `banlist.hideplayerips` and
+        `banlist.hideadminname`. A valid PAT of a web admin sees IPs and
+        admin names. A well-formed but invalid PAT is 401.
+        `length` is seconds. Filter with `state`, `search`, `server`.
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+        - $ref: "#/components/parameters/search"
+        - $ref: "#/components/parameters/banState"
+        - $ref: "#/components/parameters/serverId"
+      responses:
+        "200":
+          description: Paginated ban list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BanListEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [bans]
+      summary: Create a ban
+      description: >
+        `length` is minutes (0 = permanent), same as the panel form.
+        Optional `kick: true` fans RCON kicks to enabled servers
+        (`meta.kick`). The plugin still blocks on next connect without it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BanWrite"
+      responses:
+        "201":
+          description: Ban created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BanEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Error"
+  /bans/{bid}:
+    parameters:
+      - $ref: "#/components/parameters/banId"
+    get:
+      tags: [bans]
+      security: []
+      summary: Get one ban
+      responses:
+        "200":
+          description: Ban resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BanEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /bans/{bid}/unban:
+    parameters:
+      - $ref: "#/components/parameters/banId"
+    post:
+      tags: [bans]
+      summary: Lift an active ban
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ureason]
+              properties:
+                ureason:
+                  type: string
+      responses:
+        "200":
+          description: Ban after lift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BanEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
+  /comms:
+    get:
+      tags: [comms]
+      security: []
+      summary: List mute and gag rows
+      description: >
+        Public. Same hide-admin-name rule as bans. `kind` on the resource
+        is `mute` (type 1) or `gag` (type 2). Silence is two rows.
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/perPage"
+        - $ref: "#/components/parameters/search"
+        - $ref: "#/components/parameters/commState"
+        - $ref: "#/components/parameters/serverId"
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [mute, gag]
+      responses:
+        "200":
+          description: Paginated comms list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommListEnvelope"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [comms]
+      summary: Create a mute, gag, or silence
+      description: >
+        `length` is minutes. `kind` is `mute`, `gag`, or `silence`
+        (or `type` 1 / 2 / 3). Silence returns both rows.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommWrite"
+      responses:
+        "201":
+          description: Block created
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Error"
+  /comms/{cid}:
+    parameters:
+      - $ref: "#/components/parameters/commId"
+    get:
+      tags: [comms]
+      security: []
+      summary: Get one mute or gag row
+      responses:
+        "200":
+          description: Comm resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [comms]
+      summary: Hard-delete a mute or gag row
+      responses:
+        "200":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /comms/{cid}/unblock:
+    parameters:
+      - $ref: "#/components/parameters/commId"
+    post:
+      tags: [comms]
+      summary: Lift an active mute or gag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ureason]
+              properties:
+                ureason:
+                  type: string
+      responses:
+        "200":
+          description: Block after lift
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommEnvelope"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Error"
 components:
   securitySchemes:
     bearerAuth:
@@ -293,6 +517,44 @@ components:
         minimum: 1
         maximum: 100
         default: 30
+    search:
+      name: search
+      in: query
+      schema:
+        type: string
+      description: Match name, SteamID, reason (and IP when the caller can see IPs).
+    banState:
+      name: state
+      in: query
+      schema:
+        type: string
+        enum: [permanent, active, expired, unbanned]
+    commState:
+      name: state
+      in: query
+      schema:
+        type: string
+        enum: [permanent, active, expired, unmuted]
+    serverId:
+      name: server
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+    banId:
+      name: bid
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    commId:
+      name: cid
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
   schemas:
     Error:
       type: object
@@ -430,6 +692,187 @@ components:
                     type: string
                   immunity:
                     type: integer
+    Ban:
+      type: object
+      properties:
+        id:
+          type: integer
+        player_name:
+          type: string
+        type:
+          type: string
+          enum: [steam, ip]
+        steam:
+          type: string
+          nullable: true
+        steam64:
+          type: string
+          nullable: true
+          description: Decimal string. Never a JSON number.
+        ip:
+          type: string
+          nullable: true
+        reason:
+          type: string
+        created:
+          type: integer
+        ends:
+          type: integer
+        length:
+          type: integer
+          description: Seconds stored on the row.
+        state:
+          type: string
+          enum: [permanent, active, expired, unbanned]
+        admin_name:
+          type: string
+          nullable: true
+        server_id:
+          type: integer
+          nullable: true
+        unban_reason:
+          type: string
+          nullable: true
+        removed_at:
+          type: integer
+          nullable: true
+    BanWrite:
+      type: object
+      properties:
+        steam:
+          type: string
+        type:
+          description: 0 / steam or 1 / ip
+          oneOf:
+            - type: integer
+              enum: [0, 1]
+            - type: string
+              enum: [steam, ip]
+        ip:
+          type: string
+        name:
+          type: string
+        reason:
+          type: string
+        length:
+          type: integer
+          minimum: 0
+          description: Minutes. 0 is permanent.
+        kick:
+          type: boolean
+          description: Fan RCON kicks to enabled servers after insert.
+    BanEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Ban"
+        meta:
+          type: object
+          properties:
+            kick:
+              type: object
+    BanListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ban"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+    Comm:
+      type: object
+      properties:
+        id:
+          type: integer
+        player_name:
+          type: string
+        kind:
+          type: string
+          enum: [mute, gag, unknown]
+        steam:
+          type: string
+          nullable: true
+        steam64:
+          type: string
+          nullable: true
+        reason:
+          type: string
+        created:
+          type: integer
+        ends:
+          type: integer
+        length:
+          type: integer
+          description: Seconds stored on the row.
+        state:
+          type: string
+          enum: [permanent, active, expired, unmuted]
+        admin_name:
+          type: string
+          nullable: true
+        server_id:
+          type: integer
+          nullable: true
+        unblock_reason:
+          type: string
+          nullable: true
+        removed_at:
+          type: integer
+          nullable: true
+    CommWrite:
+      type: object
+      required: [steam]
+      properties:
+        steam:
+          type: string
+        kind:
+          type: string
+          enum: [mute, gag, silence]
+        type:
+          type: integer
+          enum: [1, 2, 3]
+          description: 1 mute, 2 gag, 3 silence. Prefer kind.
+        name:
+          type: string
+        reason:
+          type: string
+        length:
+          type: integer
+          minimum: 0
+          description: Minutes. 0 is permanent.
+    CommEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Comm"
+    CommListEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comm"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
   responses:
     Error:
       description: Structured error

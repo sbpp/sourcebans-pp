@@ -71,6 +71,10 @@ final class FrontController
             $route = $matched['route'];
             $params = $matched['params'];
 
+            if ($identity === null && self::presentedWellFormedPat()) {
+                return Envelope::error('unauthorized', 'A valid API token is required.', 401, null, $rlHeaders);
+            }
+
             if ($route['auth']) {
                 /** @var UserManager $userbank */
                 $userbank = $GLOBALS['userbank'];
@@ -107,6 +111,19 @@ final class FrontController
                 : 'An unexpected error occurred. See server logs for details.';
             return Envelope::error('server_error', $msg, 500, null, $rlHeaders);
         }
+    }
+
+    /**
+     * A well-formed PAT that did not bind is 401 on every route, including
+     * public GET. Missing or junk Authorization stays anonymous.
+     */
+    private static function presentedWellFormedPat(): bool
+    {
+        $header = PatAuthenticator::authorizationHeader();
+        if (preg_match('/^Bearer\s+(\S+)/i', trim($header), $m) !== 1) {
+            return false;
+        }
+        return PatAuthenticator::isWellFormedSecret($m[1]);
     }
 
     public static function requestPath(): string

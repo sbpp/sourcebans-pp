@@ -87,7 +87,7 @@ web/
 │   ├── Log.php               Sbpp\Log — audit + error log (writes to sb_log)
 │   ├── Api/Api.php           Sbpp\Api\Api — JSON dispatcher
 │   ├── Api/ApiError.php      Sbpp\Api\ApiError — structured API error
-│   ├── Rest/                 Sbpp\Rest\* — REST /api/v1 (FrontController, Router, PatAuthenticator, RateLimiter, Envelope, AdminsService)
+│   ├── Rest/                 Sbpp\Rest\* — REST /api/v1 (FrontController, Router, PatAuthenticator, RateLimiter, Envelope, AdminsService, BansService, CommsService, Kicker)
 │   ├── Auth/UserManager.php  Sbpp\Auth\UserManager (was CUserManager) — current admin + perms
 │   ├── Auth/Auth.php         Sbpp\Auth\Auth — login flow / cookie issue
 │   ├── Auth/JWT.php          Sbpp\Auth\JWT — token encode/decode
@@ -323,15 +323,23 @@ GET /api/v1/…  ->   │  api/v1.php  │ -> │ FrontController     │ -> │
    ignored.
 3. Rate limit (file under `SB_CACHE/rest-rl/`, 60 req/min). Authenticated
    by token id, anonymous by IP.
-4. `Router` matches method + path from `Routes::all()`. Writes that
+4. A well-formed `sbpp_pat_…` that does not resolve is 401 on every route,
+   including public GET. Missing or junk Authorization stays anonymous.
+5. `Router` matches method + path from `Routes::all()`. Writes that
    already exist as RPC handlers go through `Api::invoke()`. List/get
    and Steam64 upsert are dedicated queries.
-5. Envelope `{data, meta}` / `{error: {code, message, field?}}`. HTTP
+6. Envelope `{data, meta}` / `{error: {code, message, field?}}`. HTTP
    status is load-bearing.
 
-Slice 0 resources: `/me`, `/admins/{id}` (aid or Steam64), deactivate /
-reactivate, `/groups`, `/system/rehash`. PATs are minted on Your Account
-via `account.tokens_*` (that UI is panel RPC, not REST).
+Slice 0: `/me`, `/admins/{id}` (aid or Steam64), deactivate / reactivate,
+`/groups`, `/system/rehash`. PATs are minted on Your Account via
+`account.tokens_*` (that UI is panel RPC, not REST).
+
+Slice 1: `/bans`, `/bans/{bid}`, POST unban; `/comms`, `/comms/{cid}`,
+POST unblock, DELETE. GET list/get is public and applies the same hide-*
+as the panel. Writes require a PAT. POST `/bans` `length` is minutes;
+GET `length` is seconds. Optional `kick: true` fans RCON via
+`kickit.kick_player` and records `meta.kick`.
 
 ### Auth (`includes/Auth/` — `Sbpp\Auth\*`)
 

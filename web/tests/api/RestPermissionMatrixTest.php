@@ -20,6 +20,9 @@ final class RestPermissionMatrixTest extends TestCase
         $deleteAdmins = ADMIN_OWNER | ADMIN_DELETE_ADMINS;
         $readGroups = ADMIN_OWNER | ADMIN_LIST_GROUPS | ADMIN_ADD_ADMINS | ADMIN_EDIT_ADMINS;
         $rehash = ADMIN_OWNER | ADMIN_EDIT_ADMINS | ADMIN_EDIT_GROUPS | ADMIN_ADD_ADMINS;
+        $addBan = ADMIN_OWNER | ADMIN_ADD_BAN;
+        $unban = ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS;
+        $deleteBan = ADMIN_OWNER | ADMIN_DELETE_BAN;
 
         return [
             ['method' => 'GET', 'path' => '/openapi.yaml', 'auth' => false, 'perm' => 0],
@@ -33,6 +36,15 @@ final class RestPermissionMatrixTest extends TestCase
             ['method' => 'DELETE', 'path' => '/admins/{id}', 'auth' => true, 'perm' => $deleteAdmins],
             ['method' => 'GET', 'path' => '/groups', 'auth' => true, 'perm' => $readGroups],
             ['method' => 'POST', 'path' => '/system/rehash', 'auth' => true, 'perm' => $rehash],
+            ['method' => 'GET', 'path' => '/bans', 'auth' => false, 'perm' => 0],
+            ['method' => 'POST', 'path' => '/bans', 'auth' => true, 'perm' => $addBan],
+            ['method' => 'GET', 'path' => '/bans/{bid}', 'auth' => false, 'perm' => 0],
+            ['method' => 'POST', 'path' => '/bans/{bid}/unban', 'auth' => true, 'perm' => $unban],
+            ['method' => 'GET', 'path' => '/comms', 'auth' => false, 'perm' => 0],
+            ['method' => 'POST', 'path' => '/comms', 'auth' => true, 'perm' => $addBan],
+            ['method' => 'GET', 'path' => '/comms/{cid}', 'auth' => false, 'perm' => 0],
+            ['method' => 'POST', 'path' => '/comms/{cid}/unblock', 'auth' => true, 'perm' => $unban],
+            ['method' => 'DELETE', 'path' => '/comms/{cid}', 'auth' => true, 'perm' => $deleteBan],
         ];
     }
 

@@ -98,6 +98,19 @@ final class RestAuthTest extends RestTestCase
         $this->assertArrayHasKey('Retry-After', $second->headers);
     }
 
+    public function testUnknownWellFormedPatIs401OnPublicGet(): void
+    {
+        $secret = PatAuthenticator::SECRET_PREFIX . str_repeat('cd', 32);
+        $response = $this->rest('GET', '/bans', token: $secret);
+        $this->assertRestError($response, 401, 'unauthorized');
+    }
+
+    public function testMalformedBearerStaysAnonymousOnPublicGet(): void
+    {
+        $response = $this->rest('GET', '/bans', token: 'not-a-pat');
+        $this->assertSame(200, $response->status, json_encode($response->payload));
+    }
+
     public function testResolveReturnsNullForGarbage(): void
     {
         $this->assertNull(PatAuthenticator::resolve(''));

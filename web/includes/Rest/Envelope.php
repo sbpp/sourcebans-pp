@@ -79,6 +79,10 @@ final class Envelope
             'cannot_deactivate_owner',
             'already_inactive',
             'already_active',
+            'already_banned',
+            'already_blocked',
+            'not_active',
+            'immune',
             'conflict' => 409,
             default => 400,
         };

@@ -114,11 +114,11 @@ define('SB_REST_CORS_ORIGINS', 'https://staff.example.com');
 
 ## Rate limit
 
-Default 60 requests per minute. Anonymous callers (only `GET /openapi.yaml`
-in this version) are keyed by IP. Token callers are keyed by token.
+Default 60 requests per minute. Anonymous callers (OpenAPI spec, public
+ban/comms GET) are keyed by IP. Token callers are keyed by token.
 A 429 includes `Retry-After`.
 
-## Slice 0 routes
+## Slice 0 and 1 routes
 
 | Method | Path | Notes |
 | --- | --- | --- |
@@ -132,10 +132,29 @@ A 429 includes `Retry-After`.
 | DELETE | `/admins/{id}` | Hard delete |
 | GET | `/groups` | Web + SourceMod groups |
 | POST | `/system/rehash` | Optional `{ "sids": [1,2] }` |
+| GET | `/bans`, `/bans/{bid}` | Public. Hide IP / admin name like the panel |
+| POST | `/bans` | `length` is minutes. Optional `kick: true` |
+| POST | `/bans/{bid}/unban` | Requires `ureason` |
+| GET | `/comms`, `/comms/{cid}` | Public. Hide admin name like the panel |
+| POST | `/comms` | `kind`: mute, gag, or silence |
+| POST | `/comms/{cid}/unblock` | Requires `ureason` |
+| DELETE | `/comms/{cid}` | Hard delete |
 | GET | `/openapi.yaml` | This spec |
 
-Bans, comms, servers, notes, mods, protests, and settings are later
-slices. They are not in this version.
+Servers, notes, mods, protests, and settings are later slices.
+
+GET `/bans` and `/comms` work without a token. The same hide-* settings as
+the public banlist apply (`banlist.hideplayerips`, `banlist.hideadminname`).
+Send a valid PAT to see IPs and admin names. A well-formed token that is
+revoked, expired, or unknown is 401 even on those GETs.
+
+POST `/bans` `length` is minutes (0 = permanent), matching the panel form.
+GET responses use `length` in **seconds** (what is stored). Steam64 in JSON
+is always a string.
+
+POST `/bans` with `"kick": true` runs RCON kicks on enabled servers and
+puts a summary in `meta.kick`. Without it, SourceMod still blocks the
+player on their next connect.
 
 ## nginx snippet
 

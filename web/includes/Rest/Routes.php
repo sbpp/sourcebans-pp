@@ -12,7 +12,7 @@ use Sbpp\Auth\UserManager;
 use WebPermission;
 
 /**
- * Slice 0 REST route table. Reviewable like `api/handlers/_register.php`.
+ * REST v1 route table. Reviewable like `api/handlers/_register.php`.
  *
  * @phpstan-import-type Route from Router
  */
@@ -28,6 +28,9 @@ final class Routes
         $deleteAdmins = ADMIN_OWNER | ADMIN_DELETE_ADMINS;
         $readGroups = ADMIN_OWNER | ADMIN_LIST_GROUPS | ADMIN_ADD_ADMINS | ADMIN_EDIT_ADMINS;
         $rehash = ADMIN_OWNER | ADMIN_EDIT_ADMINS | ADMIN_EDIT_GROUPS | ADMIN_ADD_ADMINS;
+        $addBan = ADMIN_OWNER | ADMIN_ADD_BAN;
+        $unban = ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS;
+        $deleteBan = ADMIN_OWNER | ADMIN_DELETE_BAN;
 
         return [
             [
@@ -106,6 +109,69 @@ final class Routes
                 'auth' => true,
                 'perm' => $rehash,
                 'handler' => self::systemRehash(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/bans',
+                'auth' => false,
+                'perm' => 0,
+                'handler' => self::bansList(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/bans',
+                'auth' => true,
+                'perm' => $addBan,
+                'handler' => self::bansCreate(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/bans/{bid}',
+                'auth' => false,
+                'perm' => 0,
+                'handler' => self::bansGet(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/bans/{bid}/unban',
+                'auth' => true,
+                'perm' => $unban,
+                'handler' => self::bansUnban(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/comms',
+                'auth' => false,
+                'perm' => 0,
+                'handler' => self::commsList(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/comms',
+                'auth' => true,
+                'perm' => $addBan,
+                'handler' => self::commsCreate(...),
+            ],
+            [
+                'method' => 'GET',
+                'path' => '/comms/{cid}',
+                'auth' => false,
+                'perm' => 0,
+                'handler' => self::commsGet(...),
+            ],
+            [
+                'method' => 'POST',
+                'path' => '/comms/{cid}/unblock',
+                'auth' => true,
+                'perm' => $unban,
+                'handler' => self::commsUnblock(...),
+            ],
+            [
+                'method' => 'DELETE',
+                'path' => '/comms/{cid}',
+                'auth' => true,
+                'perm' => $deleteBan,
+                'handler' => self::commsDelete(...),
             ],
         ];
     }
@@ -251,6 +317,115 @@ final class Routes
             $sids = Rehasher::allEnabledSids();
         }
         return Envelope::ok(['rehash' => Rehasher::run($sids)]);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function bansList(array $params, array $body, array $query): Response
+    {
+        $result = (new BansService())->list($query);
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function bansGet(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new BansService())->get(self::positiveId($params['bid'] ?? '', 'bid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function bansCreate(array $params, array $body, array $query): Response
+    {
+        $result = (new BansService())->create($body);
+        $meta = [];
+        if ($result['kick'] !== null) {
+            $meta['kick'] = $result['kick'];
+        }
+        return Envelope::ok($result['ban'], $meta, 201);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function bansUnban(array $params, array $body, array $query): Response
+    {
+        $bid = self::positiveId($params['bid'] ?? '', 'bid');
+        $ureason = trim((string) ($body['ureason'] ?? ''));
+        return Envelope::ok((new BansService())->unban($bid, $ureason));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commsList(array $params, array $body, array $query): Response
+    {
+        $result = (new CommsService())->list($query);
+        return Envelope::ok($result['data'], $result['meta']);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commsGet(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new CommsService())->get(self::positiveId($params['cid'] ?? '', 'cid')));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commsCreate(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new CommsService())->create($body), [], 201);
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commsUnblock(array $params, array $body, array $query): Response
+    {
+        $cid = self::positiveId($params['cid'] ?? '', 'cid');
+        $ureason = trim((string) ($body['ureason'] ?? ''));
+        return Envelope::ok((new CommsService())->unblock($cid, $ureason));
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, mixed> $body
+     * @param array<string, mixed> $query
+     */
+    private static function commsDelete(array $params, array $body, array $query): Response
+    {
+        return Envelope::ok((new CommsService())->delete(self::positiveId($params['cid'] ?? '', 'cid')));
+    }
+
+    private static function positiveId(string $raw, string $field): int
+    {
+        if (preg_match('/^[1-9][0-9]*$/D', $raw) !== 1) {
+            throw new ApiError('validation', $field . ' must be a positive integer.', $field, 400);
+        }
+        return (int) $raw;
     }
 
     /**
