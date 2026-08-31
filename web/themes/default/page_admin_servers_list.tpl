@@ -289,35 +289,42 @@
         var sid = Number(btn.dataset.sid);
         var label = btn.dataset.label || ('Server #' + sid);
         if (!Number.isFinite(sid) || sid <= 0) return;
-        if (!window.confirm('Delete ' + label + '?\n\nThis removes the server entry and any group/admin mappings. Bans logged from it are retained.')) {
-            return;
-        }
-        var api = window.sb && window.sb.api;
-        if (!api || !window.Actions) return;
-        setBusy(btn, true);
-        api.call(window.Actions.ServersRemove, { sid: sid }).then(function (r) {
-            if (!r || r.ok === false) {
-                setBusy(btn, false);
-                if (r && r.error && window.SBPP && window.SBPP.showToast) {
-                    window.SBPP.showToast({ kind: 'error', title: 'Delete failed', body: r.error.message || 'Unknown error' });
+        var S = window.SBPP;
+        if (!S || typeof S.confirm !== 'function') return;
+        S.confirm({
+            title: 'Delete server',
+            body: 'Delete ' + label + '?\n\nThis removes the server entry and any group/admin mappings. Bans logged from it are retained.',
+            confirmLabel: 'Delete',
+            danger: true,
+        }).then(function (ok) {
+            if (!ok) return;
+            var api = window.sb && window.sb.api;
+            if (!api || !window.Actions) return;
+            setBusy(btn, true);
+            api.call(window.Actions.ServersRemove, { sid: sid }).then(function (r) {
+                if (!r || r.ok === false) {
+                    setBusy(btn, false);
+                    if (r && r.error && window.SBPP && window.SBPP.showToast) {
+                        window.SBPP.showToast({ kind: 'error', title: 'Delete failed', body: r.error.message || 'Unknown error' });
+                    }
+                    return;
                 }
-                return;
-            }
-            // The handler returns { remove: 'sid_<id>', counter: { srvcount: <n> } };
-            // mirror what applyApiResponse does in sourcebans.js without
-            // dragging in the legacy module.
-            var d = (r && r.data) || {};
-            if (d.remove) {
-                var node = document.getElementById(String(d.remove));
-                if (node && node.parentNode) node.parentNode.removeChild(node);
-            }
-            if (d.counter && typeof d.counter.srvcount !== 'undefined') {
-                var counter = document.getElementById('srvcount');
-                if (counter) counter.textContent = String(d.counter.srvcount);
-            }
-            if (window.SBPP && window.SBPP.showToast) {
-                window.SBPP.showToast({ kind: 'success', title: 'Server deleted', body: label });
-            }
+                // The handler returns { remove: 'sid_<id>', counter: { srvcount: <n> } };
+                // mirror what applyApiResponse does in sourcebans.js without
+                // dragging in the legacy module.
+                var d = (r && r.data) || {};
+                if (d.remove) {
+                    var node = document.getElementById(String(d.remove));
+                    if (node && node.parentNode) node.parentNode.removeChild(node);
+                }
+                if (d.counter && typeof d.counter.srvcount !== 'undefined') {
+                    var counter = document.getElementById('srvcount');
+                    if (counter) counter.textContent = String(d.counter.srvcount);
+                }
+                if (window.SBPP && window.SBPP.showToast) {
+                    window.SBPP.showToast({ kind: 'success', title: 'Server deleted', body: label });
+                }
+            });
         });
     });
 })();

@@ -199,9 +199,25 @@ final class AdminsDeleteDialogTest extends ApiTestCase
         $this->assertStringContainsString('A.AdminsRemove', $html,
             'The script must reference Actions.AdminsRemove (the PascalCase symbol ' .
             'from api-contract.js), not a string literal.');
+        $this->assertStringContainsString('A.AdminsDeactivate', $html);
+        $this->assertStringContainsString('A.AdminsReactivate', $html);
+        $this->assertStringContainsString('A.SystemRehashAdmins', $html,
+            'Deactivate / reactivate / bulk must chain SystemRehashAdmins when the handler returns rehash SIDs.');
+        $this->assertStringContainsString('fireRehashIfNeeded', $html);
         // Sanity-check: we should NOT find the raw dotted string.
         $this->assertStringNotContainsString("'admins.remove'", $html,
             'String literal action names are forbidden — see AGENTS.md anti-patterns.');
+    }
+
+    public function testDeactivateDialogRendersOncePerPage(): void
+    {
+        $html = $this->renderAdminsPage();
+
+        $matches = preg_match_all('/<dialog[^>]*id="admins-deactivate-dialog"/', $html);
+        $this->assertSame(1, $matches);
+        $this->assertStringContainsString('data-testid="admins-deactivate-dialog"', $html);
+        $this->assertStringContainsString('data-testid="admins-deactivate-form"', $html);
+        $this->assertStringContainsString('data-action="admins-deactivate"', $html);
     }
 
     private function seedTargetAdmin(): void

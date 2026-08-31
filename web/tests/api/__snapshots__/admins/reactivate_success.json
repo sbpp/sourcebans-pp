@@ -1,0 +1,13 @@
+{
+    "ok": true,
+    "data": {
+        "aid": "<*>",
+        "enabled": 1,
+        "rehash": "<*>",
+        "message": {
+            "title": "Admin reactivated",
+            "body": "ReactivateMe can log in and use in-game admin again.",
+            "kind": "green"
+        }
+    }
+}

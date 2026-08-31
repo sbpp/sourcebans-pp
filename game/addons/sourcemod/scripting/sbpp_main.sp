@@ -1119,7 +1119,7 @@ public void GotDatabase(Database db, const char[] error, any data)
 			FormatEx(query, sizeof(query), "SELECT authid, srv_password, (SELECT name FROM %s_srvgroups WHERE name = srv_group AND flags != '') AS srv_group, srv_flags, user, immunity  \
 						FROM %s_admins_servers_groups AS asg \
 						LEFT JOIN %s_admins AS a ON a.aid = asg.admin_id \
-						WHERE %s (server_id = (SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1)  \
+						WHERE a.enabled = 1 AND %s (server_id = (SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1)  \
 						OR srv_group_id = ANY (SELECT group_id FROM %s_servers_groups WHERE server_id = (SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1))) \
 						GROUP BY aid, authid, srv_password, srv_group, srv_flags, user",
 				DatabasePrefix, DatabasePrefix, DatabasePrefix, queryLastLogin, DatabasePrefix, ServerIp, ServerPort, DatabasePrefix, DatabasePrefix, ServerIp, ServerPort);
@@ -1127,8 +1127,8 @@ public void GotDatabase(Database db, const char[] error, any data)
 			FormatEx(query, sizeof(query), "SELECT authid, srv_password, (SELECT name FROM %s_srvgroups WHERE name = srv_group AND flags != '') AS srv_group, srv_flags, user, immunity  \
 						FROM %s_admins_servers_groups AS asg \
 						LEFT JOIN %s_admins AS a ON a.aid = asg.admin_id \
-						WHERE %s server_id = %d  \
-						OR srv_group_id = ANY (SELECT group_id FROM %s_servers_groups WHERE server_id = %d) \
+						WHERE a.enabled = 1 AND %s (server_id = %d  \
+						OR srv_group_id = ANY (SELECT group_id FROM %s_servers_groups WHERE server_id = %d)) \
 						GROUP BY aid, authid, srv_password, srv_group, srv_flags, user",
 				DatabasePrefix, DatabasePrefix, DatabasePrefix, queryLastLogin, serverID, DatabasePrefix, serverID);
 		}
@@ -1242,7 +1242,7 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 public void SelectBanIpCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	int admin, minutes;
-	char adminAuth[MAX_AUTHID_LENGTH], adminIp[16], banReason[256], ip[16], reason[128], Query[512];
+	char adminAuth[MAX_AUTHID_LENGTH], adminIp[16], banReason[256], ip[16], reason[128], Query[1536];
 	char targetName[MAX_NAME_LENGTH], sTEscapedName[MAX_NAME_LENGTH * 2 + 1], targetAuth[MAX_AUTHID_LENGTH];
 
 	dataPack.Reset();
@@ -1278,15 +1278,17 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 	}
 	if (serverID == -1)
 	{
-		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
+		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid, country) VALUES \
 						(1, '%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, ip, targetAuth, sTEscapedName, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
+			DatabasePrefix, ip, targetAuth, sTEscapedName, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, adminAuth, adminAuth[8], DatabasePrefix, ServerIp, ServerPort);
 	} else {
-		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
+		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid, country) VALUES \
 						(1, '%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), \
 						%d, ' ')",
-			DatabasePrefix, ip, targetAuth, sTEscapedName, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
+			DatabasePrefix, ip, targetAuth, sTEscapedName, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, adminAuth, adminAuth[8], serverID);
 	}
 
 	db.Query(InsertBanIpCallback, Query, dataPack, DBPrio_High);
@@ -1451,7 +1453,7 @@ public void InsertUnbanCallback(Database db, DBResultSet results, const char[] e
 public void SelectAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	int admin, minutes;
-	char adminAuth[MAX_AUTHID_LENGTH], adminIp[16], authid[MAX_AUTHID_LENGTH], banReason[256], Query[512];
+	char adminAuth[MAX_AUTHID_LENGTH], adminIp[16], authid[MAX_AUTHID_LENGTH], banReason[256], Query[1536];
 	char reason[128];
 
 	dataPack.Reset();
@@ -1485,15 +1487,17 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 	}
 	if (serverID == -1)
 	{
-		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
+		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
+			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, adminAuth, adminAuth[8], DatabasePrefix, ServerIp, ServerPort);
 	} else {
-		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
+		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), \
 						%d, ' ')",
-			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
+			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, adminAuth, adminAuth[8], serverID);
 	}
 
 	db.Query(InsertAddbanCallback, Query, dataPack, DBPrio_High);
@@ -1548,7 +1552,7 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 	char ip[16];
 	char adminAuth[MAX_AUTHID_LENGTH];
 	char adminIp[16];
-	char query[1024];
+	char query[1536];
 	char banName[MAX_NAME_LENGTH];
 	char banReason[256];
 	while (results.MoreRows)
@@ -1574,18 +1578,20 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 			if (serverID == -1)
 			{
 				FormatEx(query, sizeof(query),
-					"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid) VALUES  \
+					"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid) VALUES  \
 						('%s', '%s', '%s', %d, %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1))",
-					DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
+					DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, adminAuth, adminAuth[8], DatabasePrefix, ServerIp, ServerPort);
 			}
 			else
 			{
 				FormatEx(query, sizeof(query),
-					"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid) VALUES  \
+					"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid) VALUES  \
 						('%s', '%s', '%s', %d, %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), \
 						%d)",
-					DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
+					DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, adminAuth, adminAuth[8], serverID);
 			}
 			DataPack authPack = new DataPack();
 			authPack.WriteString(auth);
@@ -2552,20 +2558,22 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 	//PruneBans(dummy);
 	char banName[MAX_NAME_LENGTH];
 	char banReason[256];
-	char Query[1024];
+	char Query[1536];
 	DB.Escape(Name, banName, sizeof(banName));
 	DB.Escape(Reason, banReason, sizeof(banReason));
 	if (serverID == -1)
 	{
-		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
+		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid, country) VALUES \
 						('%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'),'0'), '%s', \
+						IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, Ip, Authid, banName, (time * 60), (time * 60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, DatabasePrefix, ServerIp, ServerPort);
+			DatabasePrefix, Ip, Authid, banName, (time * 60), (time * 60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, DatabasePrefix, AdminAuthid, AdminAuthid[8], DatabasePrefix, ServerIp, ServerPort);
 	} else {
-		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
+		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, admin_name, sid, country) VALUES \
 						('%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'),'0'), '%s', \
+						IFNULL((SELECT user FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), ''), \
 						%d, ' ')",
-			DatabasePrefix, Ip, Authid, banName, (time * 60), (time * 60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, serverID);
+			DatabasePrefix, Ip, Authid, banName, (time * 60), (time * 60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, DatabasePrefix, AdminAuthid, AdminAuthid[8], serverID);
 	}
 	DB.Query(VerifyInsert, Query, dataPack, DBPrio_High);
 }

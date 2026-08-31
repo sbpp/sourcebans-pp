@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "cannot_deactivate_owner",
+        "message": "Error: You cannot deactivate the owner."
+    }
+}

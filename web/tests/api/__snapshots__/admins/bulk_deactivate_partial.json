@@ -1,0 +1,14 @@
+{
+    "ok": true,
+    "data": {
+        "op": "deactivate",
+        "applied": "<*>",
+        "skipped": "<*>",
+        "rehash": "<*>",
+        "message": {
+            "title": "Admins deactivated",
+            "body": "2 deactivated, 1 skipped.",
+            "kind": "green"
+        }
+    }
+}

@@ -409,7 +409,7 @@ if (isset($_GET['searchText'])) {
     // name. The parens lock the AND-predicates onto the entire OR
     // group.
     $res = $GLOBALS['PDO']->query("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
-		SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
+		SE.ip server_ip, COALESCE(NULLIF(CO.admin_name, ''), AD.user) AS admin_name, MO.icon as mod_icon,
 		CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 		(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
 		(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,
@@ -453,7 +453,7 @@ if (isset($_GET['searchText'])) {
     }
 
     $res = $GLOBALS['PDO']->query("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
-		SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
+		SE.ip server_ip, COALESCE(NULLIF(CO.admin_name, ''), AD.user) AS admin_name, MO.icon as mod_icon,
 		CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 		(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
 		(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,
@@ -591,7 +591,7 @@ if (isset($_GET['advSearch'])) {
     }
 
     $res = $GLOBALS['PDO']->query("SELECT CO.bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
-			SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
+			SE.ip server_ip, COALESCE(NULLIF(CO.admin_name, ''), AD.user) AS admin_name, MO.icon as mod_icon,
 			CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 			(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
 			(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,

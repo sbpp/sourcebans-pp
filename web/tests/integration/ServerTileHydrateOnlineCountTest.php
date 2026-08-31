@@ -42,9 +42,8 @@ use PHPUnit\Framework\TestCase;
  * consumer that ships the summary node and it ships it as a
  * sibling, so the fallback is what actually fires today. Surfaces
  * that don't render the summary at all (admin Server Management,
- * dashboard Servers widget, Add Admin per-server grid, admin Server
- * Groups card stack) get `null` from both lookups and
- * `updateOnlineCount` no-ops harmlessly.
+ * dashboard Servers widget, admin Server Groups card stack) get
+ * `null` from both lookups and `updateOnlineCount` no-ops harmlessly.
  *
  * Static gate
  * -----------
@@ -105,7 +104,7 @@ final class ServerTileHydrateOnlineCountTest extends TestCase
     {
         $this->assertFileExists(
             self::helperPath(),
-            'web/scripts/server-tile-hydrate.js must live at scripts/server-tile-hydrate.js so the public Server List, the admin Server Management list, the dashboard Servers widget, the Add Admin per-server grid, and the admin Server Groups card stack can all load it via their `<script src="…">` tags. If you moved it, update this test AND the per-template references.',
+            'web/scripts/server-tile-hydrate.js must live at scripts/server-tile-hydrate.js so the public Server List, the admin Server Management list, the dashboard Servers widget, and the admin Server Groups card stack can all load it via their `<script src="…">` tags. If you moved it, update this test AND the per-template references.',
         );
     }
 

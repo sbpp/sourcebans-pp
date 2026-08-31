@@ -119,14 +119,9 @@ test.describe('flow: admin groups delete (#1310 — applyApiResponse zombie)', (
             .filter({ hasText: FIXTURE.groupName });
         await expect(seededRow).toHaveCount(1);
 
-        // ---- 3. Click Delete + accept the native confirm() ----------------
-        // The inline JS calls `window.confirm()` before issuing the
-        // destructive call. Playwright dismisses dialogs by default;
-        // wire an accept handler so the click resolves the API path.
-        page.once('dialog', (d) => {
-            void d.accept();
-        });
-
+        // ---- 3. Click Delete + confirm via panel dialog ----------------
+        // Destructive deletes use window.SBPP.confirm (shared <dialog>),
+        // not native window.confirm().
         const deleteResponsePromise = page.waitForResponse(
             (response) =>
                 response.url().includes('api.php') &&
@@ -137,6 +132,8 @@ test.describe('flow: admin groups delete (#1310 — applyApiResponse zombie)', (
         const deleteBtn = detail.locator('[data-testid="group-delete"]');
         await expect(deleteBtn.locator('[data-lucide="trash-2"], svg.lucide-trash-2')).toBeVisible();
         await deleteBtn.click();
+        await page.locator('[data-testid="sbpp-confirm-dialog"]').waitFor({ state: 'visible' });
+        await page.locator('[data-testid="sbpp-confirm-submit"]').click();
 
         const deleteResponse = await deleteResponsePromise;
         const deleteEnvelope = await deleteResponse.json();

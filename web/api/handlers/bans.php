@@ -159,9 +159,20 @@ function api_bans_add(array $params): array
     }
 
     $GLOBALS['PDO']->query(
-        "INSERT INTO `:prefix_bans`(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
-        (UNIX_TIMESTAMP(),?,?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)"
-    )->execute([$banType->value, $ip, $steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
+        "INSERT INTO `:prefix_bans`(created,type,ip,authid,name,ends,length,reason,aid,adminIp,admin_name) VALUES
+        (UNIX_TIMESTAMP(),?,?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)"
+    )->execute([
+        $banType->value,
+        $ip,
+        $steam,
+        $nickname,
+        $length * 60,
+        $len,
+        $reason,
+        $userbank->GetAid(),
+        $_SERVER['REMOTE_ADDR'] ?? '',
+        (string) $userbank->GetProperty('user'),
+    ]);
     $newId = (int)$GLOBALS['PDO']->lastInsertId();
 
     if ($dname && $dfile && preg_match('/^[a-z0-9]*$/i', $dfile)) {
@@ -533,18 +544,19 @@ function api_bans_ban_member_of_group(array $params): array
             continue;
         }
         $GLOBALS['PDO']->query(
-            "INSERT INTO `:prefix_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp)
-            VALUES (UNIX_TIMESTAMP(), :type, :ip, :authid, :name, UNIX_TIMESTAMP(), :length, :reason, :aid, :adminIp)"
+            "INSERT INTO `:prefix_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp, admin_name)
+            VALUES (UNIX_TIMESTAMP(), :type, :ip, :authid, :name, UNIX_TIMESTAMP(), :length, :reason, :aid, :adminIp, :admin_name)"
         );
         $GLOBALS['PDO']->bindMultiple([
-            ':type'    => BanType::Steam->value,
-            ':ip'      => '',
-            ':authid'  => SteamID::toSteam2($player['steamid']),
-            ':name'    => $player['personaname'],
-            ':length'  => 0,
-            ':reason'  => 'Steam Community Group Ban (' . $grpurl . '): ' . $reason,
-            ':aid'     => $userbank->GetAid(),
-            ':adminIp' => $_SERVER['REMOTE_ADDR'] ?? '',
+            ':type'       => BanType::Steam->value,
+            ':ip'         => '',
+            ':authid'     => SteamID::toSteam2($player['steamid']),
+            ':name'       => $player['personaname'],
+            ':length'     => 0,
+            ':reason'     => 'Steam Community Group Ban (' . $grpurl . '): ' . $reason,
+            ':aid'        => $userbank->GetAid(),
+            ':adminIp'    => $_SERVER['REMOTE_ADDR'] ?? '',
+            ':admin_name' => (string) $userbank->GetProperty('user'),
         ]);
         if ($GLOBALS['PDO']->execute()) {
             $amount['banned']++;
@@ -648,15 +660,16 @@ function api_bans_ban_friends(array $params): array
             continue;
         }
         $GLOBALS['PDO']->query(
-            "INSERT INTO `:prefix_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp)
-            VALUES(UNIX_TIMESTAMP(), 0, '', :authid, :name, (UNIX_TIMESTAMP() + 0), 0, :reason, :aid, :admip)"
+            "INSERT INTO `:prefix_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp, admin_name)
+            VALUES(UNIX_TIMESTAMP(), 0, '', :authid, :name, (UNIX_TIMESTAMP() + 0), 0, :reason, :aid, :admip, :admin_name)"
         );
         $GLOBALS['PDO']->bindMultiple([
-            ':authid' => $authid,
-            ':name'   => $fname,
-            ':reason' => 'Steam Community Friend Ban (' . $name . ')',
-            ':aid'    => $userbank->GetAid(),
-            ':admip'  => $_SERVER['REMOTE_ADDR'] ?? '',
+            ':authid'     => $authid,
+            ':name'       => $fname,
+            ':reason'     => 'Steam Community Friend Ban (' . $name . ')',
+            ':aid'        => $userbank->GetAid(),
+            ':admip'      => $_SERVER['REMOTE_ADDR'] ?? '',
+            ':admin_name' => (string) $userbank->GetProperty('user'),
         ]);
         if (!$GLOBALS['PDO']->execute()) {
             $error++;
@@ -839,7 +852,7 @@ function api_bans_detail(array $params): array
         "SELECT BA.bid, BA.type, BA.ip, BA.authid, BA.name, BA.created, BA.ends, BA.length,
                 BA.reason, BA.aid, BA.adminIp, BA.sid, BA.country, BA.RemovedOn, BA.RemovedBy,
                 BA.RemoveType, BA.ureason,
-                AD.user AS admin_name,
+                COALESCE(NULLIF(BA.admin_name, ''), AD.user) AS admin_name,
                 SE.ip AS server_ip, SE.port AS server_port,
                 MO.icon AS mod_icon, MO.name AS mod_name,
                 CAST(MID(BA.authid, 9, 1) AS UNSIGNED)
@@ -1184,7 +1197,7 @@ function api_bans_player_history(array $params): array
         $rows = $GLOBALS['PDO']->query(
             "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
                     BA.RemovedOn, BA.RemovedBy, BA.RemoveType,
-                    AD.user AS admin_name,
+                    COALESCE(NULLIF(BA.admin_name, ''), AD.user) AS admin_name,
                     SE.ip AS server_ip, SE.port AS server_port
                FROM `:prefix_bans` AS BA
           LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
@@ -1197,7 +1210,7 @@ function api_bans_player_history(array $params): array
         $rows = $GLOBALS['PDO']->query(
             "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
                     BA.RemovedOn, BA.RemovedBy, BA.RemoveType,
-                    AD.user AS admin_name,
+                    COALESCE(NULLIF(BA.admin_name, ''), AD.user) AS admin_name,
                     SE.ip AS server_ip, SE.port AS server_port
                FROM `:prefix_bans` AS BA
           LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid

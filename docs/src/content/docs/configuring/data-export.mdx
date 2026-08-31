@@ -144,6 +144,12 @@ A few entities carry derived fields:
 - `comms.mute_kind`: `"mute"`, `"gag"`, `"silence"`, or
   `"unknown"` (from `:prefix_comms.type` 1/2/3). `type_raw` is
   the source int.
+- `admins.enabled`: `1` (active) or `0` (soft-retired). Inactive
+  admins keep their row so attribution JOINs still resolve.
+- `bans.admin_name` / `comms.admin_name`: snapshot of the issuing
+  admin's username at insert time (and re-snapshotted on hard
+  delete when still empty). Prefer this over joining `admins.user`
+  when reconstructing history.
 - `bans.state`: `"active"`, `"expired"`, `"unbanned"`,
   `"deleted"`, or `"permanent"`. Same classifier the banlist
   page uses. `RemoveType` / `removed_by` / `removed_on` /

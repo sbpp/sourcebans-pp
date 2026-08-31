@@ -40,12 +40,39 @@
  * @typedef {Object} ApiAdminsAddResponse
  */
 /**
+ * Apply one lifecycle / group op to many admin ids. Partial success: owner /
+ * self / not-found / already-* rows land in `skipped` and the rest still
+ * commit. Per-op permission is re-checked inside so a caller holding only
+ * EDIT_ADMINS cannot deactivate via this entry point.  Inputs: - `op`   
+ * (string, required) — `deactivate` | `reactivate` | `remove` |
+ * `set_web_group` | `set_srv_group` - `aids`  (list of int, required, max 100)
+ * - `ureason` (string, optional) — deactivate / remove - `gid`   (int,
+ * required for set_web_group) — 0 clears web group - `srv_group_id` (int,
+ * required for set_srv_group) — 0 clears SM group
+ *
+ * @typedef {Object} ApiAdminsBulkRequest
+ * @typedef {{ op: string, applied: Array<number>, skipped: Array<{aid: number, reason: string}>, rehash: string|null, message: {title: string, body: string, kind: string} }} ApiAdminsBulkResponse
+ */
+/**
+ * Soft-retire an admin: keeps the row (and ban/comm attribution) but blocks
+ * panel login and SourceMod admin load via `enabled = 0`.
+ *
+ * @typedef {Object} ApiAdminsDeactivateRequest
+ * @typedef {{aid: number, enabled: number, rehash: string|null, message: {title: string, body: string, kind: string}}} ApiAdminsDeactivateResponse
+ */
+/**
  * @typedef {Object} ApiAdminsEditPermsRequest
  * @typedef {Object} ApiAdminsEditPermsResponse
  */
 /**
  * @typedef {Object} ApiAdminsGeneratePasswordRequest
  * @typedef {Object} ApiAdminsGeneratePasswordResponse
+ */
+/**
+ * Restore a soft-retired admin (`enabled = 1`).
+ *
+ * @typedef {Object} ApiAdminsReactivateRequest
+ * @typedef {{aid: number, enabled: number, rehash: string|null, message: {title: string, body: string, kind: string}}} ApiAdminsReactivateResponse
  */
 /**
  * Delete an admin row + their server group memberships (#1352).  Modern JSON
@@ -652,8 +679,11 @@ var Actions = Object.freeze({
     AccountCheckPassword: 'account.check_password',
     AccountCheckSrvPassword: 'account.check_srv_password',
     AdminsAdd: 'admins.add',
+    AdminsBulk: 'admins.bulk',
+    AdminsDeactivate: 'admins.deactivate',
     AdminsEditPerms: 'admins.edit_perms',
     AdminsGeneratePassword: 'admins.generate_password',
+    AdminsReactivate: 'admins.reactivate',
     AdminsRemove: 'admins.remove',
     AuthLogin: 'auth.login',
     AuthLostPassword: 'auth.lost_password',

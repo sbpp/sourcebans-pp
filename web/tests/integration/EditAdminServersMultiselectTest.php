@@ -7,12 +7,11 @@ namespace Sbpp\Tests\Integration;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Add Admin Individual servers access is a data-multiselect. Option
- * labels hydrate via Actions.ServersHostPlayers in the page-tail
- * script (same shape as box_admin_admins_search.tpl). Wire values
- * stay s{sid} for api_admins_add.
+ * Edit Admin → Servers access uses the same data-multiselect shape as
+ * Add Admin. Wire values stay g{gid} / s{sid} for the native form POST.
+ * Individual-server option labels hydrate via Actions.ServersHostPlayers.
  */
-final class AddAdminServerHostHydrationTest extends TestCase
+final class EditAdminServersMultiselectTest extends TestCase
 {
     private string $template;
 
@@ -22,7 +21,7 @@ final class AddAdminServerHostHydrationTest extends TestCase
     {
         parent::setUp();
 
-        $tplPath = ROOT . 'themes/default/page_admin_admins_add.tpl';
+        $tplPath = ROOT . 'themes/default/page_admin_edit_admins_servers.tpl';
         $tpl     = file_get_contents($tplPath);
         if ($tpl === false) {
             self::fail("setUp could not read {$tplPath}");
@@ -36,28 +35,23 @@ final class AddAdminServerHostHydrationTest extends TestCase
         return (string) preg_replace('/\{\*.*?\*\}/s', '', $contents);
     }
 
-    public function testTemplateDoesNotIncludeServerTileHydrateScript(): void
-    {
-        $this->assertStringNotContainsString(
-            'src="./scripts/server-tile-hydrate.js"',
-            $this->templateNoComments,
-            'Add Admin server access uses option[data-server-host] hydrate, not server-tile-hydrate.js.',
-        );
-    }
-
     public function testServersSelectIsMultiselectWithHostOptions(): void
     {
         $this->assertMatchesRegularExpression(
-            '/<select\b[^>]*\bid="admin-add-servers"[^>]*>/s',
+            '/<select\b[^>]*\bid="edit-admin-servers"[^>]*>/s',
             $this->template,
-            'Individual servers select must exist with id admin-add-servers.',
+            'Individual servers select must exist with id edit-admin-servers.',
         );
         $this->assertMatchesRegularExpression(
-            '/<select\b[^>]*\bid="admin-add-servers"[^>]*\bdata-multiselect\b[^>]*>/s',
+            '/<select\b[^>]*\bid="edit-admin-servers"[^>]*\bdata-multiselect\b[^>]*>/s',
             $this->template,
         );
         $this->assertMatchesRegularExpression(
-            '/<select\b[^>]*\bid="admin-add-servers"[^>]*\bmultiple\b[^>]*>/s',
+            '/<select\b[^>]*\bid="edit-admin-servers"[^>]*\bmultiple\b[^>]*>/s',
+            $this->template,
+        );
+        $this->assertMatchesRegularExpression(
+            '/<select\b[^>]*\bid="edit-admin-servers"[^>]*\bname="servers\[\]"[^>]*>/s',
             $this->template,
         );
         $this->assertMatchesRegularExpression(
@@ -82,17 +76,33 @@ final class AddAdminServerHostHydrationTest extends TestCase
     public function testGroupsSelectIsMultiselect(): void
     {
         $this->assertMatchesRegularExpression(
-            '/<select\b[^>]*\bid="admin-add-server-groups"[^>]*\bdata-multiselect\b[^>]*>/s',
+            '/<select\b[^>]*\bid="edit-admin-server-groups"[^>]*\bdata-multiselect\b[^>]*>/s',
             $this->template,
             'Server groups must be a data-multiselect.',
         );
         $this->assertMatchesRegularExpression(
-            '/<select\b[^>]*\bid="admin-add-server-groups"[^>]*\bmultiple\b[^>]*>/s',
+            '/<select\b[^>]*\bid="edit-admin-server-groups"[^>]*\bmultiple\b[^>]*>/s',
+            $this->template,
+        );
+        $this->assertMatchesRegularExpression(
+            '/<select\b[^>]*\bid="edit-admin-server-groups"[^>]*\bname="group\[\]"[^>]*>/s',
             $this->template,
         );
         $this->assertMatchesRegularExpression(
             '/<option\b[^>]*\bvalue="g\{\$group\.gid\}"/',
             $this->template,
+        );
+    }
+
+    public function testAssignedServersPreSelectOptions(): void
+    {
+        $this->assertStringContainsString(
+            '$asrv.srv_group_id == $group.gid}selected',
+            $this->templateNoComments,
+        );
+        $this->assertStringContainsString(
+            '$asrv.server_id == $server.sid}selected',
+            $this->templateNoComments,
         );
     }
 
@@ -114,18 +124,14 @@ final class AddAdminServerHostHydrationTest extends TestCase
             "Offline (' + ip + ':' + port + ')",
             $this->templateNoComments,
         );
+        $this->assertStringContainsString(
+            "getElementById('edit-admin-servers')",
+            $this->templateNoComments,
+        );
     }
 
-    public function testCollectorsReadMultiselectSelectedOptions(): void
+    public function testCheckboxGridsAreGone(): void
     {
-        $this->assertStringContainsString(
-            "collectMultiSelectValues('admin-add-server-groups')",
-            $this->templateNoComments,
-        );
-        $this->assertStringContainsString(
-            "collectMultiSelectValues('admin-add-servers')",
-            $this->templateNoComments,
-        );
         $this->assertStringNotContainsString(
             'input[name="group[]"]',
             $this->templateNoComments,
@@ -134,42 +140,13 @@ final class AddAdminServerHostHydrationTest extends TestCase
             'input[name="servers[]"]',
             $this->templateNoComments,
         );
-    }
-
-    public function testLegacyTileAndLoadServerHostHooksAreGone(): void
-    {
-        $this->assertStringNotContainsString(
-            'data-server-hydrate="auto"',
-            $this->templateNoComments,
-        );
-        $this->assertStringNotContainsString(
-            'data-testid="server-tile"',
-            $this->templateNoComments,
-        );
-        $this->assertStringNotContainsString(
-            'data-testid="server-host"',
+        $this->assertDoesNotMatchRegularExpression(
+            '/<input\b[^>]*\btype="checkbox"[^>]*\bname="group\[\]"/',
             $this->templateNoComments,
         );
         $this->assertDoesNotMatchRegularExpression(
-            '/<span\b[^>]*\bid="sa\{\$server\.sid\}"/',
+            '/<input\b[^>]*\btype="checkbox"[^>]*\bname="servers\[\]"/',
             $this->templateNoComments,
-        );
-        $this->assertStringNotContainsString(
-            "LoadServerHost('",
-            $this->templateNoComments,
-        );
-    }
-
-    public function testAdminAdminsAddViewCarriesNoOrphanServerScriptProperty(): void
-    {
-        $viewPath = ROOT . 'includes/View/AdminAdminsAddView.php';
-        $this->assertFileExists($viewPath);
-        $stripped = php_strip_whitespace($viewPath);
-
-        $this->assertDoesNotMatchRegularExpression(
-            '/\$server_script\b/',
-            $stripped,
-            'AdminAdminsAddView must not declare a server_script property.',
         );
     }
 }

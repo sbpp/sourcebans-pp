@@ -617,7 +617,9 @@
     window.clearCacheBtn = function () {
         if (!window.sb || !window.sb.api || !window.Actions) return;
         window.sb.api.call(window.Actions.SystemClearCache, {}).then(function () {
-            window.alert('Cache cleared.');
+            if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+                window.SBPP.showToast({ kind: 'success', title: 'Cache cleared' });
+            }
         });
     };
 

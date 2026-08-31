@@ -632,34 +632,52 @@ function SbppGroupsSave(event) {
 }
 
 function SbppGroupsDelete(gid, name, btn) {
-    if (!confirm('Delete group "' + name + '"?')) return;
-    SbppGroupsSetBusy(btn, true);
-    sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: 'web' })
-        .then(function (r) {
-            // Leave the button busy on success — the apply handler reloads /
-            // navigates within 1.5s and re-enabling it would let the operator
-            // queue a second delete on the now-stale row.
-            if (r && r.ok && (r.data && (r.data.reload || (r.data.message && r.data.message.redir)))) {
+    var S = window.SBPP;
+    if (!S || typeof S.confirm !== 'function') return;
+    S.confirm({
+        title: 'Delete group',
+        body: 'Delete group "' + name + '"?',
+        confirmLabel: 'Delete',
+        danger: true,
+    }).then(function (ok) {
+        if (!ok) return;
+        SbppGroupsSetBusy(btn, true);
+        sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: 'web' })
+            .then(function (r) {
+                // Leave the button busy on success — the apply handler reloads /
+                // navigates within 1.5s and re-enabling it would let the operator
+                // queue a second delete on the now-stale row.
+                if (r && r.ok && (r.data && (r.data.reload || (r.data.message && r.data.message.redir)))) {
+                    SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
+                    return;
+                }
+                SbppGroupsSetBusy(btn, false);
                 SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
-                return;
-            }
-            SbppGroupsSetBusy(btn, false);
-            SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
-        });
+            });
+    });
 }
 
 function SbppServerGroupsDelete(gid, name, type, btn) {
-    if (!confirm('Delete group "' + name + '"?')) return;
-    SbppGroupsSetBusy(btn, true);
-    sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: String(type) })
-        .then(function (r) {
-            if (r && r.ok && (r.data && (r.data.reload || (r.data.message && r.data.message.redir)))) {
+    var S = window.SBPP;
+    if (!S || typeof S.confirm !== 'function') return;
+    S.confirm({
+        title: 'Delete group',
+        body: 'Delete group "' + name + '"?',
+        confirmLabel: 'Delete',
+        danger: true,
+    }).then(function (ok) {
+        if (!ok) return;
+        SbppGroupsSetBusy(btn, true);
+        sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: String(type) })
+            .then(function (r) {
+                if (r && r.ok && (r.data && (r.data.reload || (r.data.message && r.data.message.redir)))) {
+                    SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
+                    return;
+                }
+                SbppGroupsSetBusy(btn, false);
                 SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
-                return;
-            }
-            SbppGroupsSetBusy(btn, false);
-            SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
-        });
+            });
+    });
 }
 
 // --- Live bitmask preview (#1258) ---
@@ -807,13 +825,22 @@ function SbppServerGroupsDelete(gid, name, type, btn) {
             return;
         }
 
-        if (dirty && !window.confirm('Discard unsaved changes to this group?')) {
-            event.preventDefault();
+        event.preventDefault();
+        if (!dirty) {
+            paintGroup(group, true);
             return;
         }
-
-        event.preventDefault();
-        paintGroup(group, true);
+        var S = window.SBPP;
+        if (!S || typeof S.confirm !== 'function') return;
+        S.confirm({
+            title: 'Unsaved changes',
+            body: 'Discard unsaved changes to this group?',
+            confirmLabel: 'Discard',
+            danger: true,
+        }).then(function (ok) {
+            if (!ok) return;
+            paintGroup(group, true);
+        });
     });
 
     window.addEventListener('popstate', function () {
@@ -821,11 +848,24 @@ function SbppServerGroupsDelete(gid, name, type, btn) {
         var gid = Number(params.get('gid') || 0);
         var group = byGid[String(gid)] || catalog[0];
         if (!group) return;
-        if (dirty && !window.confirm('Discard unsaved changes to this group?')) {
-            paintGroup(byGid[String(currentGid())] || group, true);
+        if (!dirty) {
+            paintGroup(group, false);
             return;
         }
-        paintGroup(group, false);
+        var S = window.SBPP;
+        if (!S || typeof S.confirm !== 'function') return;
+        S.confirm({
+            title: 'Unsaved changes',
+            body: 'Discard unsaved changes to this group?',
+            confirmLabel: 'Discard',
+            danger: true,
+        }).then(function (ok) {
+            if (!ok) {
+                paintGroup(byGid[String(currentGid())] || group, true);
+                return;
+            }
+            paintGroup(group, false);
+        });
     });
 })();
 {/literal}

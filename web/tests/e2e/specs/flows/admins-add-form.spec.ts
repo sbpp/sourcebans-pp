@@ -41,6 +41,7 @@
  *   - `[data-testid="admin-add-email"]`              — email
  *   - `[data-testid="admin-add-password"]`           — password
  *   - `[data-testid="admin-add-password2"]`          — confirm
+ *   - `[data-testid="admin-add-password-toggle"]`    — show/hide password + confirm
  *   - `[data-testid="admin-add-generate-password"]`  — generator btn
  *   - `[data-testid="admin-add-serverg"]`            — server select
  *   - `[data-testid="admin-add-webg"]`               — web select
@@ -161,6 +162,32 @@ test.describe('flow: admin admins add form (#1402 — ProcessAddAdmin zombie)', 
             .toBe('password');
         expect(await page.locator('[data-testid="admin-add-password2"]').getAttribute('type'))
             .toBe('password');
+    });
+
+    test('Password eye toggle reveals and hides password + confirm', async ({ page }) => {
+        await page.goto(ADMIN_ADMINS_ADD_ROUTE);
+
+        const password = page.locator('[data-testid="admin-add-password"]');
+        const confirm = page.locator('[data-testid="admin-add-password2"]');
+        const toggle = page.locator('[data-testid="admin-add-password-toggle"]');
+        await password.fill('SecretValue1!');
+        await confirm.fill('SecretValue1!');
+
+        await expect(password).toHaveAttribute('type', 'password');
+        await expect(confirm).toHaveAttribute('type', 'password');
+        await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+        await toggle.click();
+        await expect(password).toHaveAttribute('type', 'text');
+        await expect(confirm).toHaveAttribute('type', 'text');
+        await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        await expect(toggle).toHaveAttribute('aria-label', 'Hide password');
+
+        await toggle.click();
+        await expect(password).toHaveAttribute('type', 'password');
+        await expect(confirm).toHaveAttribute('type', 'password');
+        await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+        await expect(toggle).toHaveAttribute('aria-label', 'Show password');
     });
 
     test('Server-group "New admin group" reveals new-name + SM flags inputs', async ({ page }) => {

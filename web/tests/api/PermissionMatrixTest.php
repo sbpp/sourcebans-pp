@@ -53,6 +53,9 @@ final class PermissionMatrixTest extends TestCase
             // -- admins.
             'admins.add'                  => ['perm' => ADMIN_OWNER | ADMIN_ADD_ADMINS,    'requireAdmin' => false, 'public' => false],
             'admins.remove'               => ['perm' => ADMIN_OWNER | ADMIN_DELETE_ADMINS, 'requireAdmin' => false, 'public' => false],
+            'admins.deactivate'           => ['perm' => ADMIN_OWNER | ADMIN_DELETE_ADMINS, 'requireAdmin' => false, 'public' => false],
+            'admins.reactivate'           => ['perm' => ADMIN_OWNER | ADMIN_DELETE_ADMINS, 'requireAdmin' => false, 'public' => false],
+            'admins.bulk'                 => ['perm' => ADMIN_OWNER | ADMIN_DELETE_ADMINS | ADMIN_EDIT_ADMINS, 'requireAdmin' => false, 'public' => false],
             'admins.edit_perms'           => ['perm' => ADMIN_OWNER | ADMIN_EDIT_ADMINS,   'requireAdmin' => false, 'public' => false],
             'admins.generate_password'    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
 

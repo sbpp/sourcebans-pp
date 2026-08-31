@@ -150,12 +150,20 @@
      */
     window.applyTheme = function (theme) {
         if (!theme) return;
-        if (!window.confirm('Switch the panel theme to "' + theme + '"? Every visitor will see the new theme on their next request.')) return;
-        if (!window.sb || !window.sb.api || !window.Actions) return;
-        window.sb.api.callOrAlert(window.Actions.SystemApplyTheme, { theme: theme }).then(function (env) {
-            if (env && env.ok && env.data && env.data.reload) {
-                window.location.reload();
-            }
+        var S = window.SBPP;
+        if (!S || typeof S.confirm !== 'function') return;
+        S.confirm({
+            title: 'Switch theme',
+            body: 'Switch the panel theme to "' + theme + '"? Every visitor will see the new theme on their next request.',
+            confirmLabel: 'Switch theme',
+        }).then(function (ok) {
+            if (!ok) return;
+            if (!window.sb || !window.sb.api || !window.Actions) return;
+            window.sb.api.callOrAlert(window.Actions.SystemApplyTheme, { theme: theme }).then(function (env) {
+                if (env && env.ok && env.data && env.data.reload) {
+                    window.location.reload();
+                }
+            });
         });
     };
 })();

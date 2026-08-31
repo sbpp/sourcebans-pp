@@ -1904,6 +1904,129 @@
     }
   }
 
+  /**
+   * Shared confirm `<dialog>` (replaces `window.confirm`). Injected
+   * once; subsequent calls reuse the same element.
+   *
+   * @typedef {{
+   *   title: string,
+   *   body?: string,
+   *   confirmLabel?: string,
+   *   cancelLabel?: string,
+   *   danger?: boolean,
+   * }} SbppConfirmOpts
+   */
+
+  /** @type {((ok: boolean) => void) | null} */
+  let confirmResolve = null;
+
+  /** @returns {HTMLDialogElement} */
+  function ensureConfirmDialog() {
+    const existing = /** @type {HTMLDialogElement | null} */ (document.getElementById('sbpp-confirm-dialog'));
+    if (existing) return existing;
+
+    const d = document.createElement('dialog');
+    d.id = 'sbpp-confirm-dialog';
+    d.className = 'palette';
+    d.setAttribute('aria-labelledby', 'sbpp-confirm-dialog-title');
+    d.setAttribute('data-testid', 'sbpp-confirm-dialog');
+    d.setAttribute('hidden', '');
+    d.setAttribute('style', 'max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border);background:var(--bg-surface);color:var(--text)');
+    d.innerHTML =
+      '<form method="dialog" data-testid="sbpp-confirm-form">'
+      + '<h2 id="sbpp-confirm-dialog-title" data-testid="sbpp-confirm-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem"></h2>'
+      + '<p class="text-sm text-muted m-0" data-testid="sbpp-confirm-body" style="margin-bottom:0.75rem;white-space:pre-line"></p>'
+      + '<div class="flex gap-2 mt-4" style="justify-content:flex-end">'
+      + '<button type="button" class="btn btn--secondary" data-testid="sbpp-confirm-cancel" value="cancel">Cancel</button>'
+      + '<button type="submit" class="btn btn--primary" data-testid="sbpp-confirm-submit" value="confirm">Confirm</button>'
+      + '</div>'
+      + '</form>';
+    document.body.appendChild(d);
+
+    d.addEventListener('click', (/** @type {MouseEvent} */ e) => {
+      if (e.target === d) finishConfirm(false);
+    });
+    d.addEventListener('cancel', (/** @type {Event} */ e) => {
+      e.preventDefault();
+      finishConfirm(false);
+    });
+    const cancelBtn = d.querySelector('[data-testid="sbpp-confirm-cancel"]');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', (/** @type {Event} */ e) => {
+        e.preventDefault();
+        finishConfirm(false);
+      });
+    }
+    const form = d.querySelector('[data-testid="sbpp-confirm-form"]');
+    if (form) {
+      form.addEventListener('submit', (/** @type {Event} */ e) => {
+        e.preventDefault();
+        finishConfirm(true);
+      });
+    }
+    return d;
+  }
+
+  /**
+   * @param {boolean} ok
+   * @returns {void}
+   */
+  function finishConfirm(ok) {
+    const resolve = confirmResolve;
+    confirmResolve = null;
+    const d = /** @type {HTMLDialogElement | null} */ (document.getElementById('sbpp-confirm-dialog'));
+    if (d) {
+      try { d.close(); } catch (_e) { /* not opened modally */ }
+      d.setAttribute('hidden', '');
+    }
+    if (resolve) resolve(ok);
+  }
+
+  /**
+   * Open the shared confirm dialog. Resolves `true` on Confirm,
+   * `false` on Cancel / backdrop / Escape. Does not fall back to
+   * `window.confirm`.
+   *
+   * @param {SbppConfirmOpts} opts
+   * @returns {Promise<boolean>}
+   */
+  function confirmDialog(opts) {
+    return new Promise((resolve) => {
+      if (confirmResolve) {
+        const prev = confirmResolve;
+        confirmResolve = null;
+        prev(false);
+      }
+      const d = ensureConfirmDialog();
+      const titleEl = d.querySelector('[data-testid="sbpp-confirm-title"]');
+      const bodyEl = /** @type {HTMLElement | null} */ (d.querySelector('[data-testid="sbpp-confirm-body"]'));
+      const submitBtn = /** @type {HTMLButtonElement | null} */ (d.querySelector('[data-testid="sbpp-confirm-submit"]'));
+      const cancelBtn = /** @type {HTMLButtonElement | null} */ (d.querySelector('[data-testid="sbpp-confirm-cancel"]'));
+
+      if (titleEl) titleEl.textContent = opts.title || 'Confirm';
+      if (bodyEl) {
+        const body = opts.body || '';
+        bodyEl.textContent = body;
+        bodyEl.hidden = body === '';
+      }
+      if (cancelBtn) cancelBtn.textContent = opts.cancelLabel || 'Cancel';
+      if (submitBtn) {
+        submitBtn.textContent = opts.confirmLabel || 'Confirm';
+        submitBtn.className = opts.danger
+          ? 'btn btn--danger'
+          : 'btn btn--primary';
+      }
+
+      confirmResolve = resolve;
+      d.removeAttribute('hidden');
+      try { d.showModal(); }
+      catch (_e) { d.setAttribute('open', ''); }
+      if (submitBtn) {
+        try { submitBtn.focus(); } catch (_e) { /* focus may throw */ }
+      }
+    });
+  }
+
   // `SHOWTOAST_DEFAULT_DURATION` is exposed on the SBPP namespace
   // so E2E specs can read it at runtime instead of hardcoding
   // `6000` (or `6500` / `7500` derived literals) into per-spec
@@ -1918,6 +2041,7 @@
     openDrawer: openDrawer,
     closeDrawer: closeDrawer,
     setBusy: setBusy,
+    confirm: confirmDialog,
     SHOWTOAST_DEFAULT_DURATION: SHOWTOAST_DEFAULT_DURATION,
   };
 
@@ -1985,6 +2109,35 @@
   if (document.readyState !== 'loading') applyPlatformHints();
   else document.addEventListener('DOMContentLoaded', applyPlatformHints);
 
+  // ---- Themed select panel placement (msel + ssel) ------------
+  // Open downward by default; flip above the trigger when the panel
+  // would overflow the viewport and there is more room above.
+  /**
+   * @param {HTMLElement} wrap
+   * @param {HTMLElement} trigger
+   * @param {HTMLElement} panel
+   * @returns {void}
+   */
+  function positionSelectPanel(wrap, trigger, panel) {
+    panel.style.maxHeight = '';
+    wrap.setAttribute('data-placement', 'bottom');
+
+    const gap = 4;
+    const triggerRect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - triggerRect.bottom - gap;
+    const spaceAbove = triggerRect.top - gap;
+    const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const cssCap = 16 * rootFs;
+    const needed = Math.min(panel.scrollHeight, cssCap);
+    const openUp = needed > spaceBelow && spaceAbove > spaceBelow;
+    wrap.setAttribute('data-placement', openUp ? 'top' : 'bottom');
+
+    const available = openUp ? spaceAbove : spaceBelow;
+    if (available > 0 && available < cssCap) {
+      panel.style.maxHeight = Math.max(5 * rootFs, available) + 'px';
+    }
+  }
+
   // ---- MULTI-SELECT (select[data-multiselect]) ---------------
   // Progressive enhancement around a real <select multiple> so GET
   // submit and no-JS still work. After enhance, the native select is
@@ -2037,6 +2190,7 @@
     wrap.appendChild(chips);
 
     const labelEl = /** @type {HTMLElement} */ (trigger.querySelector('.msel__trigger-label'));
+    const emptyLabel = select.getAttribute('data-placeholder') || 'Any';
 
     /** @returns {HTMLOptionElement[]} */
     function optionList() {
@@ -2049,7 +2203,9 @@
       const n = selected.length;
       wrap.setAttribute('data-has-value', n > 0 ? 'true' : 'false');
       if (labelEl) {
-        labelEl.textContent = n === 0 ? 'Any' : (n === 1 ? selected[0].textContent || selected[0].value : (n + ' selected'));
+        labelEl.textContent = n === 0
+          ? emptyLabel
+          : (n === 1 ? selected[0].textContent || selected[0].value : (n + ' selected'));
       }
       panel.querySelectorAll('input[type="checkbox"]').forEach((/** @type {Element} */ el) => {
         const input = /** @type {HTMLInputElement} */ (el);
@@ -2107,9 +2263,16 @@
 
     /** @param {boolean} open */
     function setOpen(open) {
+      if (open) buildPanel();
       wrap.setAttribute('data-open', open ? 'true' : 'false');
       trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
       panel.hidden = !open;
+      if (open) {
+        positionSelectPanel(wrap, trigger, panel);
+      } else {
+        wrap.removeAttribute('data-placement');
+        panel.style.maxHeight = '';
+      }
     }
 
     buildPanel();
@@ -2134,6 +2297,15 @@
 
     select.addEventListener('change', syncFromSelect);
 
+    // Option labels may update after enhance (e.g. server hostname
+    // hydrate rewriting option textContent). Keep chips + open panel
+    // in sync without requiring a reopen.
+    const mo = new MutationObserver(() => {
+      syncFromSelect();
+      if (!panel.hidden) buildPanel();
+    });
+    mo.observe(select, { subtree: true, childList: true, characterData: true, attributes: true });
+
     if (window.lucide) window.lucide.createIcons();
   }
 
@@ -2145,4 +2317,237 @@
   }
   if (document.readyState !== 'loading') initMultiselects();
   else document.addEventListener('DOMContentLoaded', initMultiselects);
+
+  // ---- SINGLE-SELECT (select.select, not multiple) ------------
+  // Sibling of data-multiselect. Progressive enhancement around a
+  // real single <select class="select"> so GET submit and no-JS still
+  // work, while closed + open chrome match the Lucide chevron used by
+  // .msel. Opt out with data-native-select. Skip size>1 listboxes and
+  // anything already claimed by data-multiselect.
+  /**
+   * @param {HTMLSelectElement} select
+   * @returns {void}
+   */
+  function enhanceSelect(select) {
+    if (select.dataset.sselReady === '1') return;
+    if (select.multiple) return;
+    if (select.hasAttribute('data-multiselect')) return;
+    if (select.hasAttribute('data-native-select')) return;
+    if (select.size > 1) return;
+    select.dataset.sselReady = '1';
+
+    const parent = select.parentNode;
+    if (!parent) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ssel';
+    wrap.setAttribute('data-ssel', 'true');
+    // Native layouts often put width / min-width / flex on the <select>
+    // (banlist filters use width:auto; advanced-search length uses
+    // width:5rem + flex:1). Those styles stay on the visually-hidden
+    // select; mirror them onto the wrap so .ssel's default width:100%
+    // does not stretch the chrome or force flex siblings onto a new row.
+    const st = select.style;
+    if (st.width) wrap.style.width = st.width;
+    if (st.minWidth) wrap.style.minWidth = st.minWidth;
+    if (st.maxWidth) wrap.style.maxWidth = st.maxWidth;
+    if (st.flex) wrap.style.flex = st.flex;
+    if (st.flexGrow) wrap.style.flexGrow = st.flexGrow;
+    if (st.flexShrink) wrap.style.flexShrink = st.flexShrink;
+    if (st.flexBasis) wrap.style.flexBasis = st.flexBasis;
+    if ((st.flex || st.flexGrow) && !st.width) {
+      wrap.style.width = 'auto';
+    }
+    parent.insertBefore(wrap, select);
+    wrap.appendChild(select);
+
+    select.classList.add('visually-hidden');
+    select.setAttribute('aria-hidden', 'true');
+    select.tabIndex = -1;
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'ssel__trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.disabled = select.disabled;
+    if (select.id) trigger.setAttribute('aria-controls', select.id + '-ssel-panel');
+    trigger.innerHTML =
+      '<span class="ssel__trigger-label"></span>' +
+      '<i data-lucide="chevron-down" class="ssel__chevron" aria-hidden="true"></i>';
+
+    const panel = document.createElement('div');
+    panel.className = 'ssel__panel';
+    panel.setAttribute('role', 'listbox');
+    if (select.id) panel.id = select.id + '-ssel-panel';
+    panel.hidden = true;
+
+    wrap.insertBefore(trigger, select);
+    wrap.appendChild(panel);
+
+    const labelEl = /** @type {HTMLElement} */ (trigger.querySelector('.ssel__trigger-label'));
+
+    /**
+     * @param {HTMLOptionElement} opt
+     * @returns {HTMLButtonElement}
+     */
+    function makeOptionRow(opt) {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'ssel__option';
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', opt.selected ? 'true' : 'false');
+      row.dataset.value = opt.value;
+      if (opt.disabled) row.dataset.disabled = 'true';
+      row.disabled = opt.disabled;
+      row.textContent = opt.textContent || opt.value;
+      row.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (opt.disabled) return;
+        select.value = opt.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        syncFromSelect();
+        setOpen(false);
+        trigger.focus();
+      });
+      return row;
+    }
+
+    /** @returns {void} */
+    function buildPanel() {
+      panel.textContent = '';
+      Array.prototype.forEach.call(select.children, (/** @type {Element} */ node) => {
+        if (node instanceof HTMLOptGroupElement) {
+          const group = document.createElement('div');
+          group.className = 'ssel__group';
+          group.textContent = node.label || '';
+          panel.appendChild(group);
+          Array.prototype.forEach.call(node.children, (/** @type {Element} */ child) => {
+            if (child instanceof HTMLOptionElement) panel.appendChild(makeOptionRow(child));
+          });
+          return;
+        }
+        if (node instanceof HTMLOptionElement) {
+          panel.appendChild(makeOptionRow(node));
+        }
+      });
+    }
+
+    /** @returns {void} */
+    function syncFromSelect() {
+      const opt = select.options[select.selectedIndex];
+      const hasValue = !!(opt && opt.value !== '');
+      wrap.setAttribute('data-has-value', hasValue ? 'true' : 'false');
+      if (labelEl) {
+        labelEl.textContent = opt ? (opt.textContent || opt.value || '') : '';
+      }
+      trigger.disabled = select.disabled;
+      panel.querySelectorAll('.ssel__option').forEach((/** @type {Element} */ el) => {
+        const row = /** @type {HTMLButtonElement} */ (el);
+        const selected = row.dataset.value === select.value;
+        row.setAttribute('aria-selected', selected ? 'true' : 'false');
+      });
+    }
+
+    /** @param {boolean} open */
+    function setOpen(open) {
+      if (open) buildPanel();
+      wrap.setAttribute('data-open', open ? 'true' : 'false');
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      panel.hidden = !open;
+      if (open) {
+        positionSelectPanel(wrap, trigger, panel);
+        const selected = /** @type {HTMLElement | null} */ (
+          panel.querySelector('.ssel__option[aria-selected="true"]')
+        );
+        if (selected) selected.focus();
+      } else {
+        wrap.removeAttribute('data-placement');
+        panel.style.maxHeight = '';
+      }
+    }
+
+    buildPanel();
+    syncFromSelect();
+
+    trigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (trigger.disabled) return;
+      setOpen(panel.hidden);
+    });
+
+    trigger.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (panel.hidden) setOpen(true);
+      }
+    });
+
+    panel.addEventListener('keydown', (e) => {
+      const rows = /** @type {HTMLButtonElement[]} */ (
+        Array.prototype.slice.call(panel.querySelectorAll('.ssel__option:not([data-disabled="true"])'))
+      );
+      if (rows.length === 0) return;
+      const active = document.activeElement;
+      const idx = rows.indexOf(/** @type {HTMLButtonElement} */ (active));
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = rows[Math.min(idx + 1, rows.length - 1)] || rows[0];
+        next.focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = rows[Math.max(idx - 1, 0)] || rows[rows.length - 1];
+        prev.focus();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        rows[0].focus();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        rows[rows.length - 1].focus();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+        trigger.focus();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!wrap.contains(/** @type {Node} */ (e.target))) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden) {
+        setOpen(false);
+        trigger.focus();
+      }
+    });
+
+    select.addEventListener('change', syncFromSelect);
+    select.addEventListener('focus', () => {
+      trigger.focus();
+      if (panel.hidden && !trigger.disabled) setOpen(true);
+    });
+
+    // Option labels may update after enhance (e.g. server hostname
+    // hydrate rewriting option textContent). Keep the closed trigger
+    // in sync without requiring a reopen.
+    const mo = new MutationObserver(() => {
+      syncFromSelect();
+      if (!panel.hidden) buildPanel();
+    });
+    mo.observe(select, { subtree: true, childList: true, characterData: true, attributes: true });
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  /** @returns {void} */
+  function initSelects() {
+    document.querySelectorAll('select.select').forEach((el) => {
+      if (el instanceof HTMLSelectElement) enhanceSelect(el);
+    });
+  }
+  if (document.readyState !== 'loading') initSelects();
+  else document.addEventListener('DOMContentLoaded', initSelects);
 })();
