@@ -20,7 +20,7 @@ function _api_system_release_upstream_url(): string
     if (defined('SB_RELEASE_LATEST_URL') && is_string(SB_RELEASE_LATEST_URL) && SB_RELEASE_LATEST_URL !== '') {
         return SB_RELEASE_LATEST_URL;
     }
-    return 'https://api.github.com/repos/sbpp/sourcebans-pp/releases/latest';
+    return 'https://api.github.com/repos/srcdslab/sourcebans-pp/releases/latest';
 }
 
 /**
@@ -198,7 +198,7 @@ function _api_system_release_format(string $tagName, string $htmlUrl, string $lo
 
 /**
  * Public action: report whether a newer SourceBans++ release is
- * available. Sources from `api.github.com/repos/sbpp/sourcebans-pp/releases/latest`
+ * available. Sources from `api.github.com/repos/srcdslab/sourcebans-pp/releases/latest`
  * with a 1-day on-disk cache + stale-while-error fallback (the cached
  * payload is served regardless of TTL when the upstream call fails) so a
  * busy panel can't blow through GitHub's 60 req/hr unauthenticated limit

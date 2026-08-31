@@ -94,7 +94,7 @@ If you maintain a fork theme:
 2. Port your fork against the v2.0 default theme. Diff
    `web/themes/default/` between the 1.8.x and 2.0 trees to see what
    changed. The new conventions live in
-   [`AGENTS.md`](https://github.com/sbpp/sourcebans-pp/blob/main/AGENTS.md)
+   [`AGENTS.md`](https://github.com/srcdslab/sourcebans-pp/blob/main/AGENTS.md)
    (typed View DTOs, the `?section=…` admin sub-route pattern, the
    `core/admin_sidebar.tpl` partial, empty-state classes in
    `theme.css`).
@@ -143,7 +143,7 @@ deduplicated.
 - SMTP credentials, the Steam API key value.
 
 The complete field list lives in the source at
-[`web/includes/Telemetry/schema-1.lock.json`](https://github.com/sbpp/sourcebans-pp/blob/main/web/includes/Telemetry/schema-1.lock.json).
+[`web/includes/Telemetry/schema-1.lock.json`](https://github.com/srcdslab/sourcebans-pp/blob/main/web/includes/Telemetry/schema-1.lock.json).
 
 ### How to opt out
 
@@ -217,7 +217,7 @@ Specifically **not** sent:
 - Nothing the panel pulls from `sb_settings` or any other table.
 
 The audit trail is the file in this repo at
-[`docs/public/announcements.json`](https://github.com/sbpp/sourcebans-pp/blob/main/docs/public/announcements.json).
+[`docs/public/announcements.json`](https://github.com/srcdslab/sourcebans-pp/blob/main/docs/public/announcements.json).
 Every announcement is a git commit before it lands on your
 dashboard, so operators can review the full history before the
 deploy chain ships it to `sbpp.github.io`.

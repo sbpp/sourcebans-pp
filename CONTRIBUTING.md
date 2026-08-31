@@ -12,7 +12,7 @@ the project's developer guides.
 - **[`ARCHITECTURE.md`](ARCHITECTURE.md)** — codebase tour: how the
   web panel boots, request lifecycle, database access patterns, and
   how the SourceMod plugins fit in.
-- **[Docs site](https://sbpp.github.io/)** (sources under
+- **[Docs site](docs/)** (sources under
   [`docs/`](docs/)) — self-hoster documentation (install, upgrade,
   configure, FAQ). Self-hoster-visible changes ship docs updates in
   the same PR.

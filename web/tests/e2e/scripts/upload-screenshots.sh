@@ -25,7 +25,7 @@ SLUG="${2:?usage: upload-screenshots.sh <pr-number> <slice-slug>}"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 SHOTS_DIR="$REPO_ROOT/web/tests/e2e/screenshots"
-RAW_BASE="https://raw.githubusercontent.com/sbpp/sourcebans-pp/screenshots-archive/screenshots/pr-${PR}/${SLUG}"
+RAW_BASE="https://raw.githubusercontent.com/srcdslab/sourcebans-pp/screenshots-archive/screenshots/pr-${PR}/${SLUG}"
 
 # 1. Run the gallery spec.
 (

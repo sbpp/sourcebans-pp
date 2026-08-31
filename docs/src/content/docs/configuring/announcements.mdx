@@ -75,7 +75,7 @@ visibility for things like:
 - A new SourceMod or MariaDB version requirement is shipping.
 
 Operators can audit content via the **public diff history** of the
-[`docs/public/announcements.json`](https://github.com/sbpp/sourcebans-pp/blob/main/docs/public/announcements.json)
+[`docs/public/announcements.json`](https://github.com/srcdslab/sourcebans-pp/blob/main/docs/public/announcements.json)
 file. Every change ships through a pull request with the same
 review process as the rest of the project. There's no separate
 announcements server or admin-only API endpoint to compromise. The
@@ -112,20 +112,13 @@ it in a hook that runs later.
 
 ## How announcements are proposed
 
-If you maintain a fork or care about a specific upcoming
-announcement, the workflow is the same as any other change to the
-docs site:
-
-1. Open a PR against
-   [`sbpp/sourcebans-pp`](https://github.com/sbpp/sourcebans-pp).
-2. Edit `docs/public/announcements.json` to prepend your entry.
-   The panel sorts by `published_at`, but the file convention is
-   "newest at the top of the array" so reviewers see the most
-   relevant change first.
-3. The maintainers will review and merge. The
-   [docs deploy trigger workflow](https://github.com/sbpp/sourcebans-pp/blob/main/.github/workflows/docs-deploy-trigger.yml)
-   ships the updated file to `https://sbpp.github.io/announcements.json`
-   within a few minutes of merge.
+If you maintain a copy of the panel and want to ship your own
+announcements, edit `docs/public/announcements.json` in this repo
+and host the file at an `https://` URL. Point the panel at it with
+`define('SB_ANNOUNCEMENTS_URL', 'https://…/announcements.json');` in
+`config.php`. The default fetch URL is still
+`https://sbpp.github.io/announcements.json`. This repo does not
+publish a Pages sibling.
 
 The strict schema, audit history, and one-file source make this
 auditable: any operator with internet access can review every

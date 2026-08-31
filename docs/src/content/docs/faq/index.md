@@ -50,15 +50,15 @@ We don't sell hosting, support, or plugins ourselves.
 - **Then:** our [Discord](https://discord.gg/tzqYqmAtF5)
   `#help-support` channel.
 - **Bug reports:** open a
-  [GitHub issue](https://github.com/sbpp/sourcebans-pp/issues) with
+  [GitHub issue](https://github.com/srcdslab/sourcebans-pp/issues) with
   reproduction steps.
 
 ### I want to contribute, where do I start?
 
 Take a stab at the issues labelled `good first issue` or `help wanted`
-on the [issue tracker](https://github.com/sbpp/sourcebans-pp/issues).
+on the [issue tracker](https://github.com/srcdslab/sourcebans-pp/issues).
 The
-[`AGENTS.md`](https://github.com/sbpp/sourcebans-pp/blob/main/AGENTS.md)
+[`AGENTS.md`](https://github.com/srcdslab/sourcebans-pp/blob/main/AGENTS.md)
 file in the repo root is the contributor cheatsheet: conventions,
 the local Docker dev stack, and the "where to find what" index.
 

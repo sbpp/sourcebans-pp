@@ -5,7 +5,7 @@
 *}
     </main>
     <footer class="install-footer" role="contentinfo">
-        <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
+        <a href="https://github.com/srcdslab/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
         installer
     </footer>
 </div>

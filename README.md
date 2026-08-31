@@ -1,14 +1,14 @@
 <h1 align="center">
-    <a href="https://sbpp.github.io"><img src="https://raw.githubusercontent.com/sbpp/sourcebans-pp/main/web/themes/default/images/favicon.svg" height="25%" width="25%"/></a>
+    <a href="https://github.com/srcdslab/sourcebans-pp"><img src="https://raw.githubusercontent.com/srcdslab/sourcebans-pp/main/web/themes/default/images/favicon.svg" height="25%" width="25%"/></a>
     <br/>
     SourceBans++
 </h1>
 
 <p align="center">
-  <a href="https://github.com/sbpp/sourcebans-pp/releases"><img src="https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub release"></a>
+  <a href="https://github.com/srcdslab/sourcebans-pp/releases"><img src="https://img.shields.io/github/release/srcdslab/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub release"></a>
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/License-Elastic_2.0-0080FF.svg" alt="License: Elastic 2.0"></a>
-  <a href="https://github.com/sbpp/sourcebans-pp/issues"><img src="https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub issues"></a>
-  <a href="https://github.com/sbpp/sourcebans-pp/releases"><img src="https://img.shields.io/github/downloads/sbpp/sourcebans-pp/total.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub All Releases"></a>
+  <a href="https://github.com/srcdslab/sourcebans-pp/issues"><img src="https://img.shields.io/github/issues/srcdslab/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub issues"></a>
+  <a href="https://github.com/srcdslab/sourcebans-pp/releases"><img src="https://img.shields.io/github/downloads/srcdslab/sourcebans-pp/total.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub All Releases"></a>
   <a href="https://discord.gg/tzqYqmAtF5"><img src="https://img.shields.io/discord/298914017135689728.svg?style=flat-square&logo=discord&label=discord" alt="Discord"></a>
 </p>
 
@@ -24,26 +24,26 @@ engine.
 
 ## Links
 
-- **Docs:** <https://sbpp.github.io/> (install, upgrade, configure, FAQ)
-- **Releases:** <https://github.com/sbpp/sourcebans-pp/releases>
-- **Issues:** <https://github.com/sbpp/sourcebans-pp/issues>
+- **Docs:** sources under [`docs/`](docs/) (install, upgrade, configure, FAQ)
+- **Releases:** <https://github.com/srcdslab/sourcebans-pp/releases>
+- **Issues:** <https://github.com/srcdslab/sourcebans-pp/issues>
 - **Discord:** <https://discord.gg/tzqYqmAtF5>
 - **AlliedModders thread:** <https://forums.alliedmods.net/showthread.php?p=2303384>
 
 ## Install
 
 Download the latest `sourcebans-pp-X.Y.Z.webpanel-only.zip` from
-[Releases](https://github.com/sbpp/sourcebans-pp/releases), unzip into
+[Releases](https://github.com/srcdslab/sourcebans-pp/releases), unzip into
 your web root, and visit `/install/` in a browser. The wizard walks
 you through the rest.
 
 Full install + plugin setup guide:
-[**Quickstart**](https://sbpp.github.io/getting-started/quickstart/).
+[`docs/src/content/docs/getting-started/quickstart.mdx`](docs/src/content/docs/getting-started/quickstart.mdx).
 
 ## Upgrade
 
-[**Updating SourceBans++**](https://sbpp.github.io/updating/) covers
-the upgrade path for each major version boundary.
+[`docs/src/content/docs/updating/index.md`](docs/src/content/docs/updating/index.md)
+covers the upgrade path for each major version boundary.
 
 ## Contributing
 

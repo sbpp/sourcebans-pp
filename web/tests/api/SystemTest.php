@@ -32,7 +32,7 @@ final class SystemTest extends ApiTestCase
         $this->assertTrue($env['ok']);
         $this->assertSame('1.8.4', $env['data']['release_latest']);
         $this->assertSame(
-            'https://github.com/sbpp/sourcebans-pp/releases/tag/1.8.4',
+            'https://github.com/srcdslab/sourcebans-pp/releases/tag/1.8.4',
             $env['data']['release_url']
         );
         $this->assertTrue($env['data']['release_update']);
@@ -124,7 +124,7 @@ final class SystemTest extends ApiTestCase
         $this->assertTrue($env['ok']);
         $this->assertSame('1.7.2', $env['data']['release_latest']);
         $this->assertSame(
-            'https://github.com/sbpp/sourcebans-pp/releases/tag/1.7.2',
+            'https://github.com/srcdslab/sourcebans-pp/releases/tag/1.7.2',
             $env['data']['release_url']
         );
         $this->assertNotSame('Error', $env['data']['release_latest']);
@@ -154,13 +154,13 @@ final class SystemTest extends ApiTestCase
         // `Sbpp\Tests\Api` namespace.
         $resp = \_api_system_release_format(
             '1.8.4',
-            'https://github.com/sbpp/sourcebans-pp/releases/tag/1.8.4',
+            'https://github.com/srcdslab/sourcebans-pp/releases/tag/1.8.4',
             'dev'
         );
 
         $this->assertSame('1.8.4', $resp['release_latest']);
         $this->assertSame(
-            'https://github.com/sbpp/sourcebans-pp/releases/tag/1.8.4',
+            'https://github.com/srcdslab/sourcebans-pp/releases/tag/1.8.4',
             $resp['release_url']
         );
         $this->assertSame('Tracking development build.', $resp['release_msg']);
@@ -196,7 +196,7 @@ final class SystemTest extends ApiTestCase
         }
         file_put_contents($cache . 'github_release_latest.json', (string) json_encode([
             'tag_name'  => $tagName,
-            'html_url'  => 'https://github.com/sbpp/sourcebans-pp/releases/tag/' . $tagName,
+            'html_url'  => 'https://github.com/srcdslab/sourcebans-pp/releases/tag/' . $tagName,
             'cached_at' => $cachedAt ?? time(),
         ]));
     }

@@ -37,7 +37,7 @@
 
 services:
   web:
-    image: ghcr.io/sbpp/sourcebans-pp:${SBPP_IMAGE_TAG:-latest}
+    image: ghcr.io/srcdslab/sourcebans-pp:${SBPP_IMAGE_TAG:-latest}
     container_name: sbpp-prod-web
     restart: unless-stopped
     depends_on:

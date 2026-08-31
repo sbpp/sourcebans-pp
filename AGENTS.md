@@ -56,7 +56,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Change the local dev stack (Docker, db-init, env vars)      | `docker/README.md` first, link from `ARCHITECTURE.md` if it changes the dev mental model |
 | Edit user-facing install/quickstart                         | `docs/src/content/docs/getting-started/quickstart.mdx` (tarball flow) OR `quickstart-docker.mdx` (Docker flow). Keep the `<Tabs syncKey="install-path">` arms in `overview.mdx` + `prerequisites.mdx` consistent across the two paths (the README is a tiny landing page that links to docs — don't grow it back into a manual). |
 | Add or change a wizard step (page handler / View / template / shared helper) | `AGENTS.md` (Install wizard convention block) + the "Edit a step of the install wizard" row in "Where to find what" |
-| Touch `docker/Dockerfile.prod`, `docker/php/prod-*`, `docker/apache/sbpp-prod.conf`, `docker-compose.prod.yml`, `.env.example.prod`, `docker/caddy/Caddyfile.example`, or `web/health.php` | `AGENTS.md` (Quality gates: `docker-image.yml` row; "Where to find what": the "Build / extend the production Docker image" + "Deploy / configure the production Docker stack" rows) + `docs/src/content/docs/getting-started/quickstart-docker.mdx` (the operator-facing doc) + `docker/README.md` (dev-vs-prod pointer). The `Plugin build specifics` block in AGENTS.md has a sibling `Prod Docker image specifics` block — keep them in sync with the workflow's tag mapping / sign step. The Docker-image gate is **release-only** (fires on `*.*.*` tag pushes + manual `workflow_dispatch` reruns); contributors who edit the Dockerfile / entrypoint MUST run the `docker buildx build` command from the Quality gates row locally before opening the PR — there is no per-PR CI gate to catch a broken image build. |
+| Touch `docker/Dockerfile.prod`, `docker/php/prod-*`, `docker/apache/sbpp-prod.conf`, `docker-compose.prod.yml`, `.env.example.prod`, `docker/caddy/Caddyfile.example`, or `web/health.php` | `AGENTS.md` (Quality gates: `docker-image.yml` row; "Where to find what": the "Build / extend the production Docker image" + "Deploy / configure the production Docker stack" rows) + `docs/src/content/docs/getting-started/quickstart-docker.mdx` (the operator-facing doc) + `docker/README.md` (dev-vs-prod pointer). The `Plugin build specifics` block in AGENTS.md has a sibling `Prod Docker image specifics` block — keep them in sync with the workflow's tag mapping / sign step. The Docker-image workflow fires on `*.*.*` tag pushes (`:latest` + semver) and on push to `main` (`:main`). There is no per-PR image build; contributors who edit the Dockerfile / entrypoint MUST run the `docker buildx build` command from the Quality gates row locally before opening the PR. |
 | Change a user-facing install / upgrade / troubleshooting flow (PHP or SourceMod version requirements, installer wizard steps, `config.php` behavior, `web/updater/` runner output, plugin `databases.cfg` / `sourcebans.cfg` shape, error messages a self-hoster will see) | The relevant page under `docs/src/content/docs/` (the Starlight site published at sbpp.github.io). |
 | Add or remove a config knob a self-hoster sets (`config.php` keys, `databases.cfg` fields, plugin convars users tune) | `docs/` page that documents that knob, plus the matching `docs/src/content/docs/updating/*.mdx` page if it's a breaking change between releases |
 | Ship a new feature with a self-hoster-visible setup step (Discord forwarder, demos, theming, etc.) | New page or section under the right `docs/` group + sidebar entry in `docs/astro.config.mjs` |
@@ -205,9 +205,10 @@ services:
 ## Quality gates
 
 CI runs six gates on every PR. Match them locally before opening one.
-A seventh gate (the production Docker image) runs **only on release
-tag pushes** — see the row's note + the `Prod Docker image specifics`
-block below for the rationale and the contributor-side responsibility.
+A seventh gate (the production Docker image) runs on `*.*.*` tag
+pushes (semver + `:latest`) and on push to `main` (`:main` only).
+PRs do not build the image. See the row's note + the `Prod Docker
+image specifics` block below.
 
 | Gate           | Local                                | CI workflow            |
 | -------------- | ------------------------------------ | ---------------------- |
@@ -217,7 +218,7 @@ block below for the rationale and the contributor-side responsibility.
 | API contract   | `./sbpp.sh composer api-contract`    | `api-contract.yml`     |
 | Playwright E2E | `./sbpp.sh e2e`                      | `e2e.yml`              |
 | Plugin build   | `bash game/addons/sourcemod/scripting/scripts/resolve-plugin-version.sh` then `(cd game/addons/sourcemod/scripting && spcomp -i include sbpp_*.sp)` | `plugin-build.yml`     |
-| Prod Docker image (release-only) | `docker buildx build --platform linux/amd64,linux/arm64 -f docker/Dockerfile.prod .` | `docker-image.yml` (tag pushes + `workflow_dispatch` only — no per-PR run; contributor MUST run the local command before merging Dockerfile / entrypoint changes) |
+| Prod Docker image | `docker buildx build --platform linux/amd64,linux/arm64 -f docker/Dockerfile.prod .` | `docker-image.yml` (`*.*.*` tag pushes publish `:latest` + semver; push to `main` publishes `:main`; `workflow_dispatch` rebuilds the ref it was dispatched against. No per-PR run; contributor MUST run the local command before merging Dockerfile / entrypoint changes) |
 
 PHPStan specifics:
 
@@ -369,42 +370,35 @@ Plugin build specifics:
 
 Prod Docker image specifics:
 
-- **Trigger surface is deliberately narrow: tag pushes + manual
-  `workflow_dispatch` only.** No `push: branches: [main]`, no
-  `pull_request:`. A multi-arch (amd64 + qemu-emulated arm64) build
-  is the most expensive job in this repo's CI matrix (~8-15 minutes
-  per run); pre-narrow this workflow ran on every push to main AND
-  every PR touching a long path filter, burning a disproportionate
-  share of the project's free Actions minutes for floating `:main` /
-  `:sha-<short>` tags that nobody pulls (self-hosters all pin to
-  released semver tags per the docs). The image surface is small +
-  stable — runtime-affecting changes (Dockerfile, entrypoint, schema
-  files, init bootstrap, health.php, trust-proxy + telemetry hooks)
-  always ship behind a release tag, so verifying-at-tag is sufficient
-  AND well-aligned with when self-hosters actually pull a new image.
-  The trade-off the project explicitly accepts: a Dockerfile /
-  entrypoint regression that landed via a green PR isn't caught by
-  CI until the next `*.*.*` tag push. **Contributors who edit any
-  file the runtime image bakes in (Dockerfile, entrypoint, php.ini,
-  Apache conf, sb-db.php, health.php, schema files, init bootstrap,
-  Auth/Host.php, Telemetry.php) MUST run the literal `docker buildx
-  build --platform linux/amd64,linux/arm64 -f docker/Dockerfile.prod .`
-  command from the Quality gates table locally before opening the
-  PR — the local command IS the per-PR gate.**
+- **Trigger surface:** `*.*.*` tag pushes, push to `main`, and
+  manual `workflow_dispatch`. No `pull_request:`. A multi-arch
+  (amd64 + qemu-emulated arm64) build is the most expensive job in
+  this repo's CI matrix (~8-15 minutes per run). PRs do not pay that
+  cost. Push-to-main publishes a floating `:main` tag so operators
+  can pull the tip of this repo without waiting for a semver cut.
+  `:latest` stays bound to `*.*.*` tags only. Runtime-affecting
+  changes (Dockerfile, entrypoint, schema files, init bootstrap,
+  health.php, trust-proxy + telemetry hooks) that land via a green
+  PR are visible on `:main` as soon as they merge. **Contributors
+  who edit any file the runtime image bakes in (Dockerfile,
+  entrypoint, php.ini, Apache conf, sb-db.php, health.php, schema
+  files, init bootstrap, Auth/Host.php, Telemetry.php) MUST run the
+  literal `docker buildx build --platform linux/amd64,linux/arm64
+  -f docker/Dockerfile.prod .` command from the Quality gates table
+  locally before opening the PR.** PRs still have no image-build
+  gate.
 - Multi-arch (linux/amd64 + linux/arm64) via `docker/setup-qemu-action@v3`
   + `docker/setup-buildx-action@v3`. The arm64 leg runs under qemu
   on the amd64 GitHub-hosted runner — roughly 2x build time vs
-  native, acceptable for the release-only publish cadence.
+  native, acceptable for the tag + `:main` publish cadence.
 - Tag mapping via `docker/metadata-action@v5`: `X.Y.Z` tag → `:X.Y.Z`
-  + `:X.Y` + `:X` + `:latest`. `:latest` is gated on
-  `startsWith(github.ref, 'refs/tags/')` so a `workflow_dispatch`
-  from a non-tag ref can't accidentally claim it. There are no
-  rolling `:main` / `:sha-<short>` tags — see the table in
+  + `:X.Y` + `:X` + `:latest`. Push to `main` → `:main`. `:latest` is
+  gated on `startsWith(github.ref, 'refs/tags/')` so a push or
+  `workflow_dispatch` from `main` cannot claim it. A
+  `workflow_dispatch` from a non-tag, non-main ref produces an empty
+  tag set and `docker push` fails loudly. See the table in
   `docs/src/content/docs/getting-started/quickstart-docker.mdx`
-  for the operator-facing tag list. A `workflow_dispatch` from a
-  non-tag ref produces an empty tag set and `docker push` fails
-  loudly (the documented "rebuilding a non-released ref isn't a
-  meaningful operation" gate).
+  for the operator-facing tag list.
 - Sigstore cosign signs each tag against the immutable digest
   (`<image>@<digest>`, not the mutable `<image>:<tag>`) in keyless
   / OIDC mode. The job-level `id-token: write` permission is what
@@ -413,8 +407,8 @@ Prod Docker image specifics:
   identity (workflow path) and the issuer (GitHub Actions OIDC
   endpoint) — see `docs/src/content/docs/getting-started/quickstart-docker.mdx`
   for the canonical `cosign verify` command. The cosign step is
-  always-on (no PR exemption is needed — PRs don't trigger the
-  workflow at all under the tag-only contract).
+  always-on (no PR exemption is needed. PRs do not trigger this
+  workflow).
 - No local `./sbpp.sh` wrapper. The dev stack doesn't ship a way
   to invoke `docker buildx` from inside the dev container itself
   (no Docker-in-Docker), and the prod image build is a host-side
@@ -3998,7 +3992,7 @@ the spec, target a 1920px viewport, not 1440px.
   dependency on `Actions.*` — exactly the asymmetry the bug
   reporter saw. **The bug only surfaces under
   `docker/Dockerfile.prod` →
-  `ghcr.io/sbpp/sourcebans-pp:*`** (the dev compose stack
+  `ghcr.io/srcdslab/sourcebans-pp:*`** (the dev compose stack
   uses a different Apache config; tarball installs don't
   ship Apache at all). When extending the deny list, prefer
   `<Files "exact-name">` for root-only configs that have a
@@ -4841,7 +4835,7 @@ the spec, target a 1920px viewport, not 1440px.
 | Need to …                              | Look at                                                  |
 | -------------------------------------- | -------------------------------------------------------- |
 | Understand request lifecycle           | `ARCHITECTURE.md` ("Page request lifecycle" / "JSON API request lifecycle") |
-| Edit a docs page or add a new one (the Astro + Starlight site published at sbpp.github.io) | `docs/src/content/docs/<group>/<slug>.md` (or `.mdx` when the page uses tabs / cards / asides — e.g. `getting-started/quickstart.mdx`, `setup/mariadb.mdx`). New pages also need a sidebar entry in `docs/astro.config.mjs` (the `sidebar:` array). Site config + theme tokens live in `docs/astro.config.mjs` + `docs/src/styles/sbpp.css`. The Starlight chrome ships from `@astrojs/starlight`; layout overrides land under `docs/src/components/` (see `ThemeProvider.astro` for the canonical override shape). Local dev: `cd docs && npm install && npm run dev`. CI gates: `.github/workflows/docs-build.yml` (per-PR build), `docs-deploy-trigger.yml` (main → repository_dispatch into sbpp.github.io), `docs-screenshots.yml` (gated on the `affects-ui` label, runs `docs/scripts/capture.mjs`). Source of truth is here; sbpp.github.io is the deploy shell only (#1333). |
+| Edit a docs page or add a new one (the Astro + Starlight site published at sbpp.github.io) | `docs/src/content/docs/<group>/<slug>.md` (or `.mdx` when the page uses tabs / cards / asides — e.g. `getting-started/quickstart.mdx`, `setup/mariadb.mdx`). New pages also need a sidebar entry in `docs/astro.config.mjs` (the `sidebar:` array). Site config + theme tokens live in `docs/astro.config.mjs` + `docs/src/styles/sbpp.css`. The Starlight chrome ships from `@astrojs/starlight`; layout overrides land under `docs/src/components/` (see `ThemeProvider.astro` for the canonical override shape). Local dev: `cd docs && npm install && npm run dev`. CI gates: `.github/workflows/docs-build.yml` (per-PR build), `docs-deploy-trigger.yml` (no-op in this repo; no Pages sibling), `docs-screenshots.yml` (gated on the `affects-ui` label, runs `docs/scripts/capture.mjs`). Source of truth is the `docs/` tree. |
 | Refresh installer / panel screenshots used in docs pages | `docs/scripts/capture.mjs` (Playwright; `npm run capture` in `docs/`). Output lands under `docs/src/assets/auto/{install,panel}/<stable-slug>.png` so docs pages keep referencing the same path across runs. CI does this automatically on PRs labelled `affects-ui`; locally run after `./sbpp.sh up`. STEAM_API_KEY is the all-zero dummy `00000000000000000000000000000000`. |
 | Add a JSON action                      | `web/api/handlers/_register.php` + `web/api/handlers/<topic>.php` |
 | Soft-retire / hard-delete admins, keep ban+comm issuer names, or bulk-select on the admins list (#1509) | Soft-retire: `admins.enabled` + `admins.deactivate` / `admins.reactivate` in `web/api/handlers/admins.php` (Active/Inactive chips + dialogs in `page_admin_admins_list.tpl`). Hard delete still snapshots `bans.admin_name` / `comms.admin_name` before DELETE (migration `811.php`). Issuer display: `COALESCE(NULLIF(*.admin_name, ''), AD.user)` → template paints **Unknown**, never "deleted admin" on the Admin cell (comments still say "deleted admin" per #1500). Bulk: `admins.bulk` (`op` = `deactivate` \| `reactivate` \| `remove` \| `set_web_group` \| `set_srv_group`, partial `applied`/`skipped`) + checkbox column / sticky bar in `page_admin_admins_list.tpl`. Guards: no self on deactivate/remove; owners skipped. Tests: `AdminsTest` + `AdminEnabledAttributionTest` + `admin-deactivate-bulk.spec.ts`. |
@@ -4943,5 +4937,5 @@ the spec, target a 1920px viewport, not 1440px.
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |
 | Build / extend the production Docker image (multi-stage build, hardened runtime, entrypoint state machine, healthcheck) | `docker/Dockerfile.prod` (multi-stage: `builder` runs `composer install --no-dev` against `web/`; `runtime` carries pdo_mysql + intl + zip + mbstring + gmp ONLY — no nodejs / npm / git / dev-prepend) + `docker/php/prod-entrypoint.sh` (pure POSIX shell state machine: `*_FILE` secret resolution → DATABASE_URL parse → defaults → Apache config (PORT + mod_remoteip from `SBPP_TRUSTED_PROXIES`) → wait-for-DB → render config.php (only when missing) → first-boot install (schema + data + seed admin from `INITIAL_ADMIN_*` env vars) → headless updater migrations → strip install/ + updater/ from writable layer → ensure writable cache/templates_c/demos → `exec apache2-foreground`) + `docker/php/prod-php.ini` (production OPcache: `validate_timestamps=0`, `display_errors=Off`, `log_errors=On`, errors → `/dev/stderr`, UTC default, `expose_php=Off`) + `docker/apache/sbpp-prod.conf` (denies dotfiles + vendor/ + configs/ + includes/ + install/ + updater/ + cache/ + templates_c/ + config.php + composer.{json,lock}; `RemoteIPHeader X-Forwarded-For` for the trusted-proxy chain) + `web/health.php` (DB-aware unauthenticated healthcheck — `init.php` bootstraps the panel; `$GLOBALS['PDO']->query('SELECT 1')` returns 200 OK or 503 + plain-text reason; Cache-Control: no-store + X-Robots-Tag: noindex). The production image MUST NOT define `SBPP_DEV_KEEP_INSTALL`; the entrypoint's `strip_install_dirs` step is what makes the panel-runtime guard pass instead (#1381). |
-| Deploy / configure the production Docker stack (compose, env vars, reverse-proxy) | `docker-compose.prod.yml` (pulls `ghcr.io/sbpp/sourcebans-pp:${SBPP_IMAGE_TAG:-latest}` — NOT a build context; DB port NOT exposed by default; commented `caddy:` service block for opt-in TLS) + `.env.example.prod` (every supported env var grouped by required / recommended / first-boot / optional / advanced; documents the `*_FILE` Docker-secret pattern and the `SBPP_CONFIG_PATH` Docker-secret-mount pattern; uses `${VAR:?...}` compose syntax for required vars so a fresh-deploy operator who forgot `SB_SECRET_KEY` / `DB_PASS` / `DB_ROOT_PASS` gets a useful container-startup error) + `docker/caddy/Caddyfile.example` (one-line `reverse_proxy web:80` + zstd/gzip encode + static-asset cache headers). Three persistent volumes: `dbdata` + `demos` (MUST persist — DB rows + uploaded ban-evidence); `cache` + `smarty` (CAN be ephemeral — rebuild on demand). Operators run `docker compose -f docker-compose.prod.yml up -d` from a directory carrying both files; upgrades are `docker compose pull && up -d` (image is immutable, entrypoint runs idempotent migrations on every boot, named volumes survive the swap) (#1381). |
+| Deploy / configure the production Docker stack (compose, env vars, reverse-proxy) | `docker-compose.prod.yml` (pulls `ghcr.io/srcdslab/sourcebans-pp:${SBPP_IMAGE_TAG:-latest}` — NOT a build context; DB port NOT exposed by default; commented `caddy:` service block for opt-in TLS) + `.env.example.prod` (every supported env var grouped by required / recommended / first-boot / optional / advanced; documents the `*_FILE` Docker-secret pattern and the `SBPP_CONFIG_PATH` Docker-secret-mount pattern; uses `${VAR:?...}` compose syntax for required vars so a fresh-deploy operator who forgot `SB_SECRET_KEY` / `DB_PASS` / `DB_ROOT_PASS` gets a useful container-startup error) + `docker/caddy/Caddyfile.example` (one-line `reverse_proxy web:80` + zstd/gzip encode + static-asset cache headers). Three persistent volumes: `dbdata` + `demos` (MUST persist — DB rows + uploaded ban-evidence); `cache` + `smarty` (CAN be ephemeral — rebuild on demand). Operators run `docker compose -f docker-compose.prod.yml up -d` from a directory carrying both files; upgrades are `docker compose pull && up -d` (image is immutable, entrypoint runs idempotent migrations on every boot, named volumes survive the swap) (#1381). |
 | Honour `SBPP_CONFIG_PATH` so config.php can live outside the panel root (Docker-secret mount) | `sbpp_resolve_config_path()` in `web/init-recovery.php` is the single source of truth; `web/init.php` calls it to resolve the require-site. `web/install/already-installed.php`'s `sbpp_install_is_already_installed()` re-implements the env-var read inline (per its self-contained no-Composer docblock) so the wizard-side and runtime-side guards agree on the install-state sentinel path. Pre-#1381 both halves hard-coded the panel-root path; with a Docker-secret-mounted config the runtime would 302-to-/install/ while the wizard would happily start over. Regression tests: `testResolveConfigPathHonorsEnvVar` + `testWizardGuardHonorsConfigPathEnvVar` in `web/tests/integration/InstallGuardTest.php`.

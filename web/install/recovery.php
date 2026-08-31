@@ -189,7 +189,7 @@ header('X-Content-Type-Options: nosniff');
         <li>
             Grab the latest
             <code>sourcebans-pp-X.Y.Z.webpanel-only.zip</code> from
-            <a href="https://github.com/sbpp/sourcebans-pp/releases"
+            <a href="https://github.com/srcdslab/sourcebans-pp/releases"
                target="_blank" rel="noopener">the releases page</a>.
         </li>
         <li>

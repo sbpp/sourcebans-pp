@@ -234,9 +234,9 @@ test.describe('#1207 routing + truthiness fixes', () => {
             // Locate the link by its containing footer + the
             // attribute we ship as the canonical contract — never by
             // visible text alone.
-            const link = page.locator('footer.sbpp-footer a[href*="github.com/sbpp/sourcebans-pp"]');
+            const link = page.locator('footer.sbpp-footer a[href*="github.com/srcdslab/sourcebans-pp"]');
             await expect(link).toBeVisible();
-            await expect(link).toHaveAttribute('href', 'https://github.com/sbpp/sourcebans-pp');
+            await expect(link).toHaveAttribute('href', 'https://github.com/srcdslab/sourcebans-pp');
             await expect(link).toHaveAttribute('target', '_blank');
             await expect(link).toHaveAttribute('rel', /noopener/);
 

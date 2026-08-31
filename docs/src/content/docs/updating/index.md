@@ -29,7 +29,7 @@ button is enough. Don't skip this step.
 ## Download
 
 Grab the latest release zip from the
-[Releases page](https://github.com/sbpp/sourcebans-pp/releases). You
+[Releases page](https://github.com/srcdslab/sourcebans-pp/releases). You
 want the `sourcebans-pp-X.Y.Z.webpanel-only.zip` for the web side and
 `sourcebans-pp-X.Y.Z.plugin-only.zip` for the game side.
 
@@ -130,7 +130,7 @@ need that value generated before they can log in.
 4. If you use a custom theme, note that **Smarty 5 (which 1.7.0+
    uses) dropped the `{php}` tag**. Custom themes that relied on
    `{php}` need to switch to the
-   [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/main/web/includes/SmartyCustomFunctions.php)
+   [`{load_template}`](https://github.com/srcdslab/sourcebans-pp/blob/main/web/includes/SmartyCustomFunctions.php)
    tag instead.
 
 ### Upgrading the plugin from <= 1.5.4.7

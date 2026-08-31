@@ -54,7 +54,7 @@ translations, and select your new theme in the panel's settings.
 SourceBans++ uses **Smarty 5** under the hood, which dropped the
 `{php}` tag. If you find a `{php}` block in an old fork theme,
 replace it with
-[`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/main/web/includes/SmartyCustomFunctions.php)
+[`{load_template}`](https://github.com/srcdslab/sourcebans-pp/blob/main/web/includes/SmartyCustomFunctions.php)
 or move the logic into a PHP helper. The panel refuses to render
 templates that still contain `{php}`.
 :::
@@ -113,7 +113,7 @@ falls back to English.
 ## Contributing translations back
 
 We always welcome translation PRs against
-[`sbpp/sourcebans-pp`](https://github.com/sbpp/sourcebans-pp), for
+[`srcdslab/sourcebans-pp`](https://github.com/srcdslab/sourcebans-pp), for
 both panel theme translations and plugin phrase translations.
 
 For the panel, the practical path is to keep the default theme's

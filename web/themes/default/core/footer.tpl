@@ -89,7 +89,7 @@
     as overlapping the credit on mobile.
 *}
     <footer class="app-footer sbpp-footer" data-version="{$version}" data-testid="app-footer">
-        <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
+        <a href="https://github.com/srcdslab/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
         {$version}{$git}
         {*
             Sponsor affordance (#1417). Mirrors the docs-side

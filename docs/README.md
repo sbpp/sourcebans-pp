@@ -229,7 +229,7 @@ returns false. Create the label via the repo's Issues → Labels page
 
 ## Source of truth
 
-These docs live in [`sbpp/sourcebans-pp` under `docs/`](https://github.com/sbpp/sourcebans-pp/tree/main/docs).
-The site at <https://sbpp.github.io/> is published from there by CI
-on every merge to `main`. Open PRs against this directory; the deploy
-shell repo doesn't accept content PRs anymore.
+These docs live in [`srcdslab/sourcebans-pp` under `docs/`](https://github.com/srcdslab/sourcebans-pp/tree/main/docs).
+There is no Pages sibling for this repo today. Open PRs against this
+directory. `docs-build.yml` validates the Astro build; `docs-deploy-trigger.yml`
+is a no-op until a Pages deploy is wired.

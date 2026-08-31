@@ -22,7 +22,7 @@ final class ThemeConfParseTest extends TestCase
         $this->assertSame('SourceBans++ Default', ThemeConf::parseDefine($src, 'theme_name', ''));
         $this->assertSame('SourceBans++ Dev Team', ThemeConf::parseDefine($src, 'theme_author', 'Unknown'));
         $this->assertSame('2.0.0', ThemeConf::parseDefine($src, 'theme_version', '?'));
-        $this->assertSame('https://github.com/sbpp/sourcebans-pp', ThemeConf::parseDefine($src, 'theme_link', ''));
+        $this->assertSame('https://github.com/srcdslab/sourcebans-pp', ThemeConf::parseDefine($src, 'theme_link', ''));
         $this->assertSame('screenshot.jpg', ThemeConf::parseDefine($src, 'theme_screenshot', ''));
     }
 
@@ -106,7 +106,7 @@ PHP;
 
         $this->assertSame('SourceBans++ Dev Team', $row['author']);
         $this->assertSame('2.0.0', $row['version']);
-        $this->assertSame('https://github.com/sbpp/sourcebans-pp', $row['link']);
+        $this->assertSame('https://github.com/srcdslab/sourcebans-pp', $row['link']);
         $this->assertStringContainsString(
             'themes/' . $filename . '/',
             'themes/' . $filename . '/' . ThemeConf::sanitizeScreenshotFilename(

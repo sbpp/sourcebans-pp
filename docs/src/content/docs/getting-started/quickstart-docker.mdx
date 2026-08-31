@@ -16,7 +16,7 @@ Compose** in a few minutes. By the end you'll have:
 - A MariaDB database persisted to a named Docker volume,
 - An initial admin account ready to log in.
 
-The Docker image (`ghcr.io/sbpp/sourcebans-pp`) is a multi-arch build
+The Docker image (`ghcr.io/srcdslab/sourcebans-pp`) is a multi-arch build
 (linux/amd64 + linux/arm64) signed with Sigstore cosign. It ships no
 install wizard, no developer tools, and runs the panel as the
 non-root `www-data` user.
@@ -54,18 +54,18 @@ host. The image carries everything.
 ## Step 1 — Get the compose stack
 
 The compose file + env template + Caddy stub live in the
-[sourcebans-pp repo](https://github.com/sbpp/sourcebans-pp). The
+[sourcebans-pp repo](https://github.com/srcdslab/sourcebans-pp). The
 simplest path is a sparse fetch of the three files you actually need
 into a deployment directory of your own:
 
 ```sh
 mkdir -p ~/sourcebans-prod
 cd ~/sourcebans-prod
-curl -O https://raw.githubusercontent.com/sbpp/sourcebans-pp/main/docker-compose.prod.yml
-curl -O https://raw.githubusercontent.com/sbpp/sourcebans-pp/main/.env.example.prod
+curl -O https://raw.githubusercontent.com/srcdslab/sourcebans-pp/main/docker-compose.prod.yml
+curl -O https://raw.githubusercontent.com/srcdslab/sourcebans-pp/main/.env.example.prod
 mkdir -p docker/caddy
 curl -o docker/caddy/Caddyfile.example \
-    https://raw.githubusercontent.com/sbpp/sourcebans-pp/main/docker/caddy/Caddyfile.example
+    https://raw.githubusercontent.com/srcdslab/sourcebans-pp/main/docker/caddy/Caddyfile.example
 ```
 
 A `git clone` of the whole repo works too if you'd rather track
@@ -289,18 +289,20 @@ Image tags:
 | `X.Y.Z` | A specific version. Recommended for production. |
 | `X.Y` | Floats forward across patch releases of `X.Y.*`. |
 | `X` | Floats forward across minor releases of `X.*.*`. |
+| `main` | Tip of `main`. Rolling. Not a release. |
 
-Only tagged release builds are published. There is no rolling
-`:main` or per-commit `:sha-<short>` tag. To test an unreleased fix,
-`git checkout` the relevant ref and build the image locally with
-`docker buildx build -f docker/Dockerfile.prod -t sbpp:dev .`.
+Tagged release builds publish `:latest` plus the semver aliases.
+Push-to-main publishes `:main` only. There is no per-commit
+`:sha-<short>` tag. To test an unreleased fix that is not yet on
+`main`, `git checkout` the relevant ref and build the image locally
+with `docker buildx build -f docker/Dockerfile.prod -t sbpp:dev .`.
 
 Every published tag is signed with Sigstore cosign in keyless mode.
 Verify the signature with:
 
 ```sh
-cosign verify ghcr.io/sbpp/sourcebans-pp:1.7.0 \
-    --certificate-identity-regexp='https://github.com/sbpp/sourcebans-pp/.github/workflows/docker-image.yml@.*' \
+cosign verify ghcr.io/srcdslab/sourcebans-pp:latest \
+    --certificate-identity-regexp='https://github.com/srcdslab/sourcebans-pp/.github/workflows/docker-image.yml@.*' \
     --certificate-oidc-issuer='https://token.actions.githubusercontent.com'
 ```
 
@@ -348,7 +350,7 @@ DigitalOcean App Platform, Railway, Render, and Fly.io. Until those
 land (tracked in
 [issue #1382](https://github.com/sbpp/sourcebans-pp/issues/1382)),
 deploy on those platforms by pointing the relevant service at the
-`ghcr.io/sbpp/sourcebans-pp:latest` image and setting the same env
+`ghcr.io/srcdslab/sourcebans-pp:latest` image and setting the same env
 vars from `.env.example.prod`. The image already speaks the
 platform-conventional knobs:
 

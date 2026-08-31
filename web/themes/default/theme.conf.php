@@ -26,7 +26,7 @@ define('theme_author', 'SourceBans++ Dev Team');
 define('theme_version', '2.0.0');
 
 // Upstream link for the picker's "more info" affordance.
-define('theme_link', 'https://github.com/sbpp/sourcebans-pp');
+define('theme_link', 'https://github.com/srcdslab/sourcebans-pp');
 
 // Preview thumbnail — must live inside this theme's directory and
 // render at a 250×170 aspect ratio (e.g. 640×435 at 2× DPI).

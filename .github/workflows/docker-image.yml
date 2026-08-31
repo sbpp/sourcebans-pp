@@ -2,54 +2,51 @@ name: Docker image
 
 # Build + publish the production image to GHCR (#1381 deliverable 3).
 #
-# Triggers (deliberately tag-only — see "Why no main / PR triggers"
-# below):
+# Triggers:
 #   - push to *.*.* tag        → :<version> + :latest + :<major> + :<major>.<minor>
-#   - workflow_dispatch        → manual rerun, dispatched against a tag
-#                                ref to rebuild a published release
-#                                (e.g. if a publish failed midway).
-#                                Dispatching from a non-tag ref is a
+#   - push to main            → :main  (rolling tip; not :latest)
+#   - workflow_dispatch        → manual rerun. Dispatch against a tag
+#                                ref to rebuild a published release, or
+#                                against main to refresh :main.
+#                                Dispatching from any other ref is a
 #                                no-op for tagging — metadata-action
 #                                emits an empty tag set and the publish
 #                                step fails loudly.
 #
+# IMAGE_NAME is ${{ github.repository }}, so this workflow publishes
+# to ghcr.io/<owner>/<repo> (ghcr.io/srcdslab/sourcebans-pp here).
+#
 # Multi-arch build via docker/build-push-action + buildx + qemu. Both
 # linux/amd64 and linux/arm64 are produced and pushed under a single
-# manifest list, so `docker pull ghcr.io/sbpp/sourcebans-pp:latest` on
-# either an Apple Silicon dev machine or a typical x86_64 VPS resolves
-# to the right image without operator awareness.
+# manifest list, so `docker pull ghcr.io/srcdslab/sourcebans-pp:latest`
+# on either an Apple Silicon dev machine or a typical x86_64 VPS
+# resolves to the right image without operator awareness.
 #
 # Signed via Sigstore cosign (keyless / OIDC). The ID-token permission
 # below is what enables the keyless signing flow: cosign requests an
 # OIDC token from GitHub's issuer, exchanges it with Fulcio for a
 # short-lived signing cert, signs the image's manifest, and records
 # the signature into Rekor (the public transparency log). Verifiers
-# can `cosign verify ghcr.io/sbpp/sourcebans-pp:<tag>
-# --certificate-identity-regexp=https://github.com/sbpp/sourcebans-pp/...
+# can `cosign verify ghcr.io/srcdslab/sourcebans-pp:<tag>
+# --certificate-identity-regexp=https://github.com/srcdslab/sourcebans-pp/...
 # --certificate-oidc-issuer=https://token.actions.githubusercontent.com`
 # without any pre-shared key.
 #
-# Why no main / PR triggers:
+# Why no PR triggers:
 # Multi-arch (amd64 + qemu-emulated arm64) image builds are the most
 # expensive job in this repo's CI matrix — roughly 8-15 minutes per
-# run. Pre-fix this workflow ran on every push to main AND every PR
-# touching a long path filter, which on a busy week burned through a
-# disproportionate share of the project's free Actions minutes for
-# images that nobody pulls (the floating `:main` and per-commit
-# `:sha-<short>` tags were nominally documented as "bleeding edge"
-# but had no real consumers; self-hosters all pin to released semver
-# tags per the docs). The image surface is small + stable: changes
-# that affect the runtime contract (Dockerfile, entrypoint, schema
-# files, init bootstrap, health.php, trust-proxy + telemetry hooks)
-# are always shipped behind a release tag, so verifying-at-tag is
-# both sufficient and well-aligned with when self-hosters actually
-# pull a new image. Contributors who edit the Dockerfile / entrypoint
-# locally are expected to run the literal `docker buildx build`
-# command from the AGENTS.md "Quality gates" table to verify before
-# opening a PR.
+# run. PRs still do not pay that cost. Push-to-main publishes a
+# floating `:main` tag so operators who want the tip of this repo
+# can pull it without waiting for a semver cut. `:latest` stays
+# bound to `*.*.*` tags only. Contributors who edit the Dockerfile /
+# entrypoint locally are expected to run the literal
+# `docker buildx build` command from the AGENTS.md "Quality gates"
+# table to verify before opening a PR.
 
 on:
   push:
+    branches:
+      - main
     tags:
       - '*.*.*'
   workflow_dispatch:
@@ -97,15 +94,13 @@ jobs:
 
       # docker/metadata-action computes the tag set from the trigger:
       #   - X.Y.Z tag           → :X.Y.Z, :X.Y, :X, :latest
-      #   - workflow_dispatch   → mirrors whatever ref it was dispatched
-      #                            against (typically a tag ref to
-      #                            rebuild a published release; a non-tag
-      #                            dispatch produces an empty tag set
-      #                            and the publish step fails loudly).
+      #   - push / dispatch on main → :main
+      #   - workflow_dispatch on a tag ref → same as the tag push
+      #   - workflow_dispatch on any other ref → empty tag set,
+      #     publish step fails loudly.
       #
       # The `:latest` tag is gated on `startsWith(github.ref, 'refs/tags/')`
-      # — a workflow_dispatch from a non-tag ref can't accidentally
-      # claim it.
+      # — a push or workflow_dispatch from main cannot claim it.
       - name: Compute image metadata (tags + labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -116,12 +111,13 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
           labels: |
             org.opencontainers.image.title=SourceBans++
-            org.opencontainers.image.description=Self-hostable admin / ban / comms management for the Source engine — production image.
-            org.opencontainers.image.url=https://sbpp.github.io
-            org.opencontainers.image.source=https://github.com/sbpp/sourcebans-pp
-            org.opencontainers.image.documentation=https://sbpp.github.io/getting-started/quickstart-docker/
+            org.opencontainers.image.description=Self-hostable admin / ban / comms management for the Source engine, production image.
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/tree/main/docs
             org.opencontainers.image.licenses=Elastic-2.0
             org.opencontainers.image.vendor=SourceBans++ Dev Team
             org.opencontainers.image.revision=${{ github.sha }}
@@ -130,10 +126,8 @@ jobs:
       # are persisted in the GitHub Actions cache between runs — buildx
       # keys the cache by the Dockerfile + the build context's hash, so
       # a Composer-only change won't bust the apt-install layer of the
-      # builder stage. (Cache hit rate is naturally low on the tag-only
-      # trigger — release tags are rare — but the cost of populating
-      # the cache on a release build is amortised across the next
-      # workflow_dispatch rerun for that tag.)
+      # builder stage. Main-branch publishes raise the cache hit
+      # rate; tag rebuilds still amortise across workflow_dispatch.
       - name: Build + push
         id: build
         uses: docker/build-push-action@v6

@@ -170,7 +170,7 @@ function sbpp_render_install_blocked_page(string $scenario): never
             'heading' => 'How to fix it',
             'body'    => '<p><strong>Easiest &mdash; download the release zip:</strong></p>'
                 . '<ol>'
-                . '<li>Grab the latest <code>sourcebans-pp-X.Y.Z.webpanel-only.zip</code> from <a href="https://github.com/sbpp/sourcebans-pp/releases" target="_blank" rel="noopener">the releases page</a>.</li>'
+                . '<li>Grab the latest <code>sourcebans-pp-X.Y.Z.webpanel-only.zip</code> from <a href="https://github.com/srcdslab/sourcebans-pp/releases" target="_blank" rel="noopener">the releases page</a>.</li>'
                 . '<li>Extract it on your computer. Make sure <code>web/includes/vendor/</code> exists in the extracted tree.</li>'
                 . '<li>Re-upload the contents to your web root, overwriting the current files.</li>'
                 . '<li>Reload this page.</li>'

@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Issue #1419: production Docker image (`docker/Dockerfile.prod` →
- * `ghcr.io/sbpp/sourcebans-pp:*`) ships a hardening Apache conf
+ * `ghcr.io/srcdslab/sourcebans-pp:*`) ships a hardening Apache conf
  * (`docker/apache/sbpp-prod.conf`) that uses `<FilesMatch>` /
  * `<Files>` to deny access to root-level config files
  * (`composer.json`, `phpstan.*`, `phpunit.xml*`, `package.json`,

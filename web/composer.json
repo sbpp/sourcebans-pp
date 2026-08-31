@@ -1,17 +1,17 @@
 {
-    "name": "sbpp/sourcebans-pp",
+    "name": "srcdslab/sourcebans-pp",
     "description": "Admin, ban, and comms management system for the Source engine.",
     "type": "project",
     "keywords": [],
-    "homepage": "https://sbpp.github.io",
-    "readme": "https://github.com/sbpp/sourcebans-pp/blob/main/README.md",
+    "homepage": "https://github.com/srcdslab/sourcebans-pp",
+    "readme": "https://github.com/srcdslab/sourcebans-pp/blob/main/README.md",
     "license": "Elastic-2.0",
     "support": {
-        "issues": "https://github.com/sbpp/sourcebans-pp/issues",
+        "issues": "https://github.com/srcdslab/sourcebans-pp/issues",
         "forum": "https://forums.alliedmods.net/forumdisplay.php?f=152",
-        "wiki": "https://sbpp.github.io/faq/",
-        "source": "https://github.com/sbpp/sourcebans-pp",
-        "docs": "https://sbpp.github.io/docs/",
+        "wiki": "https://github.com/srcdslab/sourcebans-pp/tree/main/docs",
+        "source": "https://github.com/srcdslab/sourcebans-pp",
+        "docs": "https://github.com/srcdslab/sourcebans-pp/tree/main/docs",
         "chat": "https://discord.gg/tzqYqmAtF5"
     },
     "config": {

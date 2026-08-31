@@ -4,8 +4,9 @@
 # stays out of the way of PRs that don't touch the docs site.
 #
 # Why it exists: catches `npm run build` failures (broken Markdown,
-# missing assets, busted Starlight config) BEFORE the deploy trigger
-# fires on main. Pair gate with docs-deploy-trigger.yml.
+# missing assets, busted Starlight config) on PRs and merges that
+# touch docs/. This repo has no Pages sibling; docs-deploy-trigger.yml
+# is a documented no-op.
 
 name: docs-build
 

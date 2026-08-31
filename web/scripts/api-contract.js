@@ -567,7 +567,7 @@
  */
 /**
  * Public action: report whether a newer SourceBans++ release is available.
- * Sources from `api.github.com/repos/sbpp/sourcebans-pp/releases/latest` with
+ * Sources from `api.github.com/repos/srcdslab/sourcebans-pp/releases/latest` with
  * a 1-day on-disk cache + stale-while-error fallback (the cached payload is
  * served regardless of TTL when the upstream call fails) so a busy panel can't
  * blow through GitHub's 60 req/hr unauthenticated limit and a transient GitHub
