@@ -105,6 +105,55 @@ final class RestAuthTest extends RestTestCase
         $this->assertRestError($response, 401, 'unauthorized');
     }
 
+    public function testPatBanWriteIsAttributedToPatAdminInAuditLog(): void
+    {
+        $token = $this->mintToken();
+        $created = $this->rest('POST', '/bans', [
+            'steam' => 'STEAM_0:1:9601',
+            'name' => 'LogPat',
+            'reason' => 'cheat',
+            'length' => 0,
+        ], $token);
+        $this->assertSame(201, $created->status, json_encode($created->payload));
+
+        $row = Fixture::rawPdo()->query(sprintf(
+            'SELECT aid FROM `%s_log` ORDER BY lid DESC LIMIT 1',
+            DB_PREFIX
+        ))->fetch(\PDO::FETCH_ASSOC);
+        $this->assertIsArray($row);
+        $this->assertSame(Fixture::adminAid(), (int) $row['aid']);
+    }
+
+    public function testPatBanWriteIsAttributedToPatAdminWhenCookieSessionIsADifferentAdmin(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $hash = password_hash('other', PASSWORD_BCRYPT);
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins` (user, authid, password, gid, email, extraflags, immunity, enabled)
+             VALUES (?, ?, ?, -1, ?, ?, 0, 1)',
+            DB_PREFIX
+        ))->execute(['logwriter', 'STEAM_0:0:9602', $hash, 'logwriter@example.test', ADMIN_ADD_BAN]);
+        $writerAid = (int) $pdo->lastInsertId();
+
+        $this->loginAsAdmin();
+        $token = $this->mintToken($writerAid);
+        $created = $this->rest('POST', '/bans', [
+            'steam' => 'STEAM_0:1:9602',
+            'name' => 'LogPatB',
+            'reason' => 'cheat',
+            'length' => 0,
+        ], $token);
+        $this->assertSame(201, $created->status, json_encode($created->payload));
+
+        $row = Fixture::rawPdo()->query(sprintf(
+            'SELECT aid FROM `%s_log` ORDER BY lid DESC LIMIT 1',
+            DB_PREFIX
+        ))->fetch(\PDO::FETCH_ASSOC);
+        $this->assertIsArray($row);
+        $this->assertSame($writerAid, (int) $row['aid']);
+        $this->assertNotSame(Fixture::adminAid(), (int) $row['aid']);
+    }
+
     public function testMalformedBearerStaysAnonymousOnPublicGet(): void
     {
         $response = $this->rest('GET', '/bans', token: 'not-a-pat');

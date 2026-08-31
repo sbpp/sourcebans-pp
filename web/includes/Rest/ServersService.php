@@ -36,7 +36,10 @@ final class ServersService
 
         $where = '1=1';
         $binds = [];
-        if (array_key_exists('enabled', $query) && $query['enabled'] !== '' && $query['enabled'] !== null) {
+        $isAdmin = PublicVisibility::isAdmin();
+        if (!$isAdmin) {
+            $where .= ' AND S.enabled = 1';
+        } elseif (array_key_exists('enabled', $query) && $query['enabled'] !== '' && $query['enabled'] !== null) {
             $enabled = $query['enabled'];
             $flag = $enabled === true || $enabled === 'true' || $enabled === '1' || $enabled === 1;
             $where .= ' AND S.enabled = :enabled';
@@ -82,6 +85,9 @@ final class ServersService
     {
         $row = $this->find($sid);
         if ($row === null) {
+            throw new ApiError('not_found', 'Server not found.', null, 404);
+        }
+        if (!PublicVisibility::isAdmin() && (int) $row['enabled'] !== 1) {
             throw new ApiError('not_found', 'Server not found.', null, 404);
         }
         return $this->toResource($row);
@@ -230,7 +236,7 @@ final class ServersService
         $sid = (int) $row['sid'];
         $ip = (string) $row['ip'];
         $port = (int) $row['port'];
-        return [
+        $resource = [
             'id' => $sid,
             'ip' => $ip,
             'port' => $port,
@@ -240,9 +246,12 @@ final class ServersService
                 'name' => (string) ($row['mod_name'] ?? ''),
                 'folder' => (string) ($row['modfolder'] ?? ''),
             ],
-            'group_ids' => $this->groupIds($sid),
             'query' => $this->liveQuery($ip, $port),
         ];
+        if (PublicVisibility::isAdmin()) {
+            $resource['group_ids'] = $this->groupIds($sid);
+        }
+        return $resource;
     }
 
     /**

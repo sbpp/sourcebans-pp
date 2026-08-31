@@ -83,13 +83,13 @@ final class CommentsService
     {
         $this->assertParent($parentId, $ctype);
         $text = $this->bodyText($body);
-        Api::invoke('bans.add_comment', [
+        $out = Api::invoke('bans.add_comment', [
             'bid' => $parentId,
             'ctype' => $ctype,
             'ctext' => $text,
             'page' => -1,
         ]);
-        $id = (int) $this->db()->lastInsertId();
+        $id = (int) ($out['cid'] ?? 0);
         if ($id <= 0) {
             $id = $this->latestCid($parentId, $ctype);
         }

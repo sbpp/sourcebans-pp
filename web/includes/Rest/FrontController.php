@@ -10,6 +10,8 @@ namespace Sbpp\Rest;
 use Sbpp\Api\Api;
 use Sbpp\Api\ApiError;
 use Sbpp\Auth\UserManager;
+use Sbpp\Db\Database;
+use Sbpp\Log;
 use Throwable;
 
 /**
@@ -31,6 +33,11 @@ final class FrontController
         }
 
         $identity = PatAuthenticator::bindUserbank();
+        $pdo = $GLOBALS['PDO'] ?? null;
+        $userbank = $GLOBALS['userbank'] ?? null;
+        if ($pdo instanceof Database && $userbank instanceof UserManager) {
+            Log::init($pdo, $userbank);
+        }
         $rlKey = $identity !== null
             ? 'tok:' . $identity['token_id']
             : 'ip:' . (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');

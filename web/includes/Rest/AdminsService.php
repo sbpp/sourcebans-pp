@@ -244,6 +244,15 @@ final class AdminsService
             throw new ApiError('not_found', 'Admin not found.', null, 404);
         }
 
+        $isOwnerEditor = $userbank->HasAccess(WebPermission::Owner);
+        $isSelfEdit = $aid === $userbank->GetAid();
+        $canEditTarget = $isOwnerEditor
+            || ($userbank->HasAccess(WebPermission::EditAdmins)
+                && (!$userbank->HasAccess(WebPermission::Owner, $aid) || $isSelfEdit));
+        if (!$canEditTarget) {
+            throw new ApiError('forbidden', 'No access', null, 403);
+        }
+
         $name = array_key_exists('name', $body) ? trim((string) $body['name']) : (string) $current['user'];
         if ($name === '') {
             throw new ApiError('validation', 'You must type a name for the admin.', 'name', 400);

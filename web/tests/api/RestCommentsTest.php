@@ -6,6 +6,41 @@ use Sbpp\Tests\Fixture;
 
 final class RestCommentsTest extends RestTestCase
 {
+    public function testCreateReturnsCommentCidWhenLogAutoIncrementHasDiverged(): void
+    {
+        $bid = $this->seedBan('STEAM_0:1:9510');
+        $pdo = Fixture::rawPdo();
+        $insertLog = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_log` (`type`, `title`, `message`, `function`, `query`, `aid`, `host`, `created`)
+             VALUES ("m", "dummy", "dummy", "", "", -1, "", UNIX_TIMESTAMP())',
+            DB_PREFIX
+        ));
+        for ($i = 0; $i < 5; $i++) {
+            $insertLog->execute();
+        }
+
+        $token = $this->mintToken();
+        $created = $this->rest('POST', '/bans/' . $bid . '/comments', [
+            'body' => 'cid contract',
+        ], $token);
+        $this->assertSame(201, $created->status, json_encode($created->payload));
+        $id = (int) $created->payload['data']['id'];
+
+        $commentCid = (int) $pdo->query(sprintf(
+            'SELECT cid FROM `%s_comments` WHERE bid = %d AND type = "B" ORDER BY cid DESC LIMIT 1',
+            DB_PREFIX,
+            $bid
+        ))->fetchColumn();
+        $maxLid = (int) $pdo->query(sprintf(
+            'SELECT MAX(lid) FROM `%s_log`',
+            DB_PREFIX
+        ))->fetchColumn();
+
+        $this->assertSame($commentCid, $id);
+        $this->assertNotSame($maxLid, $id);
+        $this->assertSame('cid contract', $created->payload['data']['body']);
+    }
+
     public function testCreateListPatchDeleteOnBan(): void
     {
         $bid = $this->seedBan('STEAM_0:1:9501');

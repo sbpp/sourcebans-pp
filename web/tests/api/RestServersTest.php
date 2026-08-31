@@ -39,6 +39,7 @@ final class RestServersTest extends RestTestCase
         $this->assertSame($sid, $data['id']);
         $this->assertSame('203.0.113.50', $data['ip']);
         $this->assertArrayNotHasKey('rcon', $data);
+        $this->assertArrayNotHasKey('group_ids', $data);
         $this->assertStringNotContainsString('secret-rcon-rest', json_encode($response->payload));
         $this->assertSame('Rest Query Host', $data['query']['hostname']);
         $this->assertSame('de_dust2', $data['query']['map']);
@@ -125,6 +126,46 @@ final class RestServersTest extends RestTestCase
     {
         $response = $this->rest('GET', '/servers/STEAM_0:1:1');
         $this->assertRestError($response, 400, 'validation');
+    }
+
+    public function testAnonymousListHidesDisabledServers(): void
+    {
+        $enabledSid = $this->seedServer();
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_servers` (ip, port, rcon, modid, enabled) VALUES (?, ?, ?, 1, 0)',
+            DB_PREFIX
+        ))->execute(['203.0.113.60', 27016, '']);
+        $disabledSid = (int) $pdo->lastInsertId();
+
+        $anonList = $this->rest('GET', '/servers');
+        $this->assertSame(200, $anonList->status, json_encode($anonList->payload));
+        $anonIds = array_column($anonList->payload['data'], 'id');
+        $this->assertContains($enabledSid, $anonIds);
+        $this->assertNotContains($disabledSid, $anonIds);
+        foreach ($anonList->payload['data'] as $row) {
+            $this->assertArrayNotHasKey('group_ids', $row);
+        }
+
+        $anonFiltered = $this->rest('GET', '/servers', query: ['enabled' => '0']);
+        $this->assertSame(200, $anonFiltered->status, json_encode($anonFiltered->payload));
+        $this->assertNotContains($disabledSid, array_column($anonFiltered->payload['data'], 'id'));
+
+        $anonGet = $this->rest('GET', '/servers/' . $disabledSid);
+        $this->assertRestError($anonGet, 404, 'not_found');
+
+        $token = $this->mintToken();
+        $patList = $this->rest('GET', '/servers', token: $token, query: ['enabled' => '0']);
+        $this->assertSame(200, $patList->status, json_encode($patList->payload));
+        $this->assertContains($disabledSid, array_column($patList->payload['data'], 'id'));
+        foreach ($patList->payload['data'] as $row) {
+            $this->assertArrayHasKey('group_ids', $row);
+        }
+
+        $patGet = $this->rest('GET', '/servers/' . $disabledSid, token: $token);
+        $this->assertSame(200, $patGet->status, json_encode($patGet->payload));
+        $this->assertFalse($patGet->payload['data']['enabled']);
+        $this->assertArrayHasKey('group_ids', $patGet->payload['data']);
     }
 
     public function testRconRequiresSmFlagAndServerMapping(): void

@@ -11,6 +11,7 @@ use BanRemoval;
 use Sbpp\Api\Api;
 use Sbpp\Api\ApiError;
 use Sbpp\Auth\UserManager;
+use Sbpp\Config;
 use Sbpp\Db\Database;
 use SteamID\SteamID;
 
@@ -28,6 +29,7 @@ final class CommsService
      */
     public function list(array $query): array
     {
+        $this->assertPublicFeature();
         PruneComms();
         $page = max(1, (int) ($query['page'] ?? 1));
         $perPage = (int) ($query['per_page'] ?? 30);
@@ -76,6 +78,7 @@ final class CommsService
      */
     public function get(int $cid): array
     {
+        $this->assertPublicFeature();
         PruneComms();
         if ($cid <= 0) {
             throw new ApiError('validation', 'Block id must be a positive integer.', 'cid', 400);
@@ -352,6 +355,13 @@ final class CommsService
             $out[] = $this->toResource($row);
         }
         return $out;
+    }
+
+    private function assertPublicFeature(): void
+    {
+        if (!Config::getBool('config.enablecomms') && !PublicVisibility::isAdmin()) {
+            throw new ApiError('not_found', 'Not found.', null, 404);
+        }
     }
 
     private function db(): Database

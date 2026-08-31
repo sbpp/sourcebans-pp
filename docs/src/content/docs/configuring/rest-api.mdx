@@ -135,11 +135,11 @@ A 429 includes `Retry-After`.
 | GET | `/bans`, `/bans/{bid}` | Public. Hide IP / admin name like the panel |
 | POST | `/bans` | `length` is minutes. Optional `kick: true` |
 | POST | `/bans/{bid}/unban` | Requires `ureason` |
-| GET | `/comms`, `/comms/{cid}` | Public. Hide admin name like the panel |
+| GET | `/comms`, `/comms/{cid}` | Public when Comm blocks are enabled. Hide admin name like the panel. Anonymous GET is 404 when `config.enablecomms` is off |
 | POST | `/comms` | `kind`: mute, gag, or silence |
 | POST | `/comms/{cid}/unblock` | Requires `ureason` |
 | DELETE | `/comms/{cid}` | Hard delete |
-| GET | `/servers`, `/servers/{sid}` | Public. A2S in `query`. Never returns `rcon` |
+| GET | `/servers`, `/servers/{sid}` | Public for enabled hosts. A2S in `query`. Never returns `rcon`. Anonymous GET omits `group_ids` and ignores `enabled=` |
 | POST | `/servers` | `ip` / `address`, `port`, `mod`. `enabled` defaults to true |
 | PATCH | `/servers/{sid}` | Merge. Omit `rcon` to keep the stored password |
 | DELETE | `/servers/{sid}` | Hard delete |
@@ -165,11 +165,15 @@ A 429 includes `Retry-After`.
 GET `/bans`, `/comms`, and `/servers` work without a token. Ban and comm
 GET apply the same hide-* settings as the public lists
 (`banlist.hideplayerips`, `banlist.hideadminname`). Send a valid PAT to
-see IPs and admin names. GET `/servers` never includes `rcon`, even with
-a PAT. A well-formed token that is revoked, expired, or unknown is 401
-even on those GETs. GET comments on a ban or comm is also public (empty
-when public comments are off). GET `/protests`, `/submissions`, and
-`/settings` need a PAT.
+see IPs and admin names. Anonymous GET `/comms` is 404 when Comm blocks
+are off in Settings (`config.enablecomms`). A PAT still reads comms.
+GET `/servers` never includes `rcon`, even with a PAT. Anonymous GET
+`/servers` returns enabled hosts only (the same as `?p=servers`), omits
+`group_ids`, and 404s a disabled `{sid}`. A PAT may pass `enabled=` and
+sees `group_ids`. A well-formed token that is revoked, expired, or
+unknown is 401 even on those GETs. GET comments on a ban or comm is also
+public (empty when public comments are off). GET `/protests`,
+`/submissions`, and `/settings` need a PAT.
 
 POST `/bans` `length` is minutes (0 = permanent), matching the panel form.
 GET responses use `length` in **seconds** (what is stored). Steam64 in JSON

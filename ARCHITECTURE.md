@@ -316,11 +316,12 @@ GET /api/v1/…  ->   │  api/v1.php  │ -> │ FrontController     │ -> │
                                                                    lists: Rest queries
 ```
 
-1. `api/v1.php` registers a JSON exception handler, includes `init.php`
-   (no CSRF), and calls `FrontController::dispatch()`.
+1. `api/v1.php` defines `SBPP_REST` before including `init.php` so
+   `CSRF::init()` does not start a PHP session, then calls
+   `FrontController::dispatch()`.
 2. The controller **replaces** `$GLOBALS['userbank']` with the PAT
-   identity or an anonymous `UserManager(null)`. The panel cookie is
-   ignored.
+   identity or an anonymous `UserManager(null)`, then rebinds
+   `Log::init` to that userbank. The panel cookie is ignored.
 3. Rate limit (file under `SB_CACHE/rest-rl/`, 60 req/min). Authenticated
    by token id, anonymous by IP.
 4. A well-formed `sbpp_pat_…` that does not resolve is 401 on every route,
@@ -337,16 +338,18 @@ Slice 0: `/me`, `/admins/{id}` (aid or Steam64), deactivate / reactivate,
 
 Slice 1: `/bans`, `/bans/{bid}`, POST unban; `/comms`, `/comms/{cid}`,
 POST unblock, DELETE. GET list/get is public and applies the same hide-*
-as the panel. Writes require a PAT. POST `/bans` `length` is minutes;
-GET `length` is seconds. Optional `kick: true` fans RCON via
+as the panel. Anonymous GET `/comms` is 404 when `config.enablecomms` is
+off (a PAT still reads). Writes require a PAT. POST `/bans` `length` is
+minutes; GET `length` is seconds. Optional `kick: true` fans RCON via
 `kickit.kick_player` and records `meta.kick`.
 
-Slice 2: `/servers` (public GET with A2S `query`, never `rcon`; POST /
-PATCH / DELETE; POST `/{sid}/rcon`), `/notes` (GET `?steam=`, POST,
-DELETE; any web admin), `/mods` (GET / POST / DELETE). Writes reuse
-`servers.add` / `servers.remove` / `servers.send_rcon`, `notes.add` /
-`notes.delete`, `mods.add` / `mods.remove`. PATCH `/servers` is dedicated
-(no RPC handler).
+Slice 2: `/servers` (public GET of enabled hosts with A2S `query`, never
+`rcon`, no `group_ids` for anonymous; PAT may filter `enabled=` and sees
+`group_ids`; POST / PATCH / DELETE; POST `/{sid}/rcon`), `/notes` (GET
+`?steam=`, POST, DELETE; any web admin), `/mods` (GET / POST / DELETE).
+Writes reuse `servers.add` / `servers.remove` / `servers.send_rcon`,
+`notes.add` / `notes.delete`, `mods.add` / `mods.remove`. PATCH
+`/servers` is dedicated (no RPC handler).
 
 Slice 3: `/protests` and `/submissions` (GET list/get, DELETE hard-delete
 via `protests.remove` / `submissions.remove` with `archiv=0`), nested

@@ -429,8 +429,10 @@ paths:
       security: []
       summary: List mute and gag rows
       description: >
-        Public. Same hide-admin-name rule as bans. `kind` on the resource
-        is `mute` (type 1) or `gag` (type 2). Silence is two rows.
+        Public when `config.enablecomms` is on. Same hide-admin-name
+        rule as bans. Anonymous GET is 404 when the setting is off.
+        A PAT still lists rows. `kind` on the resource is `mute`
+        (type 1) or `gag` (type 2). Silence is two rows.
       parameters:
         - $ref: "#/components/parameters/page"
         - $ref: "#/components/parameters/perPage"
@@ -481,6 +483,9 @@ paths:
       tags: [comms]
       security: []
       summary: Get one mute or gag row
+      description: >
+        Public when `config.enablecomms` is on. Anonymous GET is 404
+        when the setting is off. A PAT still returns the row.
       responses:
         "200":
           description: Comm resource
@@ -588,7 +593,8 @@ paths:
       summary: List game servers
       description: >
         Public. A2S summary is in `query` (null when the probe fails).
-        Never includes `rcon`. Filter with `enabled=true|false`.
+        Never includes `rcon`. Anonymous GET returns enabled hosts only
+        and ignores `enabled=`. A PAT may filter with `enabled=true|false`.
       parameters:
         - $ref: "#/components/parameters/page"
         - $ref: "#/components/parameters/perPage"
@@ -636,6 +642,9 @@ paths:
       tags: [servers]
       security: []
       summary: Get one game server
+      description: >
+        Public for enabled hosts. Anonymous GET of a disabled host is
+        404. A PAT can still fetch a disabled host.
       responses:
         "200":
           description: Server resource
@@ -1498,6 +1507,7 @@ components:
           type: array
           items:
             type: integer
+          description: Server group membership. Present for PAT callers. Omitted on anonymous GET.
         query:
           type: object
           nullable: true

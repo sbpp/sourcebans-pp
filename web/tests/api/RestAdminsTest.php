@@ -176,4 +176,97 @@ final class RestAdminsTest extends RestTestCase
         $response = $this->rest('GET', '/admins');
         $this->assertRestError($response, 401, 'unauthorized');
     }
+
+    public function testDeleteAdminsOnlyPatDoesNotRehashAfterDelete(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'REPLACE INTO `%s_settings` (`value`, `setting`) VALUES ("1", "config.enableadminrehashing")',
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_servers` (ip, port, rcon, modid, enabled) VALUES (?, ?, ?, 1, 1)',
+            DB_PREFIX
+        ))->execute(['203.0.113.80', 27015, '']);
+        $sid = (int) $pdo->lastInsertId();
+
+        $targetAid = $this->insertAdmin('rehash-target', 'STEAM_0:0:9701', ADMIN_ADD_BAN);
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id)
+             VALUES (?, 0, -1, ?)',
+            DB_PREFIX
+        ))->execute([$targetAid, $sid]);
+
+        $deleterAid = $this->insertAdmin('rehash-deleter', 'STEAM_0:0:9702', ADMIN_DELETE_ADMINS);
+        $token = $this->mintToken($deleterAid);
+
+        $response = $this->rest('DELETE', '/admins/' . $targetAid, ['reason' => 'cleanup'], $token);
+        $this->assertSame(200, $response->status, json_encode($response->payload));
+        $this->assertSame($targetAid, $response->payload['data']['id']);
+        $this->assertFalse($response->payload['meta']['rehash']['attempted']);
+        $this->assertContains($sid, $response->payload['meta']['rehash']['sids']);
+
+        $gone = $pdo->prepare(sprintf('SELECT aid FROM `%s_admins` WHERE aid = ?', DB_PREFIX));
+        $gone->execute([$targetAid]);
+        $this->assertFalse($gone->fetch());
+    }
+
+    public function testEditAdminsPatCannotPatchOwner(): void
+    {
+        $editorAid = $this->insertAdmin('owner-editor', 'STEAM_0:0:9703', ADMIN_EDIT_ADMINS);
+        $token = $this->mintToken($editorAid);
+        $ownerAid = Fixture::adminAid();
+
+        $name = $this->rest('PATCH', '/admins/' . $ownerAid, [
+            'name' => 'HackedOwner',
+        ], $token);
+        $this->assertRestError($name, 403, 'forbidden');
+
+        $steam = $this->rest('PATCH', '/admins/' . $ownerAid, [
+            'steam' => 'STEAM_0:0:99999',
+        ], $token);
+        $this->assertRestError($steam, 403, 'forbidden');
+
+        $servers = $this->rest('PATCH', '/admins/' . $ownerAid, [
+            'server_ids' => [1],
+        ], $token);
+        $this->assertRestError($servers, 403, 'forbidden');
+    }
+
+    public function testOwnerPatCanPatchOwner(): void
+    {
+        $token = $this->mintToken();
+        $ownerAid = Fixture::adminAid();
+
+        $name = $this->rest('PATCH', '/admins/' . $ownerAid, [
+            'name' => 'OwnerRenamed',
+        ], $token);
+        $this->assertSame(200, $name->status, json_encode($name->payload));
+        $this->assertSame('OwnerRenamed', $name->payload['data']['name']);
+
+        $steam = $this->rest('PATCH', '/admins/' . $ownerAid, [
+            'steam' => 'STEAM_0:0:9704',
+        ], $token);
+        $this->assertSame(200, $steam->status, json_encode($steam->payload));
+        $this->assertSame('STEAM_0:0:9704', $steam->payload['data']['steam']);
+
+        $servers = $this->rest('PATCH', '/admins/' . $ownerAid, [
+            'server_ids' => [],
+        ], $token);
+        $this->assertSame(200, $servers->status, json_encode($servers->payload));
+    }
+
+    private function insertAdmin(string $user, string $steam, int $flags): int
+    {
+        $pdo = Fixture::rawPdo();
+        $hash = password_hash('other', PASSWORD_BCRYPT);
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins` (user, authid, password, gid, email, extraflags, immunity, enabled)
+             VALUES (?, ?, ?, -1, ?, ?, 0, 1)',
+            DB_PREFIX
+        ))->execute([$user, $steam, $hash, $user . '@example.test', $flags]);
+        return (int) $pdo->lastInsertId();
+    }
 }

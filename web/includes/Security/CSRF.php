@@ -18,6 +18,9 @@ final class CSRF
      */
     public static function init(): void
     {
+        if (defined('SBPP_REST')) {
+            return;
+        }
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }

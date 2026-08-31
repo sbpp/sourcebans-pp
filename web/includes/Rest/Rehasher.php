@@ -8,7 +8,9 @@ declare(strict_types=1);
 namespace Sbpp\Rest;
 
 use Sbpp\Api\Api;
+use Sbpp\Auth\UserManager;
 use Sbpp\Config;
+use WebPermission;
 
 /**
  * Fires `sm_rehash` on the given server ids when admin rehashing is enabled.
@@ -22,7 +24,19 @@ final class Rehasher
     public static function run(array $sids): array
     {
         $sids = array_values(array_unique(array_map('intval', $sids)));
-        if ($sids === [] || !Config::getBool('config.enableadminrehashing')) {
+        $userbank = $GLOBALS['userbank'] ?? null;
+        $rehashMask = WebPermission::mask(
+            WebPermission::Owner,
+            WebPermission::EditAdmins,
+            WebPermission::EditGroups,
+            WebPermission::AddAdmins,
+        );
+        if (
+            $sids === []
+            || !Config::getBool('config.enableadminrehashing')
+            || !$userbank instanceof UserManager
+            || !$userbank->HasAccess($rehashMask)
+        ) {
             return ['attempted' => false, 'sids' => $sids, 'results' => []];
         }
 

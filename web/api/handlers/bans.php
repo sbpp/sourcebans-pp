@@ -317,6 +317,7 @@ function api_bans_add_comment(array $params): array
     $GLOBALS['PDO']->query(
         "INSERT INTO `:prefix_comments`(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())"
     )->execute([$bid, $ctype, $userbank->GetAid(), $ctext]);
+    $cid = (int) $GLOBALS['PDO']->lastInsertId();
 
     Log::add(LogType::Message, 'Comment Added', "$username added a comment for ban #$bid");
 
@@ -328,6 +329,7 @@ function api_bans_add_comment(array $params): array
             'kind'  => 'green',
             'redir' => 'index.php' . $redir,
         ],
+        'cid' => $cid,
     ];
 }
 

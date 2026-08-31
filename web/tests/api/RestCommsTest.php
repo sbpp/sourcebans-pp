@@ -121,6 +121,37 @@ final class RestCommsTest extends RestTestCase
         $this->assertSame('kind', $response->payload['error']['field'] ?? null);
     }
 
+    public function testAnonymousGetIs404WhenCommsDisabled(): void
+    {
+        $cid = $this->seedComm('STEAM_0:1:9305', 1);
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'REPLACE INTO `%s_settings` (`value`, `setting`) VALUES ("0", "config.enablecomms")',
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $list = $this->rest('GET', '/comms');
+        $this->assertRestError($list, 404, 'not_found');
+
+        $get = $this->rest('GET', '/comms/' . $cid);
+        $this->assertRestError($get, 404, 'not_found');
+
+        $token = $this->mintToken();
+        $pat = $this->rest('GET', '/comms/' . $cid, token: $token);
+        $this->assertSame(200, $pat->status, json_encode($pat->payload));
+        $this->assertSame($cid, $pat->payload['data']['id']);
+
+        $pdo->prepare(sprintf(
+            'REPLACE INTO `%s_settings` (`value`, `setting`) VALUES ("1", "config.enablecomms")',
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $restored = $this->rest('GET', '/comms/' . $cid);
+        $this->assertSame(200, $restored->status, json_encode($restored->payload));
+    }
+
     private function seedComm(string $steam, int $type): int
     {
         $pdo = Fixture::rawPdo();

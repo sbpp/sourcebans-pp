@@ -7,6 +7,7 @@
             "body": "The comment has been successfully published",
             "kind": "green",
             "redir": "index.php?p=banlist"
-        }
+        },
+        "cid": 1
     }
 }

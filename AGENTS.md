@@ -982,10 +982,15 @@ fallback). This is a **separate product** from `POST /api.php`.
 - After admin mutate, fire rehash server-side and put the result in
   `meta.rehash`. Clients will forget.
 - GET `/bans` and `/comms` are public. Hide IP / admin name using the
-  same `is_admin()` + `banlist.hide*` gate as `api_bans_detail`. GET
-  `/servers` is public with a trimmed A2S `query` and **never** returns
-  `rcon`. A well-formed PAT that fails to resolve is 401. Cookie JWT
-  never authenticates REST (would leak IPs on public GET).
+  same `is_admin()` + `banlist.hide*` gate as `api_bans_detail`. Anonymous
+  GET `/comms` is 404 when `config.enablecomms` is off. A PAT still
+  reads. GET `/servers` is public for enabled hosts, with a trimmed A2S
+  `query`, and **never** returns `rcon`. Anonymous GET omits `group_ids`
+  and ignores `enabled=`. A well-formed PAT that fails to resolve is
+  401. Cookie JWT never authenticates REST (would leak IPs on public GET).
+- `web/api/v1.php` defines `SBPP_REST` before `init.php`. `CSRF::init()`
+  no-ops so REST does not start a PHP session. After PAT bind,
+  `Log::init` is rebound to the PAT (or anonymous) userbank.
 - POST `/bans` and `/comms` `length` is minutes (0 = permanent). GET
   `length` is seconds. Optional `kick: true` on POST `/bans` fans
   RCON (`meta.kick`). Unban/unblock require non-empty `ureason`.

@@ -38,6 +38,10 @@ register_shutdown_function(function (): void {
     echo json_encode(['error' => ['code' => 'fatal', 'message' => $msg]]);
 });
 
+if (!defined('SBPP_REST')) {
+    define('SBPP_REST', true);
+}
+
 include_once dirname(__DIR__) . '/init.php';
 require_once INCLUDES_PATH . '/system-functions.php';
 
