@@ -12,8 +12,6 @@ if (!defined('IN_SB')) {
 
 global $userbank, $theme;
 
-new \Sbpp\View\AdminTabs([], $userbank, $theme);
-
 require_once __DIR__ . '/_admin_edit_helpers.php';
 
 $modId = isset($_GET['id']) ? (int) $_GET['id'] : 0;

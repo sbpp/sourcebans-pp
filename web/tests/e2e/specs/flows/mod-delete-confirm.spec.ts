@@ -210,7 +210,7 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
         // Count badge decrements by exactly one (defensive — the
         // chrome's `decrementCount` reads the span's text and writes
         // back `n - 1`).
-        await expect(countBadge).toHaveText(String(startingCount - 1));
+        await expect(countBadge).toHaveText(`(${startingCount - 1})`);
 
         // Success toast surfaces. Anchor on `data-kind="success"` plus
         // a hasText filter on the title our handler emits ("Mod
