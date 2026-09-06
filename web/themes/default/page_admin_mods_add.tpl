@@ -42,7 +42,7 @@
     without depending on element ids. The icon-callback hidden input is
     `#icon_hid` to mirror the edit-mod template.
 *}
-<div class="page-section">
+<div class="page-section" data-testid="addmod-section" style="max-width:48rem">
 {if NOT $permission_add}
     <div class="card">
         <div class="card__body">
@@ -50,6 +50,15 @@
         </div>
     </div>
 {else}
+    <div class="mb-6">
+        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0" data-testid="addmod-title">
+            Add mod
+        </h1>
+        <p class="text-sm text-muted m-0 mt-2">
+            Configure a new game mod that can be assigned to bans and servers.
+        </p>
+    </div>
+
     <form method="post"
           action=""
           enctype="multipart/form-data"
@@ -58,13 +67,7 @@
           data-testid="addmod-form">
         {csrf_field}
         <div class="card">
-            <div class="card__header">
-                <div>
-                    <h3>Add Mod</h3>
-                    <p>Configure a new game mod that can be assigned to bans and servers.</p>
-                </div>
-            </div>
-            <div class="card__body space-y-4" style="max-width:42rem">
+            <div class="card__body space-y-4">
                 {* #1402: the legacy `<input id="fromsub">` hidden was a vestigial
                    reference to the v1.x ProcessMod() flow; the new submit handler
                    has no equivalent. Replaced with `#icon_hid` so the upload-icon

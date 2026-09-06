@@ -7,6 +7,7 @@
 
     Variable contract (kept in sync by SmartyTemplateRule):
         - $permission_listmods   — gate the whole tab body.
+        - $permission_addmods    — gate the empty-state "Add mod" CTA.
         - $permission_editmods   — gate the per-row "Edit" link.
         - $permission_deletemods — gate the per-row "Delete" button.
         - $mod_count             — total mods configured.
@@ -43,15 +44,20 @@
         </div>
     </div>
 {else}
-    <div class="card">
-        <div class="card__header">
-            <div>
-                <h3>Server Mods</h3>
-                <p><span data-testid="mod-count">{$mod_count}</span> configured</p>
-            </div>
-        </div>
+    <div class="mb-4">
+        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0" data-testid="mods-list-title">
+            Mods
+            <span class="text-faint" style="font-weight:400;margin-left:0.375rem" data-testid="mod-count">({$mod_count})</span>
+        </h1>
+        <p class="text-sm text-muted m-0 mt-2">
+            Game mods that can be assigned to bans and servers.
+        </p>
+    </div>
+
+    <div class="card" style="overflow:hidden">
         {if $mod_count > 0}
-            <table class="table" data-testid="mods-table">
+            <div class="table-scroll" data-testid="mods-table-wrap">
+            <table class="table table--compact" data-testid="mods-table">
                 <thead>
                     <tr>
                         <th style="width:40%">Name</th>
@@ -64,20 +70,23 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {* Mod metadata is entity-encoded on store. Decode before
+                       Smarty's automatic final escape at every text and
+                       attribute sink so values stay readable without raw HTML. *}
                     {foreach from=$mod_list item=mod}
                         <tr id="mid_{$mod.mid}" data-testid="mod-row" data-id="{$mod.mid}">
                             <td>
-                                <div class="flex items-center gap-3">
-                                    <img src="images/games/{$mod.icon}"
+                                <div class="flex items-center gap-2">
+                                    <img src="images/games/{$mod.icon|unescape:'html'}"
                                          alt=""
-                                         width="20"
-                                         height="20"
+                                         width="18"
+                                         height="18"
                                          loading="lazy"
                                          onerror="this.style.visibility='hidden'">
-                                    <span class="font-medium">{$mod.name}</span>
+                                    <span class="font-medium">{$mod.name|unescape:'html'}</span>
                                 </div>
                             </td>
-                            <td><span class="font-mono text-xs">{$mod.modfolder}</span></td>
+                            <td><span class="font-mono text-xs">{$mod.modfolder|unescape:'html'}</span></td>
                             <td class="tabular-nums">{$mod.steam_universe}</td>
                             <td>
                                 {if $mod.enabled}
@@ -87,12 +96,20 @@
                                 {/if}
                             </td>
                             {if $permission_editmods || $permission_deletemods}
-                                <td style="text-align:right">
-                                    <div class="flex justify-end gap-2">
+                                <td class="col-actions" style="text-align:right">
+                                    {* Icon-only row actions matching banlist / admins list:
+                                       Lucide icon + `data-tooltip` + `aria-label` inside
+                                       `.row-actions--icons`. Keep `data-testid` / `data-action`
+                                       / `data-fallback-href` wiring unchanged. *}
+                                    <div class="row-actions row-actions--icons">
                                         {if $permission_editmods}
-                                            <a class="btn btn--ghost btn--sm"
+                                            <a class="btn btn--ghost btn--icon btn--sm"
                                                href="index.php?p=admin&c=mods&o=edit&id={$mod.mid|escape:'url'}"
-                                               data-testid="editmod-link">Edit</a>
+                                               data-testid="editmod-link"
+                                               data-tooltip="Edit"
+                                               aria-label="Edit mod {$mod.name|unescape:'html'}">
+                                                <i data-lucide="pencil" style="width:14px;height:14px"></i>
+                                            </a>
                                         {/if}
                                         {if $permission_deletemods}
                                             {* #1397: data-action wires the delete button to the inline
@@ -110,14 +127,17 @@
                                                beyond the bug; the fallback is a graceful degradation
                                                for the rare case where the JSON dispatcher itself is
                                                missing (e.g. third-party theme that stripped api.js). *}
-                                            <button class="btn btn--ghost btn--sm"
+                                            <button class="btn btn--ghost btn--icon btn--sm"
                                                     type="button"
                                                     data-action="mod-delete"
                                                     data-mid="{$mod.mid}"
-                                                    data-name="{$mod.name|escape}"
+                                                    data-name="{$mod.name|unescape:'html'}"
                                                     data-fallback-href="index.php?p=admin&amp;c=mods"
                                                     data-testid="deletemod-btn"
-                                                    aria-label="Delete mod {$mod.name|escape}">Delete</button>
+                                                    data-tooltip="Delete"
+                                                    aria-label="Delete mod {$mod.name|unescape:'html'}">
+                                                <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
+                                            </button>
                                         {/if}
                                     </div>
                                 </td>
@@ -126,11 +146,89 @@
                     {/foreach}
                 </tbody>
             </table>
-        {else}
-            <div class="card__body">
-                <p class="text-muted">No mods configured yet.</p>
+            </div>
+
+            {* Mobile cards — paired surface for the global
+               `@media (max-width: 768px) { .table { display: none } }`
+               rule. Same display dance as `.admins-list-cards`. *}
+            <div class="mods-list-cards" data-testid="mods-list-cards">
+                {foreach from=$mod_list item=mod}
+                    <div class="mods-list-card" data-testid="mods-list-card" data-id="{$mod.mid}">
+                        <div class="mods-list-card__body flex items-center gap-3">
+                            <img src="images/games/{$mod.icon|unescape:'html'}"
+                                 alt=""
+                                 width="28"
+                                 height="28"
+                                 loading="lazy"
+                                 onerror="this.style.visibility='hidden'">
+                            <div style="flex:1;min-width:0">
+                                <div class="font-medium text-sm truncate">{$mod.name|unescape:'html'}</div>
+                                <div class="flex items-center gap-2 text-xs text-muted" style="margin-top:0.125rem">
+                                    <span class="font-mono truncate"
+                                          style="min-width:0"
+                                          title="{$mod.modfolder|unescape:'html'}">{$mod.modfolder|unescape:'html'}</span>
+                                    <span class="tabular-nums" style="flex-shrink:0">SU {$mod.steam_universe}</span>
+                                </div>
+                                <div style="margin-top:0.35rem">
+                                    {if $mod.enabled}
+                                        <span class="pill pill--online">Enabled</span>
+                                    {else}
+                                        <span class="pill pill--offline">Disabled</span>
+                                    {/if}
+                                </div>
+                            </div>
+                        </div>
+                        {if $permission_editmods || $permission_deletemods}
+                        <div class="row-actions row-actions--icons ban-card__actions">
+                            {if $permission_editmods}
+                                <a class="btn btn--ghost btn--icon btn--sm"
+                                   href="index.php?p=admin&amp;c=mods&amp;o=edit&amp;id={$mod.mid|escape:'url'}"
+                                   data-testid="editmod-link-mobile"
+                                   data-tooltip="Edit"
+                                   aria-label="Edit mod {$mod.name|unescape:'html'}">
+                                    <i data-lucide="pencil" style="width:14px;height:14px"></i>
+                                </a>
+                            {/if}
+                            {if $permission_deletemods}
+                                <button class="btn btn--ghost btn--icon btn--sm"
+                                        type="button"
+                                        data-action="mod-delete"
+                                        data-mid="{$mod.mid}"
+                                        data-name="{$mod.name|unescape:'html'}"
+                                        data-fallback-href="index.php?p=admin&amp;c=mods"
+                                        data-testid="deletemod-btn-mobile"
+                                        data-tooltip="Delete"
+                                        aria-label="Delete mod {$mod.name|unescape:'html'}">
+                                    <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
+                                </button>
+                            {/if}
+                        </div>
+                        {/if}
+                    </div>
+                {/foreach}
             </div>
         {/if}
+
+        <div class="empty-state"
+             data-testid="mods-empty"
+             data-filtered="false"
+             {if $mod_count > 0}hidden{/if}>
+            <div class="empty-state__icon" aria-hidden="true">
+                <i data-lucide="puzzle"></i>
+            </div>
+            <h2 class="empty-state__title">No mods configured yet</h2>
+            <p class="empty-state__body">Add a game mod before assigning it to bans or servers.</p>
+            {if $permission_addmods}
+                <div class="empty-state__actions">
+                    <a class="btn btn--primary btn--sm"
+                       href="index.php?p=admin&amp;c=mods&amp;section=add"
+                       data-testid="mods-empty-add">
+                        <i data-lucide="plus"></i>
+                        Add mod
+                    </a>
+                </div>
+            {/if}
+        </div>
     </div>
 
     {if $permission_deletemods}
@@ -258,10 +356,23 @@
 
         /**
          * @param {string} mid
-         * @returns {Element|null}
+         * @returns {NodeListOf<Element>}
          */
-        function rowForMid(mid) {
-            return document.querySelector('[data-testid="mod-row"][data-id="' + mid + '"]');
+        function rowsForMid(mid) {
+            return document.querySelectorAll(
+                '[data-testid="mod-row"][data-id="' + mid + '"],'
+                + '[data-testid="mods-list-card"][data-id="' + mid + '"]'
+            );
+        }
+
+        /** @returns {void} */
+        function showEmptyState() {
+            var tableWrap = document.querySelector('[data-testid="mods-table-wrap"]');
+            var cards = document.querySelector('[data-testid="mods-list-cards"]');
+            var empty = document.querySelector('[data-testid="mods-empty"]');
+            if (tableWrap) tableWrap.setAttribute('hidden', '');
+            if (cards) cards.setAttribute('hidden', '');
+            if (empty) empty.removeAttribute('hidden');
         }
 
         /**
@@ -276,7 +387,9 @@
             if (!el) return;
             var n = Number((el.textContent || '').replace(/[^0-9]/g, ''));
             if (!Number.isFinite(n) || n <= 0) return;
-            el.textContent = String(n - 1);
+            var next = n - 1;
+            el.textContent = '(' + String(next) + ')';
+            if (next === 0) showEmptyState();
         }
 
         /** @returns {HTMLDialogElement|null} */
@@ -397,8 +510,11 @@
                     toast('error', 'Delete failed', msg);
                     return;
                 }
-                var row = rowForMid(ctx.mid);
-                if (row && row.parentNode) row.parentNode.removeChild(row);
+                var rows = rowsForMid(ctx.mid);
+                for (var i = 0; i < rows.length; i++) {
+                    var row = rows[i];
+                    if (row && row.parentNode) row.parentNode.removeChild(row);
+                }
                 decrementCount();
                 closeDeleteDialog();
                 toast('success', 'Mod deleted', ctx.name + ' has been removed.');

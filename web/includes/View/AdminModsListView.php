@@ -16,7 +16,8 @@ namespace Sbpp\View;
  * Property names keep the historical `permission_*` shape (rather than
  * the newer `can_*` convention `Sbpp\View\Perms::for()` produces) because
  * the template references `{$permission_listmods}` /
- * `{$permission_editmods}` / `{$permission_deletemods}`. See
+ * `{$permission_addmods}` / `{$permission_editmods}` /
+ * `{$permission_deletemods}`. See
  * `AdminServersListView` / `AdminBansAddView` for the canonical
  * `can_*` convention on Views that don't have to honour a historical
  * variable name.
@@ -30,6 +31,7 @@ final class AdminModsListView extends View
      */
     public function __construct(
         public readonly bool $permission_listmods,
+        public readonly bool $permission_addmods,
         public readonly bool $permission_editmods,
         public readonly bool $permission_deletemods,
         public readonly int $mod_count,

@@ -2130,6 +2130,12 @@ details.queue-row > summary > .row-actions {
 .admins-list-card:last-child { border-bottom: none; }
 .admins-list-card__body { padding: 0.75rem 1rem 0.25rem; }
 
+.mods-list-cards { display: none; }
+.mods-list-cards[hidden] { display: none; }
+.mods-list-card { border-bottom: 1px solid var(--border); }
+.mods-list-card:last-child { border-bottom: none; }
+.mods-list-card__body { padding: 0.75rem 1rem 0.25rem; }
+
 /* ---- Responsive ---- */
 [data-mobile-menu] { display: none; }
 @media (max-width: 1024px) {
@@ -2148,6 +2154,7 @@ details.queue-row > summary > .row-actions {
      dance as `.ban-cards` — hidden at desktop, block at mobile. */
   .log-cards { display: block; }
   .admins-list-cards { display: block; }
+  .mods-list-cards { display: block; }
   /* #1181: filter chip rows wrap onto multiple lines on mobile
      instead of horizontal-scrolling, so every chip is reachable
      without a swipe. The .scroll-x desktop affordance is the
@@ -2159,6 +2166,7 @@ details.queue-row > summary > .row-actions {
   .ban-cards { display: none; }
   .log-cards { display: none; }
   .admins-list-cards { display: none; }
+  .mods-list-cards { display: none; }
 }
 
 /* ---- Utility classes used by templates ---- */
@@ -2238,6 +2246,7 @@ details.queue-row > summary > .row-actions {
   padding: 2.5rem 1.5rem;
   color: var(--text-muted);
 }
+.empty-state[hidden] { display: none; }
 .empty-state__icon {
   width: 2.5rem;
   height: 2.5rem;
