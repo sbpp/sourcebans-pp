@@ -112,6 +112,8 @@ final class ModsDeleteDialogTest extends ApiTestCase
         $this->assertStringContainsString('data-name="' . $this->targetName . '"', $html);
         $this->assertStringContainsString('src="images/games/default&amp;alt.png"', $html);
         $this->assertStringContainsString('>delete&amp;target</span>', $html);
+        $this->assertStringContainsString('title="delete&amp;target"', $html,
+            'The truncated mobile folder must expose its full value.');
         $this->assertStringNotContainsString('&amp;amp;', $html,
             'Entity-encoded mod metadata must be decoded before Smarty applies its final escape.');
         $this->assertStringContainsString('data-fallback-href="index.php?p=admin&amp;c=mods"', $html,
@@ -266,12 +268,36 @@ final class ModsDeleteDialogTest extends ApiTestCase
     {
         $html = $this->renderModsPage();
 
-        $this->assertStringContainsString("String(n - 1) + ')'", $html);
+        $this->assertStringContainsString("String(next) + ')'", $html);
+        $this->assertStringContainsString('if (next === 0) showEmptyState();', $html);
         $this->assertStringNotContainsString(
             '(n - 1).toLocaleString()',
             $html,
             'Localized numerals cannot be parsed by the next ASCII-digit decrement.',
         );
+    }
+
+    public function testZeroGameModsRendersActionableEmptyState(): void
+    {
+        Fixture::rawPdo()->exec(sprintf(
+            'DELETE FROM `%s_mods` WHERE mid > 0',
+            DB_PREFIX,
+        ));
+
+        $html = $this->renderModsPage();
+
+        $this->assertStringContainsString('data-testid="mod-count">(0)</span>', $html);
+        $this->assertSame(0, preg_match_all('/<tr\b[^>]*data-testid="mod-row"[^>]*>/', $html));
+        $this->assertStringContainsString('data-testid="mods-empty-add"', $html);
+
+        $matched = preg_match(
+            '/<div class="empty-state"[^>]*data-testid="mods-empty"[^>]*>/s',
+            $html,
+            $emptyTag,
+        );
+        $this->assertSame(1, $matched, 'The mods empty state must render.');
+        $this->assertStringNotContainsString(' hidden', $emptyTag[0],
+            'The server-rendered empty state must be visible when no game mods remain.');
     }
 
     private function seedTargetMod(): void

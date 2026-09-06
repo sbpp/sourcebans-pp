@@ -7,6 +7,7 @@
 
     Variable contract (kept in sync by SmartyTemplateRule):
         - $permission_listmods   — gate the whole tab body.
+        - $permission_addmods    — gate the empty-state "Add mod" CTA.
         - $permission_editmods   — gate the per-row "Edit" link.
         - $permission_deletemods — gate the per-row "Delete" button.
         - $mod_count             — total mods configured.
@@ -55,7 +56,7 @@
 
     <div class="card" style="overflow:hidden">
         {if $mod_count > 0}
-            <div class="table-scroll">
+            <div class="table-scroll" data-testid="mods-table-wrap">
             <table class="table table--compact" data-testid="mods-table">
                 <thead>
                     <tr>
@@ -162,9 +163,11 @@
                                  onerror="this.style.visibility='hidden'">
                             <div style="flex:1;min-width:0">
                                 <div class="font-medium text-sm truncate">{$mod.name|unescape:'html'}</div>
-                                <div class="text-xs text-muted truncate" style="margin-top:0.125rem">
-                                    <span class="font-mono">{$mod.modfolder|unescape:'html'}</span>
-                                    · SU {$mod.steam_universe}
+                                <div class="flex items-center gap-2 text-xs text-muted" style="margin-top:0.125rem">
+                                    <span class="font-mono truncate"
+                                          style="min-width:0"
+                                          title="{$mod.modfolder|unescape:'html'}">{$mod.modfolder|unescape:'html'}</span>
+                                    <span class="tabular-nums" style="flex-shrink:0">SU {$mod.steam_universe}</span>
                                 </div>
                                 <div style="margin-top:0.35rem">
                                     {if $mod.enabled}
@@ -204,11 +207,28 @@
                     </div>
                 {/foreach}
             </div>
-        {else}
-            <div class="card__body">
-                <p class="text-muted">No mods configured yet.</p>
-            </div>
         {/if}
+
+        <div class="empty-state"
+             data-testid="mods-empty"
+             data-filtered="false"
+             {if $mod_count > 0}hidden{/if}>
+            <div class="empty-state__icon" aria-hidden="true">
+                <i data-lucide="puzzle"></i>
+            </div>
+            <h2 class="empty-state__title">No mods configured yet</h2>
+            <p class="empty-state__body">Add a game mod before assigning it to bans or servers.</p>
+            {if $permission_addmods}
+                <div class="empty-state__actions">
+                    <a class="btn btn--primary btn--sm"
+                       href="index.php?p=admin&amp;c=mods&amp;section=add"
+                       data-testid="mods-empty-add">
+                        <i data-lucide="plus"></i>
+                        Add mod
+                    </a>
+                </div>
+            {/if}
+        </div>
     </div>
 
     {if $permission_deletemods}
@@ -345,6 +365,16 @@
             );
         }
 
+        /** @returns {void} */
+        function showEmptyState() {
+            var tableWrap = document.querySelector('[data-testid="mods-table-wrap"]');
+            var cards = document.querySelector('[data-testid="mods-list-cards"]');
+            var empty = document.querySelector('[data-testid="mods-empty"]');
+            if (tableWrap) tableWrap.setAttribute('hidden', '');
+            if (cards) cards.setAttribute('hidden', '');
+            if (empty) empty.removeAttribute('hidden');
+        }
+
         /**
          * Drop one from the count badge. Reads the digits out of the badge's
          * textContent so a third-party theme that wraps the count
@@ -357,7 +387,9 @@
             if (!el) return;
             var n = Number((el.textContent || '').replace(/[^0-9]/g, ''));
             if (!Number.isFinite(n) || n <= 0) return;
-            el.textContent = '(' + String(n - 1) + ')';
+            var next = n - 1;
+            el.textContent = '(' + String(next) + ')';
+            if (next === 0) showEmptyState();
         }
 
         /** @returns {HTMLDialogElement|null} */

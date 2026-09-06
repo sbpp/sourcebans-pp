@@ -31,7 +31,7 @@
     <div class="mb-6">
         {* Mod names are entity-encoded on store. Decode before Smarty's
            automatic final escape so the heading stays both readable and safe. *}
-        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0" data-testid="editmod-title">
+        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0;overflow-wrap:anywhere" data-testid="editmod-title">
             Edit mod · {$name|unescape:'html'}
         </h1>
         <p class="text-sm text-muted m-0 mt-2">

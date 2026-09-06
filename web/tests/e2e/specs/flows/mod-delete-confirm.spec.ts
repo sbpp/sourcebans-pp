@@ -300,6 +300,33 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
             .first();
         await expect(row).toBeVisible();
 
+        // Model the final visible mod without deleting fixture rows from the
+        // shared DB. This isolates the client-side 1 → 0 transition that must
+        // reveal the already-mounted empty state after a successful delete.
+        const targetMid = await row.getAttribute('data-id');
+        expect(targetMid).not.toBeNull();
+        await page.locator('[data-testid="mod-row"]').evaluateAll((nodes, keepMid) => {
+            nodes.forEach((node) => {
+                if (node.getAttribute('data-id') !== keepMid) node.remove();
+            });
+        }, targetMid);
+        await page.locator('[data-testid="mods-list-card"]').evaluateAll((nodes, keepMid) => {
+            nodes.forEach((node) => {
+                if (node.getAttribute('data-id') !== keepMid) node.remove();
+            });
+        }, targetMid);
+
+        const targetCard = page
+            .locator('[data-testid="mods-list-card"]')
+            .filter({ hasText: 'e2e-no-reason-mod' });
+        const countBadge = page.locator('[data-testid="mod-count"]');
+        await countBadge.evaluate((node) => {
+            node.textContent = '(1)';
+        });
+        await expect(page.locator('[data-testid="mod-row"]')).toHaveCount(1);
+        await expect(targetCard).toHaveCount(1);
+        await expect(page.locator('[data-testid="mods-empty"]')).toBeHidden();
+
         await row.locator('[data-testid="deletemod-btn"]').click();
         const dialog = page.locator('[data-testid="mod-delete-dialog"]');
         await expect(dialog).toBeVisible();
@@ -314,7 +341,17 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
         expect(env.ok, JSON.stringify(env)).toBe(true);
 
         await expect(row).toHaveCount(0);
+        await expect(targetCard).toHaveCount(0);
+        await expect(countBadge).toHaveText('(0)');
+        await expect(page.locator('[data-testid="mods-table-wrap"]')).toHaveAttribute('hidden', '');
+        await expect(page.locator('[data-testid="mods-list-cards"]')).toHaveAttribute('hidden', '');
+        await expect(page.locator('[data-testid="mods-empty"]')).toBeVisible();
 
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect(page.locator('[data-testid="mods-list-cards"]')).toBeHidden();
+        await expect(page.locator('[data-testid="mods-empty"]')).toBeVisible();
+
+        await page.setViewportSize({ width: 1280, height: 720 });
         await page.goto(AUDIT_ROUTE);
         const auditDetail = page
             .locator('.audit-row__detail')

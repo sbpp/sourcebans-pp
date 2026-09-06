@@ -124,6 +124,11 @@ final class EditAdminTabsChromeTest extends TestCase
             $src,
             'Stored entities should be decoded before Smarty applies its final automatic escape.',
         );
+        $this->assertStringContainsString(
+            'overflow-wrap:anywhere',
+            $src,
+            'A schema-width mod name must not overflow the edit heading on narrow viewports.',
+        );
         $this->assertSame(
             5,
             substr_count($src, '|unescape:\'html\''),

@@ -43,6 +43,7 @@ $mod_count = (int) $GLOBALS['PDO']->query("SELECT COUNT(mid) AS cnt FROM `:prefi
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminModsListView(
     permission_listmods:   $canList,
+    permission_addmods:    $canAdd,
     permission_editmods:   $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditMods)),
     permission_deletemods: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteMods)),
     mod_count:             $mod_count,
