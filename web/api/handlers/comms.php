@@ -410,6 +410,7 @@ function api_comms_prepare_block_from_ban(array $params): array
  * Inputs: `cid` (int, the focal comm-block id — matches the
  * `data-drawer-cid` attribute the comms-list template emits).
  *
+ * @param array{cid?: int|string} $params
  * @return array{
  *   cid: int,
  *   player: array{
@@ -428,10 +429,12 @@ function api_comms_prepare_block_from_ban(array $params): array
  *   admin: array{name: string|null},
  *   server: array{sid: int, name: string|null, mod_icon: string|null},
  *   comments_visible: bool,
+ *   comments_can_add: bool,
  *   notes_visible: bool,
  *   comments: list<array{cid: int, added: int, added_human: string,
- *     author: string|null, text: string,
- *     edited_at: int|null, edited_by: string|null}>,
+ *     author: string|null, author_hidden: bool, text: string,
+ *     edited_at: int|null, edited_by: string|null,
+ *     can_edit: bool, can_delete: bool}>,
  * }
  */
 function api_comms_detail(array $params): array
@@ -525,15 +528,17 @@ function api_comms_detail(array $params): array
         $serverName = $row['server_ip'] . (!empty($row['server_port']) ? ':' . $row['server_port'] : '');
     }
 
-    $comments = [];
-    $commentsVisible = Config::getBool('config.enablepubliccomments') || $isAdmin;
+    $comments          = [];
+    $commentsCanAdd    = $isAdmin;
+    $commentsCanDelete = $userbank->HasAccess(WebPermission::Owner);
+    $commentsVisible   = Config::getBool('config.enablepubliccomments') || $isAdmin;
     if ($commentsVisible) {
         // Comm comments live on `:prefix_comments` with `type = 'C'`,
         // keyed by the comm row's `bid` column (despite our public
         // surface naming it `cid` — the column is shared between the
-        // bans/comms/protests trio via the `type` letter).
+        // bans/comms/submissions/protests surfaces via the `type` letter).
         $commentRows = $GLOBALS['PDO']->query(
-            "SELECT C.cid, C.commenttxt, C.added, C.edittime,
+            "SELECT C.cid, C.aid, C.commenttxt, C.added, C.edittime,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.aid)     AS author,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editor
                FROM `:prefix_comments` AS C
@@ -558,6 +563,9 @@ function api_comms_detail(array $params): array
                 'text'       => (string)$crow['commenttxt'],
                 'edited_at'  => $editTime,
                 'edited_by'  => (!$hideAdmin && $crow['editor'] !== null) ? (string)$crow['editor'] : null,
+                'can_edit'   => $commentsCanAdd
+                    && ((int)$crow['aid'] === $userbank->GetAid() || $commentsCanDelete),
+                'can_delete' => $commentsCanDelete,
             ];
         }
     }
@@ -601,6 +609,7 @@ function api_comms_detail(array $params): array
             'mod_icon' => !empty($row['mod_icon']) ? (string)$row['mod_icon'] : null,
         ],
         'comments_visible' => $commentsVisible,
+        'comments_can_add' => $commentsCanAdd,
         // Mirrors `api_bans_detail`: the drawer's Notes tab is
         // admin-only, gated on this flag. The dispatcher gate on
         // `notes.list` is the load-bearing one; this signal lets the

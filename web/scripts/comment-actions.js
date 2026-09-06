@@ -6,8 +6,8 @@
    `data-action="comment-delete"` triggers across the three
    surfaces that render comment threads:
 
-     1. Public banlist  (`web/pages/page.banlist.php`)
-     2. Public commslist (`web/pages/page.commslist.php`)
+     1. Public banlist inline disclosure + player drawer
+     2. Public commslist inline disclosure + player drawer
      3. Admin moderation queues — protests + submissions
         (`web/pages/admin.bans.php`)
 
@@ -55,7 +55,11 @@
         if (!btn) return;
         var S = /** @type {any} */ (window).SBPP;
         if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
-        else /** @type {HTMLButtonElement|HTMLAnchorElement} */ (btn).setAttribute('aria-busy', busy ? 'true' : 'false');
+        else {
+            btn.setAttribute('aria-busy', busy ? 'true' : 'false');
+            if (btn instanceof HTMLButtonElement) btn.disabled = !!busy;
+            else btn.setAttribute('aria-disabled', busy ? 'true' : 'false');
+        }
     }
     /**
      * @param {string} kind
@@ -150,16 +154,16 @@
             // sets it; on success api_bans_remove_comment surfaces a
             // `message.redir` field that drives the navigation back to
             // the same paginated view. Mirror SbppGroupsAdd's shape.
-            if (!r) {
+            if (r && typeof r.redirect === 'string' && r.redirect !== '') return;
+            if (!r || r.ok !== true) {
                 setBusy(submitBtn, false);
                 setBusy(ctx.trigger, false);
-                return;
-            }
-            if (r.redirect) return;
-            if (r.ok === false) {
-                setBusy(submitBtn, false);
-                setBusy(ctx.trigger, false);
-                var em = (r.error && r.error.message) || 'Failed to delete comment.';
+                var em = r
+                    && r.error
+                    && typeof r.error.message === 'string'
+                    && r.error.message !== ''
+                    ? r.error.message
+                    : 'Failed to delete comment.';
                 toast('error', 'Delete failed', em);
                 return;
             }
@@ -172,7 +176,7 @@
             // Match SbppGroupsAdd's 1.2-1.5s pause so the toast is
             // visible before the navigation.
             setTimeout(function () {
-                if (msg.redir) window.location.href = msg.redir;
+                if (typeof msg.redir === 'string' && msg.redir !== '') window.location.href = msg.redir;
                 else window.location.reload();
             }, 1200);
         }).catch(function (err) {

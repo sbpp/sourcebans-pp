@@ -36,6 +36,7 @@
         "demo_count": 0,
         "history_count": 1,
         "comments_visible": true,
+        "comments_can_add": true,
         "notes_visible": true,
         "comments": [
             {
@@ -46,7 +47,9 @@
                 "author_hidden": false,
                 "text": "note for the drawer",
                 "edited_at": null,
-                "edited_by": null
+                "edited_by": null,
+                "can_edit": true,
+                "can_delete": true
             }
         ]
     }

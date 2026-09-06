@@ -50,10 +50,10 @@ use PHPUnit\Framework\TestCase;
  * docker-mounted `web/demos/` (which is shared across stacks and
  * could be polluted by other tests).
  *
- * The suite also pins `\trunc()`'s #1487 contract (the non-positive
- * "no truncation" sentinel + the unchanged positive branch). Those
- * cases are pure-string and need no temp tree; they live here because
- * `trunc()` ships in the same `system-functions.php` under test.
+ * The suite also pins `\trunc()`'s #1487 contract and the comment
+ * renderer's raw-entity / malformed-UTF-8 behavior. Those cases are
+ * pure-string and need no temp tree; they live here because both helpers
+ * ship in the same `system-functions.php` under test.
  */
 final class SystemFunctionsTest extends TestCase
 {
@@ -273,6 +273,37 @@ final class SystemFunctionsTest extends TestCase
         $this->assertSame('abcde...', trunc('abcdefghij', 5), 'over budget → cut + ellipsis');
         $this->assertSame('abc', trunc('abc', 5), 'under budget → verbatim, no ellipsis');
         $this->assertSame('abcde', trunc('abcde', 5), 'exactly at budget → verbatim, no ellipsis');
+    }
+
+    public function testEncodePreservingBrKeepsLiteralHtmlEntitiesAsText(): void
+    {
+        $this->assertSame(
+            'literal &amp;amp; and &amp;lt;b&amp;gt;',
+            encodePreservingBr('literal &amp; and &lt;b&gt;'),
+            'JSON API comment text is stored raw; entity-shaped input must not be decoded or change meaning on render',
+        );
+        $this->assertSame("one<br />\ntwo", encodePreservingBr('one<br>two'));
+    }
+
+    public function testEncodePreservingBrSubstitutesMalformedUtf8(): void
+    {
+        $rendered = encodePreservingBr("before \xC3broken after");
+
+        $this->assertStringContainsString('before ', $rendered);
+        $this->assertStringContainsString("\u{FFFD}", $rendered);
+        $this->assertStringContainsString('broken after', $rendered);
+    }
+
+    public function testSubstituteInvalidUtf8PreservesRawTextAndReplacesBadBytes(): void
+    {
+        $this->assertSame(
+            'literal &amp; <tag>',
+            substituteInvalidUtf8('literal &amp; <tag>'),
+        );
+        $this->assertSame(
+            "broken \u{FFFD}( text",
+            substituteInvalidUtf8("broken \xC3( text"),
+        );
     }
 
     /**

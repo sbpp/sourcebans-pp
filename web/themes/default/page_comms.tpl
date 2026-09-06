@@ -7,10 +7,7 @@
     replace the long ban-reason banner, and the row state vocabulary is
     `unmuted` instead of `unbanned`. View: Sbpp\View\CommsListView.
 
-    Skipped from the design / handoff for B4 (each open for follow-up):
-      * Comment edit drawer — the `?comment=` flow stays on the legacy
-        theme; the new theme list-only page just exposes the row's edit
-        URL. Wiring the new comment editor needs its own template.
+    Skipped from the design / handoff for B4 (open for follow-up):
       * Live-server hostname resolution — the schema has no hostname
         column; sname renders ip:port (or "Web Block" for sid=0) until
         a future ticket re-implements the LoadServerHost equivalent
@@ -19,6 +16,9 @@
     Testability hooks (`data-testid`) match the B4 spec: comm-row /
     filter-chip-* / row-action-* / page-prev / page-next / comms-search.
 *}
+{if $comment}
+{include file="partials/punishment-comment-editor.tpl"}
+{else}
 <div class="p-6 space-y-4" style="max-width:1700px;margin:0 auto;width:100%">
 
     {* -- Page header --------------------------------------------------- *}
@@ -267,6 +267,32 @@
                                                 {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.comname)}<strong>{$com.comname|escape}</strong>{else}<i class="text-faint">deleted admin</i>{/if}
                                                 <span class="text-faint">&middot;</span>
                                                 <span class="text-xs text-faint tabular-nums">{$com.added}</span>
+                                                {if $com.can_edit || $com.can_delete}
+                                                <span class="row-actions row-actions--icons" style="margin-left:auto">
+                                                  {if $com.can_edit}
+                                                  <a class="btn btn--ghost btn--icon btn--xs"
+                                                     href="{$com.edit_url|escape}"
+                                                     data-testid="comm-comment-edit"
+                                                     data-tooltip="Edit comment"
+                                                     aria-label="Edit comment">
+                                                    <i data-lucide="pencil" style="width:12px;height:12px"></i>
+                                                  </a>
+                                                  {/if}
+                                                  {if $com.can_delete}
+                                                  <button type="button"
+                                                          class="btn btn--ghost btn--icon btn--xs"
+                                                          data-testid="comm-comment-delete"
+                                                          data-action="comment-delete"
+                                                          data-cid="{$com.cid}"
+                                                          data-ctype="C"
+                                                          data-page="{$com.page}"
+                                                          data-tooltip="Delete comment"
+                                                          aria-label="Delete comment">
+                                                    <i data-lucide="trash-2" style="width:12px;height:12px;color:var(--danger)"></i>
+                                                  </button>
+                                                  {/if}
+                                                </span>
+                                                {/if}
                                               </div>
                                               {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.commslist.php $commentres loop. Same provenance + safety as the banlist disclosure. *}
                                               <div class="ban-comments-inline__text" data-testid="comm-comment-text">{$com.commenttxt nofilter}</div>
@@ -363,6 +389,15 @@
                                        aria-label="Re-apply block for {$comm.name|escape}">
                                         <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
                                     </a>
+                                {/if}
+                                {if $can_comment}
+                                <a class="btn btn--ghost btn--icon btn--sm"
+                                   href="{$comm.comment_url|escape}"
+                                   data-testid="row-action-comment-add"
+                                   data-tooltip="Add comment"
+                                   aria-label="Add comment for {$comm.name|escape}">
+                                    <i data-lucide="message-square-text" style="width:14px;height:14px"></i>
+                                </a>
                                 {/if}
                                 {if !empty($comm.steam)}
                                 <button class="btn btn--ghost btn--icon btn--sm" type="button"
@@ -513,7 +548,7 @@
                         </div>
                         <i data-lucide="chevron-right"></i>
                     </a>
-                    {if $can_edit_comm || ($can_unmute_gag && $comm.unmute_url) || ($can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')) || $can_delete_comm || !empty($comm.steam)}
+                    {if $can_edit_comm || ($can_unmute_gag && $comm.unmute_url) || ($can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')) || $can_delete_comm || $can_comment || !empty($comm.steam)}
                     <div class="row-actions row-actions--icons ban-card__actions">
                         {if $can_edit_comm}
                             <a class="btn btn--ghost btn--icon btn--sm"
@@ -553,6 +588,15 @@
                                aria-label="Re-apply block for {$comm.name|escape}">
                                 <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
                             </a>
+                        {/if}
+                        {if $can_comment}
+                        <a class="btn btn--ghost btn--icon btn--sm"
+                           href="{$comm.comment_url|escape}"
+                           data-testid="row-action-comment-add-mobile"
+                           data-tooltip="Add comment"
+                           aria-label="Add comment for {$comm.name|escape}">
+                            <i data-lucide="message-square-text" style="width:14px;height:14px"></i>
+                        </a>
                         {/if}
                         {if !empty($comm.steam)}
                         <button class="btn btn--ghost btn--icon btn--sm" type="button"
@@ -1168,6 +1212,11 @@
 })();
 </script>
 {/literal}
+{/if}
+
+{* Shared comment-editor submit handler. Feature-detected, so loading it
+   on the normal list branch is harmless. *}
+<script src="./scripts/banlist.js" defer></script>
 
 {* ============================================================
    Manifest of properties only consumed by themes/default/page_comms.tpl.

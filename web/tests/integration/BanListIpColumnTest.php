@@ -233,6 +233,7 @@ final class BanListIpColumnTest extends ApiTestCase
             can_delete:      false,
             can_export:      false,
             admin_postkey:   'test-postkey',
+            can_comment:     false,
             can_add_ban:     false,
             is_filtered:     false,
             server_list:     [],

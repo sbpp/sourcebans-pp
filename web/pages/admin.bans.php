@@ -367,9 +367,14 @@ var did = 0;
 var dname = "";
 function demo(id, name)
 {
-    $('demo.msg').setHTML("Uploaded: <b>" + name);
     did = id;
     dname = name;
+    // SECURITY-REVIEW: the original upload filename is untrusted. Render it
+    // as text, not HTML, and avoid the removed MooTools `$().setHTML()` API.
+    var message = document.getElementById("demo.msg");
+    if (message) {
+        message.textContent = "Uploaded: " + String(name);
+    }
 }
 
 function changeReason(szListValue)
@@ -475,13 +480,13 @@ window.__sbppApplyBanFields = function (d) {
     if (byId('steam'))      byId('steam').value      = d.steam    || '';
     if (byId('ip'))         byId('ip').value         = d.ip       || '';
     if (byId('txtReason'))  byId('txtReason').value  = '';
-    if (byId('demo.msg'))   byId('demo.msg').innerHTML = '';
+    if (byId('demo.msg'))   byId('demo.msg').textContent = '';
     if (typeof window.selectLengthTypeReason === 'function') {
         window.selectLengthTypeReason(d.length || 0, d.type || 0, d.reason || '');
     }
     if (d.demo) {
-        if (byId('demo.msg')) byId('demo.msg').innerHTML = d.demo.origname || '';
         if (typeof window.demo === 'function') window.demo(d.demo.filename, d.demo.origname);
+        else if (byId('demo.msg')) byId('demo.msg').textContent = String(d.demo.origname || '');
     }
 };
 </script>
@@ -1298,12 +1303,14 @@ JS;
  * splat into the View DTO.
  *
  * @param list<array<string,mixed>> $commentres
- * @param object $userbank Logged-in user (CUserManager-like).
- * @param int    $rowId    pid (for protests) or subid (for submissions).
- * @param string $type     'P' for protests, 'S' for submissions.
- * @return string|list<array<string,mixed>> "None" sentinel or comment rows.
+ * @return 'None'|list<array<string,mixed>>
  */
-function bansBuildComments(array $commentres, $userbank, int $rowId, string $type)
+function bansBuildComments(
+    array $commentres,
+    \Sbpp\Auth\UserManager $userbank,
+    int $rowId,
+    string $type,
+): string|array
 {
     if (count($commentres) === 0) {
         return "None";
@@ -1335,9 +1342,8 @@ function bansBuildComments(array $commentres, $userbank, int $rowId, string $typ
 
         $cdata['comname']    = $crow['comname'];
         $cdata['added']      = Config::time($crow['added']);
-        $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $commentText         = encodePreservingBr($commentText);
-        $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
+        $commentText         = encodePreservingBr((string) $crow['commenttxt']);
+        $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?[^\s<]+)?)?)?)@', '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>', $commentText);
         $cdata['commenttxt'] = $commentText;
 
         if (!empty($crow['edittime'])) {

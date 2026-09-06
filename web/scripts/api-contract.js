@@ -63,7 +63,7 @@
  * admin deletion is a lifecycle action, not a moderation flip, so we don't
  * gate the call on it the way `bans.unban` / `comms.unblock` do.
  *
- * @typedef {Object} ApiAdminsRemoveRequest
+ * @typedef {{ aid?: number|string, ureason?: string }} ApiAdminsRemoveRequest
  * @typedef {{ remove: string, counter: { admincount: number }, rehash: string|null, message: { title: string, body: string, kind: string, redir: string } }} ApiAdminsRemoveResponse
  */
 /**
@@ -130,12 +130,14 @@
  * `config.enablepubliccomments` is set or the caller is an admin — mirroring
  * page.banlist.php's `$view_comments` switch.
  *
- * @typedef {Object} ApiBansDetailRequest
- * @typedef {{ bid: number, player: {name: string, type: number, steam_id: string, steam_id_3: string, community_id: string, ip: string|null, country: string|null}, ban: {reason: string, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unban_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null}, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, demo_count: number, history_count: number, comments_visible: boolean, notes_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiBansDetailResponse
+ * @typedef {{bid?: number|string}} ApiBansDetailRequest
+ * @typedef {{ bid: number, player: {name: string, type: number, steam_id: string, steam_id_3: string, community_id: string, ip: string|null, country: string|null}, ban: {reason: string, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unban_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null}, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, demo_count: number, history_count: number, comments_visible: boolean, comments_can_add: boolean, notes_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, author_hidden: boolean, text: string, edited_at: number|null, edited_by: string|null, can_edit: boolean, can_delete: boolean}> }} ApiBansDetailResponse
  */
 /**
- * @typedef {Object} ApiBansEditCommentRequest
- * @typedef {Object} ApiBansEditCommentResponse
+ * Edit an existing punishment or moderation-queue comment.
+ *
+ * @typedef {{bid?: number|string, cid?: number|string, ctype?: string, ctext?: string, page?: number|string}} ApiBansEditCommentRequest
+ * @typedef {{ reload: boolean, message: {title: string, body: string, kind: string, redir: string} }} ApiBansEditCommentResponse
  */
 /**
  * @typedef {Object} ApiBansGetGroupsRequest
@@ -309,8 +311,8 @@
  * comm-block id — matches the `data-drawer-cid` attribute the comms-list
  * template emits).
  *
- * @typedef {Object} ApiCommsDetailRequest
- * @typedef {{ cid: number, player: { name: string, steam_id: string, steam_id_3: string, community_id: string, ip: null, country: string|null }, block: { type: number, type_label: string, reason: string, started_at: number, started_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unblock_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null }, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, comments_visible: boolean, notes_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiCommsDetailResponse
+ * @typedef {{cid?: number|string}} ApiCommsDetailRequest
+ * @typedef {{ cid: number, player: { name: string, steam_id: string, steam_id_3: string, community_id: string, ip: null, country: string|null }, block: { type: number, type_label: string, reason: string, started_at: number, started_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unblock_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null }, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, comments_visible: boolean, comments_can_add: boolean, notes_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, author_hidden: boolean, text: string, edited_at: number|null, edited_by: string|null, can_edit: boolean, can_delete: boolean}> }} ApiCommsDetailResponse
  */
 /**
  * @typedef {Object} ApiCommsPasteRequest
@@ -436,7 +438,7 @@
  * is a lifecycle action, not a moderation flip, so we don't gate the call on
  * it the way `bans.unban` / `comms.unblock` do.
  *
- * @typedef {Object} ApiModsRemoveRequest
+ * @typedef {{ mid?: number|string, ureason?: string }} ApiModsRemoveRequest
  * @typedef {{ remove: string, message: { title: string, body: string, kind: string, redir: string } }} ApiModsRemoveResponse
  */
 /**
@@ -569,7 +571,7 @@
  * we'd rather refuse a stray call from another surface than discover a new
  * caller exists.
  *
- * @typedef {Object} ApiSystemPreviewIntroTextRequest
+ * @typedef {{markdown?: string}} ApiSystemPreviewIntroTextRequest
  * @typedef {{html: string}} ApiSystemPreviewIntroTextResponse
  */
 /**
@@ -637,7 +639,7 @@
  * smtp_not_configured / rate_limited branches don't log (they never reach the
  * SMTP wire — same shape `api_system_send_mail` uses).
  *
- * @typedef {Object} ApiSystemTestEmailRequest
+ * @typedef {{to?: string}} ApiSystemTestEmailRequest
  * @typedef {{to: string, sent_at: number}} ApiSystemTestEmailResponse
  */
 
