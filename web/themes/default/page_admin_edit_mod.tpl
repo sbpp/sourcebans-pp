@@ -29,10 +29,10 @@
 *}
 <div class="page-section" data-testid="editmod-section" style="max-width:48rem">
     <div class="mb-6">
-        {* nofilter: name is htmlspecialchars'd on store in admin.edit.mod.php;
-           auto-escaping here would double-encode (#1108 / #1113). *}
+        {* Mod names are entity-encoded on store. Decode before Smarty's
+           automatic final escape so the heading stays both readable and safe. *}
         <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0" data-testid="editmod-title">
-            Edit mod · {$name nofilter}
+            Edit mod · {$name|unescape:'html'}
         </h1>
         <p class="text-sm text-muted m-0 mt-2">
             Update the configuration for this game mod.
@@ -49,18 +49,19 @@
         <div class="card__body space-y-4">
             <input type="hidden" name="insert_type" value="add">
 
-            {* nofilter: mod metadata is htmlspecialchars(strip_tags($_POST[…]))'d in admin.edit.mod.php before INSERT/UPDATE, so values pulled back out of `:prefix_mods` are already entity-encoded; auto-escaping the value attribute would double-encode (#1113 audit). The id="icon_hid" element is the channel the popup uploader writes into via window.opener.icon(). *}
-            <input type="hidden" id="icon_hid" name="icon_hid" value="{$mod_icon nofilter}">
+            {* Mod metadata is entity-encoded on store. Decode that layer
+               before Smarty's automatic final escape so legacy raw values
+               cannot break out of text or attribute contexts. *}
+            <input type="hidden" id="icon_hid" name="icon_hid" value="{$mod_icon|unescape:'html'}">
 
             <div>
                 <label class="label" for="name">Mod name</label>
-                {* nofilter: see the icon_hid annotation above — name is htmlspecialchars'd on store, double-encoding it in the value attribute would render literal &amp;… to admins (#1108 / #1113 audit). *}
                 <input class="input"
                        type="text"
                        id="name"
                        name="name"
                        data-testid="editmod-name"
-                       value="{$name nofilter}"
+                       value="{$name|unescape:'html'}"
                        required>
                 <div id="name.msg"
                      class="text-xs"
@@ -69,13 +70,12 @@
 
             <div>
                 <label class="label" for="folder">Mod folder</label>
-                {* nofilter: see the icon_hid annotation above — folder is htmlspecialchars'd on store. *}
                 <input class="input"
                        type="text"
                        id="folder"
                        name="folder"
                        data-testid="editmod-folder"
-                       value="{$folder nofilter}"
+                       value="{$folder|unescape:'html'}"
                        required>
                 <p class="text-xs text-muted" style="margin-top:0.25rem">
                     Folder name on disk (e.g. <span class="font-mono">cstrike</span> for Counter-Strike: Source).
@@ -125,8 +125,7 @@
                     {if $mod_icon}
                         <span class="text-xs text-muted">
                             Current:
-                            {* nofilter: see the icon_hid annotation above — icon filename is htmlspecialchars'd on store. *}
-                            <span class="font-mono" data-testid="editmod-current-icon">{$mod_icon nofilter}</span>
+                            <span class="font-mono" data-testid="editmod-current-icon">{$mod_icon|unescape:'html'}</span>
                         </span>
                     {/if}
                 </div>

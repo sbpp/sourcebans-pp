@@ -103,4 +103,36 @@ final class EditAdminTabsChromeTest extends TestCase
             );
         }
     }
+
+    public function testStandaloneEditModKeepsBackStrip(): void
+    {
+        $src = (string) file_get_contents(ROOT . 'pages/admin.edit.mod.php');
+
+        $this->assertStringContainsString(
+            'new \\Sbpp\\View\\AdminTabs([],',
+            $src,
+            'The standalone mod editor must keep the shared Back strip; it has no in-template section tabs.',
+        );
+    }
+
+    public function testEditModMetadataDoesNotRenderAsRawHtml(): void
+    {
+        $src = (string) file_get_contents(self::THEME . 'page_admin_edit_mod.tpl');
+
+        $this->assertStringContainsString(
+            'Edit mod · {$name|unescape:\'html\'}',
+            $src,
+            'Stored entities should be decoded before Smarty applies its final automatic escape.',
+        );
+        $this->assertSame(
+            5,
+            substr_count($src, '|unescape:\'html\''),
+            'The title plus every name, folder, and icon sink must decode once before the final escape.',
+        );
+        $this->assertStringNotContainsString(
+            'nofilter',
+            $src,
+            'Legacy or externally seeded raw mod metadata must never bypass Smarty escaping.',
+        );
+    }
 }

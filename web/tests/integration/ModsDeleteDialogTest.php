@@ -110,6 +110,10 @@ final class ModsDeleteDialogTest extends ApiTestCase
 
         // Verify the supporting attributes are all present.
         $this->assertStringContainsString('data-name="' . $this->targetName . '"', $html);
+        $this->assertStringContainsString('src="images/games/default&amp;alt.png"', $html);
+        $this->assertStringContainsString('>delete&amp;target</span>', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $html,
+            'Entity-encoded mod metadata must be decoded before Smarty applies its final escape.');
         $this->assertStringContainsString('data-fallback-href="index.php?p=admin&amp;c=mods"', $html,
             'The fallback URL lands the no-JS / no-dispatcher operator on the mods list ' .
             '(no legacy GET handler exists for `o=remove`).');
@@ -226,9 +230,47 @@ final class ModsDeleteDialogTest extends ApiTestCase
         $html = $this->renderModsPage();
 
         $this->assertMatchesRegularExpression(
-            '/<span[^>]*data-testid="mod-count"[^>]*>\s*\(?\d+\)?\s*<\/span>/',
+            '/<span[^>]*data-testid="mod-count"[^>]*>\s*\(\d+\)\s*<\/span>/',
             $html,
-            'The mod count number must be wrapped in <span data-testid="mod-count"> (optionally parenthesised, matching the Admins list badge).'
+            'The mod count must be parenthesised inside <span data-testid="mod-count">, matching the Admins list badge.'
+        );
+    }
+
+    /**
+     * `mid = 0` is the reserved Web pseudo-mod. It is deliberately absent
+     * from both list renderings, so the heading count must exclude it too.
+     */
+    public function testCountBadgeMatchesDesktopRowsAndMobileCards(): void
+    {
+        $html = $this->renderModsPage();
+
+        $matched = preg_match(
+            '/<span[^>]*data-testid="mod-count"[^>]*>\s*\((\d+)\)\s*<\/span>/',
+            $html,
+            $countMatch,
+        );
+        $this->assertSame(1, $matched, 'The parenthesised mod count must render.');
+
+        $desktopRows = preg_match_all('/<tr\b[^>]*data-testid="mod-row"[^>]*>/', $html);
+        $mobileCards = preg_match_all('/<div\b[^>]*data-testid="mods-list-card"[^>]*>/', $html);
+
+        $this->assertNotFalse($desktopRows);
+        $this->assertNotFalse($mobileCards);
+        $this->assertSame((int) $countMatch[1], $desktopRows,
+            'The heading count must equal the visible game-mod rows, excluding the reserved Web pseudo-mod.');
+        $this->assertSame($desktopRows, $mobileCards,
+            'Every desktop mod row must have one mobile-card mirror.');
+    }
+
+    public function testCountDecrementKeepsAsciiDigitsForSubsequentDeletes(): void
+    {
+        $html = $this->renderModsPage();
+
+        $this->assertStringContainsString("String(n - 1) + ')'", $html);
+        $this->assertStringNotContainsString(
+            '(n - 1).toLocaleString()',
+            $html,
+            'Localized numerals cannot be parsed by the next ASCII-digit decrement.',
         );
     }
 
@@ -236,15 +278,14 @@ final class ModsDeleteDialogTest extends ApiTestCase
     {
         $pdo = Fixture::rawPdo();
 
-        // Use a name that's safe through htmlspecialchars and survives
-        // the data-name attribute round-trip without escaping noise so
-        // the data-name assertion stays readable.
-        $this->targetName = 'DeleteTargetMod';
+        // Mirror api_mods_add's escaping-on-store shape. The rendered
+        // list should decode this once, then let Smarty escape it once.
+        $this->targetName = 'Delete &amp; Target';
 
         $pdo->prepare(sprintf(
             'INSERT INTO `%s_mods` (name, icon, modfolder, steam_universe, enabled) VALUES (?, ?, ?, ?, ?)',
             DB_PREFIX,
-        ))->execute([$this->targetName, 'default.png', 'deletetargetmod', 0, 1]);
+        ))->execute([$this->targetName, 'default&amp;alt.png', 'delete&amp;target', 0, 1]);
         $this->targetMid = (int) $pdo->lastInsertId();
     }
 

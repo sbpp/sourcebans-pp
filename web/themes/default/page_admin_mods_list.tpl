@@ -69,20 +69,23 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {* Mod metadata is entity-encoded on store. Decode before
+                       Smarty's automatic final escape at every text and
+                       attribute sink so values stay readable without raw HTML. *}
                     {foreach from=$mod_list item=mod}
                         <tr id="mid_{$mod.mid}" data-testid="mod-row" data-id="{$mod.mid}">
                             <td>
                                 <div class="flex items-center gap-2">
-                                    <img src="images/games/{$mod.icon}"
+                                    <img src="images/games/{$mod.icon|unescape:'html'}"
                                          alt=""
                                          width="18"
                                          height="18"
                                          loading="lazy"
                                          onerror="this.style.visibility='hidden'">
-                                    <span class="font-medium">{$mod.name}</span>
+                                    <span class="font-medium">{$mod.name|unescape:'html'}</span>
                                 </div>
                             </td>
-                            <td><span class="font-mono text-xs">{$mod.modfolder}</span></td>
+                            <td><span class="font-mono text-xs">{$mod.modfolder|unescape:'html'}</span></td>
                             <td class="tabular-nums">{$mod.steam_universe}</td>
                             <td>
                                 {if $mod.enabled}
@@ -103,7 +106,7 @@
                                                href="index.php?p=admin&c=mods&o=edit&id={$mod.mid|escape:'url'}"
                                                data-testid="editmod-link"
                                                data-tooltip="Edit"
-                                               aria-label="Edit mod {$mod.name|escape}">
+                                               aria-label="Edit mod {$mod.name|unescape:'html'}">
                                                 <i data-lucide="pencil" style="width:14px;height:14px"></i>
                                             </a>
                                         {/if}
@@ -127,11 +130,11 @@
                                                     type="button"
                                                     data-action="mod-delete"
                                                     data-mid="{$mod.mid}"
-                                                    data-name="{$mod.name|escape}"
+                                                    data-name="{$mod.name|unescape:'html'}"
                                                     data-fallback-href="index.php?p=admin&amp;c=mods"
                                                     data-testid="deletemod-btn"
                                                     data-tooltip="Delete"
-                                                    aria-label="Delete mod {$mod.name|escape}">
+                                                    aria-label="Delete mod {$mod.name|unescape:'html'}">
                                                 <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
                                             </button>
                                         {/if}
@@ -151,16 +154,16 @@
                 {foreach from=$mod_list item=mod}
                     <div class="mods-list-card" data-testid="mods-list-card" data-id="{$mod.mid}">
                         <div class="mods-list-card__body flex items-center gap-3">
-                            <img src="images/games/{$mod.icon}"
+                            <img src="images/games/{$mod.icon|unescape:'html'}"
                                  alt=""
                                  width="28"
                                  height="28"
                                  loading="lazy"
                                  onerror="this.style.visibility='hidden'">
                             <div style="flex:1;min-width:0">
-                                <div class="font-medium text-sm truncate">{$mod.name}</div>
+                                <div class="font-medium text-sm truncate">{$mod.name|unescape:'html'}</div>
                                 <div class="text-xs text-muted truncate" style="margin-top:0.125rem">
-                                    <span class="font-mono">{$mod.modfolder}</span>
+                                    <span class="font-mono">{$mod.modfolder|unescape:'html'}</span>
                                     · SU {$mod.steam_universe}
                                 </div>
                                 <div style="margin-top:0.35rem">
@@ -179,7 +182,7 @@
                                    href="index.php?p=admin&amp;c=mods&amp;o=edit&amp;id={$mod.mid|escape:'url'}"
                                    data-testid="editmod-link-mobile"
                                    data-tooltip="Edit"
-                                   aria-label="Edit mod {$mod.name|escape}">
+                                   aria-label="Edit mod {$mod.name|unescape:'html'}">
                                     <i data-lucide="pencil" style="width:14px;height:14px"></i>
                                 </a>
                             {/if}
@@ -188,11 +191,11 @@
                                         type="button"
                                         data-action="mod-delete"
                                         data-mid="{$mod.mid}"
-                                        data-name="{$mod.name|escape}"
+                                        data-name="{$mod.name|unescape:'html'}"
                                         data-fallback-href="index.php?p=admin&amp;c=mods"
                                         data-testid="deletemod-btn-mobile"
                                         data-tooltip="Delete"
-                                        aria-label="Delete mod {$mod.name|escape}">
+                                        aria-label="Delete mod {$mod.name|unescape:'html'}">
                                     <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
                                 </button>
                             {/if}
@@ -354,7 +357,7 @@
             if (!el) return;
             var n = Number((el.textContent || '').replace(/[^0-9]/g, ''));
             if (!Number.isFinite(n) || n <= 0) return;
-            el.textContent = '(' + (n - 1).toLocaleString() + ')';
+            el.textContent = '(' + String(n - 1) + ')';
         }
 
         /** @returns {HTMLDialogElement|null} */

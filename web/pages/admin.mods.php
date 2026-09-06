@@ -37,8 +37,9 @@ if ($section === 'add') {
     return;
 }
 
+// mid=0 is the reserved Web pseudo-mod, not a configurable game mod.
 $mod_list  = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE mid > 0 ORDER BY name ASC")->resultset();
-$mod_count = (int) $GLOBALS['PDO']->query("SELECT COUNT(mid) AS cnt FROM `:prefix_mods`")->single()['cnt'];
+$mod_count = (int) $GLOBALS['PDO']->query("SELECT COUNT(mid) AS cnt FROM `:prefix_mods` WHERE mid > 0")->single()['cnt'];
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminModsListView(
     permission_listmods:   $canList,
