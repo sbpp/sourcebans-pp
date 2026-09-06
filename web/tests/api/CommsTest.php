@@ -546,6 +546,7 @@ final class CommsTest extends ApiTestCase
         $this->assertNull($env['data']['player']['ip'], 'comm-block player.ip is always null (no IP column on :prefix_comms)');
         $this->assertNull($env['data']['admin']['name'], 'admin should be hidden for public + hideadminname');
         $this->assertFalse($env['data']['comments_visible'], 'comments should be hidden when public + flag off');
+        $this->assertFalse($env['data']['comments_can_add'], 'anonymous callers cannot add comments');
         $this->assertSame([], $env['data']['comments']);
         $this->assertFalse($env['data']['notes_visible'], 'notes_visible should be false for public callers');
         $this->assertSame('Mute', $env['data']['block']['type_label']);
@@ -581,9 +582,12 @@ final class CommsTest extends ApiTestCase
         $this->assertSame('STEAM_0:0:2020', $env['data']['player']['steam_id']);
         $this->assertNotNull($env['data']['admin']['name']);
         $this->assertTrue($env['data']['comments_visible']);
+        $this->assertTrue($env['data']['comments_can_add']);
         $this->assertTrue($env['data']['notes_visible'], 'notes_visible should be true for admin callers');
         $this->assertCount(1, $env['data']['comments']);
         $this->assertSame('note for the comm-block drawer', $env['data']['comments'][0]['text']);
+        $this->assertTrue($env['data']['comments'][0]['can_edit']);
+        $this->assertTrue($env['data']['comments'][0]['can_delete']);
         $this->assertSame('Gag', $env['data']['block']['type_label']);
     }
 
@@ -624,6 +628,9 @@ final class CommsTest extends ApiTestCase
             'comment editor must be hidden for public + hideadminname (#1500)');
         $this->assertTrue($env['data']['comments'][0]['author_hidden'],
             'author_hidden sentinel must be true when a real name was suppressed (#1500 m1: lets the drawer render "Hidden" vs "unknown")');
+        $this->assertFalse($env['data']['comments_can_add']);
+        $this->assertFalse($env['data']['comments'][0]['can_edit']);
+        $this->assertFalse($env['data']['comments'][0]['can_delete']);
         $this->assertNull($env['data']['admin']['name'], 'focal admin name is hidden too');
 
         // Admins still see the author + editor; author_hidden is false.

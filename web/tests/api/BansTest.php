@@ -70,6 +70,17 @@ final class BansTest extends ApiTestCase
         return (int)$pdo->lastInsertId();
     }
 
+    private function seedProtest(): int
+    {
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_protests` (`bid`, `email`, `reason`, `archiv`, `datesubmitted`, `pip`)
+             VALUES (0, ?, ?, "0", ?, "127.0.0.1")',
+            DB_PREFIX,
+        ))->execute(['protest@example.test', 'wrong ban', time()]);
+        return (int) $pdo->lastInsertId();
+    }
+
     public function testAddRejectsAnonymous(): void
     {
         $env = $this->api('bans.add', [
@@ -89,7 +100,8 @@ final class BansTest extends ApiTestCase
             'steam'    => 'STEAM_0:1:7777',
             'ip'       => '',
             'length'   => 0,         // permanent
-            'dfile'    => '',
+            // Default form wire value when no demo was selected.
+            'dfile'    => 0,
             'dname'    => '',
             'reason'   => 'wallhack',
             'fromsub'  => 0,
@@ -97,6 +109,129 @@ final class BansTest extends ApiTestCase
         $this->assertTrue($env['ok'], json_encode($env));
         // bid depends on the auto-increment counter; redact it.
         $this->assertSnapshot('bans/add_success', $env, ['data.bid']);
+    }
+
+    public function testAddRejectsMalformedDemoMetadataBeforeWritingBan(): void
+    {
+        $this->loginAsAdmin();
+        $cases = [
+            ['STEAM_0:1:1554011', str_repeat('0', 32), '', 'dfile'],
+            ['STEAM_0:1:1554012', '', 'evidence.dem', 'dfile'],
+            ['STEAM_0:1:1554013', str_repeat('g', 32), 'evidence.dem', 'dfile'],
+            ['STEAM_0:1:1554014', str_repeat('0', 32), str_repeat('a', 129), 'dname'],
+        ];
+
+        foreach ($cases as [$steam, $filename, $originalName, $field]) {
+            $env = $this->api('bans.add', [
+                'nickname' => 'Malformed demo',
+                'type'     => 0,
+                'steam'    => $steam,
+                'ip'       => '',
+                'length'   => 0,
+                'dfile'    => $filename,
+                'dname'    => $originalName,
+                'reason'   => 'demo validation',
+                'fromsub'  => 0,
+            ]);
+
+            $this->assertEnvelopeError($env, 'validation');
+            $this->assertSame($field, $env['error']['field']);
+            $this->assertNull($this->row('bans', ['authid' => $steam]));
+        }
+    }
+
+    public function testAddLinksOnlyARealUploaderShapedDemo(): void
+    {
+        $this->loginAsAdmin();
+        $filename = '15540000000000000000000000000001';
+        $path = SB_DEMOS . '/' . $filename;
+        if (!is_dir(SB_DEMOS)) {
+            mkdir(SB_DEMOS, 0775, true);
+        }
+        file_put_contents($path, 'demo-bytes');
+
+        try {
+            $env = $this->api('bans.add', [
+                'nickname' => 'Demo',
+                'type'     => 0,
+                'steam'    => 'STEAM_0:1:1554001',
+                'ip'       => '',
+                'length'   => 0,
+                'dfile'    => $filename,
+                'dname'    => 'evidence.dem',
+                'reason'   => 'demo validation',
+                'fromsub'  => 0,
+            ]);
+
+            $this->assertTrue($env['ok'], json_encode($env));
+            $demo = $this->row('demos', [
+                'demid'   => (int) $env['data']['bid'],
+                'demtype' => 'B',
+            ]);
+            $this->assertSame($filename, $demo['filename']);
+            $this->assertSame('evidence.dem', $demo['origname']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    public function testAddRejectsMissingDemoFileBeforeWritingBan(): void
+    {
+        $this->loginAsAdmin();
+        $filename = '15540000000000000000000000000002';
+        @unlink(SB_DEMOS . '/' . $filename);
+
+        $env = $this->api('bans.add', [
+            'nickname' => 'Missing demo',
+            'type'     => 0,
+            'steam'    => 'STEAM_0:1:1554002',
+            'ip'       => '',
+            'length'   => 0,
+            'dfile'    => $filename,
+            'dname'    => 'missing.dem',
+            'reason'   => 'demo validation',
+            'fromsub'  => 0,
+        ]);
+
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('dfile', $env['error']['field']);
+        $this->assertNull($this->row('bans', ['authid' => 'STEAM_0:1:1554002']));
+    }
+
+    public function testAddRejectsDemoSymlinkBeforeWritingBan(): void
+    {
+        $this->loginAsAdmin();
+        $filename = '15540000000000000000000000000003';
+        $link = SB_DEMOS . '/' . $filename;
+        if (!is_dir(SB_DEMOS)) {
+            mkdir(SB_DEMOS, 0775, true);
+        }
+        @unlink($link);
+        $target = tempnam(sys_get_temp_dir(), 'sbpp-demo-');
+        $this->assertIsString($target);
+        file_put_contents($target, 'outside-demo-root');
+        $this->assertTrue(symlink($target, $link));
+
+        try {
+            $env = $this->api('bans.add', [
+                'nickname' => 'Linked demo',
+                'type'     => 0,
+                'steam'    => 'STEAM_0:1:1554003',
+                'ip'       => '',
+                'length'   => 0,
+                'dfile'    => $filename,
+                'dname'    => 'linked.dem',
+                'reason'   => 'demo validation',
+                'fromsub'  => 0,
+            ]);
+
+            $this->assertEnvelopeError($env, 'validation');
+            $this->assertSame('dfile', $env['error']['field']);
+            $this->assertNull($this->row('bans', ['authid' => 'STEAM_0:1:1554003']));
+        } finally {
+            @unlink($link);
+            @unlink($target);
+        }
     }
 
     public function testAddValidationMissingSteamForType0(): void
@@ -462,6 +597,7 @@ final class BansTest extends ApiTestCase
         $this->assertNull($env['data']['player']['ip'],   'IP should be hidden for public + hideplayerips');
         $this->assertNull($env['data']['admin']['name'],  'admin should be hidden for public + hideadminname');
         $this->assertFalse($env['data']['comments_visible'], 'comments should be hidden when public + flag off');
+        $this->assertFalse($env['data']['comments_can_add'], 'anonymous callers cannot add comments');
         $this->assertSame([], $env['data']['comments']);
         $this->assertFalse($env['data']['notes_visible'], 'notes_visible should be false for public callers (#1165)');
         $this->assertSnapshot('bans/detail_public_hidden', $env, ['data.bid', 'data.ban.banned_at', 'data.ban.banned_at_human', 'data.ban.expires_at', 'data.ban.expires_at_human']);
@@ -495,9 +631,12 @@ final class BansTest extends ApiTestCase
         $this->assertSame('STEAM_0:1:2020', $env['data']['player']['steam_id']);
         $this->assertNotNull($env['data']['admin']['name']);
         $this->assertTrue($env['data']['comments_visible']);
+        $this->assertTrue($env['data']['comments_can_add']);
         $this->assertTrue($env['data']['notes_visible'], 'notes_visible should be true for admin callers (#1165)');
         $this->assertCount(1, $env['data']['comments']);
         $this->assertSame('note for the drawer', $env['data']['comments'][0]['text']);
+        $this->assertTrue($env['data']['comments'][0]['can_edit']);
+        $this->assertTrue($env['data']['comments'][0]['can_delete']);
         $this->assertSnapshot('bans/detail_admin_view', $env, [
             'data.bid',
             'data.ban.banned_at',
@@ -508,6 +647,41 @@ final class BansTest extends ApiTestCase
             'data.comments.0.added',
             'data.comments.0.added_human',
         ]);
+    }
+
+    public function testDetailReportsAttachedDemoForDrawerDownload(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:2021', 'demo-drawer');
+        $filename = 'detaildemo1554';
+        $this->seedDemoForBan($bid, $filename);
+
+        try {
+            $env = $this->api('bans.detail', ['bid' => $bid]);
+
+            $this->assertTrue($env['ok'], json_encode($env));
+            $this->assertSame(1, $env['data']['demo_count']);
+        } finally {
+            @unlink(SB_DEMOS . '/' . $filename);
+        }
+    }
+
+    public function testDetailAllowsNonOwnerAdminToAddButNotEditOthersComments(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:2022', 'comment-permissions');
+        $this->api('bans.add_comment', [
+            'bid' => $bid, 'ctype' => 'B', 'ctext' => 'owner comment', 'page' => -1,
+        ]);
+
+        $aid = $this->createAdminWithFlags(ADMIN_ADD_BAN);
+        $this->loginAs($aid);
+        $env = $this->api('bans.detail', ['bid' => $bid]);
+
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertTrue($env['data']['comments_can_add']);
+        $this->assertFalse($env['data']['comments'][0]['can_edit']);
+        $this->assertFalse($env['data']['comments'][0]['can_delete']);
     }
 
     public function testDetailHidesCommentAuthorForPublicWhenHideAdminName(): void
@@ -547,6 +721,9 @@ final class BansTest extends ApiTestCase
             'comment editor must be hidden for public + hideadminname (#1500)');
         $this->assertTrue($env['data']['comments'][0]['author_hidden'],
             'author_hidden sentinel must be true when a real name was suppressed (#1500 m1: lets the drawer render "Hidden" vs "unknown")');
+        $this->assertFalse($env['data']['comments_can_add']);
+        $this->assertFalse($env['data']['comments'][0]['can_edit']);
+        $this->assertFalse($env['data']['comments'][0]['can_delete']);
         $this->assertNull($env['data']['admin']['name'], 'focal admin name is hidden too');
 
         // Admins still see the author + editor; author_hidden is false.
@@ -639,13 +816,13 @@ final class BansTest extends ApiTestCase
         $bid = $this->seedBan();
 
         $env = $this->api('bans.add_comment', [
-            'bid' => $bid, 'ctype' => 'B', 'ctext' => 'note for the ban', 'page' => -1,
+            'bid' => $bid, 'ctype' => 'B', 'ctext' => 'note &amp; literal for the ban', 'page' => -1,
         ]);
         $this->assertTrue($env['ok']);
 
         $rows = $this->rows('comments', ['bid' => $bid]);
         $this->assertCount(1, $rows);
-        $this->assertSame('note for the ban', $rows[0]['commenttxt']);
+        $this->assertSame('note &amp; literal for the ban', $rows[0]['commenttxt']);
         $this->assertSame(Fixture::adminAid(), (int)$rows[0]['aid']);
         $this->assertSnapshot('bans/add_comment_success', $env);
     }
@@ -660,6 +837,115 @@ final class BansTest extends ApiTestCase
         $this->assertSnapshot('bans/add_comment_bad_type', $env);
     }
 
+    public function testAddCommentRejectsEmptyText(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan();
+
+        $env = $this->api('bans.add_comment', [
+            'bid' => $bid, 'ctype' => 'B', 'ctext' => '  ', 'page' => -1,
+        ]);
+
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('ctext', $env['error']['field']);
+        $this->assertSame([], $this->rows('comments', ['bid' => $bid]));
+    }
+
+    public function testAddCommentRejectsUnknownParent(): void
+    {
+        $this->loginAsAdmin();
+
+        $env = $this->api('bans.add_comment', [
+            'bid' => 999999,
+            'ctype' => 'B',
+            'ctext' => 'orphan comment',
+            'page' => -1,
+        ]);
+
+        $this->assertEnvelopeError($env, 'not_found', 'bid');
+        $this->assertSame([], $this->rows('comments', ['bid' => 999999]));
+    }
+
+    public function testModerationQueueCommentsRequireTheirSpecificPermissions(): void
+    {
+        $submissionId = $this->seedSubmission();
+        $protestId = $this->seedProtest();
+        $aid = $this->createAdminWithFlags(ADMIN_ADD_BAN);
+        $this->loginAs($aid);
+
+        foreach ([['S', $submissionId], ['P', $protestId]] as [$ctype, $parentId]) {
+            $env = $this->api('bans.add_comment', [
+                'bid' => $parentId,
+                'ctype' => $ctype,
+                'ctext' => 'unauthorized moderation note',
+                'page' => -1,
+            ]);
+
+            $this->assertEnvelopeError($env, 'forbidden');
+            $this->assertSame([], $this->rows('comments', [
+                'bid' => $parentId,
+                'type' => $ctype,
+            ]));
+        }
+    }
+
+    public function testModerationQueuePermissionsAllowCommentsAndReturnSectionRedirects(): void
+    {
+        $submissionId = $this->seedSubmission();
+        $protestId = $this->seedProtest();
+        $aid = $this->createAdminWithFlags(ADMIN_BAN_SUBMISSIONS | ADMIN_BAN_PROTESTS);
+        $this->loginAs($aid);
+
+        $submissionEnv = $this->api('bans.add_comment', [
+            'bid' => $submissionId,
+            'ctype' => 'S',
+            'ctext' => 'submission note',
+            'page' => -1,
+        ]);
+        $this->assertTrue($submissionEnv['ok'], json_encode($submissionEnv));
+        $this->assertSame(
+            'index.php?p=admin&c=bans&section=submissions',
+            $submissionEnv['data']['message']['redir'],
+        );
+
+        $protestEnv = $this->api('bans.add_comment', [
+            'bid' => $protestId,
+            'ctype' => 'P',
+            'ctext' => 'protest note',
+            'page' => -1,
+        ]);
+        $this->assertTrue($protestEnv['ok'], json_encode($protestEnv));
+        $this->assertSame(
+            'index.php?p=admin&c=bans&section=protests',
+            $protestEnv['data']['message']['redir'],
+        );
+    }
+
+    public function testEditModerationCommentRequiresCurrentQueuePermissionEvenForAuthor(): void
+    {
+        $submissionId = $this->seedSubmission();
+        $aid = $this->createAdminWithFlags(ADMIN_ADD_BAN);
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_comments` (`bid`, `type`, `aid`, `commenttxt`, `added`)
+             VALUES (?, "S", ?, ?, UNIX_TIMESTAMP())',
+            DB_PREFIX,
+        ))->execute([$submissionId, $aid, 'original note']);
+        $cid = (int) $pdo->lastInsertId();
+        $this->loginAs($aid);
+
+        $env = $this->api('bans.edit_comment', [
+            'bid' => $submissionId,
+            'cid' => $cid,
+            'ctype' => 'S',
+            'ctext' => 'unauthorized edit',
+            'page' => -1,
+        ]);
+
+        $this->assertEnvelopeError($env, 'forbidden');
+        $this->assertSame('original note', $this->row('comments', ['cid' => $cid])['commenttxt']);
+    }
+
     public function testEditCommentUpdatesRow(): void
     {
         $this->loginAsAdmin();
@@ -668,7 +954,7 @@ final class BansTest extends ApiTestCase
         $cid = (int)$this->row('comments', ['bid' => $bid])['cid'];
 
         $env = $this->api('bans.edit_comment', [
-            'cid' => $cid, 'ctype' => 'B', 'ctext' => 'edited', 'page' => -1,
+            'bid' => $bid, 'cid' => $cid, 'ctype' => 'B', 'ctext' => 'edited', 'page' => -1,
         ]);
         $this->assertTrue($env['ok']);
         $row = $this->row('comments', ['cid' => $cid]);
@@ -678,13 +964,111 @@ final class BansTest extends ApiTestCase
         $this->assertSnapshot('bans/edit_comment_success', $env, ['data.message.body']);
     }
 
+    public function testEditCommentSupportsLegacyRequestWithoutParentId(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan();
+        $this->api('bans.add_comment', [
+            'bid' => $bid, 'ctype' => 'B', 'ctext' => 'legacy request', 'page' => -1,
+        ]);
+        $cid = (int)$this->row('comments', ['bid' => $bid])['cid'];
+
+        $env = $this->api('bans.edit_comment', [
+            'cid' => $cid, 'ctype' => 'B', 'ctext' => 'legacy request edited', 'page' => -1,
+        ]);
+
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(
+            'legacy request edited',
+            $this->row('comments', ['cid' => $cid])['commenttxt'],
+        );
+    }
+
+    public function testEditCommentGeneratedRequestContractIncludesParentIdentity(): void
+    {
+        $contract = file_get_contents(ROOT . 'scripts/api-contract.js');
+        $this->assertIsString($contract);
+        $this->assertStringContainsString(
+            '@typedef {{bid?: number|string, cid?: number|string, ctype?: string, ctext?: string, page?: number|string}} ApiBansEditCommentRequest',
+            $contract,
+        );
+    }
+
     public function testEditCommentRejectsBadType(): void
     {
         $this->loginAsAdmin();
         $env = $this->api('bans.edit_comment', [
-            'cid' => 1, 'ctype' => 'Z', 'ctext' => 'x', 'page' => -1,
+            'bid' => 1, 'cid' => 1, 'ctype' => 'Z', 'ctext' => 'x', 'page' => -1,
         ]);
         $this->assertEnvelopeError($env, 'bad_type');
+    }
+
+    public function testEditCommentRejectsValidButMismatchedType(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan();
+        $this->api('bans.add_comment', [
+            'bid' => $bid,
+            'ctype' => 'B',
+            'ctext' => 'ban-only comment',
+            'page' => -1,
+        ]);
+        $cid = (int) $this->row('comments', ['bid' => $bid])['cid'];
+
+        $env = $this->api('bans.edit_comment', [
+            'bid' => $bid,
+            'cid' => $cid,
+            'ctype' => 'C',
+            'ctext' => 'retargeted comment',
+            'page' => -1,
+        ]);
+
+        $this->assertEnvelopeError($env, 'validation', 'ctype');
+        $this->assertSame('ban-only comment', $this->row('comments', ['cid' => $cid])['commenttxt']);
+    }
+
+    public function testEditCommentRejectsMismatchedParentId(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan();
+        $otherBid = $this->seedBan('STEAM_0:1:882211');
+        $this->api('bans.add_comment', [
+            'bid' => $bid,
+            'ctype' => 'B',
+            'ctext' => 'original text',
+            'page' => -1,
+        ]);
+        $cid = (int) $this->row('comments', ['bid' => $bid])['cid'];
+
+        $env = $this->api('bans.edit_comment', [
+            'bid' => $otherBid,
+            'cid' => $cid,
+            'ctype' => 'B',
+            'ctext' => 'wrong-parent edit',
+            'page' => -1,
+        ]);
+
+        $this->assertEnvelopeError($env, 'validation', 'bid');
+        $this->assertSame('original text', $this->row('comments', ['cid' => $cid])['commenttxt']);
+    }
+
+    public function testEditCommentRejectsNonAuthorWithoutOwnerPermission(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan();
+        $this->api('bans.add_comment', [
+            'bid' => $bid, 'ctype' => 'B', 'ctext' => 'owner text', 'page' => -1,
+        ]);
+        $cid = (int)$this->row('comments', ['bid' => $bid])['cid'];
+
+        $aid = $this->createAdminWithFlags(ADMIN_ADD_BAN);
+        $this->loginAs($aid);
+        $env = $this->api('bans.edit_comment', [
+            'bid' => $bid, 'cid' => $cid, 'ctype' => 'B', 'ctext' => 'unauthorized edit', 'page' => -1,
+        ]);
+
+        $this->assertEnvelopeError($env, 'forbidden');
+        $this->assertSame('owner text', $this->row('comments', ['cid' => $cid])['commenttxt']);
     }
 
     public function testRemoveCommentDeletesRow(): void
@@ -698,6 +1082,28 @@ final class BansTest extends ApiTestCase
         $this->assertTrue($env['ok']);
         $this->assertNull($this->row('comments', ['cid' => $cid]));
         $this->assertSnapshot('bans/remove_comment_success', $env);
+    }
+
+    public function testRemoveCommentRejectsValidButMismatchedType(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan();
+        $this->api('bans.add_comment', [
+            'bid' => $bid,
+            'ctype' => 'B',
+            'ctext' => 'keep this comment',
+            'page' => -1,
+        ]);
+        $cid = (int) $this->row('comments', ['bid' => $bid])['cid'];
+
+        $env = $this->api('bans.remove_comment', [
+            'cid' => $cid,
+            'ctype' => 'C',
+            'page' => -1,
+        ]);
+
+        $this->assertEnvelopeError($env, 'validation', 'ctype');
+        $this->assertNotNull($this->row('comments', ['cid' => $cid]));
     }
 
     public function testPasteRequiresKnownServer(): void

@@ -5,8 +5,8 @@ namespace Sbpp\View;
 
 /**
  * Public communications-blocklist (mute/gag) page — binds to
- * `page_comms.tpl`. The template renders the public block list; the
- * inline comment-edit drawer is a deferred-scope follow-up.
+ * `page_comms.tpl`. The template renders the public block list and
+ * shares the banlist's focused add/edit comment partial.
  *
  * Per-row shape (each entry of `$ban_list`) — the redesign's slim
  * keys layered on top of every legacy key already present
@@ -89,6 +89,9 @@ final class CommsListView extends View
         public readonly bool $can_edit_comm,
         public readonly bool $can_unmute_gag,
         public readonly bool $can_delete_comm,
+        // Any web admin may add comments. Per-comment edit/delete
+        // controls remain narrower (author-or-owner / owner).
+        public readonly bool $can_comment,
         // #1207: detects whether the current request applied any filter
         // (search text / server / time / state / type / hide-inactive).
         // Drives the first-run-vs-filtered split in the empty-state

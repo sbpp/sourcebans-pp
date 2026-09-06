@@ -24,16 +24,15 @@ use Smarty\Smarty;
  * Overview pane → "Comments" section), reachable only by clicking the
  * player-name anchor. The commslist regression is worse: the v2.0
  * rewrite of `page_comms.tpl` dropped the comment surface entirely
- * (no badge, no drawer fallback — `<tr data-testid="comm-row">`
- * carries no `data-drawer-href`), so per-row comments became 100%
- * invisible on the page even though the page handler was still
+ * from the list, so per-row comments were only reachable through the
+ * later comm-focal drawer even though the page handler was still
  * building `commentdata` for every row.
  *
  * The fix wires a native `<details data-testid="ban-comments-inline">`
  * disclosure into both templates — summary is the clickable count
  * chip, body lists each comment with author + timestamp + text. The
- * drawer's comments section (banlist only) continues to render the
- * same data via `api_bans_detail`; the two surfaces share the
+ * drawer's comments section continues to render the same data via
+ * `api_bans_detail` / `api_comms_detail`; the surfaces share the
  * `Config::getBool('config.enablepubliccomments') || $userbank->is_admin()`
  * gate.
  *
@@ -49,10 +48,9 @@ use Smarty\Smarty;
  *     the comment-edit-mode "Other comments" foreach has used since
  *     v1.x — the disclosure reuses the `nofilter` annotation pattern
  *     from that block.
- *   - Mobile cards emit a non-interactive count indicator (the card
- *     is wrapped in a single `<a>` so a nested `<details>` would be
- *     invalid HTML; mobile users tap through to the drawer where
- *     `renderOverviewPane` paints the same comments under Overview).
+ *   - Mobile cards emit a count indicator plus Add comment. Mobile
+ *     users expand the thread in the drawer, which mirrors the full
+ *     Add/Edit/Delete action set.
  *
  * Mirrors the AdminAdminsSearchTest / PublicBanListRegressionTest
  * pattern: in-process `require` of the page handler, output captured
@@ -68,8 +66,17 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
     /** @var int bid of the seeded ban with no comments. */
     private int $banWithoutCommentsBid = 0;
 
+    /** @var int cid of the first seeded ban comment. */
+    private int $firstBanCommentCid = 0;
+
     /** @var int cid of the seeded mute with comments. */
     private int $commWithCommentsCid = 0;
+
+    /** @var int subid of the seeded submission with comments. */
+    private int $submissionWithCommentsId = 0;
+
+    /** @var int pid of the seeded protest with comments. */
+    private int $protestWithCommentsId = 0;
 
     protected function setUp(): void
     {
@@ -149,9 +156,39 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
             'seeded comment text must reach the rendered HTML inside the disclosure body',
         );
         $this->assertStringContainsString(
+            '<a href="https://example.test/evidence?case=1" target="_blank" rel="noopener noreferrer">https://example.test/evidence?case=1</a><br />',
+            $html,
+            'linkified URLs must stop before preserved break markup and isolate the new tab',
+        );
+        $this->assertStringNotContainsString(
+            'href="https://example.test/evidence?case=1<br',
+            $html,
+            'the query-string matcher must not consume the trusted break tag',
+        );
+        $this->assertStringContainsString(
             'second seed comment',
             $html,
             'every comment must render — not just the first',
+        );
+        $this->assertStringContainsString(
+            'second seed comment &amp;amp; literal',
+            $html,
+            'entity-shaped API input must remain literal text instead of being decoded during render',
+        );
+        $this->assertSame(
+            2,
+            substr_count($html, 'data-testid="ban-comment-edit"'),
+            'each rendered comment needs its own Edit CTA',
+        );
+        $this->assertSame(
+            2,
+            substr_count($html, 'data-testid="ban-comment-delete"'),
+            'owners need a Delete CTA on each rendered comment',
+        );
+        $this->assertSame(
+            4,
+            substr_count($html, 'data-testid="row-action-comment-add'),
+            'both seeded bans expose Add comment on desktop and mobile',
         );
     }
 
@@ -168,7 +205,7 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
         $this->assertStringContainsString(
             'data-testid="ban-comments-count-mobile"',
             $html,
-            'mobile card must surface a non-interactive count indicator (the card wraps in <a>, so a nested <details> would be invalid HTML — drawer is the canonical mobile expansion)',
+            'mobile card must surface the count while the drawer remains the canonical mobile thread expansion',
         );
         // The seeded ban has 2 comments; the count must reach the
         // mobile indicator's text content. Anchor via the singular
@@ -264,6 +301,9 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
             $html,
             'comment author username must not leak to anonymous callers (hideadminname defaults on) (#1500)',
         );
+        $this->assertStringNotContainsString('data-testid="row-action-comment-add', $html);
+        $this->assertStringNotContainsString('data-testid="ban-comment-edit"', $html);
+        $this->assertStringNotContainsString('data-testid="ban-comment-delete"', $html);
     }
 
     // ---------------------------------------------------------------
@@ -415,6 +455,129 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
         );
     }
 
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistCommentViewKeepsEditTimestampWhenEditorWasDeleted(): void
+    {
+        Fixture::rawPdo()->prepare(sprintf(
+            'UPDATE `%s_comments` SET editaid = ?, edittime = ? WHERE bid = ? AND type = ?',
+            DB_PREFIX,
+        ))->execute([999_999, time() - 300, $this->banWithCommentsBid, 'B']);
+        $this->loginAsAdmin();
+
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => (string) $this->banWithCommentsBid,
+            'ctype'   => 'B',
+        ];
+        $html = $this->renderBanlistPage();
+
+        $this->assertStringContainsString('last edit', $html);
+        $this->assertStringContainsString(
+            'deleted admin',
+            $html,
+            'a missing editor row must not erase the surviving edit timestamp',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistCommentEditorPreservesLiteralHtmlEntities(): void
+    {
+        Fixture::rawPdo()->prepare(sprintf(
+            'UPDATE `%s_comments` SET commenttxt = ? WHERE bid = ? AND type = "B"',
+            DB_PREFIX,
+        ))->execute(['literal &amp; token', $this->banWithCommentsBid]);
+        $this->loginAsAdmin();
+
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => (string) $this->banWithCommentsBid,
+            'ctype'   => 'B',
+            'cid'     => (string) $this->firstBanCommentCid,
+        ];
+        $html = $this->renderBanlistPage();
+
+        $this->assertSame(
+            2,
+            substr_count($html, 'literal &amp;amp; token'),
+            'the editable textarea and the remaining comment must both preserve the literal entity text',
+        );
+        $this->assertStringNotContainsString(
+            'literal &amp; token',
+            $html,
+            'decoding raw API input would silently change the comment before the user saves it again',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistCommentEditorSubstitutesMalformedUtf8(): void
+    {
+        $theme = $GLOBALS['theme'];
+        $theme->assign([
+            'commenttype'  => 'Edit',
+            'comment'      => $this->banWithCommentsBid,
+            'ctype'        => 'B',
+            'cid'          => (string) $this->firstBanCommentCid,
+            'page'         => -1,
+            'canedit'      => true,
+            'commenttext'  => substituteInvalidUtf8("broken \xC3( text"),
+            'othercomments' => [],
+            'hideadminname' => false,
+        ]);
+        $html = $theme->fetch('partials/punishment-comment-editor.tpl');
+
+        $this->assertStringContainsString('broken �( text', $html);
+        $this->assertStringContainsString('id="banlist-comment-form"', $html);
+        foreach (['page.banlist.php', 'page.commslist.php'] as $handler) {
+            $source = file_get_contents(ROOT . 'pages/' . $handler);
+            $this->assertIsString($source);
+            $this->assertStringContainsString(
+                "substituteInvalidUtf8((string) \$ceditdata['commenttxt'])",
+                $source,
+                "$handler must normalise the raw editable value before Smarty auto-escapes it",
+            );
+        }
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistDoesNotRenderEditorForMismatchedCommentId(): void
+    {
+        $this->loginAsAdmin();
+        $this->setPublicCommentsFlag(false);
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => (string) $this->banWithoutCommentsBid,
+            'ctype'   => 'B',
+            'cid'     => (string) $this->firstBanCommentCid,
+        ];
+
+        $html = $this->renderBanlistPage();
+
+        $this->assertStringNotContainsString('id="banlist-comment-form"', $html);
+        $this->assertStringContainsString('data-testid="ban-row"', $html);
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistDoesNotRenderAddEditorForUnknownParent(): void
+    {
+        $this->loginAsAdmin();
+        $this->setPublicCommentsFlag(false);
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => '999999',
+            'ctype'   => 'B',
+        ];
+
+        $html = $this->renderBanlistPage();
+
+        $this->assertStringNotContainsString('id="banlist-comment-form"', $html);
+        $this->assertStringContainsString('data-testid="ban-row"', $html);
+    }
+
     // ---------------------------------------------------------------
     // Commslist — same shape, sister-fix
     // ---------------------------------------------------------------
@@ -432,7 +595,7 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
         $this->assertStringContainsString(
             'data-testid="comm-comments-inline"',
             $html,
-            'admin must see the comm-block inline comments disclosure (commslist regression was worse than banlist — no drawer fallback to recover the data)',
+            'admin must see the comm-block inline comments disclosure instead of relying on the drawer alone',
         );
         $this->assertStringContainsString(
             'data-testid="comm-comments-toggle"',
@@ -459,12 +622,167 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
             $html,
             'seeded mute-comment text must reach the rendered HTML inside the disclosure body',
         );
+        $this->assertStringContainsString(
+            'mute comment for worker C &amp;amp; literal',
+            $html,
+            'comm comments must preserve entity-shaped input with the same raw-storage contract as ban comments',
+        );
         // Control for #1500: admin viewer sees the un-hidden author.
         $this->assertStringContainsString(
             '<strong>admin</strong>',
             $html,
             'admin viewer sees the un-hidden comm-block comment author username (control for #1500)',
         );
+        $this->assertStringContainsString('data-testid="row-action-comment-add"', $html);
+        $this->assertStringContainsString('data-testid="row-action-comment-add-mobile"', $html);
+        $this->assertStringContainsString('data-testid="comm-comment-edit"', $html);
+        $this->assertStringContainsString('data-testid="comm-comment-delete"', $html);
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCommslistCommentCtaOpensSharedEditor(): void
+    {
+        $this->loginAsAdmin();
+        $this->setPublicCommentsFlag(false);
+        $_GET = [
+            'p'       => 'commslist',
+            'comment' => (string) $this->commWithCommentsCid,
+            'ctype'   => 'C',
+        ];
+
+        $html = $this->renderCommslistPage();
+
+        $this->assertStringContainsString('id="banlist-comment-form"', $html);
+        $this->assertStringContainsString('href="index.php?p=commslist"', $html);
+        $this->assertStringContainsString('data-testid="comment-editor-submit"', $html);
+        $this->assertStringContainsString('mute comment for worker C', $html);
+        $this->assertStringNotContainsString('data-testid="comms-header"', $html);
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCommslistCommentEditorDoesNotDependOnFilteredListRows(): void
+    {
+        $this->loginAsAdmin();
+        $this->setPublicCommentsFlag(false);
+        $_GET = [
+            'p'          => 'commslist',
+            'searchText' => 'no-comm-row-can-match-this-filter',
+            'comment'    => (string) $this->commWithCommentsCid,
+            'ctype'      => 'C',
+        ];
+
+        $html = $this->renderCommslistPage();
+
+        $this->assertStringContainsString('id="banlist-comment-form"', $html);
+        $this->assertStringContainsString('mute comment for worker C', $html);
+        $this->assertStringNotContainsString('data-testid="comms-header"', $html);
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCommslistCommentViewKeepsEditTimestampWhenEditorWasDeleted(): void
+    {
+        Fixture::rawPdo()->prepare(sprintf(
+            'UPDATE `%s_comments` SET editaid = ?, edittime = ? WHERE bid = ? AND type = ?',
+            DB_PREFIX,
+        ))->execute([999_999, time() - 300, $this->commWithCommentsCid, 'C']);
+        $this->loginAsAdmin();
+
+        $_GET = [
+            'p'       => 'commslist',
+            'comment' => (string) $this->commWithCommentsCid,
+            'ctype'   => 'C',
+        ];
+        $html = $this->renderCommslistPage();
+
+        $this->assertStringContainsString('last edit', $html);
+        $this->assertStringContainsString(
+            'deleted admin',
+            $html,
+            'a missing editor row must not erase the surviving edit timestamp',
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCommslistDoesNotRenderEditorForUnknownCommentId(): void
+    {
+        $this->loginAsAdmin();
+        $this->setPublicCommentsFlag(false);
+        $_GET = [
+            'p'       => 'commslist',
+            'comment' => (string) $this->commWithCommentsCid,
+            'ctype'   => 'C',
+            'cid'     => '999999',
+        ];
+
+        $html = $this->renderCommslistPage();
+
+        $this->assertStringNotContainsString('id="banlist-comment-form"', $html);
+        $this->assertStringContainsString('data-testid="comm-row"', $html);
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testSubmissionCommentCtaStillOpensSharedEditorForAuthorizedAdmin(): void
+    {
+        $this->loginAsAdmin();
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => (string) $this->submissionWithCommentsId,
+            'ctype'   => 'S',
+        ];
+
+        $html = $this->renderBanlistPage();
+
+        $this->assertStringContainsString('id="banlist-comment-form"', $html);
+        $this->assertStringContainsString('data-ctype="S"', $html);
+        $this->assertStringContainsString('submission moderation comment', $html);
+        $this->assertStringContainsString(
+            'href="index.php?p=admin&amp;c=bans&amp;section=submissions"',
+            $html,
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testProtestCommentCtaStillOpensSharedEditorForAuthorizedAdmin(): void
+    {
+        $this->loginAsAdmin();
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => (string) $this->protestWithCommentsId,
+            'ctype'   => 'P',
+        ];
+
+        $html = $this->renderBanlistPage();
+
+        $this->assertStringContainsString('id="banlist-comment-form"', $html);
+        $this->assertStringContainsString('data-ctype="P"', $html);
+        $this->assertStringContainsString('protest moderation comment', $html);
+        $this->assertStringContainsString(
+            'href="index.php?p=admin&amp;c=bans&amp;section=protests"',
+            $html,
+        );
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testPublicCommentsSettingDoesNotExposeModerationQueueComments(): void
+    {
+        $this->setPublicCommentsFlag(true);
+        $_GET = [
+            'p'       => 'banlist',
+            'comment' => (string) $this->submissionWithCommentsId,
+            'ctype'   => 'S',
+        ];
+
+        $html = $this->renderBanlistPage();
+
+        $this->assertStringNotContainsString('id="banlist-comment-form"', $html);
+        $this->assertStringNotContainsString('submission moderation comment', $html);
     }
 
     #[RunInSeparateProcess]
@@ -492,9 +810,8 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
     #[PreserveGlobalState(false)]
     public function testCommslistHidesCommentAuthorWhenHideAdminName(): void
     {
-        // #1500 sister-fix: the commslist inline disclosure has no
-        // drawer fallback, so a leaked comm-block comment author is the
-        // ONLY on-page surface — must honour banlist.hideadminname too.
+        // #1500 sister-fix: the commslist inline disclosure must honour
+        // the same hideadminname gate as the comm-focal drawer.
         Fixture::rawPdo()->prepare(sprintf(
             "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
                 ('config.enablepubliccomments', '1'),
@@ -567,6 +884,53 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
         );
     }
 
+    public function testSharedEditorClientHonorsServerAndModerationFallbackRedirects(): void
+    {
+        $source = file_get_contents(ROOT . 'scripts/banlist.js');
+        $this->assertIsString($source);
+
+        $this->assertStringContainsString('data.message.redir', $source);
+        $this->assertStringContainsString(
+            'index.php?p=admin&c=bans&section=submissions',
+            $source,
+        );
+        $this->assertStringContainsString(
+            'index.php?p=admin&c=bans&section=protests',
+            $source,
+        );
+    }
+
+    public function testDrawerCommentRendererPreservesSafeListFormatting(): void
+    {
+        $source = file_get_contents(ROOT . 'themes/default/js/theme.js');
+        $this->assertIsString($source);
+
+        $this->assertStringContainsString(
+            "renderCommentText(c.text || '')",
+            $source,
+        );
+        $this->assertStringContainsString(
+            'split(/(<br\\s*\\/?>)/gi)',
+            $source,
+        );
+        $this->assertStringContainsString(
+            'target="_blank" rel="noopener noreferrer"',
+            $source,
+        );
+        $this->assertStringContainsString(
+            'data-testid="drawer-comment-text"',
+            $source,
+        );
+        $this->assertStringContainsString('c.can_edit === true', $source);
+        $this->assertStringContainsString('c.can_delete === true', $source);
+        $this->assertStringContainsString(
+            "Object.prototype.hasOwnProperty.call(c, 'author') && c.author === null",
+            $source,
+            'the drawer must distinguish the API null-for-deleted-author contract from a malformed missing field',
+        );
+        $this->assertStringContainsString("? 'deleted admin'", $source);
+    }
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
@@ -616,8 +980,15 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
              VALUES (?, ?, ?, ?, ?)',
             DB_PREFIX,
         ));
-        $insertComment->execute(['B', $this->banWithCommentsBid, $aid, 'first comment from worker C', $now - 1800]);
-        $insertComment->execute(['B', $this->banWithCommentsBid, $aid, 'second seed comment', $now - 600]);
+        $insertComment->execute([
+            'B',
+            $this->banWithCommentsBid,
+            $aid,
+            'first comment from worker C https://example.test/evidence?case=1<br/>after break',
+            $now - 1800,
+        ]);
+        $this->firstBanCommentCid = (int) $pdo->lastInsertId();
+        $insertComment->execute(['B', $this->banWithCommentsBid, $aid, 'second seed comment &amp; literal', $now - 600]);
 
         // Seed a mute with comments so the commslist disclosure has
         // something to render. The ureason / RemoveType fields stay
@@ -633,7 +1004,36 @@ final class BanlistCommentsVisibilityTest extends ApiTestCase
         ]);
         $this->commWithCommentsCid = (int) $pdo->lastInsertId();
 
-        $insertComment->execute(['C', $this->commWithCommentsCid, $aid, 'mute comment for worker C', $now - 600]);
+        $insertComment->execute(['C', $this->commWithCommentsCid, $aid, 'mute comment for worker C &amp; literal', $now - 600]);
+
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_submissions`
+              (`name`, `SteamId`, `email`, `reason`, `archiv`, `submitted`, `ModID`, `ip`, `server`)
+             VALUES (?, ?, ?, ?, "0", ?, 0, "127.0.0.1", 0)',
+            DB_PREFIX,
+        ))->execute(['ReportedPlayer', 'STEAM_0:1:42020', 'reporter@example.test', 'cheating', $now - 500]);
+        $this->submissionWithCommentsId = (int) $pdo->lastInsertId();
+        $insertComment->execute([
+            'S',
+            $this->submissionWithCommentsId,
+            $aid,
+            'submission moderation comment',
+            $now - 400,
+        ]);
+
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_protests` (`bid`, `email`, `reason`, `archiv`, `datesubmitted`, `pip`)
+             VALUES (0, ?, ?, "0", ?, "127.0.0.1")',
+            DB_PREFIX,
+        ))->execute(['protester@example.test', 'wrong ban', $now - 300]);
+        $this->protestWithCommentsId = (int) $pdo->lastInsertId();
+        $insertComment->execute([
+            'P',
+            $this->protestWithCommentsId,
+            $aid,
+            'protest moderation comment',
+            $now - 200,
+        ]);
     }
 
     private function bootstrapSmartyTheme(): void

@@ -19,6 +19,48 @@ function _api_bans_steam_api_key(): string
     return $key;
 }
 
+/**
+ * Validate the upload callback pair before linking a demo to a new ban.
+ *
+ * @return bool True when a complete, valid attachment should be inserted.
+ */
+function _api_bans_validate_demo_attachment(string $filename, string $originalName): bool
+{
+    // The add-ban form has historically sent numeric `0` when no upload
+    // was selected. Preserve that wire sentinel as the empty state.
+    $hasFilename = $filename !== '' && $filename !== '0';
+    $hasOriginalName = $originalName !== '';
+    if (!$hasFilename && !$hasOriginalName) {
+        return false;
+    }
+    if (!$hasFilename || !$hasOriginalName) {
+        throw new ApiError('validation', 'The demo upload is incomplete.', 'dfile');
+    }
+    if (!preg_match('/^[a-f0-9]{32}$/D', $filename)) {
+        throw new ApiError('validation', 'The demo upload reference is invalid.', 'dfile');
+    }
+    // `:prefix_demos.origname` is VARCHAR(128); reject over-width input
+    // before MariaDB strict mode turns the INSERT into a generic 500.
+    if (!mb_check_encoding($originalName, 'UTF-8') || mb_strlen($originalName, 'UTF-8') > 128) {
+        throw new ApiError('validation', 'The demo filename is invalid.', 'dname');
+    }
+
+    // SECURITY-REVIEW: `$filename` is API input. Require the exact
+    // uploader-generated hash shape, reject links, and contain the resolved
+    // regular file inside SB_DEMOS before persisting a public download row.
+    $demoRoot = realpath(SB_DEMOS);
+    $path = rtrim(SB_DEMOS, '/\\') . DIRECTORY_SEPARATOR . $filename;
+    $resolvedPath = realpath($path);
+    $insideDemoRoot = $demoRoot !== false
+        && $resolvedPath !== false
+        && str_starts_with($resolvedPath, $demoRoot . DIRECTORY_SEPARATOR);
+    if ($resolvedPath === false || !$insideDemoRoot || is_link($path) || !is_file($resolvedPath)) {
+        throw new ApiError('validation', 'The uploaded demo is no longer available.', 'dfile');
+    }
+
+    return true;
+}
+
 function api_bans_add(array $params): array
 {
     global $userbank;
@@ -158,13 +200,15 @@ function api_bans_add(array $params): array
         }
     }
 
+    $attachDemo = _api_bans_validate_demo_attachment($dfile, $dname);
+
     $GLOBALS['PDO']->query(
         "INSERT INTO `:prefix_bans`(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
         (UNIX_TIMESTAMP(),?,?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)"
     )->execute([$banType->value, $ip, $steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
     $newId = (int)$GLOBALS['PDO']->lastInsertId();
 
-    if ($dname && $dfile && preg_match('/^[a-z0-9]*$/i', $dfile)) {
+    if ($attachDemo) {
         $GLOBALS['PDO']->query("INSERT INTO `:prefix_demos`(demid,demtype,filename,origname) VALUES(?,'B',?,?)")
             ->execute([$newId, $dfile, $dname]);
     }
@@ -277,6 +321,56 @@ function api_bans_paste(array $params): array
     throw new ApiError('player_not_found', "Can't get player info for " . htmlspecialchars($name) . '. Player is not on the server anymore!');
 }
 
+/**
+ * Confirm that a comment's parent row exists. The SQL is selected from
+ * a fixed allowlist because table and column identifiers cannot be bound.
+ */
+function _api_bans_comment_parent_exists(string $ctype, int $id): bool
+{
+    return match ($ctype) {
+        'B' => $GLOBALS['PDO']->query('SELECT bid FROM `:prefix_bans` WHERE bid = ?')->single([$id]) !== false,
+        'C' => $GLOBALS['PDO']->query('SELECT bid FROM `:prefix_comms` WHERE bid = ?')->single([$id]) !== false,
+        'S' => $GLOBALS['PDO']->query('SELECT subid FROM `:prefix_submissions` WHERE subid = ?')->single([$id]) !== false,
+        'P' => $GLOBALS['PDO']->query('SELECT pid FROM `:prefix_protests` WHERE pid = ?')->single([$id]) !== false,
+        default => false,
+    };
+}
+
+/**
+ * Enforce the parent surface's authorization before reading or mutating
+ * moderation-queue comments.
+ */
+function _api_bans_can_manage_comment_type(string $ctype): bool
+{
+    global $userbank;
+
+    // SECURITY-REVIEW: submission and protest comments expose moderation
+    // records, so a generic web-admin session is not sufficient.
+    return match ($ctype) {
+        'B', 'C' => $userbank->is_admin(),
+        'S' => $userbank->HasAccess(WebPermission::mask(
+            WebPermission::Owner,
+            WebPermission::BanSubmissions,
+        )),
+        'P' => $userbank->HasAccess(WebPermission::mask(
+            WebPermission::Owner,
+            WebPermission::BanProtests,
+        )),
+        default => false,
+    };
+}
+
+function _api_bans_comment_subject_label(string $ctype): string
+{
+    return match ($ctype) {
+        'B' => 'ban',
+        'C' => 'comm block',
+        'S' => 'submission',
+        'P' => 'protest',
+        default => 'record',
+    };
+}
+
 function api_bans_add_comment(array $params): array
 {
     global $userbank, $username;
@@ -302,12 +396,25 @@ function api_bans_add_comment(array $params): array
     if ($redir === null) {
         throw new ApiError('bad_type', 'Bad comment type.');
     }
+    if (!_api_bans_can_manage_comment_type($ctype)) {
+        throw new ApiError('forbidden', 'You do not have permission to manage comments for this record.');
+    }
+    if ($bid <= 0) {
+        throw new ApiError('validation', 'Missing or invalid record id.', 'bid');
+    }
+    if ($ctext === '') {
+        throw new ApiError('validation', 'Comment is required.', 'ctext');
+    }
+    if (!_api_bans_comment_parent_exists($ctype, $bid)) {
+        throw new ApiError('not_found', 'Record not found.', 'bid', 404);
+    }
 
     $GLOBALS['PDO']->query(
         "INSERT INTO `:prefix_comments`(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())"
     )->execute([$bid, $ctype, $userbank->GetAid(), $ctext]);
 
-    Log::add(LogType::Message, 'Comment Added', "$username added a comment for ban #$bid");
+    $subject = _api_bans_comment_subject_label($ctype);
+    Log::add(LogType::Message, 'Comment Added', "$username added a comment for $subject #$bid");
 
     return [
         'reload'  => true,
@@ -320,9 +427,20 @@ function api_bans_add_comment(array $params): array
     ];
 }
 
+/**
+ * Edit an existing punishment or moderation-queue comment.
+ *
+ * @param array{bid?: int|string, cid?: int|string, ctype?: string, ctext?: string, page?: int|string} $params
+ * @return array{
+ *   reload: bool,
+ *   message: array{title: string, body: string, kind: string, redir: string}
+ * }
+ */
 function api_bans_edit_comment(array $params): array
 {
     global $userbank, $username;
+    $hasBid = array_key_exists('bid', $params);
+    $bid   = (int)($params['bid']   ?? 0);
     $cid   = (int)($params['cid']   ?? 0);
     $ctype = (string)($params['ctype'] ?? '');
     $ctext = trim((string)($params['ctext'] ?? ''));
@@ -341,10 +459,46 @@ function api_bans_edit_comment(array $params): array
     if ($redir === null) {
         throw new ApiError('bad_type', 'Bad comment type.');
     }
+    if (!_api_bans_can_manage_comment_type($ctype)) {
+        throw new ApiError('forbidden', 'You do not have permission to manage comments for this record.');
+    }
+    if ($cid <= 0) {
+        throw new ApiError('validation', 'Missing or invalid comment id.', 'cid');
+    }
+    if ($hasBid && $bid <= 0) {
+        throw new ApiError('validation', 'Missing or invalid record id.', 'bid');
+    }
+    if ($ctext === '') {
+        throw new ApiError('validation', 'Comment is required.', 'ctext');
+    }
+
+    $comment = $GLOBALS['PDO']
+        ->query('SELECT aid, bid, type FROM `:prefix_comments` WHERE cid = ?')
+        ->single([$cid]);
+    if (!$comment) {
+        throw new ApiError('not_found', 'Comment not found.', 'cid', 404);
+    }
+    if ((string)$comment['type'] !== $ctype) {
+        throw new ApiError('validation', 'Comment type does not match.', 'ctype');
+    }
+    if ((int)$comment['aid'] !== $userbank->GetAid()
+        && !$userbank->HasAccess(WebPermission::Owner)) {
+        throw new ApiError('forbidden', 'You do not have permission to edit this comment.');
+    }
+    $commentBid = (int)$comment['bid'];
+    if ($hasBid && $commentBid !== $bid) {
+        throw new ApiError('validation', 'Comment does not belong to this record.', 'bid');
+    }
+    $bid = $commentBid;
+    if (!_api_bans_comment_parent_exists($ctype, $bid)) {
+        throw new ApiError('not_found', 'Record not found.', 'bid', 404);
+    }
 
     $GLOBALS['PDO']->query(
-        "UPDATE `:prefix_comments` SET commenttxt = ?, editaid = ?, edittime = UNIX_TIMESTAMP() WHERE cid = ?"
-    )->execute([$ctext, $userbank->GetAid(), $cid]);
+        "UPDATE `:prefix_comments`
+         SET commenttxt = ?, editaid = ?, edittime = UNIX_TIMESTAMP()
+         WHERE cid = ? AND bid = ? AND type = ?"
+    )->execute([$ctext, $userbank->GetAid(), $cid, $bid, $ctype]);
 
     Log::add(LogType::Message, 'Comment Edited', "$username edited comment #$cid");
 
@@ -427,19 +581,38 @@ function api_bans_remove_comment(array $params): array
     $ctype = (string)($params['ctype'] ?? '');
     $page  = (int)($params['page']  ?? -1);
 
+    if ($cid <= 0) {
+        throw new ApiError('validation', 'Missing or invalid comment id.', 'cid');
+    }
+    if (!in_array($ctype, ['B', 'C', 'S', 'P'], true)) {
+        throw new ApiError('bad_type', 'Bad comment type.');
+    }
+
+    $comment = $GLOBALS['PDO']
+        ->query('SELECT type FROM `:prefix_comments` WHERE cid = ?')
+        ->single([$cid]);
+    if (!$comment) {
+        throw new ApiError('not_found', 'Comment not found.', 'cid', 404);
+    }
+    if ((string)$comment['type'] !== $ctype) {
+        throw new ApiError('validation', 'Comment type does not match.', 'ctype');
+    }
+
     $pagelink = $page !== -1 ? '&page=' . $page : '';
     // #1275 — match the section-aware redirect shape from
     // api_bans_add_comment / api_bans_edit_comment so a deleted
     // comment lands the admin back on the queue they were on.
-    $redir = match ($ctype) {
+    $redirects = [
         'B' => '?p=banlist' . $pagelink,
         'C' => '?p=commslist' . $pagelink,
         'S' => '?p=admin&c=bans&section=submissions',
         'P' => '?p=admin&c=bans&section=protests',
-        default => '?p=admin&c=bans',
-    };
+    ];
+    $redir = $redirects[$ctype];
 
-    $GLOBALS['PDO']->query("DELETE FROM `:prefix_comments` WHERE cid = ?")->execute([$cid]);
+    $GLOBALS['PDO']->query(
+        'DELETE FROM `:prefix_comments` WHERE cid = ? AND type = ?'
+    )->execute([$cid, $ctype]);
     Log::add(LogType::Message, 'Comment Deleted', "$username deleted comment #$cid");
 
     return [
@@ -813,8 +986,9 @@ function api_bans_view_community(array $params): array
  *   demo_count: int,
  *   history_count: int,
  *   comments_visible: bool,
+ *   comments_can_add: bool,
  *   notes_visible: bool,
- *   comments: list<array{cid: int, added: int, added_human: string, author: string|null, text: string, edited_at: int|null, edited_by: string|null}>
+ *   comments: list<array{cid: int, added: int, added_human: string, author: string|null, author_hidden: bool, text: string, edited_at: int|null, edited_by: string|null, can_edit: bool, can_delete: bool}>
  * }
  */
 function api_bans_detail(array $params): array
@@ -931,11 +1105,13 @@ function api_bans_detail(array $params): array
         $serverName = $row['server_ip'] . (!empty($row['server_port']) ? ':' . $row['server_port'] : '');
     }
 
-    $comments = [];
-    $commentsVisible = Config::getBool('config.enablepubliccomments') || $isAdmin;
+    $comments          = [];
+    $commentsCanAdd    = $isAdmin;
+    $commentsCanDelete = $userbank->HasAccess(WebPermission::Owner);
+    $commentsVisible   = Config::getBool('config.enablepubliccomments') || $isAdmin;
     if ($commentsVisible) {
         $commentRows = $GLOBALS['PDO']->query(
-            "SELECT C.cid, C.commenttxt, C.added, C.edittime,
+            "SELECT C.cid, C.aid, C.commenttxt, C.added, C.edittime,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.aid)     AS author,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editor
                FROM `:prefix_comments` AS C
@@ -960,6 +1136,9 @@ function api_bans_detail(array $params): array
                 'text'       => (string)$crow['commenttxt'],
                 'edited_at'  => $editTime,
                 'edited_by'  => (!$hideAdmin && $crow['editor'] !== null) ? (string)$crow['editor'] : null,
+                'can_edit'   => $commentsCanAdd
+                    && ((int)$crow['aid'] === $userbank->GetAid() || $commentsCanDelete),
+                'can_delete' => $commentsCanDelete,
             ];
         }
     }
@@ -1000,6 +1179,7 @@ function api_bans_detail(array $params): array
         'demo_count'       => (int)$row['demo_count'],
         'history_count'    => (int)$row['history_count'],
         'comments_visible' => $commentsVisible,
+        'comments_can_add' => $commentsCanAdd,
         // notes_visible is the drawer's signal for whether to render the
         // Notes tab at all (#1165). It mirrors the dispatcher gate on
         // `notes.list` (requireAdmin=true) so a public visitor sees three
