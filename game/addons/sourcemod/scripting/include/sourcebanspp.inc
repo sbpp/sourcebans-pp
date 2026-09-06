@@ -81,6 +81,7 @@ public void __pl_sourcebanspp_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
 	MarkNativeAsOptional("SBPP_BanPlayer");
+	MarkNativeAsOptional("SBPP_BanPlayerBySteamId");
 	MarkNativeAsOptional("SBPP_ReportPlayer");
 }
 #endif
@@ -108,6 +109,20 @@ native void SBBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason
  * @noreturn
  *********************************************************/
 native void SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
+
+/*********************************************************
+ * Ban a player by SteamID — supports offline/disconnected players.
+ * Inserts the ban directly into the SourceBans++ database.
+ * Fires SBPP_OnBanPlayer with iTarget = -1 to indicate an offline ban.
+ *
+ * @param iAdmin	Client index of the admin (0 = server / automated)
+ * @param steamId	SteamID string, e.g. "STEAM_0:0:12345"
+ * @param name		Player name; may be empty string if unknown
+ * @param iTime		Ban duration in minutes (0 = permanent)
+ * @param sReason	Reason for the ban
+ * @noreturn
+ *********************************************************/
+native void SBPP_BanPlayerBySteamId(int iAdmin, const char[] steamId, const char[] name, int iTime, const char[] sReason);
 
 /*********************************************************
  * Reports a player
