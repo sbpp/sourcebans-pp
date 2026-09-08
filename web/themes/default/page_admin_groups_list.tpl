@@ -104,14 +104,20 @@
                     <input type="hidden" name="type" value="web">
                     <div class="card__header">
                         <div>
-                            <h3>{$selected_group.name|escape}</h3>
-                            <p>{$selected_group.member_count} member{if $selected_group.member_count != 1}s{/if}</p>
+                            <h3 data-testid="group-detail-name">{$selected_group.name|escape}</h3>
+                            <p data-testid="group-detail-members">{$selected_group.member_count} member{if $selected_group.member_count != 1}s{/if}</p>
                         </div>
                         {if $permission_deletegroup}
                             <button type="button"
                                     class="btn btn--ghost btn--sm"
                                     data-testid="group-delete"
-                                    onclick="SbppGroupsDelete({$selected_group.gid}, '{$selected_group.name|escape:'javascript'}', this);">Delete group</button>
+                                    data-gid="{$selected_group.gid}"
+                                    data-name="{$selected_group.name|escape}"
+                                    style="color:var(--danger)"
+                                    onclick="SbppGroupsDelete(this.dataset.gid, this.dataset.name, this);">
+                                <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                                Delete group
+                            </button>
                         {/if}
                     </div>
                     <div class="card__body space-y-4">
@@ -224,19 +230,31 @@
                     <article class="card" data-testid="server-admin-group-row" data-id="{$group.id}">
                         <div class="card__header">
                             <div>
-                                <h3>{$group.name|escape}</h3>
-                                <p>{$server_admins[$smarty.foreach.server_admin_group.index]} member{if $server_admins[$smarty.foreach.server_admin_group.index] != 1}s{/if} &middot; immunity {$group.immunity}</p>
+                                <h3 style="font-size:var(--fs-lg);font-weight:600;margin:0">{$group.name|escape}</h3>
+                                <p class="text-sm text-muted m-0 mt-1">{$server_admins[$smarty.foreach.server_admin_group.index]} member{if $server_admins[$smarty.foreach.server_admin_group.index] != 1}s{/if} &middot; immunity {$group.immunity}</p>
                             </div>
                             <div class="flex gap-1">
                                 {if $permission_editgroup}
-                                    <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id|escape:'url'}">Edit</a>
+                                    <a class="btn btn--ghost btn--sm"
+                                       href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id|escape:'url'}"
+                                       data-testid="server-admin-group-edit">
+                                        <i data-lucide="pencil" style="width:13px;height:13px"></i>
+                                        Edit
+                                    </a>
                                 {/if}
                                 {if $permission_deletegroup}
-                                    <button type="button" class="btn btn--ghost btn--sm" onclick="SbppServerGroupsDelete({$group.id}, '{$group.name|escape:'javascript'}', 'srv', this);">Delete</button>
+                                    <button type="button"
+                                            class="btn btn--ghost btn--sm"
+                                            data-testid="server-admin-group-delete"
+                                            style="color:var(--danger)"
+                                            onclick="SbppServerGroupsDelete({$group.id}, '{$group.name|escape:'javascript'}', 'srv', this);">
+                                        <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                                        Delete
+                                    </button>
                                 {/if}
                             </div>
                         </div>
-                        <div class="card__body space-y-3">
+                        <div class="card__body space-y-0">
                             <div>
                                 <div class="text-xs font-semibold text-muted mb-2">Permissions</div>
                                 {if $group.permissions}
@@ -250,32 +268,51 @@
                                 {/if}
                             </div>
                             {if $server_admins_list[$smarty.foreach.server_admin_group.index]}
-                                <div>
+                                <div style="border-top:1px solid var(--border);padding-top:0.75rem;margin-top:0.75rem">
                                     <div class="text-xs font-semibold text-muted mb-2">Members</div>
-                                    <ul style="list-style:none;padding:0;margin:0" class="space-y-3">
-                                        {foreach from=$server_admins_list[$smarty.foreach.server_admin_group.index] item="server_admin"}
-                                            <li class="flex items-center justify-between gap-2 text-sm">
-                                                <span class="truncate">{$server_admin.user|escape}</span>
-                                                {if $permission_editadmin}
-                                                    <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=admins&o=editgroup&id={$server_admin.aid|escape:'url'}">Edit</a>
-                                                {/if}
-                                            </li>
-                                        {/foreach}
-                                    </ul>
+                                    <table class="table table--compact" style="margin:0">
+                                        <thead>
+                                            <tr>
+                                                <th>User</th>
+                                                {if $permission_editadmin}<th style="width:5rem"></th>{/if}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {foreach from=$server_admins_list[$smarty.foreach.server_admin_group.index] item="server_admin"}
+                                                <tr>
+                                                    <td class="truncate">{$server_admin.user|escape}</td>
+                                                    {if $permission_editadmin}
+                                                        <td class="text-right">
+                                                            <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=admins&o=editgroup&id={$server_admin.aid|escape:'url'}">Edit</a>
+                                                        </td>
+                                                    {/if}
+                                                </tr>
+                                            {/foreach}
+                                        </tbody>
+                                    </table>
                                 </div>
                             {/if}
                             {if $server_overrides_list[$smarty.foreach.server_admin_group.index]}
-                                <div>
+                                <div style="border-top:1px solid var(--border);padding-top:0.75rem;margin-top:0.75rem">
                                     <div class="text-xs font-semibold text-muted mb-2">Overrides</div>
-                                    <ul style="list-style:none;padding:0;margin:0" class="space-y-3 text-xs">
-                                        {foreach from=$server_overrides_list[$smarty.foreach.server_admin_group.index] item="override"}
-                                            <li class="flex items-center justify-between gap-2">
-                                                <span class="font-mono">{$override.type|escape}</span>
-                                                <span class="truncate">{$override.name|escape}</span>
-                                                <span class="font-mono text-muted">{$override.access|escape}</span>
-                                            </li>
-                                        {/foreach}
-                                    </ul>
+                                    <table class="table table--compact" style="margin:0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:4.5rem">Type</th>
+                                                <th>Name</th>
+                                                <th style="width:5rem">Access</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {foreach from=$server_overrides_list[$smarty.foreach.server_admin_group.index] item="override"}
+                                                <tr>
+                                                    <td class="font-mono text-xs">{$override.type|escape}</td>
+                                                    <td class="truncate font-mono text-xs">{$override.name|escape}</td>
+                                                    <td class="font-mono text-xs text-muted">{$override.access|escape}</td>
+                                                </tr>
+                                            {/foreach}
+                                        </tbody>
+                                    </table>
                                 </div>
                             {/if}
                         </div>
@@ -326,15 +363,27 @@
                     <article class="card" data-testid="server-group-row" data-id="{$group.gid}">
                         <div class="card__header">
                             <div>
-                                <h3>{$group.name|escape}</h3>
-                                <p>{$server_counts[$smarty.foreach.server_group.index]} server{if $server_counts[$smarty.foreach.server_group.index] != 1}s{/if}</p>
+                                <h3 style="font-size:var(--fs-lg);font-weight:600;margin:0">{$group.name|escape}</h3>
+                                <p class="text-sm text-muted m-0 mt-1">{$server_counts[$smarty.foreach.server_group.index]} server{if $server_counts[$smarty.foreach.server_group.index] != 1}s{/if}</p>
                             </div>
                             <div class="flex gap-1">
                                 {if $permission_editgroup}
-                                    <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid|escape:'url'}">Edit</a>
+                                    <a class="btn btn--ghost btn--sm"
+                                       href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid|escape:'url'}"
+                                       data-testid="server-group-edit">
+                                        <i data-lucide="pencil" style="width:13px;height:13px"></i>
+                                        Edit
+                                    </a>
                                 {/if}
                                 {if $permission_deletegroup}
-                                    <button type="button" class="btn btn--ghost btn--sm" onclick="SbppServerGroupsDelete({$group.gid}, '{$group.name|escape:'javascript'}', 'server', this);">Delete</button>
+                                    <button type="button"
+                                            class="btn btn--ghost btn--sm"
+                                            data-testid="server-group-delete"
+                                            style="color:var(--danger)"
+                                            onclick="SbppServerGroupsDelete({$group.gid}, '{$group.name|escape:'javascript'}', 'server', this);">
+                                        <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                                        Delete
+                                    </button>
                                 {/if}
                             </div>
                         </div>
@@ -459,6 +508,9 @@
         {/if}
     </section>
 </div>
+
+{* nofilter: server-built JSON catalog (json_encode + JSON_HEX_*) for client-side master-detail selection *}
+<script type="application/json" id="web-groups-catalog" data-testid="web-groups-catalog">{$web_groups_catalog_json nofilter}</script>
 
 <script>
 {literal}
@@ -633,6 +685,147 @@ function SbppServerGroupsDelete(gid, name, type, btn) {
         if (!target || !target.matches || !target.matches('input[name="flags[]"]')) return;
 
         preview.textContent = SbppFoldFlags(grid) + ' bitmask';
+    });
+})();
+
+// --- Client-side master-detail selection ---
+// Left-rail clicks paint the right pane from `#web-groups-catalog`
+// without a full navigation. The `<a href="?gid=N">` stays as the
+// no-JS fallback. Dirty forms prompt before discard.
+(function () {
+    'use strict';
+
+    var catalogEl = document.getElementById('web-groups-catalog');
+    var list = document.querySelector('[data-testid="group-list"]');
+    var form = document.querySelector('[data-testid="group-detail"]');
+    if (!catalogEl || !list || !form) return;
+
+    var catalog;
+    try {
+        catalog = JSON.parse(catalogEl.textContent || '[]');
+    } catch (e) {
+        return;
+    }
+    if (!Array.isArray(catalog) || catalog.length === 0) return;
+
+    /** @type {Object<string, {gid: number, name: string, flags: number, member_count: number}>} */
+    var byGid = {};
+    for (var i = 0; i < catalog.length; i++) {
+        byGid[String(catalog[i].gid)] = catalog[i];
+    }
+
+    var dirty = false;
+    var nameInput = form.querySelector('[data-testid="group-name"]');
+    var gidInput = form.querySelector('input[name="gid"]');
+    var titleEl = form.querySelector('[data-testid="group-detail-name"]');
+    var membersEl = form.querySelector('[data-testid="group-detail-members"]');
+    var deleteBtn = form.querySelector('[data-testid="group-delete"]');
+    var flagGrid = form.querySelector('[data-testid="flag-grid"]');
+    var bitmaskEl = form.querySelector('[data-testid="flag-bitmask"]');
+
+    function markDirty() {
+        dirty = true;
+    }
+    form.addEventListener('input', markDirty);
+    form.addEventListener('change', markDirty);
+
+    function currentGid() {
+        return gidInput ? Number(gidInput.value) : 0;
+    }
+
+    function memberLabel(count) {
+        var n = Number(count) || 0;
+        return n + ' member' + (n === 1 ? '' : 's');
+    }
+
+    /**
+     * @param {{gid: number, name: string, flags: number, member_count: number}} group
+     * @param {boolean} [push]
+     */
+    function paintGroup(group, push) {
+        if (!group) return;
+
+        if (gidInput) gidInput.value = String(group.gid);
+        if (nameInput) nameInput.value = group.name;
+        if (titleEl) titleEl.textContent = group.name;
+        if (membersEl) membersEl.textContent = memberLabel(group.member_count);
+        form.setAttribute('action', '?p=admin&c=groups&gid=' + group.gid);
+
+        if (deleteBtn) {
+            deleteBtn.setAttribute('data-gid', String(group.gid));
+            deleteBtn.setAttribute('data-name', group.name);
+        }
+
+        var flags = (Number(group.flags) || 0) >>> 0;
+        if (flagGrid) {
+            var checks = flagGrid.querySelectorAll('input[name="flags[]"]');
+            for (var c = 0; c < checks.length; c++) {
+                var input = /** @type {HTMLInputElement} */ (checks[c]);
+                var val = Number(input.dataset.flagValue || input.value) >>> 0;
+                input.checked = (flags & val) === val;
+            }
+        }
+        if (bitmaskEl) {
+            bitmaskEl.textContent = flags + ' bitmask';
+        }
+
+        var rows = list.querySelectorAll('[data-testid="group-row"]');
+        for (var r = 0; r < rows.length; r++) {
+            var row = /** @type {HTMLElement} */ (rows[r]);
+            var isActive = Number(row.getAttribute('data-id')) === group.gid;
+            if (isActive) {
+                row.setAttribute('aria-current', 'true');
+                row.style.background = 'var(--bg-muted)';
+            } else {
+                row.removeAttribute('aria-current');
+                row.style.background = '';
+            }
+        }
+
+        dirty = false;
+
+        if (push) {
+            var url = '?p=admin&c=groups&gid=' + group.gid;
+            if (window.history && typeof window.history.pushState === 'function') {
+                window.history.pushState({ gid: group.gid }, '', url);
+            }
+        }
+    }
+
+    list.addEventListener('click', function (event) {
+        var target = /** @type {HTMLElement|null} */ (event.target);
+        if (!target || typeof target.closest !== 'function') return;
+        var row = target.closest('[data-testid="group-row"]');
+        if (!row || !list.contains(row)) return;
+
+        var gid = Number(row.getAttribute('data-id'));
+        var group = byGid[String(gid)];
+        if (!group) return;
+
+        if (gid === currentGid()) {
+            event.preventDefault();
+            return;
+        }
+
+        if (dirty && !window.confirm('Discard unsaved changes to this group?')) {
+            event.preventDefault();
+            return;
+        }
+
+        event.preventDefault();
+        paintGroup(group, true);
+    });
+
+    window.addEventListener('popstate', function () {
+        var params = new URLSearchParams(window.location.search);
+        var gid = Number(params.get('gid') || 0);
+        var group = byGid[String(gid)] || catalog[0];
+        if (!group) return;
+        if (dirty && !window.confirm('Discard unsaved changes to this group?')) {
+            paintGroup(byGid[String(currentGid())] || group, true);
+            return;
+        }
+        paintGroup(group, false);
     });
 })();
 {/literal}

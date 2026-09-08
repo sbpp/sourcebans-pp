@@ -12,8 +12,6 @@ if (!defined('IN_SB')) {
 
 global $userbank, $theme;
 
-new \Sbpp\View\AdminTabs([], $userbank, $theme);
-
 require_once __DIR__ . '/_admin_edit_helpers.php';
 
 $groupId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -192,6 +190,61 @@ $smHas = static fn(string $flag): bool => str_contains($srvFlags, $flag);
         syncParent();
     });
 
+    function scopeBoxes(scope) {
+        var table = form.querySelector('table[data-perms-scope="' + scope + '"]');
+        if (!table) return [];
+        if (scope === 'server') {
+            return Array.prototype.slice.call(table.querySelectorAll('input[data-sm-flag]'));
+        }
+        return Array.prototype.slice.call(table.querySelectorAll('input[type="checkbox"]'));
+    }
+
+    function syncSelectAll(scope) {
+        var master = form.querySelector('input[data-select-all="' + scope + '"]');
+        if (!master) return;
+        var boxes = scopeBoxes(scope);
+        var on = 0;
+        for (var i = 0; i < boxes.length; i++) {
+            if (boxes[i].checked) on++;
+        }
+        master.checked = boxes.length > 0 && on === boxes.length;
+        master.indeterminate = on > 0 && on < boxes.length;
+    }
+
+    function wireSelectAll(scope) {
+        var master = form.querySelector('input[data-select-all="' + scope + '"]');
+        if (!master) return;
+        master.addEventListener('change', function () {
+            var on = master.checked;
+            scopeBoxes(scope).forEach(function (c) { c.checked = on; });
+            if (scope === 'web') {
+                form.querySelectorAll('input[data-parent]').forEach(function (parent) {
+                    var name = parent.getAttribute('data-parent');
+                    var children = form.querySelectorAll('input[data-child="' + name + '"]');
+                    var anyOn = false;
+                    for (var i = 0; i < children.length; i++) {
+                        if (children[i].checked) { anyOn = true; break; }
+                    }
+                    parent.checked = anyOn;
+                });
+            }
+            master.indeterminate = false;
+            syncSelectAll(scope);
+        });
+        syncSelectAll(scope);
+    }
+
+    wireSelectAll('web');
+    wireSelectAll('server');
+
+    form.addEventListener('change', function (e) {
+        var t = e.target;
+        if (!t || t.type !== 'checkbox' || t.hasAttribute('data-select-all')) return;
+        var table = t.closest('table[data-perms-scope]');
+        if (!table) return;
+        syncSelectAll(table.getAttribute('data-perms-scope'));
+    });
+
     var ownerCb = document.getElementById('p2');
     if (ownerCb) {
         ownerCb.addEventListener('change', function () {
@@ -199,6 +252,9 @@ $smHas = static fn(string $flag): bool => str_contains($srvFlags, $flag);
             form.querySelectorAll('input[data-child], input[data-parent]').forEach(function (c) {
                 c.checked = true;
             });
+            var settingsCb = document.getElementById('p26');
+            if (settingsCb) settingsCb.checked = true;
+            syncSelectAll('web');
         });
     }
 
@@ -209,6 +265,7 @@ $smHas = static fn(string $flag): bool => str_contains($srvFlags, $flag);
             form.querySelectorAll('input[data-sm-flag]').forEach(function (c) {
                 if (c !== smRootCb) c.checked = true;
             });
+            syncSelectAll('server');
         });
     }
 
