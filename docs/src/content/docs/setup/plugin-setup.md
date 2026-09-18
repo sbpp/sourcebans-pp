@@ -64,6 +64,18 @@ The rest of the file controls in-game admin menu behaviour (ban
 durations, default reasons, immunity flags, etc.). The defaults are
 sensible; tweak as you go.
 
+If the game server runs behind NAT or inside a container, its `hostip`
+value may be a private address. Set `ServerIP` to the public IPv4
+address registered in the panel:
+
+```ini
+"ServerIP"  "203.0.113.10"
+```
+
+Leave `ServerIP` blank to use `hostip`. This setting controls
+address-based server lookup and automatic registration. Keep
+`ServerID` set to the panel's numeric ID whenever possible.
+
 After editing either file, **reload the map or restart the game
 server** so SourceMod re-reads the configs.
 

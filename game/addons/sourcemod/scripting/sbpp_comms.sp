@@ -30,6 +30,7 @@
 #include <sourcemod>
 #include <basecomm>
 #include <sourcecomms>
+#include <sbpp_server_ip>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
@@ -95,7 +96,8 @@ Database g_hDatabase;
 Database SQLiteDB;
 
 char
-	ServerIp[24]
+	ServerIp[SBPP_SERVER_IP_LENGTH]
+	, ConfiguredServerIp[SBPP_SERVER_IP_LENGTH]
 	, ServerPort[7]
 	, DatabasePrefix[10] = "sb"
 #if defined LOG_QUERIES
@@ -230,10 +232,9 @@ public void OnPluginStart()
 		SetFailState("Database failure: could not find database config: %s", DATABASE);
 		return;
 	}
+	ReadConfig();
 	DB_Connect();
 	InitializeBackupDB();
-
-	ServerInfo();
 
 	if (g_bLate)
 	{
@@ -2019,6 +2020,22 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 					DatabasePrefix = "sb";
 				}
 			}
+			else if (strcmp("ServerIP", key, false) == 0)
+			{
+				char configuredIp[64];
+				strcopy(configuredIp, sizeof(configuredIp), value);
+				TrimString(configuredIp);
+
+				if (SBPP_IsValidServerIpOverride(configuredIp))
+				{
+					strcopy(ConfiguredServerIp, sizeof(ConfiguredServerIp), configuredIp);
+				}
+				else
+				{
+					ConfiguredServerIp[0] = '\0';
+					LogError("Ignoring invalid ServerIP override; expected an IPv4 address");
+				}
+			}
 			else if (strcmp("RetryTime", key, false) == 0)
 			{
 				RetryTime = StringToFloat(value);
@@ -2036,10 +2053,10 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 				serverID = StringToInt(value);
 
 				// get our sb_id value if we have one
-				int sbid = GetConVarInt(FindConVar("sb_id"));
-				if (sbid != -1)
+				ConVar sbId = FindConVar("sb_id");
+				if (sbId != null && sbId.IntValue != -1)
 				{
-					serverID = sbid;
+					serverID = sbId.IntValue;
 				}
 
 				// if it's not valid, make it 0
@@ -2798,13 +2815,7 @@ stock void InsertTempBlock(int length, int type, const char[] name, const char[]
 
 stock void ServerInfo()
 {
-	int pieces[4];
-	int longip = CvarHostIp.IntValue;
-	pieces[0] = (longip >> 24) & 0x000000FF;
-	pieces[1] = (longip >> 16) & 0x000000FF;
-	pieces[2] = (longip >> 8) & 0x000000FF;
-	pieces[3] = longip & 0x000000FF;
-	FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
+	SBPP_ResolveServerIp(CvarHostIp, ConfiguredServerIp, ServerIp, sizeof(ServerIp));
 	CvarPort.GetString(ServerPort, sizeof(ServerPort));
 }
 
@@ -2816,6 +2827,8 @@ stock void ReadConfig()
 	{
 		return;
 	}
+
+	ConfiguredServerIp[0] = '\0';
 
 	char ConfigFile1[PLATFORM_MAX_PATH], ConfigFile2[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, ConfigFile1, sizeof(ConfigFile1), "configs/sourcebans/sourcebans.cfg");
@@ -2858,6 +2871,8 @@ stock void ReadConfig()
 	PrintToServer("Loaded DefaultTime value: %d", DefaultTime);
 	PrintToServer("Loaded DisableUnblockImmunityCheck value: %d", DisUBImCheck);
 	#endif
+
+	ServerInfo();
 }
 
 
