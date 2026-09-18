@@ -265,8 +265,8 @@ final class SystemFunctionsTest extends TestCase
      * #1487 — the positive branch is unchanged: a string longer than
      * `$len` bytes is cut to `$len` + `'...'`; a string within budget
      * (or exactly at it) comes back untouched, no gratuitous ellipsis.
-     * Every non-dashboard surface (public list 70, Add Admin grid /
-     * Server Groups 40) relies on this branch staying live.
+     * The public list (70) and Server Groups (40) rely on this branch
+     * staying live. Dashboard and Add Admin opt out with `0`.
      */
     public function testTruncStillTruncatesPositiveLength(): void
     {
