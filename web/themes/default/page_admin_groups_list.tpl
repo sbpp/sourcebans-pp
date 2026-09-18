@@ -133,11 +133,21 @@
                         <div>
                             <div class="flex items-center justify-between gap-2 mb-2">
                                 <label class="label m-0">Permission flags</label>
-                                {* #1258: `data-testid="flag-bitmask"` lets the page-tail JS
-                                   below (and future E2E specs) anchor on the contract instead
-                                   of visible copy. SSR is the source of truth for the initial
-                                   paint; the listener re-folds the OR-sum on each `change`. *}
-                                <span class="text-xs text-muted" data-testid="flag-bitmask">{$selected_group.flags} bitmask</span>
+                                <div class="flex items-center gap-3">
+                                    {if $permission_editgroup}
+                                        <label class="edit-perms-select-all">
+                                            <input type="checkbox"
+                                                   aria-controls="group-flags-grid"
+                                                   data-testid="group-flags-select-all">
+                                            <span>Select all</span>
+                                        </label>
+                                    {/if}
+                                    {* #1258: `data-testid="flag-bitmask"` lets the page-tail JS
+                                       below (and future E2E specs) anchor on the contract instead
+                                       of visible copy. SSR is the source of truth for the initial
+                                       paint; the listener re-folds the OR-sum on each `change`. *}
+                                    <span class="text-xs text-muted" data-testid="flag-bitmask">{$selected_group.flags} bitmask</span>
+                                </div>
                             </div>
                             {* #1258: per-flag rows are bare `<label class="flex items-center
                                gap-2">` — no inline border / background / radius — so the grid
@@ -145,6 +155,7 @@
                                class="card">`, matching the inline-checkbox shape from
                                page_admin_settings_settings.tpl's "Enable debug mode" row. *}
                             <div class="grid gap-2 admin-groups-flag-grid"
+                                 id="group-flags-grid"
                                  style="grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))"
                                  data-testid="flag-grid">
                                 {foreach from=$all_flags item="flag"}
@@ -610,12 +621,11 @@ function SbppServerGroupsDelete(gid, name, type, btn) {
         });
 }
 
-// --- Live bitmask preview (#1258) ---
+// --- Flag-grid controls + live bitmask preview (#1258 / #1436) ---
 // Re-fold the OR-sum of the grid's checked `data-flag-value`s on every
-// `change` and write it into `[data-testid="flag-bitmask"]`. SSR stays
-// the source of truth for the initial paint; the listener only mirrors
-// what `SbppGroupsSave` already does at submit time so the operator
-// sees the new value before saving (no Save + reload round-trip).
+// change, keep the Select all checkbox's checked / indeterminate state
+// in sync, and write the result into `[data-testid="flag-bitmask"]`.
+// SSR stays the source of truth for the initial flag state.
 //
 // No `// @ts-check` here because the file is rendered by Smarty;
 // ts-check only runs against `.js` sources in `web/scripts`. The
@@ -626,14 +636,40 @@ function SbppServerGroupsDelete(gid, name, type, btn) {
 
     var grid = document.querySelector('[data-testid="flag-grid"]');
     var preview = document.querySelector('[data-testid="flag-bitmask"]');
+    var selectAll = /** @type {HTMLInputElement|null} */ (
+        document.querySelector('[data-testid="group-flags-select-all"]')
+    );
     if (!grid || !preview) return;
+
+    function updateFlagState() {
+        var flags = grid.querySelectorAll('input[name="flags[]"]');
+        var checked = grid.querySelectorAll('input[name="flags[]"]:checked').length;
+        preview.textContent = SbppFoldFlags(grid) + ' bitmask';
+
+        if (selectAll) {
+            selectAll.checked = flags.length > 0 && checked === flags.length;
+            selectAll.indeterminate = checked > 0 && checked < flags.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            var flags = grid.querySelectorAll('input[name="flags[]"]:not(:disabled)');
+            for (var i = 0; i < flags.length; i++) {
+                /** @type {HTMLInputElement} */ (flags[i]).checked = selectAll.checked;
+            }
+            updateFlagState();
+        });
+    }
 
     grid.addEventListener('change', function (event) {
         var target = /** @type {HTMLInputElement|null} */ (event.target);
         if (!target || !target.matches || !target.matches('input[name="flags[]"]')) return;
 
-        preview.textContent = SbppFoldFlags(grid) + ' bitmask';
+        updateFlagState();
     });
+
+    updateFlagState();
 })();
 {/literal}
 </script>
