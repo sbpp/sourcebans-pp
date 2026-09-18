@@ -1624,11 +1624,13 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 				{
 					dataPack.WriteCell(TYPE_UNMUTE);
 					TempUnBlock(dataPack);
+					return;
 				}
 				else if (g_GagType[target] > bNot)
 				{
 					dataPack.WriteCell(TYPE_UNGAG);
 					TempUnBlock(dataPack);
+					return;
 				}
 			}
 		}

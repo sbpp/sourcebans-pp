@@ -102,6 +102,7 @@ bool
 int
 	g_BanTarget[MAXPLAYERS + 1] =  { -1, ... }
 	, g_BanTime[MAXPLAYERS + 1] =  { -1, ... }
+	, g_BanTargetUserId[MAXPLAYERS + 1] =  { -1, ... }
 	, AutoAdd = 0
 	, curLoading
 	, serverID = -1
@@ -279,11 +280,7 @@ public void OnMapEnd()
 {
 	for (int i = 0; i <= MaxClients; i++)
 	{
-		if (PlayerDataPack[i] != null)
-		{
-			/* Need to close reason pack */
-			delete PlayerDataPack[i];
-		}
+		ClearPendingBanState(i);
 	}
 }
 
@@ -304,10 +301,11 @@ public void OnClientDisconnect(int client)
 		delete PlayerRecheck[client];
 	}
 
+	ClearPendingBanState(client);
+
 	FormatEx(g_sSteamIDs[client], sizeof(g_sSteamIDs[]), "\0");
 	FormatEx(g_sPlayerIP[client], sizeof(g_sPlayerIP[]), "\0");
 	FormatEx(g_sName[client], sizeof(g_sName[]), "\0");
-	g_ownReasons[client] = false;
 	g_iUserIDs[client] = -1;
 }
 
@@ -406,12 +404,13 @@ public Action ChatHook(int client, int args)
 
 		if (strcmp(reason[0], "!noreason", false) == 0)
 		{
+			ClearPendingBanState(client);
 			PrintToChat(client, "%s%t", Prefix, "Chat Reason Aborted");
 			return Plugin_Handled;
 		}
 
 		// ban him!
-		PrepareBan(client, g_BanTarget[client], g_BanTime[client], reason);
+		PrepareBan(client, g_BanTarget[client], g_BanTime[client], reason, g_BanTargetUserId[client]);
 
 		// block the reason to be sent in chat
 		return Plugin_Handled;
@@ -494,10 +493,18 @@ public Action CommandBan(int client, int args)
 		reason[0] = '\0';
 	}
 
+	if (client != 0)
+		CancelClientMenu(client);
+	ClearPendingBanState(client);
+
 	g_BanTarget[client] = target;
 	g_BanTime[client] = time;
+	g_BanTargetUserId[client] = GetClientUserId(target);
 
-	CreateBan(client, target, time, reason);
+	bool banStarted = CreateBan(client, target, time, reason);
+	if (!banStarted || reason[0] != '\0')
+		ClearPendingBanState(client);
+
 	return Plugin_Handled;
 }
 
@@ -567,7 +574,7 @@ public Action CommandBanIp(int client, int args)
 
 	// Pack everything into a data pack so we can retain it
 	DataPack dataPack = new DataPack();
-	dataPack.WriteCell(client);
+	dataPack.WriteCell(client == 0 ? 0 : GetClientUserId(client));
 	dataPack.WriteCell(minutes);
 	dataPack.WriteString(Arguments[len]);
 	dataPack.WriteString(g_sPlayerIP[target]);
@@ -622,7 +629,7 @@ public Action CommandUnban(int client, int args)
 
 	// Pack everything into a data pack so we can retain it
 	DataPack dataPack = new DataPack();
-	dataPack.WriteCell(client);
+	dataPack.WriteCell(client == 0 ? 0 : GetClientUserId(client));
 	dataPack.WriteString(Arguments[len]); // Reason
 	dataPack.WriteString(arg); // Steamid - IP
 	dataPack.WriteString(adminAuth); // Admin SteamID
@@ -709,7 +716,7 @@ public Action CommandAddBan(int client, int args)
 
 	// Pack everything into a data pack so we can retain it
 	DataPack dataPack = new DataPack();
-	dataPack.WriteCell(client);
+	dataPack.WriteCell(client == 0 ? 0 : GetClientUserId(client));
 	dataPack.WriteCell(minutes);
 	dataPack.WriteString(arg_string[total_len]);
 	dataPack.WriteString(authid);
@@ -790,9 +797,6 @@ public void AdminMenu_Ban(TopMenu topmenu,
 	char[] buffer,  // Output buffer (if used)
 	int maxlength) // Output buffer (if used)
 {
-	/* Clear the Ownreason bool, so he is able to chat again;) */
-	g_ownReasons[param] = false;
-
 	#if defined DEBUG
 	LogToFile(logFile, "AdminMenu_Ban()");
 	#endif
@@ -844,22 +848,19 @@ public int ReasonSelected(Menu menu, MenuAction action, int param1, int param2)
 			}
 
 			else if (g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
-				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info);
+				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, g_BanTargetUserId[param1]);
 		}
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_Disconnected)
+			if (param2 == MenuCancel_ExitBack)
 			{
-				if (PlayerDataPack[param1] != null)
-				{
-					delete PlayerDataPack[param1];
-				}
+				CleanupPendingBanDataPack(param1);
+				DisplayBanTimeMenu(param1);
 			}
-
 			else
 			{
-				DisplayBanTimeMenu(param1);
+				ClearPendingBanState(param1);
 			}
 		}
 	}
@@ -877,38 +878,18 @@ public int HackingSelected(Menu menu, MenuAction action, int param1, int param2)
 			menu.GetItem(param2, key, sizeof(key), _, info, sizeof(info));
 
 			if (g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
-				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info);
+				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, g_BanTargetUserId[param1]);
 		}
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_Disconnected)
-			{
-				DataPack Pack = PlayerDataPack[param1];
-
-				if (Pack != null)
-				{
-					Pack.ReadCell(); // admin index
-					Pack.ReadCell(); // target index
-					Pack.ReadCell(); // admin userid
-					Pack.ReadCell(); // target userid
-					Pack.ReadCell(); // time
-
-					DataPack ReasonPack = Pack.ReadCell();
-
-					if (ReasonPack != INVALID_HANDLE)
-					{
-						CloseHandle(ReasonPack);
-					}
-
-					delete Pack;
-					PlayerDataPack[param1] = null;
-				}
-			}
-
-			else
+			if (param2 == MenuCancel_ExitBack)
 			{
 				DisplayMenu(ReasonMenuHandle, param1, MENU_TIME_FOREVER);
+			}
+			else
+			{
+				ClearPendingBanState(param1);
 			}
 		}
 	}
@@ -930,6 +911,8 @@ public int MenuHandler_BanPlayerList(Menu menu, MenuAction action, int param1, i
 
 		case MenuAction_Cancel:
 		{
+			ClearPendingBanState(param1);
+
 			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
 			{
 				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
@@ -955,6 +938,7 @@ public int MenuHandler_BanPlayerList(Menu menu, MenuAction action, int param1, i
 			else
 			{
 				g_BanTarget[param1] = target;
+				g_BanTargetUserId[param1] = userid;
 				DisplayBanTimeMenu(param1);
 			}
 		}
@@ -972,6 +956,8 @@ public int MenuHandler_BanTimeList(Menu menu, MenuAction action, int param1, int
 	{
 		case MenuAction_Cancel:
 		{
+			ClearPendingBanState(param1);
+
 			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
 			{
 				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
@@ -1007,6 +993,9 @@ stock void DisplayBanTargetMenu(int client)
 	#if defined DEBUG
 	LogToFile(logFile, "DisplayBanTargetMenu()");
 	#endif
+
+	CancelClientMenu(client);
+	ClearPendingBanState(client);
 
 	Menu menu = new Menu(MenuHandler_BanPlayerList); // Create a new menu, pass it the handler.
 
@@ -1153,81 +1142,65 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 		return;
 	}
 
+	dataPack.Reset();
+
+	int adminIndex = dataPack.ReadCell();
+	int client = dataPack.ReadCell();
+	int adminUserId = dataPack.ReadCell();
+	int targetUserId = dataPack.ReadCell();
+	int time = dataPack.ReadCell();
+
+	DataPack reasonPack = view_as<DataPack>(dataPack.ReadCell());
+
+	char reason[128], name[MAX_NAME_LENGTH], auth[MAX_AUTHID_LENGTH], ip[16], adminAuth[MAX_AUTHID_LENGTH], adminIp[16];
+
+	if (reasonPack != null)
+	{
+		reasonPack.Reset();
+		reasonPack.ReadString(reason, sizeof(reason));
+	}
+
+	dataPack.ReadString(name, sizeof(name));
+	dataPack.ReadString(auth, sizeof(auth));
+	dataPack.ReadString(ip, sizeof(ip));
+	dataPack.ReadString(adminAuth, sizeof(adminAuth));
+	dataPack.ReadString(adminIp, sizeof(adminIp));
+
+	CleanupBanDataPack(dataPack);
+
+	int admin = adminIndex == 0 ? 0 : GetClientOfUserId(adminUserId);
+
 	if (results == null)
 	{
 		LogToFile(logFile, "Verify Insert Query Failed: %s", error);
-
-		int admin = dataPack.ReadCell();
-		dataPack.ReadCell(); // target
-		dataPack.ReadCell(); // admin userid
-		dataPack.ReadCell(); // target userid
-		int time = dataPack.ReadCell();
-
-		DataPack reasonPack = dataPack.ReadCell();
-
-		char reason[128], name[MAX_NAME_LENGTH], auth[MAX_AUTHID_LENGTH], ip[16], adminAuth[MAX_AUTHID_LENGTH], adminIp[16];
-
-		reasonPack.ReadString(reason, sizeof reason);
-
-		dataPack.ReadString(name, sizeof name);
-		dataPack.ReadString(auth, sizeof auth);
-		dataPack.ReadString(ip, sizeof ip);
-		dataPack.ReadString(adminAuth, sizeof adminAuth);
-		dataPack.ReadString(adminIp, sizeof adminIp);
-
-		dataPack.Reset();
-		reasonPack.Reset();
-
-		PlayerDataPack[admin] = null;
-		UTIL_InsertTempBan(time, name, auth, ip, reason, adminAuth, adminIp, dataPack);
+		UTIL_InsertTempBan(admin, client, targetUserId, time, name, auth, ip, reason, adminAuth, adminIp);
 		return;
 	}
 
-	int admin = dataPack.ReadCell();
-	int client = dataPack.ReadCell();
-
-	if (!IsClientConnected(client) || IsFakeClient(client))
+	if (!IsClientConnected(client) || IsFakeClient(client) || GetClientUserId(client) != targetUserId)
 		return;
-
-	dataPack.ReadCell(); // admin userid
-
-	int UserId = dataPack.ReadCell();
-	int time = dataPack.ReadCell();
-
-	DataPack ReasonPack = dataPack.ReadCell();
-
-	char Name[MAX_NAME_LENGTH], Reason[128];
-
-	dataPack.ReadString(Name, sizeof(Name));
-	ReasonPack.ReadString(Reason, sizeof(Reason));
 
 	if (!time)
 	{
-		if (Reason[0] == '\0')
+		if (reason[0] == '\0')
 		{
-			ShowActivity2(admin, Prefix, "%t", "Permabanned Player", Name);
+			ShowActivity2(admin, Prefix, "%t", "Permabanned Player", name);
 		} else {
-			ShowActivity2(admin, Prefix, "%t", "Permabanned Player Reason", Name, Reason);
+			ShowActivity2(admin, Prefix, "%t", "Permabanned Player Reason", name, reason);
 		}
 	} else {
-		if (Reason[0] == '\0')
+		if (reason[0] == '\0')
 		{
-			ShowActivity2(admin, Prefix, "%t", "Banned Player", Name, time);
+			ShowActivity2(admin, Prefix, "%t", "Banned Player", name, time);
 		} else {
-			ShowActivity2(admin, Prefix, "%t", "Banned Player Reason", Name, time, Reason);
+			ShowActivity2(admin, Prefix, "%t", "Banned Player Reason", name, time, reason);
 		}
 	}
 
-	LogAction(admin, client, "%t", "Ban Log", admin, client, time, Reason);
-
-	if (PlayerDataPack[admin] != INVALID_HANDLE)
-	{
-		delete PlayerDataPack[admin];
-		delete ReasonPack;
-	}
+	LogAction(admin, client, "%t", "Ban Log", admin, client, time, reason);
 
 	// Kick player
-	if (g_iUserIDs[client] == UserId)
+	if (g_iUserIDs[client] == targetUserId)
 	{
 		char length[32];
 		if(time == 0)
@@ -1235,7 +1208,7 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 		else
 			FormatEx(length, sizeof(length), "%d %T", time, time == 1 ? "minute" : "minutes", client);
 
-		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, Reason, length);
+		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
 	}
 }
 
@@ -1246,7 +1219,8 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 	char targetName[MAX_NAME_LENGTH], sTEscapedName[MAX_NAME_LENGTH * 2 + 1], targetAuth[MAX_AUTHID_LENGTH];
 
 	dataPack.Reset();
-	admin = dataPack.ReadCell();
+	int adminUserId = dataPack.ReadCell();
+	admin = adminUserId == 0 ? 0 : GetClientOfUserId(adminUserId);
 	minutes = dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(ip, sizeof(ip));
@@ -1265,6 +1239,7 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 		else
 			PrintToServer("%s%t", Prefix, "Ban Fail");
 
+		delete dataPack;
 		return;
 	}
 	if (results.RowCount)
@@ -1274,6 +1249,7 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 		else
 			PrintToServer("%s%t", Prefix, "Already Banned", ip);
 
+		delete dataPack;
 		return;
 	}
 	if (serverID == -1)
@@ -1303,7 +1279,8 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 	if (dataPack != null)
 	{
 		dataPack.Reset();
-		admin = dataPack.ReadCell();
+		int adminUserId = dataPack.ReadCell();
+		admin = adminUserId == 0 ? 0 : GetClientOfUserId(adminUserId);
 		minutes = dataPack.ReadCell();
 		dataPack.ReadString(reason, sizeof(reason));
 		dataPack.ReadString(targetIP, sizeof(targetIP));
@@ -1363,7 +1340,8 @@ public void SelectUnbanCallback(Database db, DBResultSet results, const char[] e
 	char reason[128];
 
 	dataPack.Reset();
-	admin = dataPack.ReadCell();
+	int adminUserId = dataPack.ReadCell();
+	admin = adminUserId == 0 ? 0 : GetClientOfUserId(adminUserId);
 	dataPack.ReadString(reason, sizeof(reason)); // Reason
 	dataPack.ReadString(arg, sizeof(arg)); // SteamID - IP
 	dataPack.ReadString(adminAuth, sizeof(adminAuth)); // Admin SteamID
@@ -1420,7 +1398,8 @@ public void InsertUnbanCallback(Database db, DBResultSet results, const char[] e
 	if (dataPack != null)
 	{
 		dataPack.Reset();
-		admin = dataPack.ReadCell();
+		int adminUserId = dataPack.ReadCell();
+		admin = adminUserId == 0 ? 0 : GetClientOfUserId(adminUserId);
 		dataPack.ReadString(reason, sizeof(reason)); // Reason
 		dataPack.ReadString(arg, sizeof(arg)); // SteamID - IP
 		delete dataPack;
@@ -1455,7 +1434,8 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 	char reason[128];
 
 	dataPack.Reset();
-	admin = dataPack.ReadCell();
+	int adminUserId = dataPack.ReadCell();
+	admin = adminUserId == 0 ? 0 : GetClientOfUserId(adminUserId);
 	minutes = dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(authid, sizeof(authid));
@@ -1472,6 +1452,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 		else
 			PrintToServer("%s%t", Prefix, "Ban Fail");
 
+		delete dataPack;
 		return;
 	}
 	if (results.RowCount)
@@ -1481,6 +1462,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 		else
 			PrintToServer("%s%t", Prefix, "Already Banned", authid);
 
+		delete dataPack;
 		return;
 	}
 	if (serverID == -1)
@@ -1506,7 +1488,8 @@ public void InsertAddbanCallback(Database db, DBResultSet results, const char[] 
 	char reason[128];
 
 	dataPack.Reset();
-	admin = dataPack.ReadCell();
+	int adminUserId = dataPack.ReadCell();
+	admin = adminUserId == 0 ? 0 : GetClientOfUserId(adminUserId);
 	minutes = dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(authid, sizeof(authid));
@@ -2416,8 +2399,8 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 
 	DataPack dataPack = new DataPack();
 
-	dataPack.WriteCell(iReporter);
-	dataPack.WriteCell(iTarget);
+	dataPack.WriteCell(GetClientUserId(iReporter));
+	dataPack.WriteCell(GetClientUserId(iTarget));
 	dataPack.WriteCell(iReasonLen);
 	dataPack.WriteString(sReason);
 
@@ -2428,19 +2411,27 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	if (results == null)
+	{
 		LogToFile(logFile, "Failed to submit report: %s", error);
+		delete dataPack;
+	}
 	else
 	{
 		dataPack.Reset();
 
-		int iReporter = dataPack.ReadCell();
-		int iTarget = dataPack.ReadCell();
+		int reporterUserId = dataPack.ReadCell();
+		int targetUserId = dataPack.ReadCell();
 		int iReasonLen = dataPack.ReadCell();
 
 		char[] sReason = new char[iReasonLen];
 
 		dataPack.ReadString(sReason, iReasonLen);
 		delete dataPack;
+
+		int iReporter = GetClientOfUserId(reporterUserId);
+		int iTarget = GetClientOfUserId(targetUserId);
+		if (iReporter == 0 || iTarget == 0)
+			return;
 
 		Call_StartForward(g_hFwd_OnReportAdded);
 		Call_PushCell(iReporter);
@@ -2477,6 +2468,8 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 {
 	char adminIp[16], adminAuth[MAX_AUTHID_LENGTH];
 	int admin = client;
+
+	CleanupPendingBanDataPack(admin);
 
 	// The server is the one calling the ban
 	if (!admin)
@@ -2527,7 +2520,8 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 		{
 			UTIL_InsertBan(time, g_sName[target], g_sSteamIDs[target], g_sPlayerIP[target], reason, adminAuth, adminIp, dataPack);
 		} else {
-			UTIL_InsertTempBan(time, g_sName[target], g_sSteamIDs[target], g_sPlayerIP[target], reason, adminAuth, adminIp, dataPack);
+			CleanupBanDataPack(dataPack);
+			UTIL_InsertTempBan(admin, target, g_iUserIDs[target], time, g_sName[target], g_sSteamIDs[target], g_sPlayerIP[target], reason, adminAuth, adminIp);
 		}
 	} else {
 		// We need a reason so offer the administrator a menu of reasons
@@ -2544,6 +2538,47 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 	Call_Finish();
 
 	return true;
+}
+
+stock void CleanupBanDataPack(DataPack dataPack)
+{
+	if (dataPack == null)
+		return;
+
+	dataPack.Reset();
+	dataPack.ReadCell(); // admin index
+	dataPack.ReadCell(); // target index
+	dataPack.ReadCell(); // admin userid
+	dataPack.ReadCell(); // target userid
+	dataPack.ReadCell(); // time
+
+	DataPack reasonPack = view_as<DataPack>(dataPack.ReadCell());
+	if (reasonPack != null)
+		delete reasonPack;
+
+	delete dataPack;
+}
+
+stock void CleanupPendingBanDataPack(int client)
+{
+	if (client < 0 || client > MaxClients)
+		return;
+
+	DataPack dataPack = PlayerDataPack[client];
+	PlayerDataPack[client] = null;
+	CleanupBanDataPack(dataPack);
+}
+
+stock void ClearPendingBanState(int client)
+{
+	if (client < 0 || client > MaxClients)
+		return;
+
+	CleanupPendingBanDataPack(client);
+	g_BanTarget[client] = -1;
+	g_BanTime[client] = -1;
+	g_BanTargetUserId[client] = -1;
+	g_ownReasons[client] = false;
 }
 
 stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, const char[] Ip, const char[] Reason, const char[] AdminAuthid, const char[] AdminIp, DataPack dataPack)
@@ -2570,22 +2605,8 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 	DB.Query(VerifyInsert, Query, dataPack, DBPrio_High);
 }
 
-stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp, DataPack dataPack)
+stock void UTIL_InsertTempBan(int admin, int client, int targetUserId, int time, const char[] name, const char[] auth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp)
 {
-	int admin = dataPack.ReadCell(); // admin index
-
-	int client = dataPack.ReadCell();
-
-	dataPack.ReadCell(); // admin userid
-	dataPack.ReadCell(); // target userid
-	dataPack.ReadCell(); // time
-
-	DataPack reasonPack = view_as<DataPack>(dataPack.ReadCell());
-
-	if (reasonPack != null)
-		delete reasonPack;
-	delete dataPack;
-
 	// we add a temporary ban and then add the record into the queue to be processed when the database is available
 	char buffer[50];
 
@@ -2593,7 +2614,7 @@ stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, co
 
 	ServerCommand(buffer);
 
-	if (IsClientInGame(client))
+	if (client > 0 && client <= MaxClients && IsClientInGame(client) && GetClientUserId(client) == targetUserId)
 	{
 		char length[32];
 		if(time == 0)
@@ -2663,13 +2684,15 @@ stock void InsertServerInfo()
     }
 }
 
-stock void PrepareBan(int client, int target, int time, char[] reason)
+stock void PrepareBan(int client, int target, int time, char[] reason, int targetUserId = -1)
 {
 	#if defined DEBUG
 	LogToFile(logFile, "PrepareBan()");
 	#endif
 
-	if (!target || !IsClientInGame(target))
+	ClearPendingBanState(client);
+
+	if (!target || !IsClientInGame(target) || (targetUserId != -1 && GetClientUserId(target) != targetUserId))
 		return;
 
 	char bannedSite[512];
