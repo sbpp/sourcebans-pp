@@ -1152,7 +1152,7 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 
 	DataPack reasonPack = view_as<DataPack>(dataPack.ReadCell());
 
-	char reason[128], name[MAX_NAME_LENGTH], auth[MAX_AUTHID_LENGTH], ip[16], adminAuth[MAX_AUTHID_LENGTH], adminIp[16];
+	char reason[128], name[MAX_NAME_LENGTH], auth[MAX_AUTHID_LENGTH], gameAuth[MAX_AUTHID_LENGTH], ip[16], adminAuth[MAX_AUTHID_LENGTH], adminIp[16];
 
 	if (reasonPack != null)
 	{
@@ -1162,6 +1162,7 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 
 	dataPack.ReadString(name, sizeof(name));
 	dataPack.ReadString(auth, sizeof(auth));
+	dataPack.ReadString(gameAuth, sizeof(gameAuth));
 	dataPack.ReadString(ip, sizeof(ip));
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
 	dataPack.ReadString(adminIp, sizeof(adminIp));
@@ -1173,7 +1174,7 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 	if (results == null)
 	{
 		LogToFile(logFile, "Verify Insert Query Failed: %s", error);
-		UTIL_InsertTempBan(admin, client, targetUserId, time, name, auth, ip, reason, adminAuth, adminIp);
+		UTIL_InsertTempBan(admin, client, targetUserId, time, name, auth, gameAuth, ip, reason, adminAuth, adminIp);
 		return;
 	}
 
@@ -1522,6 +1523,11 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 		LogToFile(logFile, "Failed to retrieve queued bans from sqlite database, %s", error);
 		return;
 	}
+	if (DB == INVALID_HANDLE)
+	{
+		CreateTimer(float(ProcessQueueTime * 60), ProcessQueue);
+		return;
+	}
 
 	char auth[MAX_AUTHID_LENGTH];
 	int time;
@@ -1531,8 +1537,9 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 	char ip[16];
 	char adminAuth[MAX_AUTHID_LENGTH];
 	char adminIp[16];
+	char gameAuth[MAX_AUTHID_LENGTH];
 	char query[1024];
-	char banName[MAX_NAME_LENGTH];
+	char banName[MAX_NAME_LENGTH * 2 + 1];
 	char banReason[256];
 	while (results.MoreRows)
 	{
@@ -1549,8 +1556,12 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 		results.FetchString(5, ip, sizeof(ip));
 		results.FetchString(6, adminAuth, sizeof(adminAuth));
 		results.FetchString(7, adminIp, sizeof(adminIp));
-		db.Escape(name, banName, sizeof(banName));
-		db.Escape(reason, banReason, sizeof(banReason));
+		results.FetchString(8, gameAuth, sizeof(gameAuth));
+		if (!DB.Escape(name, banName, sizeof(banName)) || !DB.Escape(reason, banReason, sizeof(banReason)))
+		{
+			LogToFile(logFile, "Failed to escape queued ban data for %s", auth);
+			continue;
+		}
 		if (startTime + time * 60 > GetTime() || time == 0)
 		{
 			// This ban is still valid and should be entered into the db
@@ -1572,8 +1583,9 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 			}
 			DataPack authPack = new DataPack();
 			authPack.WriteString(auth);
+			authPack.WriteString(gameAuth);
 			authPack.Reset();
-			db.Query(AddedFromSQLiteCallback, query, authPack);
+			DB.Query(AddedFromSQLiteCallback, query, authPack);
 		} else {
 			// The ban is no longer valid and should be deleted from the queue
 			FormatEx(query, sizeof(query), "DELETE FROM queue WHERE steam_id = '%s'", auth);
@@ -1587,9 +1599,12 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	char buffer[512];
-	char auth[MAX_AUTHID_LENGTH];
+	char auth[MAX_AUTHID_LENGTH], gameAuth[MAX_AUTHID_LENGTH];
 
 	dataPack.ReadString(auth, sizeof(auth));
+	dataPack.ReadString(gameAuth, sizeof(gameAuth));
+	ResolveQueuedGameAuth(auth, gameAuth, sizeof(gameAuth));
+
 	if (results != null)
 	{
 		// The insert was successful so delete the record from the queue
@@ -1597,12 +1612,11 @@ public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char
 		SQLiteDB.Query(ErrorCheckCallback, buffer);
 
 		// They are added to main banlist, so remove the temp ban
-		RemoveBan(auth, BANFLAG_AUTHID);
+		RemoveBan(gameAuth, BANFLAG_AUTHID);
 
 	} else {
 		// the insert failed so we leave the record in the queue and increase our temporary ban
-		FormatEx(buffer, sizeof(buffer), "banid %d %s", ProcessQueueTime, auth);
-		ServerCommand(buffer);
+		BanIdentity(gameAuth, ProcessQueueTime, BANFLAG_AUTHID, "", "", 0);
 	}
 	delete dataPack;
 }
@@ -1669,7 +1683,7 @@ public void VerifyBan(Database db, DBResultSet results, const char[] error, int 
 
 	if (results.RowCount > 0)
 	{
-		char buffer[40], Name[MAX_NAME_LENGTH], Query[512];
+		char Name[MAX_NAME_LENGTH], Query[512];
 
 		// Amending to ban record's IP field
 		if (results.FetchRow())
@@ -1708,9 +1722,12 @@ public void VerifyBan(Database db, DBResultSet results, const char[] error, int 
 
 		db.Query(ErrorCheckCallback, Query, client, DBPrio_High);
 
-		FormatEx(buffer, sizeof(buffer), "banid 5 %s", clientAuth);
-		ServerCommand(buffer);
-		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
+		char kickMessage[256];
+		FormatEx(kickMessage, sizeof(kickMessage), "%T", "Banned Check Site", client, WebsiteAddress);
+
+		// BANFLAG_AUTO makes SourceMod use the game's native auth string.
+		// Synergy rejects Steam2 IDs here, but accepts its native Steam3 ID.
+		BanClient(client, 5, BANFLAG_AUTO, kickMessage, kickMessage, "", 0);
 
 		return;
 	}
@@ -2166,7 +2183,7 @@ public Action PruneBans(Handle timer)
 public Action ProcessQueue(Handle timer, any data)
 {
 	char buffer[512];
-	Format(buffer, sizeof(buffer), "SELECT steam_id, time, start_time, reason, name, ip, admin_id, admin_ip FROM queue");
+	Format(buffer, sizeof(buffer), "SELECT steam_id, time, start_time, reason, name, ip, admin_id, admin_ip, game_id FROM queue");
 	SQLiteDB.Query(ProcessQueueCallback, buffer);
 	return Plugin_Continue;
 }
@@ -2443,6 +2460,63 @@ public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] er
 
 // STOCK FUNCTIONS //
 
+stock bool IsAsciiDecimal(const char[] value)
+{
+	if (value[0] == '\0')
+		return false;
+
+	for (int i = 0; value[i] != '\0'; i++)
+	{
+		if (value[i] < '0' || value[i] > '9')
+			return false;
+	}
+	return true;
+}
+
+stock bool Steam2ToSteam3(const char[] steam2, char[] steam3, int maxlength)
+{
+	int colonCount = 0;
+	for (int i = 0; steam2[i] != '\0'; i++)
+	{
+		if (steam2[i] == ':')
+			colonCount++;
+	}
+	if (colonCount != 2)
+		return false;
+
+	char parts[3][22];
+	if (ExplodeString(steam2, ":", parts, sizeof(parts), sizeof(parts[])) != sizeof(parts))
+		return false;
+	if (!StrEqual(parts[0], "STEAM_0") && !StrEqual(parts[0], "STEAM_1"))
+		return false;
+	if (parts[1][1] != '\0' || (parts[1][0] != '0' && parts[1][0] != '1'))
+		return false;
+	if (!IsAsciiDecimal(parts[2]))
+		return false;
+
+	int zLength = strlen(parts[2]);
+	if (zLength > 10 || (zLength == 10 && strcmp(parts[2], "2147483647") > 0))
+		return false;
+
+	int y = parts[1][0] - '0';
+	int z = StringToInt(parts[2]);
+	FormatEx(steam3, maxlength, "[U:1:%u]", z * 2 + y);
+	return true;
+}
+
+stock void ResolveQueuedGameAuth(const char[] storedAuth, char[] gameAuth, int maxlength)
+{
+	if (gameAuth[0] != '\0')
+		return;
+
+	char gameFolder[32];
+	GetGameFolderName(gameFolder, sizeof(gameFolder));
+	if (StrEqual(gameFolder, "synergy", false) && Steam2ToSteam3(storedAuth, gameAuth, maxlength))
+		return;
+
+	strcopy(gameAuth, maxlength, storedAuth);
+}
+
 public void InitializeBackupDB()
 {
 	char error[256];
@@ -2453,7 +2527,7 @@ public void InitializeBackupDB()
 		SetFailState(error);
 	}
 
-	SQLiteDB.Query(ErrorCheckCallback, 
+	if (!SQL_FastQuery(SQLiteDB,
 			"CREATE TABLE IF NOT EXISTS queue ( \
 				steam_id TEXT PRIMARY KEY ON CONFLICT REPLACE, \
 				time INTEGER, \
@@ -2461,12 +2535,46 @@ public void InitializeBackupDB()
 				reason TEXT, \
 				name TEXT, \
 				ip TEXT, \
-				admin_id TEXT, admin_ip TEXT);");
+				admin_id TEXT, \
+				admin_ip TEXT, \
+				game_id TEXT NOT NULL DEFAULT '');"))
+	{
+		SQL_GetError(SQLiteDB, error, sizeof(error));
+		SetFailState("Could not create the local ban queue: %s", error);
+		return;
+	}
+
+	DBResultSet columns = SQL_Query(SQLiteDB, "PRAGMA table_info(queue)");
+	if (columns == null)
+	{
+		SQL_GetError(SQLiteDB, error, sizeof(error));
+		SetFailState("Could not inspect the local ban queue: %s", error);
+		return;
+	}
+
+	bool hasGameId = false;
+	char columnName[32];
+	while (columns.FetchRow())
+	{
+		columns.FetchString(1, columnName, sizeof(columnName));
+		if (StrEqual(columnName, "game_id"))
+		{
+			hasGameId = true;
+			break;
+		}
+	}
+	delete columns;
+
+	if (!hasGameId && !SQL_FastQuery(SQLiteDB, "ALTER TABLE queue ADD COLUMN game_id TEXT NOT NULL DEFAULT ''"))
+	{
+		SQL_GetError(SQLiteDB, error, sizeof(error));
+		SetFailState("Could not upgrade the local ban queue: %s", error);
+	}
 }
 
 public bool CreateBan(int client, int target, int time, const char[] reason)
 {
-	char adminIp[16], adminAuth[MAX_AUTHID_LENGTH];
+	char adminIp[16], adminAuth[MAX_AUTHID_LENGTH], gameAuth[MAX_AUTHID_LENGTH];
 	int admin = client;
 
 	CleanupPendingBanDataPack(admin);
@@ -2491,6 +2599,8 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 
 	// target information
 	int userid = admin ? g_iUserIDs[admin] : 0;
+	if (!GetClientAuthId(target, AuthId_Engine, gameAuth, sizeof(gameAuth), false))
+		strcopy(gameAuth, sizeof(gameAuth), g_sSteamIDs[target]);
 
 	// Pack everything into a data pack so we can retain it
 	DataPack dataPack = new DataPack();
@@ -2506,6 +2616,7 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 	dataPack.WriteCell(reasonPack);
 	dataPack.WriteString(g_sName[target]);
 	dataPack.WriteString(g_sSteamIDs[target]);
+	dataPack.WriteString(gameAuth);
 	dataPack.WriteString(g_sPlayerIP[target]);
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
@@ -2521,7 +2632,7 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 			UTIL_InsertBan(time, g_sName[target], g_sSteamIDs[target], g_sPlayerIP[target], reason, adminAuth, adminIp, dataPack);
 		} else {
 			CleanupBanDataPack(dataPack);
-			UTIL_InsertTempBan(admin, target, g_iUserIDs[target], time, g_sName[target], g_sSteamIDs[target], g_sPlayerIP[target], reason, adminAuth, adminIp);
+			UTIL_InsertTempBan(admin, target, g_iUserIDs[target], time, g_sName[target], g_sSteamIDs[target], gameAuth, g_sPlayerIP[target], reason, adminAuth, adminIp);
 		}
 	} else {
 		// We need a reason so offer the administrator a menu of reasons
@@ -2605,14 +2716,10 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 	DB.Query(VerifyInsert, Query, dataPack, DBPrio_High);
 }
 
-stock void UTIL_InsertTempBan(int admin, int client, int targetUserId, int time, const char[] name, const char[] auth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp)
+stock void UTIL_InsertTempBan(int admin, int client, int targetUserId, int time, const char[] name, const char[] auth, const char[] gameAuth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp)
 {
 	// we add a temporary ban and then add the record into the queue to be processed when the database is available
-	char buffer[50];
-
-	Format(buffer, sizeof(buffer), "banid %d %s", ProcessQueueTime, auth);
-
-	ServerCommand(buffer);
+	BanIdentity(gameAuth, ProcessQueueTime, BANFLAG_AUTHID, reason, "", admin);
 
 	if (client > 0 && client <= MaxClients && IsClientInGame(client) && GetClientUserId(client) == targetUserId)
 	{
@@ -2624,13 +2731,18 @@ stock void UTIL_InsertTempBan(int admin, int client, int targetUserId, int time,
 		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
 	}
 
-	char banName[MAX_NAME_LENGTH], banReason[256], query[512];
+	char banName[MAX_NAME_LENGTH * 2 + 1], banReason[256], gameAuthEscaped[MAX_AUTHID_LENGTH * 2 + 1], query[1024];
 
-	SQLiteDB.Escape(name, banName, sizeof(banName));
-	SQLiteDB.Escape(reason, banReason, sizeof(banReason));
+	if (!SQLiteDB.Escape(name, banName, sizeof(banName))
+		|| !SQLiteDB.Escape(reason, banReason, sizeof(banReason))
+		|| !SQLiteDB.Escape(gameAuth, gameAuthEscaped, sizeof(gameAuthEscaped)))
+	{
+		LogToFile(logFile, "Failed to escape temporary ban data for %s", auth);
+		return;
+	}
 
-	FormatEx(query, sizeof(query), "INSERT INTO queue VALUES ('%s', %i, %i, '%s', '%s', '%s', '%s', '%s')",
-		auth, time, GetTime(), banReason, banName, ip, adminAuth, adminIp);
+	FormatEx(query, sizeof(query), "INSERT OR REPLACE INTO queue (steam_id, time, start_time, reason, name, ip, admin_id, admin_ip, game_id) VALUES ('%s', %i, %i, '%s', '%s', '%s', '%s', '%s', '%s')",
+		auth, time, GetTime(), banReason, banName, ip, adminAuth, adminIp, gameAuthEscaped);
 
 	SQLiteDB.Query(ErrorCheckCallback, query);
 }
