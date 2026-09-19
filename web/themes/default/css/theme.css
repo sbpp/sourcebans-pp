@@ -1959,6 +1959,26 @@ details.queue-row > summary > .row-actions {
   }
 }
 
+/* ---- Add Admin server-access grid (#1491) ----
+   Keep the per-server choices to at most two columns. Hostnames can
+   use the Source server-name limit, so the hydrated value is left
+   intact and wraps within its choice instead of being truncated. */
+.admin-server-access-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.admin-server-access-grid > [data-testid="server-tile"],
+.admin-server-access-grid__hostname {
+  min-width: 0;
+}
+.admin-server-access-grid__hostname {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 768px) {
+  .admin-server-access-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ---- Server card grid (#1316 — public + admin Server Management) ----
    Shared `grid-template-columns` for the two surfaces that render
    `:prefix_servers` rows as A2S-hydrated cards:
