@@ -28,6 +28,7 @@
 
 #include <sourcemod>
 #include <sourcebanspp>
+#include <sbpp_server_ip>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
@@ -74,7 +75,9 @@ Database DB;
 Database SQLiteDB;
 
 char
-	ServerIp[24]
+	ServerIp[SBPP_SERVER_IP_LENGTH]
+	, ConfiguredServerIp[SBPP_SERVER_IP_LENGTH]
+	, ServerIpEscaped[SBPP_SERVER_IP_LENGTH * 2 + 1]
 	, ServerPort[7]
 	, DatabasePrefix[10] = "sb"
 	, WebsiteAddress[128]
@@ -206,6 +209,9 @@ public void OnPluginStart()
 	BuildPath(Path_SM, logFile, sizeof(logFile), "logs/sourcebans.log");
 	g_bConnecting = true;
 
+	// Read the server identity before the asynchronous database callback builds queries.
+	ResetSettings();
+
 	// Catch config error and show link to FAQ
 	if (!SQL_CheckConfig("sourcebans"))
 	{
@@ -268,12 +274,18 @@ public void OnConfigsExecuted()
 
 public void OnMapStart()
 {
-	ResetSettings();
+	if (ResetSettings())
+	{
+		sm_rehash(0);
+	}
 }
 
 void sbid_reload(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	ResetSettings();
+	if (ResetSettings())
+	{
+		sm_rehash(0);
+	}
 }
 
 public void OnMapEnd()
@@ -420,7 +432,10 @@ public Action ChatHook(int client, int args)
 
 public Action CommandReload(int client, int args)
 {
-	ResetSettings();
+	if (ResetSettings())
+	{
+		sm_rehash(0);
+	}
 	return Plugin_Handled;
 }
 
@@ -1111,7 +1126,7 @@ public void GotDatabase(Database db, const char[] error, any data)
 						WHERE %s (server_id = (SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1)  \
 						OR srv_group_id = ANY (SELECT group_id FROM %s_servers_groups WHERE server_id = (SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1))) \
 						GROUP BY aid, authid, srv_password, srv_group, srv_flags, user",
-				DatabasePrefix, DatabasePrefix, DatabasePrefix, queryLastLogin, DatabasePrefix, ServerIp, ServerPort, DatabasePrefix, DatabasePrefix, ServerIp, ServerPort);
+				DatabasePrefix, DatabasePrefix, DatabasePrefix, queryLastLogin, DatabasePrefix, ServerIpEscaped, ServerPort, DatabasePrefix, DatabasePrefix, ServerIpEscaped, ServerPort);
 		} else {
 			FormatEx(query, sizeof(query), "SELECT authid, srv_password, (SELECT name FROM %s_srvgroups WHERE name = srv_group AND flags != '') AS srv_group, srv_flags, user, immunity  \
 						FROM %s_admins_servers_groups AS asg \
@@ -1258,7 +1273,7 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						(1, '%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, ip, targetAuth, sTEscapedName, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
+			DatabasePrefix, ip, targetAuth, sTEscapedName, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIpEscaped, ServerPort);
 	} else {
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						(1, '%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
@@ -1471,7 +1486,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
+			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIpEscaped, ServerPort);
 	} else {
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
@@ -1571,7 +1586,7 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 					"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid) VALUES  \
 						('%s', '%s', '%s', %d, %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1))",
-					DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
+					DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIpEscaped, ServerPort);
 			}
 			else
 			{
@@ -1623,6 +1638,14 @@ public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char
 
 public void ServerInfoCallback(Database db, DBResultSet results, const char[] error, any data)
 {
+	DataPack serverInfo = view_as<DataPack>(data);
+	char serverIpEscaped[sizeof(ServerIpEscaped)], serverPort[sizeof(ServerPort)], databasePrefix[sizeof(DatabasePrefix)];
+	serverInfo.ReadString(serverIpEscaped, sizeof(serverIpEscaped));
+	serverInfo.ReadString(serverPort, sizeof(serverPort));
+	serverInfo.ReadString(databasePrefix, sizeof(databasePrefix));
+	int autoAdd = serverInfo.ReadCell();
+	delete serverInfo;
+
 	if (results == null)
 	{
 		LogToFile(logFile, "Server Select Query Failed: %s", error);
@@ -1637,7 +1660,7 @@ public void ServerInfoCallback(Database db, DBResultSet results, const char[] er
 		GetGameFolderName(desc, sizeof(desc));
 		Format(rcon, sizeof(rcon), "");
 
-		if (AutoAdd == AUTO_ADD_SERVER_WITH_RCON)
+		if (autoAdd == AUTO_ADD_SERVER_WITH_RCON)
 		{
 			ConVar cvarRconPassword = FindConVar("rcon_password");
 			if (cvarRconPassword != null)
@@ -1648,7 +1671,7 @@ public void ServerInfoCallback(Database db, DBResultSet results, const char[] er
 
 		db.Escape(desc, descEscaped, sizeof(descEscaped));
 		db.Escape(rcon, rconEscaped, sizeof(rconEscaped));
-		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '%s', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", DatabasePrefix, ServerIp, ServerPort, rconEscaped, DatabasePrefix, descEscaped);
+		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '%s', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", databasePrefix, serverIpEscaped, serverPort, rconEscaped, databasePrefix, descEscaped);
 		db.Query(ErrorCheckCallback, query);
 	}
 }
@@ -1710,7 +1733,7 @@ public void VerifyBan(Database db, DBResultSet results, const char[] error, int 
 			FormatEx(Query, sizeof(Query), "INSERT INTO %s_banlog (sid ,time ,name ,bid) VALUES  \
 				((SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), UNIX_TIMESTAMP(), '%s', \
 				(SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND RemoveType IS NULL LIMIT 0,1))",
-				DatabasePrefix, DatabasePrefix, ServerIp, ServerPort, Name, DatabasePrefix, clientAuth[8], clientIp);
+				DatabasePrefix, DatabasePrefix, ServerIpEscaped, ServerPort, Name, DatabasePrefix, clientAuth[8], clientIp);
 		}
 		else
 		{
@@ -2256,6 +2279,22 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 				int sAutoAdd = StringToInt(value);
 				AutoAdd = (sAutoAdd < 0 || sAutoAdd > 2) ? 0 : sAutoAdd;
 			}
+			else if (strcmp("ServerIP", key, false) == 0)
+			{
+				char configuredIp[64];
+				strcopy(configuredIp, sizeof(configuredIp), value);
+				TrimString(configuredIp);
+
+				if (SBPP_IsValidServerIpOverride(configuredIp))
+				{
+					strcopy(ConfiguredServerIp, sizeof(ConfiguredServerIp), configuredIp);
+				}
+				else
+				{
+					ConfiguredServerIp[0] = '\0';
+					LogToFile(logFile, "Ignoring invalid ServerIP override; expected an IPv4 address");
+				}
+			}
 			else if (strcmp("Unban", key, false) == 0)
 			{
 				if (StringToInt(value) == 0)
@@ -2706,7 +2745,7 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'),'0'), '%s', \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, Ip, Authid, banName, (time * 60), (time * 60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, DatabasePrefix, ServerIp, ServerPort);
+			DatabasePrefix, Ip, Authid, banName, (time * 60), (time * 60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, DatabasePrefix, ServerIpEscaped, ServerPort);
 	} else {
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'),'0'), '%s', \
@@ -2772,28 +2811,40 @@ stock void CheckLoadAdmins(AdminCachePart part)
 	}
 }
 
+stock void ResolveServerInfo()
+{
+	SBPP_ResolveServerIp(CvarHostIp, ConfiguredServerIp, ServerIp, sizeof(ServerIp));
+	CvarPort.GetString(ServerPort, sizeof(ServerPort));
+
+	if (DB != INVALID_HANDLE)
+	{
+		DB.Escape(ServerIp, ServerIpEscaped, sizeof(ServerIpEscaped));
+	}
+}
+
 stock void InsertServerInfo()
 {
-    if (DB == INVALID_HANDLE) {
-        return;
-    }
+	if (DB == INVALID_HANDLE)
+	{
+		return;
+	}
 
-    char query[100];
-    int pieces[4];
-    int longip = CvarHostIp.IntValue;
+	ResolveServerInfo();
 
-    pieces[0] = (longip >> 24) & 0x000000FF;
-    pieces[1] = (longip >> 16) & 0x000000FF;
-    pieces[2] = (longip >> 8) & 0x000000FF;
-    pieces[3] = longip & 0x000000FF;
+	if (AutoAdd != AUTO_ADD_SERVER_DISABLED)
+	{
+		char query[256];
+		FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIpEscaped, ServerPort);
 
-    FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
-    CvarPort.GetString(ServerPort, sizeof(ServerPort));
+		DataPack serverInfo = new DataPack();
+		serverInfo.WriteString(ServerIpEscaped);
+		serverInfo.WriteString(ServerPort);
+		serverInfo.WriteString(DatabasePrefix);
+		serverInfo.WriteCell(AutoAdd);
+		serverInfo.Reset();
 
-    if (AutoAdd != AUTO_ADD_SERVER_DISABLED) {
-        FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIp, ServerPort);
-        DB.Query(ServerInfoCallback, query);
-    }
+		DB.Query(ServerInfoCallback, query, serverInfo);
+	}
 }
 
 stock void PrepareBan(int client, int target, int time, char[] reason, int targetUserId = -1)
@@ -2872,12 +2923,29 @@ stock void ReadConfig()
 	}
 }
 
-stock void ResetSettings()
+stock bool ResetSettings()
 {
+	char previousServerIp[sizeof(ServerIp)], previousServerPort[sizeof(ServerPort)], previousDatabasePrefix[sizeof(DatabasePrefix)];
+	strcopy(previousServerIp, sizeof(previousServerIp), ServerIp);
+	strcopy(previousServerPort, sizeof(previousServerPort), ServerPort);
+	strcopy(previousDatabasePrefix, sizeof(previousDatabasePrefix), DatabasePrefix);
+	int previousServerId = serverID;
+	int previousAutoAdd = AutoAdd;
+
 	CommandDisable = 0;
+	AutoAdd = AUTO_ADD_SERVER_DISABLED;
+	serverID = -1;
+	ConfiguredServerIp[0] = '\0';
 
 	ResetMenu();
 	ReadConfig();
+	ResolveServerInfo();
+
+	return previousServerId != serverID
+		|| previousAutoAdd != AutoAdd
+		|| !StrEqual(previousServerIp, ServerIp)
+		|| !StrEqual(previousServerPort, ServerPort)
+		|| !StrEqual(previousDatabasePrefix, DatabasePrefix);
 }
 
 stock void ParseBackupConfig_Overrides()
