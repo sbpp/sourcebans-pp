@@ -1,7 +1,7 @@
 /**
- * Flow spec — issue #1272: web admin groups bitmask round-trips as an
- * unsigned 32-bit integer (no negative sign in the live preview, no
- * negative sign on the round-tripped value after Save + reload).
+ * Flow spec — issues #1272 and #1436: web admin groups bitmask
+ * round-trips as an unsigned 32-bit integer, and the Select all
+ * control manages the whole permission grid.
  *
  * What this locks in
  * ------------------
@@ -34,6 +34,8 @@
  *     `web/pages/admin.groups.php` `$all_flags[]` build-up). For
  *     `ADMIN_UNBAN_GROUP_BANS` the testid is
  *     `flag-unban_group_bans`.
+ *   - `[data-testid="group-flags-select-all"]` — the grid-wide
+ *     checked / unchecked / indeterminate control.
  *   - `[data-testid="flag-bitmask"]`     — the live preview span
  *   - `[data-testid="group-save"]`       — the Save button
  *
@@ -60,22 +62,15 @@ const FIXTURE = {
     unbanGroupBansValue: 2147483648,
 };
 
-test.describe('flow: admin groups bitmask round-trip (#1272)', () => {
+test.describe('flow: admin groups permission flags (#1272, #1436)', () => {
     // truncateE2eDb in beforeEach is global, no worker-scoped locking
-    // yet — see `admin-ban-lifecycle.spec.ts` for the full reasoning.
+    // yet. Keep this file serial now that it carries two mutating tests;
+    // see `admin-ban-lifecycle.spec.ts` for the full reasoning.
+    test.describe.configure({ mode: 'serial' });
     test.skip(({ isMobile }) => isMobile, 'flow spec runs only on desktop chromium');
 
-    test.beforeEach(async () => {
+    test.beforeEach(async ({ page }) => {
         await truncateE2eDb();
-    });
-
-    test('bit-31 flag round-trips as an unsigned integer end-to-end', async ({ page }) => {
-        // ---- 1. Seed a web admin group via the JSON API -------------------
-        // Use `Actions.GroupsAdd` so the seeding path mirrors the real
-        // dispatcher (CSRF + permissions + handler stack). type='1' is
-        // a web admin group; `bitmask: 0` so the round-trip starts
-        // from a known empty state and the assertion below is purely
-        // about the bit-31 toggle.
         await page.goto('/');
 
         const seedEnvelope = await page.evaluate(async (groupName) => {
@@ -102,8 +97,10 @@ test.describe('flow: admin groups bitmask round-trip (#1272)', () => {
         }, FIXTURE.groupName);
 
         expect(seedEnvelope.ok, `groups.add must succeed: ${JSON.stringify(seedEnvelope)}`).toBe(true);
+    });
 
-        // ---- 2. Navigate to the groups list section -----------------------
+    test('bit-31 flag round-trips as an unsigned integer end-to-end', async ({ page }) => {
+        // ---- 1. Navigate to the groups list section -----------------------
         // The newly-seeded group is the only row, so the master-detail
         // editor auto-selects it (admin.groups.php falls back to the
         // first row when `?gid=` is missing). The right-pane form
@@ -126,7 +123,7 @@ test.describe('flow: admin groups bitmask round-trip (#1272)', () => {
         await expect(bitmaskBadge).toHaveText(/^0 bitmask$/);
         await expect(unbanGroupBansCheckbox).not.toBeChecked();
 
-        // ---- 3. Toggle the bit-31 flag → live preview is unsigned ---------
+        // ---- 2. Toggle the bit-31 flag → live preview is unsigned ---------
         // Pre-#1272 this would have rendered `-2147483648 bitmask`. The
         // contract is "no minus sign + the spec'd unsigned value".
         await unbanGroupBansCheckbox.check();
@@ -138,7 +135,7 @@ test.describe('flow: admin groups bitmask round-trip (#1272)', () => {
         // expected value) still fails on the sign separately.
         await expect(bitmaskBadge).not.toContainText('-');
 
-        // ---- 4. Save → DB has the unsigned value --------------------------
+        // ---- 3. Save → DB has the unsigned value --------------------------
         // The Save button posts `Actions.GroupsEdit` with
         // `web_flags: <SbppFoldFlags result>`. We wait on the
         // network response (the deterministic terminal state for
@@ -165,7 +162,7 @@ test.describe('flow: admin groups bitmask round-trip (#1272)', () => {
             `groups.edit must succeed: ${JSON.stringify(editEnvelope)}`,
         ).toBe(true);
 
-        // ---- 5. Reload → checkbox is still checked + badge persists -------
+        // ---- 4. Reload → checkbox is still checked + badge persists -------
         // The acceptance criterion: "Save round-trip — pick a flag
         // combination that includes bit 31, Save, reload — the same
         // flags re-render checked AND the badge reads the same
@@ -184,5 +181,72 @@ test.describe('flow: admin groups bitmask round-trip (#1272)', () => {
         await expect(reloadedBadge).toHaveText(`${FIXTURE.unbanGroupBansValue} bitmask`);
         await expect(reloadedBadge).not.toContainText('-');
         await expect(reloadedCheckbox).toBeChecked();
+    });
+
+    test('select all toggles every flag and stays synchronized', async ({ page }) => {
+        await page.goto(GROUPS_LIST_ROUTE);
+
+        const detail = page.locator('[data-testid="group-detail"]');
+        const flagGrid = detail.locator('[data-testid="flag-grid"]');
+        const selectAll = detail.locator('[data-testid="group-flags-select-all"]');
+        const flags = flagGrid.locator('input[name="flags[]"]');
+        const checkedFlags = flagGrid.locator('input[name="flags[]"]:checked');
+        const bitmaskBadge = detail.locator('[data-testid="flag-bitmask"]');
+
+        await expect(detail).toBeVisible();
+        await expect(selectAll).toBeVisible();
+        const flagCount = await flags.count();
+        expect(flagCount).toBeGreaterThan(1);
+        await expect(selectAll).not.toBeChecked();
+        expect(await selectAll.evaluate((input) => (input as HTMLInputElement).indeterminate)).toBe(false);
+
+        await selectAll.check();
+        await expect(checkedFlags).toHaveCount(flagCount);
+        await expect(selectAll).toBeChecked();
+        expect(await selectAll.evaluate((input) => (input as HTMLInputElement).indeterminate)).toBe(false);
+
+        const allFlagsMask = await flags.evaluateAll((inputs) => {
+            let mask = 0;
+            for (const node of inputs) {
+                const input = node as HTMLInputElement;
+                mask |= Number(input.dataset.flagValue || input.value);
+            }
+            return mask >>> 0;
+        });
+        await expect(bitmaskBadge).toHaveText(`${allFlagsMask} bitmask`);
+
+        await flags.first().uncheck();
+        await expect(selectAll).not.toBeChecked();
+        expect(await selectAll.evaluate((input) => (input as HTMLInputElement).indeterminate)).toBe(true);
+
+        await selectAll.check();
+        await expect(checkedFlags).toHaveCount(flagCount);
+
+        const editResponsePromise = page.waitForResponse(
+            (response) =>
+                response.url().includes('api.php') &&
+                response.request().method() === 'POST' &&
+                response.status() === 200,
+        );
+        await detail.locator('[data-testid="group-save"]').click();
+        const editEnvelope = await (await editResponsePromise).json();
+        expect(
+            editEnvelope.ok,
+            `groups.edit must succeed: ${JSON.stringify(editEnvelope)}`,
+        ).toBe(true);
+
+        await page.goto(GROUPS_LIST_ROUTE);
+        const reloadedDetail = page.locator('[data-testid="group-detail"]');
+        const reloadedGrid = reloadedDetail.locator('[data-testid="flag-grid"]');
+        const reloadedSelectAll = reloadedDetail.locator('[data-testid="group-flags-select-all"]');
+        await expect(reloadedGrid.locator('input[name="flags[]"]:checked')).toHaveCount(flagCount);
+        await expect(reloadedSelectAll).toBeChecked();
+        expect(
+            await reloadedSelectAll.evaluate((input) => (input as HTMLInputElement).indeterminate),
+        ).toBe(false);
+
+        await reloadedSelectAll.uncheck();
+        await expect(reloadedGrid.locator('input[name="flags[]"]:checked')).toHaveCount(0);
+        await expect(reloadedDetail.locator('[data-testid="flag-bitmask"]')).toHaveText('0 bitmask');
     });
 });
