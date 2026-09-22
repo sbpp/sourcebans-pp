@@ -635,11 +635,12 @@ foreach ($res as $row) {
 }
 $removedByNames = [];
 if ($removedByAdminIds !== []) {
-    $ids          = array_keys($removedByAdminIds);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $adminRows    = $GLOBALS['PDO']->query(
-        "SELECT aid, user FROM `:prefix_admins` WHERE aid IN ($placeholders)"
-    )->resultset($ids);
+    $ids       = array_keys($removedByAdminIds);
+    $adminRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT aid, user FROM `:prefix_admins` WHERE aid IN (',
+        $ids,
+        ')',
+    );
     foreach ($adminRows as $adminRow) {
         $removedByNames[(int) $adminRow['aid']] = $adminRow['user'];
     }
@@ -659,11 +660,12 @@ foreach ($res as $row) {
 
 $activeSiblingCounts = [];
 if ($siblingAuthidsToCheck !== []) {
-    $authids      = array_keys($siblingAuthidsToCheck);
-    $placeholders = implode(',', array_fill(0, count($authids), '?'));
-    $countRows    = $GLOBALS['PDO']->query(
-        "SELECT authid, type, COUNT(bid) as cnt FROM `:prefix_comms` WHERE authid IN ($placeholders) AND RemovedBy IS NULL AND (length = 0 OR ends > UNIX_TIMESTAMP()) GROUP BY authid, type"
-    )->resultset($authids);
+    $authids   = array_keys($siblingAuthidsToCheck);
+    $countRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT authid, type, COUNT(bid) as cnt FROM `:prefix_comms` WHERE authid IN (',
+        $authids,
+        ') AND RemovedBy IS NULL AND (length = 0 OR ends > UNIX_TIMESTAMP()) GROUP BY authid, type',
+    );
     foreach ($countRows as $countRow) {
         $activeSiblingCounts[$countRow['authid'] . '|' . (int) $countRow['type']] = (int) $countRow['cnt'];
     }
@@ -674,14 +676,15 @@ $canDeleteComment     = $userbank->HasAccess(WebPermission::Owner);
 $commentsByBidComm    = [];
 $viewCommentsEnabled  = Config::getBool('config.enablepubliccomments') || $canComment;
 if ($viewCommentsEnabled && $bidList !== []) {
-    $placeholders = implode(',', array_fill(0, count($bidList), '?'));
-    $cRows        = $GLOBALS['PDO']->query(
+    $cRows = $GLOBALS['PDO']->resultsetInList(
         "SELECT bid, cid, aid, commenttxt, added, edittime,
 			(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
 			(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
 			FROM `:prefix_comments` AS C
-			WHERE C.type = 'C' AND bid IN ($placeholders) ORDER BY bid, added desc"
-    )->resultset($bidList);
+			WHERE C.type = 'C' AND bid IN (",
+        $bidList,
+        ') ORDER BY bid, added desc',
+    );
     foreach ($cRows as $cRow) {
         $commentsByBidComm[(int) $cRow['bid']][] = $cRow;
     }

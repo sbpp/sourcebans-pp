@@ -323,47 +323,48 @@ function PruneBans(): void
     $pdo->bind(':id', $adminId);
     $pdo->execute();
 
-    // Two single-column SELECTs are intentionally separate from the
-    // composite UPDATE below: `UPDATE … WHERE` locks every row it
-    // examines for the predicate, not just the rows it changes. We
-    // surface the candidate `subid`s with a SELECT first so the
-    // UPDATE only locks rows it'll mutate.
-    $steamIds = $pdo
-        ->query('SELECT DISTINCT authid FROM `:prefix_bans` WHERE `type` = 0 AND `RemoveType` IS NULL')
-        ->resultset(null, PDO::FETCH_COLUMN);
-    $banIps = $pdo
-        ->query('SELECT ip FROM `:prefix_bans` WHERE type = 1 AND RemoveType IS NULL')
-        ->resultset(null, PDO::FETCH_COLUMN);
-
-    if ($steamIds === [] && $banIps === []) {
-        return;
-    }
-
-    $clauses = [];
-    $args    = [];
-    if ($steamIds !== []) {
-        $clauses[] = 'SteamId IN (' . implode(',', array_fill(0, count($steamIds), '?')) . ')';
-        array_push($args, ...$steamIds);
-    }
-    if ($banIps !== []) {
-        $clauses[] = 'sip IN (' . implode(',', array_fill(0, count($banIps), '?')) . ')';
-        array_push($args, ...$banIps);
-    }
-
+    // Keep the candidate lookup read-only: a composite UPDATE would
+    // lock every submissions row examined, not just rows it changes.
+    // Two set-based arms avoid materialising every active ban identifier
+    // as one prepared-statement IN-list (MariaDB rejects statements above
+    // 65,535 placeholders). UNION DISTINCT de-duplicates a submission
+    // that happens to match both its Steam ID and IP. Keeping the arms
+    // separate lets MariaDB probe type_authid / type_ip directly for each
+    // submission instead of materialising all active identifiers first.
     $subIds = $pdo
-        ->query('SELECT `subid` FROM `:prefix_submissions` WHERE `archiv` = 0 AND (' . implode(' OR ', $clauses) . ')')
-        ->resultset($args, PDO::FETCH_COLUMN);
+        ->query(
+            'SELECT S.`subid`
+               FROM `:prefix_submissions` AS S
+               INNER JOIN `:prefix_bans` AS BSteam FORCE INDEX (`type_authid`)
+                       ON BSteam.`type` = 0
+                      AND BSteam.`authid` = S.`SteamId`
+                      AND BSteam.`RemoveType` IS NULL
+              WHERE S.`archiv` = 0
+              UNION DISTINCT
+             SELECT S.`subid`
+               FROM `:prefix_submissions` AS S
+               INNER JOIN `:prefix_bans` AS BIp FORCE INDEX (`type_ip`)
+                       ON BIp.`type` = 1
+                      AND BIp.`ip` = S.`sip`
+                      AND BIp.`RemoveType` IS NULL
+              WHERE S.`archiv` = 0'
+        )
+        ->resultset(null, PDO::FETCH_COLUMN);
 
     if ($subIds === []) {
         return;
     }
 
-    $pdo
-        ->query('UPDATE `:prefix_submissions`
-                    SET `archiv` = 3,
-                        `archivedby` = ?
-                  WHERE `subid` IN (' . implode(',', array_fill(0, count($subIds), '?')) . ')')
-        ->execute([$adminId, ...$subIds]);
+    $pdo->executeInList(
+        'UPDATE `:prefix_submissions`
+            SET `archiv` = 3,
+                `archivedby` = ?
+          WHERE `subid` IN (',
+        $subIds,
+        ')',
+        [$adminId],
+        atomic: true,
+    );
 }
 
 /**

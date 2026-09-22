@@ -783,11 +783,12 @@ foreach ($res as $row) {
 }
 $removedByNames = [];
 if ($removedByAdminIds !== []) {
-    $ids          = array_keys($removedByAdminIds);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $adminRows    = $GLOBALS['PDO']->query(
-        "SELECT aid, user FROM `:prefix_admins` WHERE aid IN ($placeholders)"
-    )->resultset($ids);
+    $ids       = array_keys($removedByAdminIds);
+    $adminRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT aid, user FROM `:prefix_admins` WHERE aid IN (',
+        $ids,
+        ')',
+    );
     foreach ($adminRows as $adminRow) {
         $removedByNames[(int) $adminRow['aid']] = $adminRow['user'];
     }
@@ -810,21 +811,23 @@ foreach ($res as $row) {
     }
 }
 if ($steamAuthidsToCheck !== []) {
-    $ids          = array_keys($steamAuthidsToCheck);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $countRows    = $GLOBALS['PDO']->query(
-        "SELECT authid, COUNT(bid) as cnt FROM `:prefix_bans` WHERE authid IN ($placeholders) AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' GROUP BY authid"
-    )->resultset($ids);
+    $ids       = array_keys($steamAuthidsToCheck);
+    $countRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT authid, COUNT(bid) as cnt FROM `:prefix_bans` WHERE authid IN (',
+        $ids,
+        ") AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' GROUP BY authid",
+    );
     foreach ($countRows as $countRow) {
         $activeSteamCounts[$countRow['authid']] = (int) $countRow['cnt'];
     }
 }
 if ($ipsToCheck !== []) {
-    $ids          = array_keys($ipsToCheck);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $countRows    = $GLOBALS['PDO']->query(
-        "SELECT ip, COUNT(bid) as cnt FROM `:prefix_bans` WHERE ip IN ($placeholders) AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' GROUP BY ip"
-    )->resultset($ids);
+    $ids       = array_keys($ipsToCheck);
+    $countRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT ip, COUNT(bid) as cnt FROM `:prefix_bans` WHERE ip IN (',
+        $ids,
+        ") AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' GROUP BY ip",
+    );
     foreach ($countRows as $countRow) {
         $activeIpCounts[$countRow['ip']] = (int) $countRow['cnt'];
     }
@@ -832,10 +835,11 @@ if ($ipsToCheck !== []) {
 
 $banlogByBid = [];
 if ($banIds !== []) {
-    $placeholders = implode(',', array_fill(0, count($banIds), '?'));
-    $blRows       = $GLOBALS['PDO']->query(
-        "SELECT bl.bid, bl.time, bl.name, s.ip, s.port FROM `:prefix_banlog` AS bl LEFT JOIN `:prefix_servers` AS s ON s.sid = bl.sid WHERE bl.bid IN ($placeholders)"
-    )->resultset($banIds);
+    $blRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT bl.bid, bl.time, bl.name, s.ip, s.port FROM `:prefix_banlog` AS bl LEFT JOIN `:prefix_servers` AS s ON s.sid = bl.sid WHERE bl.bid IN (',
+        $banIds,
+        ')',
+    );
     foreach ($blRows as $blRow) {
         $banlogByBid[(int) $blRow['bid']][] = $blRow;
     }
@@ -846,14 +850,15 @@ $canDeleteComment    = $userbank->HasAccess(WebPermission::Owner);
 $viewCommentsEnabled = Config::getBool('config.enablepubliccomments') || $canComment;
 $commentsByBid       = [];
 if ($viewCommentsEnabled && $banIds !== []) {
-    $placeholders = implode(',', array_fill(0, count($banIds), '?'));
-    $cRows        = $GLOBALS['PDO']->query(
+    $cRows = $GLOBALS['PDO']->resultsetInList(
         "SELECT bid, cid, aid, editaid, commenttxt, added, edittime,
 			(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
 			(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
 			FROM `:prefix_comments` AS C
-			WHERE type = 'B' AND bid IN ($placeholders) ORDER BY bid, added desc"
-    )->resultset($banIds);
+			WHERE type = 'B' AND bid IN (",
+        $banIds,
+        ') ORDER BY bid, added desc',
+    );
     foreach ($cRows as $cRow) {
         $commentsByBid[(int) $cRow['bid']][] = $cRow;
     }
@@ -1226,15 +1231,15 @@ foreach ($res as $row) {
     array_push($bans, $data);
 }
 
-// Flush the GeoIP country write-back queued during the loop above as a
-// single batched UPDATE (one round trip for the whole page) instead of
-// one UPDATE per row.
-if ($pendingCountryUpdates !== []) {
+// Flush the GeoIP country write-back in bounded batches instead of one
+// UPDATE per row. Each row contributes three placeholders (CASE id,
+// country, and the WHERE id), so use the shared 10,000-value chunk cap.
+foreach (array_chunk($pendingCountryUpdates, \Sbpp\Db\Database::IN_LIST_CHUNK_SIZE, true) as $countryUpdates) {
     $caseParts    = [];
     $whenArgs     = [];
     $idPlaceholders = [];
     $idArgs       = [];
-    foreach ($pendingCountryUpdates as $bid => $country) {
+    foreach ($countryUpdates as $bid => $country) {
         $caseParts[]      = "WHEN ? THEN ?";
         $whenArgs[]       = $bid;
         $whenArgs[]       = $country;

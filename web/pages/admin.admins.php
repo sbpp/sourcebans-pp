@@ -176,6 +176,8 @@ $where        = "";
 $whereParams  = [];
 $joinAdminsServersGroups = false;
 $joinServersGroups       = false;
+$joinWebGroups           = false;
+$joinSrvAdminGroups      = false;
 /** @var array<string, string|list<string>> $activeFilters */
 $activeFilters = [];
 
@@ -262,8 +264,9 @@ if (!empty($_GET['srvgroup']) && is_scalar($_GET['srvgroup'])) {
 
 // 7) Web permission flags (multi). Submitted as either `admwebflag[]=X&admwebflag[]=Y`
 // or the legacy comma-joined string. Resolve each name to its bit and
-// OR-combine into a single bitmask, then narrow ADM.aid to admins with
-// access — same per-admin permission probe the legacy code used.
+// OR-combine into a single bitmask. The SQL predicate mirrors
+// UserManager::HasAccess(): direct extraflags OR inherited web-group
+// flags, with any requested bit counting as a match.
 $rawWebFlags = $_GET['admwebflag'] ?? null;
 if (is_string($rawWebFlags)) {
     $rawWebFlags = explode(',', $rawWebFlags);
@@ -278,28 +281,18 @@ if (is_array($rawWebFlags)) {
     }
     if (!empty($webFlagNames)) {
         $flagBits = array_map(fn(string $name): int => (int) constant($name), $webFlagNames);
-        $flagstring = implode('|', $flagBits);
-        $alladmins = $GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE aid > 0")->resultset();
-        $accessAids = [];
-        foreach ($alladmins as $row) {
-            if ($userbank->HasAccess($flagstring, $row['aid'])) {
-                $accessAids[] = (int) $row['aid'];
-            }
-        }
-        if (empty($accessAids)) {
-            $where .= " AND 0";
-        } else {
-            $placeholders  = implode(',', array_fill(0, count($accessAids), '?'));
-            $where        .= " AND ADM.aid IN($placeholders)";
-            $whereParams   = array_merge($whereParams, $accessAids);
-        }
+        $flagMask = array_reduce($flagBits, static fn (int $mask, int $bit): int => $mask | $bit, 0);
+        $joinWebGroups = true;
+        $where .= ' AND (((ADM.extraflags | COALESCE(WG.flags, 0)) & ?) <> 0)';
+        $whereParams[] = $flagMask;
         $activeFilters['admwebflag'] = $webFlagNames;
     }
 }
 
 // 8) Server permission flags (multi). SM_* constants are single-char
-// strings (`SM_ROOT` = `z`); pass them to HasAccess as strings so the
-// srv_flags path runs. SM_ROOT implies every other server flag.
+// strings (`SM_ROOT` = `z`). Match against the concatenated direct +
+// inherited group flags, mirroring UserManager::HasAccess(). SM_ROOT
+// implies every requested server flag.
 $rawSrvFlags = $_GET['admsrvflag'] ?? null;
 if (is_string($rawSrvFlags)) {
     $rawSrvFlags = explode(',', $rawSrvFlags);
@@ -315,31 +308,18 @@ if (is_array($rawSrvFlags)) {
     if (!empty($srvFlagNames)) {
         /** @var list<string> $flagChars */
         $flagChars = array_map(fn(string $name): string => (string) constant($name), $srvFlagNames);
-        $alladmins = $GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE aid > 0")->resultset();
-        $accessAids = [];
-        foreach ($alladmins as $row) {
-            $aid = (int) $row['aid'];
-            $matched = false;
-            foreach ($flagChars as $fla) {
-                if ($userbank->HasAccess($fla, $aid)) {
-                    $matched = true;
-                    break;
-                }
-            }
-            if (!$matched && $userbank->HasAccess(SM_ROOT, $aid)) {
-                $matched = true;
-            }
-            if ($matched) {
-                $accessAids[] = $aid;
-            }
+        $flagChars[] = SM_ROOT;
+        $flagChars = array_values(array_unique($flagChars));
+        $joinSrvAdminGroups = true;
+        $serverFlagClauses = [];
+        foreach ($flagChars as $flagChar) {
+            // SourceMod flags are case-sensitive in UserManager::HasAccess().
+            // BINARY prevents the table's case-insensitive collation from
+            // treating `A` as the lower-case `a` reserved-slot flag.
+            $serverFlagClauses[] = "INSTR(BINARY CONCAT(COALESCE(ADM.srv_flags, ''), COALESCE(SAG.flags, '')), BINARY ?) > 0";
+            $whereParams[] = $flagChar;
         }
-        if (empty($accessAids)) {
-            $where .= " AND 0";
-        } else {
-            $placeholders  = implode(',', array_fill(0, count($accessAids), '?'));
-            $where        .= " AND ADM.aid IN($placeholders)";
-            $whereParams   = array_merge($whereParams, $accessAids);
-        }
+        $where .= ' AND (' . implode(' OR ', $serverFlagClauses) . ')';
         $activeFilters['admsrvflag'] = $srvFlagNames;
     }
 }
@@ -364,6 +344,12 @@ if ($joinAdminsServersGroups) {
 if ($joinServersGroups) {
     $join .= " LEFT JOIN `:prefix_servers_groups` AS SGS ON SGS.group_id = ASG.srv_group_id";
 }
+if ($joinWebGroups) {
+    $join .= " LEFT JOIN `:prefix_groups` AS WG ON WG.gid = ADM.gid";
+}
+if ($joinSrvAdminGroups) {
+    $join .= " LEFT JOIN `:prefix_srvgroups` AS SAG ON SAG.name = ADM.srv_group";
+}
 
 // Pagination needs the active-filter snapshot baked into every "next"
 // page link so subsequent navigation preserves the search. Pre-#1275
@@ -373,25 +359,16 @@ if ($joinServersGroups) {
 // `http_build_query` handles array values (`admwebflag[]=…&admwebflag[]=…`)
 // natively, so multi-select filters round-trip without manual joining.
 $advSearchString = empty($activeFilters) ? '' : '&' . http_build_query($activeFilters);
-$admins = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . (int) (($page-1) * $AdminsPerPage) . "," . (int) $AdminsPerPage)->resultset($whereParams);
-// The server filter joins through `:prefix_admins_servers_groups` and
-// `:prefix_servers_groups`, which can produce duplicate ADM.aid rows
-// when an admin reaches the same server via multiple paths. Dedupe
-// here to keep the rendered list one-row-per-admin.
-if (isset($activeFilters['server'])) {
-    $aadm = [];
-    $num = 0;
-    foreach ($admins as $aadmin) {
-        if (!in_array($aadmin['aid'], $aadm)) {
-            $aadm[] = $aadmin['aid'];
-        } else {
-            unset($admins[$num]);
-        }
-        $num++;
-    }
-}
-
-$query = $GLOBALS['PDO']->query("SELECT COUNT(ADM.aid) AS cnt FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where)->single($whereParams);
+$offset = (int) (($page - 1) * $AdminsPerPage);
+// DISTINCT runs before LIMIT so joins cannot consume page slots with
+// duplicate admins. The count uses the same one-row-per-aid contract.
+$admins = $GLOBALS['PDO']->query(
+    "SELECT DISTINCT ADM.* FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY ADM.user LIMIT "
+    . $offset . "," . (int) $AdminsPerPage
+)->resultset($whereParams);
+$query = $GLOBALS['PDO']->query(
+    "SELECT COUNT(DISTINCT ADM.aid) AS cnt FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where
+)->single($whereParams);
 $admin_count = $query['cnt'];
 
 if (isset($_GET['page']) && $_GET['page'] > 0) {
@@ -410,17 +387,20 @@ $adminAids        = array_map(static fn ($a) => (int) $a['aid'], $admins);
 $banCountByAid    = [];
 $nodemoCountByAid = [];
 if ($adminAids !== []) {
-    $placeholders = implode(',', array_fill(0, count($adminAids), '?'));
-    $banCountRows = $GLOBALS['PDO']->query(
-        "SELECT aid, count(authid) AS num FROM `:prefix_bans` WHERE aid IN ($placeholders) GROUP BY aid"
-    )->resultset($adminAids);
+    $banCountRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT aid, count(authid) AS num FROM `:prefix_bans` WHERE aid IN (',
+        $adminAids,
+        ') GROUP BY aid',
+    );
     foreach ($banCountRows as $banCountRow) {
         $banCountByAid[(int) $banCountRow['aid']] = (int) $banCountRow['num'];
     }
 
-    $nodemoCountRows = $GLOBALS['PDO']->query(
-        "SELECT B.aid AS aid, count(B.bid) AS num FROM `:prefix_bans` AS B WHERE B.aid IN ($placeholders) AND NOT EXISTS (SELECT D.demid FROM `:prefix_demos` AS D WHERE D.demid = B.bid) GROUP BY B.aid"
-    )->resultset($adminAids);
+    $nodemoCountRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT B.aid AS aid, count(B.bid) AS num FROM `:prefix_bans` AS B WHERE B.aid IN (',
+        $adminAids,
+        ') AND NOT EXISTS (SELECT D.demid FROM `:prefix_demos` AS D WHERE D.demid = B.bid) GROUP BY B.aid',
+    );
     foreach ($nodemoCountRows as $nodemoCountRow) {
         $nodemoCountByAid[(int) $nodemoCountRow['aid']] = (int) $nodemoCountRow['num'];
     }

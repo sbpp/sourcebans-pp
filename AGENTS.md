@@ -481,6 +481,21 @@ top-level `class Foo {}` in `web/includes/` (see "Anti-patterns").
   `Database::query()` rewrites the placeholder. Never inline the prefix.
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
 - ADOdb was fully removed (commit `b9c812b2`). **Do not reintroduce it.**
+- Row-derived `IN (...)` lists go through
+  `Database::resultsetInList()` / `executeInList()`. Both methods split
+  values into 10,000-item statements so native MySQL / MariaDB prepares
+  stay below the 65,535-placeholder ceiling. Do not build an unbounded
+  placeholder string with `array_fill(count($rows), '?')`: an install
+  with 75,000 bans fails during `PDO::prepare()` with error 1390 before
+  any values are bound. Compile-time constant lists (for example the
+  export subsystem's short forbidden-setting-key list) may stay inline.
+  Chunked SELECT ordering is only per statement; regroup returned rows
+  by key instead of relying on one globally ordered result. The helper
+  accepts only list-shaped `PDO::FETCH_ASSOC` / `PDO::FETCH_COLUMN`
+  results; keyed modes cannot be merged safely across chunks. Pass
+  `atomic: true` to `executeInList()` when splitting a formerly single
+  write must preserve all-or-nothing behavior; the helper owns the
+  transaction in that mode, so callers must not open a nested one.
 - Each named placeholder (`:name`) inside one query needs as many
   `bind()` calls as occurrences. The panel runs PDO with
   `PDO::ATTR_EMULATE_PREPARES => false` (`Sbpp\Db\Database::__construct`

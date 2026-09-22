@@ -12,6 +12,16 @@ use PDOStatement;
  */
 final class Database
 {
+    public const MAX_PREPARED_STATEMENT_PLACEHOLDERS = 65_535;
+
+    /**
+     * Keep generated IN-list statements comfortably below MySQL /
+     * MariaDB's 65,535-placeholder prepared-statement ceiling. Fixed
+     * parameters that appear before or after the list also count toward
+     * that ceiling, so callers must not build the list themselves.
+     */
+    public const IN_LIST_CHUNK_SIZE = 10_000;
+
     private readonly string $prefix;
 
     private PDO $dbh;
@@ -152,6 +162,137 @@ final class Database
     {
         $this->execute($inputParams);
         return $this->stmt->fetchAll($fetchType);
+    }
+
+    /**
+     * Execute a SELECT once per bounded slice of an IN-list and merge
+     * the rows. Ordering is guaranteed within each slice only; callers
+     * should consume the result as a set or regroup it by key.
+     *
+     * `$sqlBeforeValues` must end immediately before the first generated
+     * placeholder and `$sqlAfterValues` must begin immediately after the
+     * last one. For example:
+     *
+     *     $db->resultsetInList(
+     *         'SELECT aid, user FROM `:prefix_admins` WHERE aid IN (',
+     *         $aids,
+     *         ')',
+     *     );
+     *
+     * @param list<int|bool|null|string> $values
+     * @param list<int|bool|null|string> $paramsBefore
+     * @param list<int|bool|null|string> $paramsAfter
+     * @return list<mixed>
+     * @throws \InvalidArgumentException When a keyed PDO fetch mode is requested.
+     */
+    public function resultsetInList(
+        string $sqlBeforeValues,
+        array $values,
+        string $sqlAfterValues = '',
+        array $paramsBefore = [],
+        array $paramsAfter = [],
+        int $fetchType = PDO::FETCH_ASSOC,
+    ): array {
+        if (!in_array($fetchType, [PDO::FETCH_ASSOC, PDO::FETCH_COLUMN], true)) {
+            throw new \InvalidArgumentException(
+                'Chunked IN-list SELECTs support only PDO::FETCH_ASSOC and PDO::FETCH_COLUMN.'
+            );
+        }
+
+        $rows = [];
+        foreach ($this->inListChunks($values, count($paramsBefore) + count($paramsAfter)) as $chunk) {
+            $placeholders = implode(',', array_fill(0, count($chunk), '?'));
+            $chunkRows = $this
+                ->query($sqlBeforeValues . $placeholders . $sqlAfterValues)
+                ->resultset([...$paramsBefore, ...$chunk, ...$paramsAfter], $fetchType);
+            array_push($rows, ...$chunkRows);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Execute a write once per bounded slice of an IN-list.
+     *
+     * Pass `$atomic = true` when every chunk must commit or roll back as
+     * one operation. The caller must not already have a transaction open
+     * in that mode because PDO does not support nested transactions.
+     *
+     * @param list<int|bool|null|string> $values
+     * @param list<int|bool|null|string> $paramsBefore
+     * @param list<int|bool|null|string> $paramsAfter
+     */
+    public function executeInList(
+        string $sqlBeforeValues,
+        array $values,
+        string $sqlAfterValues = '',
+        array $paramsBefore = [],
+        array $paramsAfter = [],
+        bool $atomic = false,
+    ): int {
+        $chunks = $this->inListChunks($values, count($paramsBefore) + count($paramsAfter));
+        if ($chunks === []) {
+            return 0;
+        }
+
+        $affected = 0;
+        $transactionOpen = false;
+        if ($atomic) {
+            if ($this->dbh->inTransaction()) {
+                throw new \LogicException('Atomic IN-list execution cannot start inside an existing transaction.');
+            }
+            $this->beginTransaction();
+            $transactionOpen = true;
+        }
+        try {
+            foreach ($chunks as $chunk) {
+                $placeholders = implode(',', array_fill(0, count($chunk), '?'));
+                $this
+                    ->query($sqlBeforeValues . $placeholders . $sqlAfterValues)
+                    ->execute([...$paramsBefore, ...$chunk, ...$paramsAfter]);
+                $affected += $this->rowCount();
+            }
+            if ($atomic) {
+                $this->endTransaction();
+                $transactionOpen = false;
+            }
+        } catch (\Throwable $e) {
+            if ($transactionOpen) {
+                $this->cancelTransaction();
+            }
+            throw $e;
+        }
+
+        return $affected;
+    }
+
+    /**
+     * @param list<int|bool|null|string> $values
+     * @return list<list<int|bool|null|string>>
+     */
+    private function inListChunks(array $values, int $reservedPlaceholders): array
+    {
+        if ($values === []) {
+            return [];
+        }
+
+        $available = self::MAX_PREPARED_STATEMENT_PLACEHOLDERS - $reservedPlaceholders;
+        if ($available < 1) {
+            throw new \InvalidArgumentException('IN-list query has no placeholder capacity left after fixed parameters.');
+        }
+
+        $unique = [];
+        $seen   = [];
+        foreach ($values as $value) {
+            $key = serialize($value);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $unique[] = $value;
+        }
+
+        return array_chunk($unique, min(self::IN_LIST_CHUNK_SIZE, $available));
     }
 
     public function single(?array $inputParams = null, int $fetchType = PDO::FETCH_ASSOC): mixed

@@ -266,6 +266,23 @@ final class AdminAdminsSearchTest extends ApiTestCase
         $this->assertStringContainsString('>charlie<', $html, 'charlie has ADMIN_OWNER');
     }
 
+    public function testWebFlagMultiFilterCombinesSelectedBitsWithOr(): void
+    {
+        $_GET = [
+            'p'           => 'admin',
+            'c'           => 'admins',
+            'admwebflag'  => ['ADMIN_OWNER', 'ADMIN_ADD_BAN'],
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $this->assertSame(3, $this->extractAdminCount($html));
+        $this->assertStringContainsString('>admin<', $html);
+        $this->assertStringContainsString('>alice<', $html);
+        $this->assertStringContainsString('>charlie<', $html);
+        $this->assertStringNotContainsString('>bob<', $html);
+    }
+
     /**
      * #1303 — default render is collapsed.
      *
@@ -543,6 +560,58 @@ final class AdminAdminsSearchTest extends ApiTestCase
         $this->assertStringNotContainsString('>charlie<', $html);
     }
 
+    public function testServerFlagFilterIsCaseSensitiveLikeHasAccess(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'UPDATE `%s_admins` SET srv_flags = "A" WHERE aid = ?',
+            DB_PREFIX,
+        ))->execute([$this->aliceAid]);
+
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'admsrvflag' => ['SM_RESERVED_SLOT'],
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $this->assertSame(0, $this->extractAdminCount($html));
+        $this->assertStringNotContainsString('>alice<', $html);
+    }
+
+    public function testServerJoinCountsEachAdminOnceWhenMembershipRowsDuplicate(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_servers` (ip, port, rcon, modid, enabled)
+             VALUES ("server.example.test", 27015, "secret", 0, 1)',
+            DB_PREFIX,
+        ))->execute();
+        $sid = (int) $pdo->lastInsertId();
+
+        $membership = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins_servers_groups`
+                (admin_id, group_id, srv_group_id, server_id)
+             VALUES (?, -1, -1, ?)',
+            DB_PREFIX,
+        ));
+        $membership->execute([$this->aliceAid, $sid]);
+        $membership->execute([$this->aliceAid, $sid]);
+
+        $_GET = [
+            'p'      => 'admin',
+            'c'      => 'admins',
+            'server' => (string) $sid,
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $this->assertSame(1, $this->extractAdminCount($html));
+        $this->assertSame(1, $this->countAdminRows($html));
+        $this->assertStringContainsString('>alice<', $html);
+    }
+
     /**
      * SM_ROOT on srv_flags implies every server permission, so a
      * reserved-slot filter still returns root holders.
@@ -565,6 +634,31 @@ final class AdminAdminsSearchTest extends ApiTestCase
 
         $this->assertSame(1, $this->extractAdminCount($html), 'SM_ROOT implies SM_RESERVED_SLOT');
         $this->assertStringContainsString('>charlie<', $html);
+    }
+
+    public function testServerFlagFilterIncludesInheritedGroupFlags(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_srvgroups` (flags, immunity, name, groups_immune)
+             VALUES (?, 0, "Inherited Reserved", "")',
+            DB_PREFIX,
+        ))->execute([SM_RESERVED_SLOT]);
+        $pdo->prepare(sprintf(
+            'UPDATE `%s_admins` SET srv_group = "Inherited Reserved" WHERE aid = ?',
+            DB_PREFIX,
+        ))->execute([$this->bobAid]);
+
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'admsrvflag' => ['SM_RESERVED_SLOT'],
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $this->assertSame(1, $this->extractAdminCount($html));
+        $this->assertStringContainsString('>bob<', $html);
     }
 
     /**
