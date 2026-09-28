@@ -12,7 +12,7 @@ use Sbpp\Tests\Fixture;
  * #1578 — upgraded installs can lack `:prefix_bans`'s `type_authid` /
  * `type_ip` composite indexes. 2.2.1's `PruneBans()` named them in
  * `FORCE INDEX` hints, which MariaDB rejects with error 1176 when the
- * index is missing, fataling the banlist / servers / dashboard pages.
+ * index is missing, fataling the banlist and the add / edit ban flows.
  *
  * Surfaces exercised:
  *   - `PruneBans()` runs and archives matching submissions with both

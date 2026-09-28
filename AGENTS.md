@@ -502,10 +502,12 @@ top-level `class Foo {}` in `web/includes/` (see "Anti-patterns").
  `config.version`, so a long-upgraded install whose version moved
  past that script without running it never gets the index, and a
  hint on a missing index is MariaDB error 1176, not a no-op. (The
- `:prefix_comms` `FORCE INDEX (created)` hints are fine: that index
- ships in the table's own `CREATE TABLE`.) #1578: 2.2.1's
+ `:prefix_comms` `FORCE INDEX (created)` hints in `page.commslist.php`
+ are the accepted exception: `KEY created` is in every schema that
+ table has shipped with, upstream SourceComms included, and the hint
+ has been live since 1.5.0F without reports.) #1578: 2.2.1's
  `PruneBans()` hinted `type_authid` / `type_ip` and fataled the
- banlist, servers, and dashboard on such installs. If a hint is
+ banlist plus the add / edit ban flows on such installs. If a hint is
  truly needed, ship a paired idempotent migration that creates the
  index (see `web/updater/data/811.php`) in the same PR. Regression
  guard: `web/tests/integration/BansCompositeIndexesTest.php`.

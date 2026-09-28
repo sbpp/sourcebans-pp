@@ -124,11 +124,12 @@ if you can't decipher it.
 
 ## Key doesn't exist
 
-> `1176 Key 'type_authid' doesn't exist in table 'BSteam'`
+> `1176 Key 'type_authid' doesn't exist in table 'BSteam'` or
+> `1176 Key 'type_ip' doesn't exist in table 'BIp'`
 
 Panel 2.2.1 on an older, long-upgraded install can hit this on the
-Ban List, Servers, and Home pages. Your `_bans` table is missing two
-indexes the panel expects.
+Ban List and when adding or editing a ban. Your `_bans` table is
+missing two indexes the panel expects.
 
 Upgrade to the next panel release and run the updater. It adds the
 missing indexes. To fix it right away instead, run this against the

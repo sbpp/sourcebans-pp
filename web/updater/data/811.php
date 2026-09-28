@@ -6,12 +6,14 @@
 // later `config.version` by another path (old installer seeds, manual
 // schema imports, forks) never got them, so `PruneBans()`'s submission
 // lookup had no composite index to probe and 2.2.1's `FORCE INDEX`
-// hints fataled every banlist / servers / dashboard render.
+// hints fataled the banlist and the add / edit ban flows.
 //
 // Add each index only when no index of that name exists. The
 // `information_schema` probe keeps this portable (MySQL has no
-// `ADD INDEX IF NOT EXISTS`) and makes re-runs a no-op. Fresh installs
-// already carry both indexes from `struc.sql`, so they converge.
+// `ADD INDEX IF NOT EXISTS`) and makes re-runs a no-op. Missing indexes
+// go in one `ALTER TABLE` so old MyISAM tables are rebuilt once, not
+// twice. Fresh installs already carry both indexes from `struc.sql`, so
+// they converge.
 //
 // `$this` is supplied by Updater::update() which loads this file inside
 // the Updater instance scope; PHPStan can't see that, so each
@@ -25,6 +27,7 @@ $indexes = [
     'type_ip'     => '(`type`, `ip`)',
 ];
 
+$addClauses = [];
 foreach ($indexes as $name => $columns) {
     // @phpstan-ignore variable.undefined
     $this->dbs->query(
@@ -40,12 +43,14 @@ foreach ($indexes as $name => $columns) {
     // @phpstan-ignore variable.undefined
     $row = $this->dbs->single();
 
-    if ((int) ($row['n'] ?? 0) > 0) {
-        continue;
+    if ((int) ($row['n'] ?? 0) === 0) {
+        $addClauses[] = "ADD INDEX `$name` $columns";
     }
+}
 
+if ($addClauses !== []) {
     // @phpstan-ignore variable.undefined
-    $this->dbs->query("ALTER TABLE `:prefix_bans` ADD INDEX `$name` $columns");
+    $this->dbs->query('ALTER TABLE `:prefix_bans` ' . implode(', ', $addClauses));
     // @phpstan-ignore variable.undefined
     $this->dbs->execute();
 }
