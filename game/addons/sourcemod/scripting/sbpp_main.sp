@@ -1746,12 +1746,24 @@ public void VerifyBan(Database db, DBResultSet results, const char[] error, int 
 
 		db.Query(ErrorCheckCallback, Query, client, DBPrio_High);
 
-		char kickMessage[256];
+		char kickMessage[256], gameAuth[MAX_AUTHID_LENGTH];
 		FormatEx(kickMessage, sizeof(kickMessage), "%T", "Banned Check Site", client, WebsiteAddress);
 
-		// BANFLAG_AUTO makes SourceMod use the game's native auth string.
-		// Synergy rejects Steam2 IDs here, but accepts its native Steam3 ID.
-		BanClient(client, 5, BANFLAG_AUTO, kickMessage, kickMessage, "", 0);
+		// Don't use BanClient() here: it needs the player entity, which may not exist
+		// yet (OnClientAuthorized can precede OnClientPutInServer). Ban the engine auth
+		// string (Synergy rejects Steam2), falling back to IP on LAN or lookup failure.
+		if (GetClientAuthId(client, AuthId_Engine, gameAuth, sizeof(gameAuth))
+			&& BanIdentity(gameAuth, 5, BANFLAG_AUTHID, kickMessage, "", 0))
+		{
+			KickClient(client, "%s", kickMessage);
+		}
+		else
+		{
+			// Kick before addip, as BanClient does, so the client sees our message.
+			KickClientEx(client, "%s", kickMessage);
+			if (clientIp[0] != '\0')
+				BanIdentity(clientIp, 5, BANFLAG_IP, kickMessage, "", 0);
+		}
 
 		return;
 	}
