@@ -122,6 +122,27 @@ Watch the output for errors. If a specific migration step fails,
 the page will say which one and why. Share that in `#help-support`
 if you can't decipher it.
 
+## Key doesn't exist
+
+> `1176 Key 'type_authid' doesn't exist in table 'BSteam'` or
+> `1176 Key 'type_ip' doesn't exist in table 'BIp'`
+
+Panel 2.2.1 on an older, long-upgraded install can hit this on the
+Ban List and when adding or editing a ban. Your `_bans` table is
+missing two indexes the panel expects.
+
+Upgrade to the next panel release and run the updater. It adds the
+missing indexes. To fix it right away instead, run this against the
+panel database (swap `sb_` for your table prefix):
+
+```sql
+ALTER TABLE `sb_bans` ADD INDEX `type_authid` (`type`, `authid`);
+ALTER TABLE `sb_bans` ADD INDEX `type_ip` (`type`, `ip`);
+```
+
+If one statement fails with `Duplicate key name`, that index already
+exists. Skip it.
+
 ## Incorrect string value
 
 > `Incorrect string value: '\xF0\x9F…' for column …`
