@@ -9,10 +9,6 @@ updates:
       interval: "monthly"
     labels:
       - "dependencies"
-    assignees:
-      - "Hackmastr"
-      - "rumblefrog"
-      - "Rushaway"
     commit-message:
       prefix: "Composer"
       include: "scope"
