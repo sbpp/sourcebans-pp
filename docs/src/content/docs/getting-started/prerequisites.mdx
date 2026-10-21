@@ -85,6 +85,10 @@ some CJK characters fail to insert and the plugin logs a SQL error.
 
 - **PHP 8.5 or newer.** This is checked by the install wizard's
   "System check" step.
+- **PHP 8.5.12 or newer for production.** Older 8.5 releases have two
+  critical remote code execution bugs (CVE-2026-109618 and
+  CVE-2026-109619). The wizard warns below 8.5.12. If your distro
+  backported the fix, the warning is safe to ignore.
 - **64 MB memory limit minimum.** The wizard doesn't enforce this,
   but the panel can run out of memory on large ban-list pages below
   64 MB.

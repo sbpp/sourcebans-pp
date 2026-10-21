@@ -55,14 +55,22 @@ $phpRows = [];
 // Runtime gate for self-hosters below the PHP 8.5 floor. The analyser
 // environment is locked to 8.5+, so this branch is not exercised there.
 $phpVersionOk = version_compare(PHP_VERSION, '8.5', '>=');
+// 8.5.0-8.5.11 still run the panel but carry CVE-2026-109618 +
+// CVE-2026-109619 (unauthenticated RCE). Warn rather than block: the
+// operator may be on a distro build with the fix backported.
+$phpPatched = version_compare(PHP_VERSION, '8.5.12', '>=');
 $phpRows[] = [
     'label'    => 'PHP version',
-    'required' => '8.5 or newer',
-    'status'   => $phpVersionOk ? 'ok' : 'err',
-    'detail'   => PHP_VERSION,
+    'required' => '8.5.12 or newer',
+    'status'   => !$phpVersionOk ? 'err' : ($phpPatched ? 'ok' : 'warn'),
+    'detail'   => $phpVersionOk && !$phpPatched
+        ? PHP_VERSION . ' (security update needed)'
+        : PHP_VERSION,
 ];
 if (!$phpVersionOk) {
     $errors++;
+} elseif (!$phpPatched) {
+    $warnings++;
 }
 
 $fileUploads = (bool) ini_get('file_uploads');

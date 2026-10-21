@@ -281,6 +281,12 @@ against the existing database. The migrations are idempotent: every
 script in `web/updater/data/<N>.php` is forward-only and safe to
 re-run. The `dbdata` and `demos` volumes survive the swap unchanged.
 
+PHP security fixes reach you the same way: each published image is
+built on the newest `php:8.5-apache` base, and the build fails below
+PHP 8.5.12 (the fix for CVE-2026-109618 and CVE-2026-109619). Pull a
+fresh image after a PHP security release. Check the running version
+with `docker compose -f docker-compose.prod.yml exec web php -v`.
+
 Image tags:
 
 | Tag | What it points at |

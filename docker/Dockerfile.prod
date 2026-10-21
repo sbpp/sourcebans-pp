@@ -91,6 +91,16 @@ FROM php:8.5-apache AS runtime
 ENV DEBIAN_FRONTEND=noninteractive \
     APACHE_DOCUMENT_ROOT=/var/www/html/web
 
+# Refuse to build on a PHP older than the last security floor. The
+# `php:8.5-apache` tag floats, so a stale local cache or a mirror that
+# lags behind Docker Hub would otherwise publish a vulnerable runtime.
+# 8.5.12 fixes CVE-2026-109618 + CVE-2026-109619 (unauthenticated RCE,
+# worst under mod_php, which is what this image runs). Bump the floor
+# on the next PHP security release.
+ARG PHP_MIN_VERSION=8.5.12
+RUN php -r 'exit(version_compare(PHP_VERSION, getenv("PHP_MIN_VERSION"), ">=") ? 0 : 1);' \
+ || { echo "PHP $(php -r 'echo PHP_VERSION;') is below the security floor ${PHP_MIN_VERSION}; pull a newer php:8.5-apache base image." >&2; exit 1; }
+
 # Runtime extensions only. The dev image carries `default-mysql-client`,
 # `nodejs`, `npm`, `git`, `gettext-base`, `unzip` — all developer-side
 # helpers the prod image has no business shipping. `pdo_mysql` is the

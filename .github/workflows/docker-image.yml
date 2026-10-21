@@ -141,6 +141,10 @@ jobs:
           context: .
           file: docker/Dockerfile.prod
           platforms: linux/amd64,linux/arm64
+          # Always re-resolve the floating `php:8.5-*` base tags so a
+          # PHP security release lands on the next publish instead of
+          # being masked by a cached base layer.
+          pull: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
