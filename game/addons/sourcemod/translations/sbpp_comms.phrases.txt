@@ -91,7 +91,7 @@
 		"ru"			"Длительность: {1} минут если не указана. навсегда если 0.\nЕсли < 0 блокировка на сессию."
 		"pl"			"Czas: {1} minut jeśli nieokreślony. Permanentny jeśli 0.\nJeśli < 0 blokada na sesje."
 		"pt"			"Tempo: {1} minutos caso não seja especificado. Permanente se for 0.\nSe for < 0 a punição será aplicada na sessão atual."
-		"de"			"Dauer: {1} Minuten wenn nicht festgelegt. Permanent wenn 0. \.nWenn < 0 Blockierung für nächste Periode."
+		"de"			"Dauer: {1} Minuten wenn nicht festgelegt. Permanent wenn 0.\nWenn < 0 Blockierung für nächste Periode."
 		"fr"			"Temps: {1} minutes si non spécifié. Permanent si 0.\nSi < 0 bloque pour la session."
 		"chi"			"时间: {1} 分钟 如果未做选择的话. 如果 0.\n 永久 如果 < 0 则在此局中封禁."
 		"tr"			"Süre: Belirtilmemişse {1} dakika. 0 ise süresiz.\nEğer < 0 harita boyunca yasaklı."
@@ -1321,6 +1321,20 @@
 		"fr"		"Votre chat et votre voix ne sont pas bloquées."
 		"chi"		"你没有被禁言或静音."
 		"tr"		"Sohbet ve mikrofon yasağınız yok."
+	}
+	"CommandComms_nc"
+	{
+		"#format"	"{1:N}"
+		"en"		"Chat and voice of {1} aren't blocked."
+		"hu"		"{1} írás és hang chatje nincs blokkolva."
+		"es"		"El chat y la voz de {1} no están bloqueados."
+		"ru"		"У игрока {1} не отключены чат или микрофон."
+		"pl"		"{1} nie jest wyciszony ani zakneblowany."
+		"pt"		"As comunicações por texto e voz de {1} não estão bloqueadas."
+		"de"		"{1} ist im Text- und Sprachchat nicht gesperrt."
+		"fr"		"Le chat et la voix de {1} ne sont pas bloqués."
+		"chi"		"{1} 没有被禁言或静音."
+		"tr"		"{1} için sohbet ve mikrofon yasağı yok."
 	}
 	//---------------------------------------------------------------------------------
 	"no access"
