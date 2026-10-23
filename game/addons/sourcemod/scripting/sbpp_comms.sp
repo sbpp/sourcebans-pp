@@ -287,6 +287,15 @@ public void OnClientDisconnect(int client)
 	g_iUserIDs[client] = -1;
 }
 
+/**
+ * SDR / Steam Networking clients connect with a link-local 169.254.x.x address
+ * rather than their real IP. This can get legitimate players banned, so skip it.
+ */
+stock bool IsSteamNetworkingIP(const char[] ip)
+{
+	return StrContains(ip, "169.254.") == 0;
+}
+
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	/* Passing false as the backend validation status return the unverified Steam ID */
@@ -298,6 +307,8 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 
 	char sIP[16];
 	GetClientIP(client, sIP, sizeof(sIP));
+	if (IsSteamNetworkingIP(sIP))
+		sIP[0] = '\0';
 	FormatEx(g_sPlayerIP[client], sizeof(g_sPlayerIP[]), "%s", sIP);
 	FormatEx(g_sName[client], sizeof(g_sName[]), "%N", client);
 	g_iUserIDs[client] = GetClientUserId(client);

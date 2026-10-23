@@ -185,6 +185,11 @@ public Action ReloadListCallBack(int client, int args)
 	return Plugin_Handled;
 }
 
+bool IsSteamNetworkingIP(const char[] ip)
+{
+	return StrContains(ip, "169.254.") == 0;
+}
+
 public void OnClientPostAdminCheck(int client)
 {
 	if (CanUseSourcebans && !IsFakeClient(client))
@@ -201,6 +206,14 @@ public void OnClientPostAdminCheck(int client)
 		{
 			char IP[32], Prefix[64];
 			GetClientIP(client, IP, sizeof(IP));
+
+			/* SDR / Steam Networking clients appear with a link-local
+			 * 169.254.x.x address, which will overlap with legitimate
+			 * players. Skip this. */
+			if (IsSteamNetworkingIP(IP))
+			{
+				return;
+			}
 
 			g_cVar_sbprefix.GetString(Prefix, sizeof(Prefix));
 

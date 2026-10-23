@@ -322,6 +322,15 @@ public void OnClientDisconnect(int client)
 	g_iUserIDs[client] = -1;
 }
 
+/**
+ * SDR / Steam Networking clients connect with a link-local 169.254.x.x address
+ * rather than their real IP. This can get legitimate players banned, so skip it.
+ */
+stock bool IsSteamNetworkingIP(const char[] ip)
+{
+	return StrContains(ip, "169.254.") == 0;
+}
+
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	PlayerStatus[client] = false;
@@ -332,6 +341,8 @@ public void OnClientConnected(int client)
 {
 	char sIP[16], auth[MAX_AUTHID_LENGTH];
 	GetClientIP(client, sIP, sizeof(sIP));
+	if (IsSteamNetworkingIP(sIP))
+		sIP[0] = '\0';
 	FormatEx(g_sPlayerIP[client], sizeof(g_sPlayerIP[]), "%s", sIP);
 
 	GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth));
@@ -360,7 +371,15 @@ public void OnClientAuthorized(int client, const char[] auth)
 		return;
 
 	char Query[256];
-	FormatEx(Query, sizeof(Query), "SELECT bid, ip FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, g_sSteamIDs[client][8], g_sPlayerIP[client]);
+	if (g_sPlayerIP[client][0] == '\0')
+	{
+		/* No usable IP (e.g. SDR client): only check by SteamID. */
+		FormatEx(Query, sizeof(Query), "SELECT bid, ip FROM %s_bans WHERE (type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, g_sSteamIDs[client][8]);
+	}
+	else
+	{
+		FormatEx(Query, sizeof(Query), "SELECT bid, ip FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, g_sSteamIDs[client][8], g_sPlayerIP[client]);
+	}
 
 	#if defined DEBUG
 	LogToFile(logFile, "Checking ban for: %s", g_sSteamIDs[client]);
@@ -561,6 +580,12 @@ public Action CommandBanIp(int client, int args)
 
 	if (target == -1)
 	{
+		return Plugin_Handled;
+	}
+
+	if (g_sPlayerIP[target][0] == '\0')
+	{
+		ReplyToCommand(client, "%sCannot IP ban this player: no IP address is available (SDR / Steam Networking).", Prefix);
 		return Plugin_Handled;
 	}
 
@@ -1307,7 +1332,7 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 			if(!IsClientInGame(i) || IsFakeClient(i))
 				continue;
 
-			if(strcmp(targetIP, g_sPlayerIP[i], false) == 0)
+			if(targetIP[0] != '\0' && strcmp(targetIP, g_sPlayerIP[i], false) == 0)
 			{
 				target = i;
 				break;
@@ -1717,7 +1742,7 @@ public void VerifyBan(Database db, DBResultSet results, const char[] error, int 
 			int iBid = results.FetchInt(0);
 			results.FetchString(1, sIP, sizeof sIP);
 
-			if (StrEqual(sIP, ""))
+			if (StrEqual(sIP, "") && clientIp[0] != '\0')
 			{
 				char sQuery[256];
 
