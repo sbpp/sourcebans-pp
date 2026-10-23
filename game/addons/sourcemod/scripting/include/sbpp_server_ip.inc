@@ -15,6 +15,18 @@
 
 #define SBPP_SERVER_IP_LENGTH 16
 
+/**
+ * SDR / Steam Networking clients connect with a link-local 169.254.x.x address
+ * rather than a real IP. Don't store these as it may get legit players banned.
+ *
+ * @param ip    Client IP address string.
+ * @return      True if the address is in the 169.254.0.0/16 range.
+ */
+stock bool IsSteamNetworkingIP(const char[] ip)
+{
+	return StrContains(ip, "169.254.") == 0;
+}
+
 stock bool SBPP_IsValidServerIpOverride(const char[] ip)
 {
 	if (ip[0] == '\0')

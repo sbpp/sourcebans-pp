@@ -30,6 +30,7 @@
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
 #include <sourcebanspp>
+#include <sbpp_server_ip>
 
 #define PLUGIN_VERSION "1.8.0"
 
@@ -185,11 +186,6 @@ public Action ReloadListCallBack(int client, int args)
 	return Plugin_Handled;
 }
 
-bool IsSteamNetworkingIP(const char[] ip)
-{
-	return StrContains(ip, "169.254.") == 0;
-}
-
 public void OnClientPostAdminCheck(int client)
 {
 	if (CanUseSourcebans && !IsFakeClient(client))
@@ -207,7 +203,7 @@ public void OnClientPostAdminCheck(int client)
 			char IP[32], Prefix[64];
 			GetClientIP(client, IP, sizeof(IP));
 
-			/* SDR / Steam Networking clients appear with a link-local
+			/* SDR / Steam Networking clients show up with a link-local
 			 * 169.254.x.x address, which will overlap with legitimate
 			 * players. Skip this. */
 			if (IsSteamNetworkingIP(IP))
