@@ -29,6 +29,8 @@
  * We are using this range directly for now, as it has remained unchanged since
  * TF2's initial SDR implementation and has been adopted by all SDK 2013 games
  * since then.
+ *
+ * https://github.com/ValveSoftware/source-sdk-2013/blob/be57e3d01ac7d7aa6a2cacbfef187c0b46616db0/src/public/steam/isteamnetworkingsockets.h#L812-L820
  */
 stock bool IsSteamNetworkingIP(const char[] ip)
 {
