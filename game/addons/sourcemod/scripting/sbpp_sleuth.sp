@@ -30,6 +30,7 @@
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
 #include <sourcebanspp>
+#include <sbpp_server_ip>
 
 #define PLUGIN_VERSION "1.8.0"
 
@@ -201,6 +202,11 @@ public void OnClientPostAdminCheck(int client)
 		{
 			char IP[32], Prefix[64];
 			GetClientIP(client, IP, sizeof(IP));
+
+			if (IsSteamNetworkingIP(IP))
+			{
+				return;
+			}
 
 			g_cVar_sbprefix.GetString(Prefix, sizeof(Prefix));
 
