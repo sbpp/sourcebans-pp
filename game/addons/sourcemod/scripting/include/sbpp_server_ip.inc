@@ -16,11 +16,19 @@
 #define SBPP_SERVER_IP_LENGTH 16
 
 /**
- * SDR / Steam Networking clients connect with a link-local 169.254.x.x address
- * rather than a real IP. Don't store these as it may get legit players banned.
+ * FakeIP addresses are designed to (hopefully) pass through existing code as
+ * transparently as possible, while conflicting with "real" addresses that might
+ * be in use on networks (both the Internet and LANs) in the same code as little
+ * as possible.  At the time this comment is being written, they come from the
+ * 169.254.0.0/16 range, and the port number will always be >1024.  HOWEVER,
+ * this is subject to change!  Do not make assumptions about these addresses,
+ * or your code might break in the future.  In particular, you should use
+ * functions such as  ISteamNetworkingUtils::IsFakeIP to determine if an IP
+ * address is a "fake" one used by this system.
  *
- * @param ip    Client IP address string.
- * @return      True if the address is in the 169.254.0.0/16 range.
+ * We are using this range directly for now, as it has remained unchanged since
+ * TF2's initial SDR implementation and has been adopted by all SDK 2013 games
+ * since then.
  */
 stock bool IsSteamNetworkingIP(const char[] ip)
 {

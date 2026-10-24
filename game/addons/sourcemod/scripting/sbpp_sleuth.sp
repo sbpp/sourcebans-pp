@@ -203,9 +203,6 @@ public void OnClientPostAdminCheck(int client)
 			char IP[32], Prefix[64];
 			GetClientIP(client, IP, sizeof(IP));
 
-			/* SDR / Steam Networking clients show up with a link-local
-			 * 169.254.x.x address, which will overlap with legitimate
-			 * players. Skip this. */
 			if (IsSteamNetworkingIP(IP))
 			{
 				return;

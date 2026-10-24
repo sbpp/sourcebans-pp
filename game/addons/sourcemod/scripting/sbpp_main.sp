@@ -576,7 +576,7 @@ public Action CommandBanIp(int client, int args)
 
 	if (g_sPlayerIP[target][0] == '\0')
 	{
-		ReplyToCommand(client, "%sCannot IP ban this player: no IP address is available (SDR / Steam Networking).", Prefix);
+		ReplyToCommand(client, "%sCannot IP ban this player: no public IP address is available (SDR / Steam Networking).", Prefix);
 		return Plugin_Handled;
 	}
 
