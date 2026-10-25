@@ -80,13 +80,15 @@
  * `smoke/routing-truthiness.spec.ts`'s AUTH-1 block).
  */
 
+import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '../../fixtures/auth.ts';
 import { seedLostpasswordE2e, seedLostpasswordEnumAdminE2e } from '../../fixtures/db.ts';
 
-// #1456 cross-test isolation: the marquee #1403 test seeds the
-// `admin@example.test` row's `:prefix_admins.validate` column to a
-// known token then GETs a URL keyed on it. The form-POST tests at
-// the tail of this file call `api_auth_lost_password` which UPDATEs
+// #1456 cross-test isolation: the GET-validation tests seed a known
+// `:prefix_admins.validate` token on a per-run admin row (see
+// `seedLostpasswordE2e(email)`) then GET a URL keyed on it. The
+// form-POST tests at the tail of this file call
+// `api_auth_lost_password` which UPDATEs
 // the matched admin's `validate` to a fresh random value. Two
 // safeguards keep these from racing:
 //
@@ -124,6 +126,24 @@ const MISMATCH_TOKEN = '0000000000000000aaaa'; // 20 chars; the SELECT will not 
  */
 const MAILPIT_BASE_URL = process.env.E2E_MAILPIT_BASE_URL
     ?? 'http://mailpit:8025';
+
+/**
+ * Every `To` address in mailpit's inbox that is case- and
+ * accent-insensitively equal to `address` (the stored address itself
+ * plus any collation-equal variant), so a spec can assert where mail
+ * for one admin went.
+ */
+async function mailpitRecipientsFoldingTo(request: APIRequestContext, address: string): Promise<string[]> {
+    const fold = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+    const resp = await request.get(`${MAILPIT_BASE_URL}/api/v1/messages?limit=200`);
+    expect(resp.ok(), `mailpit list failed (${resp.status()})`).toBe(true);
+    const body = await resp.json() as {
+        messages?: Array<{ To?: Array<{ Address?: string }> }>;
+    };
+    return (body.messages ?? [])
+        .flatMap((msg) => (msg.To ?? []).map((addr) => addr.Address ?? ''))
+        .filter((addr) => fold(addr) === fold(address));
+}
 
 test.describe('flow: lostpassword toast (#1403 ShowBox → Toast::emit)', () => {
     // Per-describe override: log out for this whole block. The form
@@ -202,26 +222,19 @@ test.describe('flow: lostpassword toast (#1403 ShowBox → Toast::emit)', () => 
         ).toEqual([]);
     });
 
-    test('Happy path: password reset → "Password Reset" toast + chrome footer + email lands in mailpit (marquee #1403 user-reported regression)', async ({ page, request }) => {
+    test('Happy path: password reset → "Password Reset" toast + chrome footer + email lands in mailpit (marquee #1403 user-reported regression)', async ({ page, request }, testInfo) => {
         const consoleErrors: string[] = [];
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 
         // ---- 0. Set up the SMTP / from-address config and a known
-        //         validate token. The seeder is idempotent so re-runs
-        //         (and CI's `retries: 1`) work even after a previous
-        //         success consumed the validate token. -----------
-        const { email, token } = await seedLostpasswordE2e();
-
-        // Clear mailpit's inbox so the post-request assertion is
-        // unambiguous. The DELETE endpoint is documented at
-        // https://mailpit.axllent.org/docs/api-v1/messages — pre-fix
-        // any prior test's mail would still be in the inbox and the
-        // count check would have to skip the first N messages.
-        const purge = await request.delete(`${MAILPIT_BASE_URL}/api/v1/messages`);
-        expect(
-            purge.ok(),
-            `mailpit purge failed (status ${purge.status()}): ${await purge.text()}`,
-        ).toBe(true);
+        //         validate token on a per-run admin row. A shared row
+        //         (or a global mailpit purge) races the other
+        //         Playwright project when workers > 1; the unique
+        //         address also keeps the inbox lookup below
+        //         unambiguous without purging. -----------
+        const { email, token } = await seedLostpasswordE2e(
+            `lostpw-happy-${testInfo.project.name}-${Date.now()}@example.test`,
+        );
 
         // ---- 1. Drive the success branch ------------------------------
         // Same shape the user hits when they click the "Reset password"
@@ -294,6 +307,60 @@ test.describe('flow: lostpassword toast (#1403 ShowBox → Toast::emit)', () => 
         expect(
             consoleErrors,
             `unexpected console errors:\n${consoleErrors.join('\n')}`,
+        ).toEqual([]);
+    });
+
+    // `:prefix_admins.email` and `.validate` use a case- and
+    // accent-insensitive collation. The page must match the token
+    // byte-exact and mail the new password to the STORED address only.
+    // AuthTest pins the request-side half. Each
+    // test seeds its own per-run admin row and filters mailpit by
+    // address, so it can't race the happy-path test above (or the
+    // other Playwright project) on `admin@example.test`'s token or on
+    // a shared inbox purge.
+    test('Collation-variant email + correct token → new password mailed only to the stored address', async ({ page, request }, testInfo) => {
+        const { email, token } = await seedLostpasswordE2e(
+            `lostpw-variant-${testInfo.project.name}-${Date.now()}@example.test`,
+        );
+        const variant = email.toUpperCase().replace('A', 'Ä');
+        expect(variant).not.toBe(email);
+
+        await page.goto(
+            `/index.php?p=lostpassword&email=${encodeURIComponent(variant)}&validation=${token}`,
+        );
+
+        await expect(
+            page.locator('.toast[data-kind="info"], .toast[data-kind="success"]')
+                .filter({ hasText: 'Password Reset' }),
+        ).toBeVisible();
+
+        let recipients: string[] = [];
+        for (let attempt = 0; attempt < 10 && recipients.length === 0; attempt += 1) {
+            recipients = await mailpitRecipientsFoldingTo(request, email);
+            if (recipients.length === 0) await page.waitForTimeout(500);
+        }
+        expect(recipients, 'the new password must go only to the stored address').toEqual([email]);
+    });
+
+    test('Token with different letter case does not match (byte-exact compare)', async ({ page, request }, testInfo) => {
+        const email = `lostpw-token-case-${testInfo.project.name}-${Date.now()}@example.test`;
+        let seed = await seedLostpasswordE2e(email);
+        for (let attempt = 0; attempt < 5 && !/[a-f]/.test(seed.token); attempt += 1) {
+            seed = await seedLostpasswordE2e(email);
+        }
+        const wrongCase = seed.token.toUpperCase();
+        expect(wrongCase).not.toBe(seed.token);
+
+        await page.goto(
+            `/index.php?p=lostpassword&email=${encodeURIComponent(email)}&validation=${wrongCase}`,
+        );
+
+        await expect(
+            page.locator('.toast[data-kind="error"]').filter({ hasText: /validation string does not match/i }),
+        ).toBeVisible();
+        expect(
+            await mailpitRecipientsFoldingTo(request, email),
+            'no mail may be sent on a token mismatch',
         ).toEqual([]);
     });
 
