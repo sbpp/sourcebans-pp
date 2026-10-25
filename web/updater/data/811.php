@@ -16,9 +16,12 @@
 //      the shape of SteamID bans written without an IP.
 //   3. `adminIp` placeholders (admins connecting over SDR) are blanked in both
 //      `:prefix_bans` and `:prefix_comms`.
+//   4. In-game reports (`SBReportPlayer`) store the reporter's IP in
+//      `:prefix_submissions.ip` and the target's in `sip`. Placeholders there
+//      are blanked (`ip` is NOT NULL) or set to NULL (`sip`).
 //
-// `:prefix_submissions.ip` and `:prefix_protests.ip` are NOT touched: they hold
-// the web visitor's address, not a game client's.
+// `:prefix_protests.ip` is NOT touched: it holds the web visitor's address,
+// not a game client's.
 //
 // Every pass is idempotent: once a row has been rewritten it no longer matches
 // its own WHERE clause, so a re-run after a partial failure is safe.
@@ -63,6 +66,25 @@ $this->dbs->query(
     "UPDATE `:prefix_comms`"
     . " SET `adminIp` = ''"
     . " WHERE `adminIp` LIKE '169.254.%'"
+);
+// @phpstan-ignore variable.undefined
+$this->dbs->execute();
+
+// Pass 4: placeholder IPs from in-game reports.
+// @phpstan-ignore variable.undefined
+$this->dbs->query(
+    "UPDATE `:prefix_submissions`"
+    . " SET `ip` = ''"
+    . " WHERE `ip` LIKE '169.254.%'"
+);
+// @phpstan-ignore variable.undefined
+$this->dbs->execute();
+
+// @phpstan-ignore variable.undefined
+$this->dbs->query(
+    "UPDATE `:prefix_submissions`"
+    . " SET `sip` = NULL"
+    . " WHERE `sip` LIKE '169.254.%'"
 );
 // @phpstan-ignore variable.undefined
 $this->dbs->execute();
