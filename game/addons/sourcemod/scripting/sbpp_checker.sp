@@ -29,6 +29,7 @@
 
 #include <sourcemod>
 #include <sbpp_version>
+#include <sbpp_server_ip>
 
 #define VERSION SB_VERSION
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
@@ -187,18 +188,23 @@ public void OnClientAuthorized(int client, const char[] auth)
 	if (auth[0] == 'B' || auth[9] == 'L')
 		return;
 
-	char query[512], ip[30];
-	GetClientIP(client, ip, sizeof(ip));
+	// No usable IP (e.g. SDR client): never match IP bans, an empty address
+	// would match any type=1 row with a blank IP.
+	char query[512], ip[30], ipCondition[64];
+	if (SBPP_GetClientPublicIP(client, ip, sizeof(ip)))
+		FormatEx(ipCondition, sizeof(ipCondition), "ip = '%s'", ip);
+	else
+		strcopy(ipCondition, sizeof(ipCondition), "1 = 0");
 	FormatEx(query, sizeof(query), 
 		"SELECT COUNT(bid) FROM %s_bans WHERE (type = 0 AND authid LIKE 'STEAM_%%:%s') \
 		UNION ALL \
-		SELECT COUNT(bid) FROM %s_bans WHERE (type = 1 AND ip = '%s') \
+		SELECT COUNT(bid) FROM %s_bans WHERE (type = 1 AND %s) \
 		UNION ALL \
 		SELECT COUNT(bid) FROM %s_comms WHERE authid LIKE 'STEAM_%%:%s' AND type = 1 \
 		UNION ALL \
 		SELECT COUNT(bid) FROM %s_comms WHERE authid LIKE 'STEAM_%%:%s' AND type = 2",
 		g_DatabasePrefix, auth[8],
-		g_DatabasePrefix, ip,
+		g_DatabasePrefix, ipCondition,
 		g_DatabasePrefix, auth[8],
 		g_DatabasePrefix, auth[8]
 	);
@@ -280,9 +286,12 @@ public Action OnListSourceBansCmd(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char query[1024], ip[30];
-	GetClientIP(target, ip, sizeof(ip));
-	FormatEx(query, sizeof(query), "SELECT created, %s_admins.user, ends, length, reason, RemoveType FROM %s_bans LEFT JOIN %s_admins ON %s_bans.aid = %s_admins.aid WHERE ((type = 0 AND %s_bans.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8], ip);
+	char query[1024], ip[30], ipCondition[64];
+	if (SBPP_GetClientPublicIP(target, ip, sizeof(ip)))
+		FormatEx(ipCondition, sizeof(ipCondition), "ip = '%s'", ip);
+	else
+		strcopy(ipCondition, sizeof(ipCondition), "1 = 0");
+	FormatEx(query, sizeof(query), "SELECT created, %s_admins.user, ends, length, reason, RemoveType FROM %s_bans LEFT JOIN %s_admins ON %s_bans.aid = %s_admins.aid WHERE ((type = 0 AND %s_bans.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND %s)) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8], ipCondition);
 
 	char targetName[MAX_NAME_LENGTH];
 	GetClientName(target, targetName, sizeof(targetName));
