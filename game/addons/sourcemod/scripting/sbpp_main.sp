@@ -1502,7 +1502,7 @@ public void InsertUnbanCallback(Database db, DBResultSet results, const char[] e
 public void SelectAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	int admin, minutes;
-	char adminAuth[MAX_AUTHID_LENGTH], adminIp[16], authid[MAX_AUTHID_LENGTH], banReason[256], Query[512];
+	char adminAuth[MAX_AUTHID_LENGTH], adminIp[16], authid[MAX_AUTHID_LENGTH], authidEscaped[sizeof(authid) * 2 + 1], banReason[256], Query[1024];
 	char reason[128];
 
 	dataPack.Reset();
@@ -1514,6 +1514,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
 	dataPack.ReadString(adminIp, sizeof(adminIp));
 	db.Escape(reason, banReason, sizeof(banReason));
+	db.Escape(authid, authidEscaped, sizeof(authidEscaped));
 
 	if (results == null)
 	{
@@ -1542,12 +1543,12 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIpEscaped, ServerPort);
+			DatabasePrefix, authidEscaped, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIpEscaped, ServerPort);
 	} else {
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						%d, ' ')",
-			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
+			DatabasePrefix, authidEscaped, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 	}
 
 	db.Query(InsertAddbanCallback, Query, dataPack, DBPrio_High);
