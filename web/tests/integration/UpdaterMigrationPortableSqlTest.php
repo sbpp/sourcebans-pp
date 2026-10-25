@@ -25,14 +25,14 @@ use PHPUnit\Framework\TestCase;
  *
  * Scope (focused, per #1498)
  * --------------------------
- * Only migrations with version >= 800 (the 8xx v2 block, 801-811 today)
+ * Only migrations with version >= 800 (the 8xx v2 block, 801-812 today)
  * are scanned. Two reasons:
  *
  *   - Every supported upgrade path the issue names (v2 rc5 -> rc6,
  *     v1.8.x -> v2) starts at `config.version = 705`, so the updater only
  *     runs 801+. 801 is the first migration past 705 and the actual
  *     blocker. Future migrations are always numbered above the current
- *     max (812+), so a `>= 800` floor guards every migration that will
+ *     max (813+), so a `>= 800` floor guards every migration that will
  *     ever be added going forward.
  *   - Ten pre-800 migrations carry the same MariaDB-only syntax
  *     (1, 112, 150, 153, 160, 241, 291, 295, 351, 355). They only run for
