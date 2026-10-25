@@ -146,7 +146,7 @@ final class Telemetry
         if ($endpoint === '') {
             return;
         }
-        $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        $body = json_encode(self::withoutNulls($payload), JSON_UNESCAPED_SLASHES);
         if ($body === false) {
             return;
         }
@@ -178,6 +178,28 @@ final class Telemetry
         // phpstan-deprecation-rules. Letting the local fall out of scope
         // is the supported lifecycle.
         unset($ch);
+    }
+
+    /**
+     * Drop `null` leaves before encoding. `collect()` keeps nullable
+     * fields (e.g. `env.memory_limit_mb` on an unlimited host) as
+     * explicit `null` so the extractor parity test sees a stable
+     * key set, but the Worker's validator only accepts an absent
+     * key there; a literal `null` would 400 the whole ping.
+     *
+     * @param array<string, mixed> $node
+     * @return array<string, mixed>
+     */
+    public static function withoutNulls(array $node): array
+    {
+        $out = [];
+        foreach ($node as $key => $value) {
+            if ($value === null) {
+                continue;
+            }
+            $out[$key] = is_array($value) ? self::withoutNulls($value) : $value;
+        }
+        return $out;
     }
 
     /**
@@ -433,7 +455,7 @@ final class Telemetry
             'db_version' => self::resolveDbVersion(),
             'web_server' => self::resolveWebServer((string) ($_SERVER['SERVER_SOFTWARE'] ?? '')),
             'os_family'  => self::resolveOsFamily(),
-        ];
+        ] + HostFingerprint::collect();
     }
 
     /**

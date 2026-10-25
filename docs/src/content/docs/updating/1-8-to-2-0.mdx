@@ -125,7 +125,15 @@ categories:
   `default` or `custom` is reported; fork theme **names are never
   sent**).
 - **env**: PHP `major.minor`, DB engine + `major.minor`, web server
-  family, OS family.
+  family, OS family, plus a hosting fingerprint: PHP SAPI name,
+  `memory_limit` / `max_execution_time`, how many functions
+  `disable_functions` lists, and yes/no flags for thread safety,
+  64-bit PHP, `open_basedir` set, `allow_url_fopen`, OPcache,
+  Suhosin, POSIX, a cPanel / Plesk / DirectAdmin install, a
+  `/home/<user>/public_html`-style document root, and PHP running as
+  the account that owns the panel files. The `open_basedir` value,
+  document root path, and the `disable_functions` list itself are
+  **never sent**, only the yes/no or the count.
 - **scale**: counts of admins, enabled servers, active and total
   bans / comm blocks, 30-day submission / protest counts.
 - **features**: every checkbox under
