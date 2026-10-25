@@ -80,6 +80,25 @@ final class TelemetryCollectTest extends ApiTestCase
             $env['os_family'],
             ['linux', 'windows', 'mac', 'bsd', 'other']
         );
+        // sbpp/cf-analytics#3 host fingerprint. Values depend on the
+        // runner's PHP build, so pin types (the analytics side bit-packs
+        // the booleans and treats the ints as doubles).
+        $this->assertSame(PHP_SAPI, $env['sapi']);
+        $this->assertTrue(
+            $env['memory_limit_mb'] === null || (is_int($env['memory_limit_mb']) && $env['memory_limit_mb'] >= 0),
+            'env.memory_limit_mb must be a non-negative int or null'
+        );
+        $this->assertIsInt($env['max_execution_time']);
+        $this->assertIsInt($env['disable_functions_count']);
+        foreach ([
+            'zts', 'php_64bit', 'open_basedir_set', 'allow_url_fopen',
+            'opcache_loaded', 'suhosin_loaded', 'posix_available',
+            'host_panel_cpanel', 'host_panel_plesk', 'host_panel_directadmin',
+            'docroot_user_home', 'sapi_per_user',
+        ] as $flag) {
+            $this->assertArrayHasKey($flag, $env, "env.$flag missing from payload");
+            $this->assertIsBool($env[$flag], "env.$flag must be a bool");
+        }
 
         $scale = $payload['scale'];
         $this->assertIsArray($scale);
