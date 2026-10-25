@@ -2,11 +2,20 @@
 
 namespace Sbpp\Tests\Api;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+use Sbpp\Mail\Mailer;
 use Sbpp\Tests\ApiTestCase;
 use Sbpp\Tests\Fixture;
+use Symfony\Component\Mailer\SentMessage;
+use Symfony\Component\Mailer\Transport\AbstractTransport;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
 
 final class AuthTest extends ApiTestCase
 {
+    /** @var list<SentMessage> Messages recorded by {@see captureMail()}. */
+    private array $sentMail = [];
+
     /**
      * #1456 — privacy fix. The pre-fix handler threw
      * `ApiError('not_registered', …)` on the miss branch and let any
@@ -205,6 +214,164 @@ final class AuthTest extends ApiTestCase
             $stmt->execute(['config.enablenormallogin', '1']);
             \Config::init($GLOBALS['PDO']);
         }
+    }
+
+    /**
+     * `:prefix_admins.email` uses a case- and accent-insensitive
+     * collation, so a request value that differs in case or accents
+     * matches the stored row. The reset link must still go ONLY to the
+     * stored address.
+     *
+     * @return iterable<string, array{0: string, 1: string}>
+     */
+    public static function collationVariantEmails(): iterable
+    {
+        yield 'upper-case'     => ['admin@example.test', 'ADMIN@EXAMPLE.TEST'];
+        yield 'accent variant' => ['owner@example.test', 'ówner@example.test'];
+    }
+
+    #[DataProvider('collationVariantEmails')]
+    public function testLostPasswordMailsOnlyTheStoredAddressForCollationVariants(string $stored, string $requested): void
+    {
+        $ownerAid  = $this->seedAdmin('owner', 'owner@example.test');
+        $targetAid = $stored === 'admin@example.test' ? Fixture::adminAid() : $ownerAid;
+        $otherAid  = $targetAid === $ownerAid ? Fixture::adminAid() : $ownerAid;
+        $this->assertSame(1, $this->countAdminsByEmail($requested),
+            'precondition: the request value must be collation-equal to exactly the stored row');
+
+        $this->captureMail();
+        $env = $this->api('auth.lost_password', ['email' => $requested]);
+
+        $this->assertTrue($env['ok'] ?? false, 'expected ok envelope: ' . json_encode($env));
+        $this->assertSnapshot('auth/lost_password_generic', $env);
+
+        $this->assertCount(1, $this->sentMail, 'exactly one reset mail must be sent');
+        $this->assertSame([$stored], $this->recipients($this->sentMail[0]));
+
+        $target = $this->row('admins', ['aid' => $targetAid]);
+        $this->assertNotEmpty($target['validate'] ?? null, 'the matched admin\'s token must be rolled');
+        $this->assertNull($this->row('admins', ['aid' => $otherAid])['validate'] ?? null,
+            'no other admin\'s token may be touched');
+
+        $body = $this->htmlBody($this->sentMail[0]);
+        $this->assertStringContainsString(
+            'email=' . urlencode($stored) . '&validation=' . urlencode((string) $target['validate']),
+            $body,
+            'the reset link must carry the stored address and the freshly rolled token',
+        );
+        $this->assertStringNotContainsString('email=' . urlencode($requested) . '&', $body);
+    }
+
+    /**
+     * `email` is not unique, and collation-equal duplicates are easy to
+     * end up with. Rolling `validate` by email would reset every
+     * duplicate's token (invalidating their in-flight links) while only
+     * one of them gets a mail; the handler keys the UPDATE on `aid`.
+     */
+    public function testLostPasswordRollsTokenOnlyOnTheMatchedAidWhenEmailsCollide(): void
+    {
+        $firstAid  = $this->seedAdmin('dup-one', 'dup@example.test');
+        $secondAid = $this->seedAdmin('dup-two', 'DUP@example.test');
+
+        $this->captureMail();
+        $this->api('auth.lost_password', ['email' => 'Dup@Example.Test']);
+
+        $rolled = array_values(array_filter(
+            [$this->row('admins', ['aid' => $firstAid]), $this->row('admins', ['aid' => $secondAid])],
+            static fn (?array $r): bool => !empty($r['validate']),
+        ));
+
+        $this->assertCount(1, $rolled, 'exactly one of the collation-equal admins may have its token rolled');
+        $this->assertCount(1, $this->sentMail);
+        $this->assertSame([(string) $rolled[0]['email']], $this->recipients($this->sentMail[0]),
+            'the mail must go to the stored address of the row whose token was rolled');
+    }
+
+    protected function tearDown(): void
+    {
+        Mailer::overrideTransportForTests(null);
+        parent::tearDown();
+    }
+
+    private function seedAdmin(string $user, string $email): int
+    {
+        $pdo  = Fixture::rawPdo();
+        $stmt = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins` (user, authid, password, gid, email, validate, extraflags, immunity)
+             VALUES (?, \'\', ?, -1, ?, NULL, 0, 0)',
+            DB_PREFIX,
+        ));
+        $stmt->execute([$user, password_hash(bin2hex(random_bytes(8)), PASSWORD_BCRYPT), $email]);
+        return (int) $pdo->lastInsertId();
+    }
+
+    private function countAdminsByEmail(string $email): int
+    {
+        $stmt = Fixture::rawPdo()->prepare(sprintf(
+            'SELECT COUNT(*) FROM `%s_admins` WHERE email = ?',
+            DB_PREFIX,
+        ));
+        $stmt->execute([$email]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Configure SMTP just enough for `Mailer::create()` to build a
+     * mailer, and swap the transport for one that appends every
+     * message to `$this->sentMail` instead of opening a socket.
+     */
+    private function captureMail(): void
+    {
+        $stmt = Fixture::rawPdo()->prepare(sprintf(
+            'REPLACE INTO `%s_settings` (`setting`, `value`) VALUES (?, ?)',
+            DB_PREFIX,
+        ));
+        foreach ([
+            'smtp.host'              => 'smtp.invalid',
+            'smtp.user'              => 'user',
+            'smtp.pass'              => 'pass',
+            'config.mail.from_email' => 'noreply@example.test',
+        ] as $key => $value) {
+            $stmt->execute([$key, $value]);
+        }
+        \Config::init($GLOBALS['PDO']);
+
+        $this->sentMail = [];
+        $record = function (SentMessage $message): void {
+            $this->sentMail[] = $message;
+        };
+        Mailer::overrideTransportForTests(new class ($record) extends AbstractTransport {
+            public function __construct(private readonly \Closure $record)
+            {
+                parent::__construct();
+            }
+
+            protected function doSend(SentMessage $message): void
+            {
+                ($this->record)($message);
+            }
+
+            public function __toString(): string
+            {
+                return 'capture://';
+            }
+        });
+    }
+
+    /** @return list<string> */
+    private function recipients(SentMessage $message): array
+    {
+        return array_map(
+            static fn (Address $a): string => $a->getAddress(),
+            $message->getEnvelope()->getRecipients(),
+        );
+    }
+
+    private function htmlBody(SentMessage $message): string
+    {
+        $email = $message->getOriginalMessage();
+        $this->assertInstanceOf(Email::class, $email);
+        return (string) $email->getHtmlBody();
     }
 
     /**

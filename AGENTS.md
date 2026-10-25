@@ -1047,6 +1047,23 @@ The contract:
   lies to the user in the missed-branch case ("If that email is
   registered, a link has been sent" → it wasn't, but they don't
   get told), which is the intended behavior.
+- **Mail the stored address, never the request value.** After the
+  lookup matches, every downstream step keys on the stored row:
+  `Mail::send($row['email'], …)`, links built from `$row['email']`,
+  `UPDATE … WHERE aid = :aid`. `:prefix_admins.email` uses the
+  table's case- and accent-insensitive collation
+  (`utf8mb4_general_ci`), so the request value can differ from the
+  stored address and still match. The stored address is the only
+  one the account owner has proven they control. `email` is also
+  not unique, so never `UPDATE … WHERE email = :email` either: it
+  rolls every collation-equal duplicate.
+- **Compare secrets byte-exact in PHP, not via SQL.** The same
+  collation makes `WHERE validate = :token` case-insensitive.
+  Look the row up by its identifier, then
+  `hash_equals((string) $row['validate'], (string) $token)`, and
+  treat a NULL / empty stored secret as never matching. Reference
+  shape: the `?email=…&validation=…` branch in
+  `web/pages/page.lostpassword.php`.
 
 **Caveat: response-time differential remains.** The matched branch
 performs a DB write + an SMTP round-trip; the unmatched branch
@@ -1070,7 +1087,15 @@ the canonical "byte-for-byte identical" assertion) +
 `web/tests/api/__snapshots__/auth/lost_password_generic.json` (the
 locked wire-format) + `web/tests/e2e/specs/flows/lostpassword-toast.spec.ts`
 (the chrome-side parity test — same painted toast for known +
-unknown emails).
+unknown emails). The stored-address / byte-exact rules are pinned by
+`AuthTest::testLostPasswordMailsOnlyTheStoredAddressForCollationVariants`
+(case- and accent-insensitive request values; recipients captured via
+the test-only `Sbpp\Mail\Mailer::overrideTransportForTests()` seam)
++ `testLostPasswordRollsTokenOnlyOnTheMatchedAidWhenEmailsCollide`,
+and on the page side by the "Collation-variant email" + "Token with
+different letter case" tests in `lostpassword-toast.spec.ts`
+(mailpit-backed, per-run admin rows via
+`seedLostpasswordE2e(email)`).
 
 **Sibling surfaces still in scope for follow-up:** `api_auth_login`
 in `web/api/handlers/auth.php` ALSO branches its `Api::redirect()`
