@@ -97,6 +97,19 @@ Drop the plugins you want into `addons/sourcemod/plugins/` and remove
 the ones you don't (SourceMod loads everything it finds, so an unused
 plugin still consumes a server slot).
 
+### How `sbpp_sleuth.smx` matches alt accounts
+
+When a player connects, SourceSleuth looks for active bans on their IP
+that belong to a **different** SteamID. It ignores:
+
+- Bans on the connecting player's own SteamID.
+- Players who already have an active SteamID ban. `sbpp_main.smx`
+  rejects them with their existing ban, so no new ban is added.
+
+`sm_sleuth_actions 1` (original length) and `3` (double length) use the
+oldest matching ban, so repeat alt bans on the same IP don't keep
+growing.
+
 ### Steam Networking (SDR / FakeIP) servers
 
 Servers using `-enablefakeip` or `sv_use_steam_networking` (Source SDK
