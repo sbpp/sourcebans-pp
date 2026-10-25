@@ -70,6 +70,9 @@ final class Telemetry
     /** cURL total-operation timeout. */
     private const TOTAL_TIMEOUT_SECONDS = 5;
 
+    /** `modfolder`s with their own `scale.games` flag; every other folder reports as `other`. */
+    private const TRACKED_GAMES = ['tf', 'cstrike', 'csgo', 'garrysmod', 'left4dead2'];
+
     /**
      * Process-local cache of the instance ID. Settings are loaded
      * once at request start by `Config::init()` and the cache is
@@ -436,11 +439,17 @@ final class Telemetry
         /** @var mixed $rawGit */
         $rawGit  = defined('SB_GITREV') ? constant('SB_GITREV') : '';
         $git     = is_string($rawGit) ? $rawGit : '';
+        $timezone = Config::get('config.timezone');
         return [
-            'version' => $version,
-            'git'     => $git,
-            'dev'     => $version === \Sbpp\Version::DEV_SENTINEL,
-            'theme'   => self::resolveTheme(),
+            'version'      => $version,
+            'git'          => $git,
+            'dev'          => $version === \Sbpp\Version::DEV_SENTINEL,
+            'theme'        => self::resolveTheme(),
+            'region'       => Region::resolve(
+                is_string($timezone) ? $timezone : null,
+                date_default_timezone_get()
+            ),
+            'exported_30d' => self::resolveExported30d(),
         ];
     }
 
@@ -459,25 +468,47 @@ final class Telemetry
     }
 
     /**
-     * @return array<string, int>
+     * @return array<string, mixed>
      */
     private static function collectScale(): array
     {
         $db = self::db();
         if ($db === null) {
             return [
-                'admins'          => 0,
-                'servers_enabled' => 0,
-                'bans_active'     => 0,
-                'bans_total'      => 0,
-                'comms_active'    => 0,
-                'comms_total'     => 0,
-                'submissions_30d' => 0,
-                'protests_30d'    => 0,
+                'admins'                => 0,
+                'servers_enabled'       => 0,
+                'bans_active'           => 0,
+                'bans_total'            => 0,
+                'comms_active'          => 0,
+                'comms_total'           => 0,
+                'submissions_30d'       => 0,
+                'protests_30d'          => 0,
+                'bans_30d'              => 0,
+                'admins_active_30d'     => 0,
+                'ban_history_months'    => null,
+                'web_bans_majority_30d' => false,
+                'games'                 => self::gamesFromModfolders([]),
+                'perms'                 => [
+                    'web_groups'    => false,
+                    'server_groups' => false,
+                    'overrides'     => false,
+                    'immunity'      => false,
+                ],
             ];
         }
 
-        $thirtyDaysAgo = time() - 30 * 86400;
+        $now           = time();
+        $thirtyDaysAgo = $now - 30 * 86400;
+        $bans30d       = self::countWithCutoff(
+            $db,
+            "SELECT COUNT(*) AS c FROM `:prefix_bans` WHERE `created` >= :cutoff",
+            $thirtyDaysAgo
+        );
+        $webBans30d    = self::countWithCutoff(
+            $db,
+            "SELECT COUNT(*) AS c FROM `:prefix_bans` WHERE `created` >= :cutoff AND `sid` = 0",
+            $thirtyDaysAgo
+        );
 
         return [
             'admins'          => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_admins`"),
@@ -504,7 +535,127 @@ final class Telemetry
                 "SELECT COUNT(*) AS c FROM `:prefix_protests` WHERE `datesubmitted` >= :cutoff",
                 $thirtyDaysAgo
             ),
+            'bans_30d'              => $bans30d,
+            'admins_active_30d'     => self::countWithCutoff(
+                $db,
+                "SELECT COUNT(*) AS c FROM `:prefix_admins` WHERE `lastvisit` >= :cutoff",
+                $thirtyDaysAgo
+            ),
+            'ban_history_months'    => self::resolveBanHistoryMonths($db, $now),
+            'web_bans_majority_30d' => $webBans30d * 2 > $bans30d,
+            'games'                 => self::gamesFromModfolders(self::enabledModfolders($db)),
+            'perms'                 => [
+                'web_groups'    => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_groups` WHERE `type` = 1") > 0,
+                'server_groups' => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_srvgroups`") > 0,
+                'overrides'     => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_overrides`") > 0,
+                'immunity'      => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_admins` WHERE `immunity` > 0") > 0,
+            ],
         ];
+    }
+
+    /**
+     * Map the `modfolder`s of enabled servers onto the `scale.games`
+     * flags. Anything outside the five tracked games collapses into
+     * `other`; the folder name itself never leaves the panel.
+     *
+     * @param list<string> $modfolders
+     * @return array<string, bool>
+     */
+    public static function gamesFromModfolders(array $modfolders): array
+    {
+        $games = array_fill_keys(self::TRACKED_GAMES, false);
+        $games['other'] = false;
+        foreach ($modfolders as $folder) {
+            $folder = strtolower(trim($folder));
+            $games[in_array($folder, self::TRACKED_GAMES, true) ? $folder : 'other'] = true;
+        }
+        return $games;
+    }
+
+    /**
+     * Distinct `modfolder`s across enabled servers.
+     *
+     * @return list<string>
+     */
+    private static function enabledModfolders(Database $db): array
+    {
+        try {
+            $db->query(
+                "SELECT DISTINCT m.`modfolder` FROM `:prefix_servers` s "
+                . "JOIN `:prefix_mods` m ON m.`mid` = s.`modid` "
+                . "WHERE s.`enabled` = 1"
+            );
+            $folders = [];
+            foreach ($db->resultset() as $row) {
+                $folders[] = (string) ($row['modfolder'] ?? '');
+            }
+            return $folders;
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Whole calendar months between the oldest ban and `$now`, or
+     * `null` when the panel has no bans. `created = 0` rows (the
+     * column default, seen on imported legacy bans) are ignored so
+     * they don't read as a ban from 1970.
+     */
+    private static function resolveBanHistoryMonths(Database $db, int $now): ?int
+    {
+        try {
+            $db->query("SELECT MIN(`created`) AS m FROM `:prefix_bans` WHERE `created` > 0");
+            $row = $db->single();
+            $oldest = is_array($row) ? (int) ($row['m'] ?? 0) : 0;
+        } catch (Throwable) {
+            return null;
+        }
+        if ($oldest <= 0) {
+            return null;
+        }
+        return self::monthsBetween($oldest, $now);
+    }
+
+    /**
+     * Whole calendar months from `$from` to `$to` (both unix
+     * seconds, compared in UTC). `0` when `$from` is in the future.
+     */
+    public static function monthsBetween(int $from, int $to): int
+    {
+        if ($from >= $to) {
+            return 0;
+        }
+        $utc  = new \DateTimeZone('UTC');
+        $diff = (new \DateTimeImmutable('@' . $from))->setTimezone($utc)
+            ->diff((new \DateTimeImmutable('@' . $to))->setTimezone($utc));
+        return $diff->y * 12 + $diff->m;
+    }
+
+    /**
+     * True iff `web/export.php` logged a successful full data
+     * export (ZIP delivered or S3 upload OK, both `LogType::Message`
+     * under the `Data Export` title) in the last 30 days. Failures
+     * and permission denials log as `Error` / `Warning` and don't
+     * count. An operator who clears the audit log resets this.
+     */
+    private static function resolveExported30d(): bool
+    {
+        $db = self::db();
+        if ($db === null) {
+            return false;
+        }
+        try {
+            $db->query(
+                "SELECT COUNT(*) AS c FROM `:prefix_log` "
+                . "WHERE `type` = :type AND `title` = 'Data Export' AND `created` >= :cutoff"
+            );
+            $db->bind(':type', \LogType::Message->value);
+            $db->bind(':cutoff', time() - 30 * 86400);
+            $row = $db->single();
+            return is_array($row) && (int) ($row['c'] ?? 0) > 0;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /**

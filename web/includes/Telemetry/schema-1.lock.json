@@ -20,7 +20,7 @@
         "panel": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["version", "git", "dev", "theme"],
+            "required": ["version", "git", "dev", "theme", "region", "exported_30d"],
             "properties": {
                 "version": {
                     "type": "string",
@@ -38,6 +38,15 @@
                     "type": "string",
                     "enum": ["default", "custom"],
                     "description": "`'default'` if the active theme is the panel's shipped default; `'custom'` otherwise. The actual fork theme name is never reported (would leak community names)."
+                },
+                "region": {
+                    "type": ["string", "null"],
+                    "enum": ["af", "as", "eu", "na", "oc", "sa", null],
+                    "description": "Continent code derived from the panel's configured timezone: `config.timezone` when it holds an IANA zone name, else PHP's default timezone (`date.timezone`). Never derived from the request or the client IP. `null` for `UTC` / `Etc/*` / Antarctica / unparseable values; null leaves are dropped from the wire body, so the Worker sees the key as absent."
+                },
+                "exported_30d": {
+                    "type": "boolean",
+                    "description": "True iff a full data export bundle was delivered (ZIP download or S3 upload) in the last 30 days, read from the `Data Export` success rows in `:prefix_log`."
                 }
             }
         },
@@ -174,7 +183,13 @@
                 "comms_active",
                 "comms_total",
                 "submissions_30d",
-                "protests_30d"
+                "protests_30d",
+                "bans_30d",
+                "admins_active_30d",
+                "ban_history_months",
+                "web_bans_majority_30d",
+                "games",
+                "perms"
             ],
             "properties": {
                 "admins": {
@@ -216,6 +231,79 @@
                     "type": "integer",
                     "minimum": 0,
                     "description": "`SELECT COUNT(*) FROM :prefix_protests WHERE datesubmitted >= UNIX_TIMESTAMP() - 2592000`."
+                },
+                "bans_30d": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_bans WHERE created >= UNIX_TIMESTAMP() - 2592000`."
+                },
+                "admins_active_30d": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_admins WHERE lastvisit >= UNIX_TIMESTAMP() - 2592000`."
+                },
+                "ban_history_months": {
+                    "type": ["integer", "null"],
+                    "minimum": 0,
+                    "description": "Whole calendar months since `MIN(:prefix_bans.created)` (rows with `created = 0` ignored). `null` when there are no bans; null leaves are dropped from the wire body, so the Worker sees the key as absent."
+                },
+                "web_bans_majority_30d": {
+                    "type": "boolean",
+                    "description": "True iff more than half of the bans created in the last 30 days have `sid = 0` (added from the web panel rather than a game server). `false` when there were none."
+                },
+                "games": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["tf", "cstrike", "csgo", "garrysmod", "left4dead2", "other"],
+                    "properties": {
+                        "tf": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'tf'`."
+                        },
+                        "cstrike": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'cstrike'`."
+                        },
+                        "csgo": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'csgo'`."
+                        },
+                        "garrysmod": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'garrysmod'`."
+                        },
+                        "left4dead2": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'left4dead2'`."
+                        },
+                        "other": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has any other `modfolder`. The folder name itself is never sent."
+                        }
+                    }
+                },
+                "perms": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["web_groups", "server_groups", "overrides", "immunity"],
+                    "properties": {
+                        "web_groups": {
+                            "type": "boolean",
+                            "description": "At least one web admin group (`:prefix_groups` with `type = 1`)."
+                        },
+                        "server_groups": {
+                            "type": "boolean",
+                            "description": "At least one server admin group (`:prefix_srvgroups`)."
+                        },
+                        "overrides": {
+                            "type": "boolean",
+                            "description": "At least one row in `:prefix_overrides`."
+                        },
+                        "immunity": {
+                            "type": "boolean",
+                            "description": "At least one admin with `immunity > 0`."
+                        }
+                    }
                 }
             }
         },
