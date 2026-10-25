@@ -54,7 +54,7 @@ docker-compose.yml       web, db, adminer, mailpit
 docker/apache/
     sbpp-dev.conf        denies direct /demos/ access + sends nosniff (mirrors sbpp-prod.conf)
 docker/php/
-    web-entrypoint.sh    waits for DB, renders config.php, runs composer install, fixes cache perms
+    web-entrypoint.sh    waits for DB, renders config.php, runs composer install, fixes cache + demos perms
     dev-prepend.php      dev-only constants: install-guard bypass + telemetry opt-out (web requests)
 docker/db-init/
     00-render-schema.sh  on first DB init: substitutes {prefix}/{charset}, loads struc/data, seeds admin
