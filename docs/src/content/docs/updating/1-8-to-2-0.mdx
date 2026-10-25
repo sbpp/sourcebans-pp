@@ -123,7 +123,9 @@ categories:
 
 - **panel**: version, short git SHA, dev flag, theme name (only
   `default` or `custom` is reported; fork theme **names are never
-  sent**).
+  sent**), the continent of the panel's configured timezone (for
+  example `eu`; never the timezone itself, and never looked up from
+  your IP), and whether a full data export ran in the last 30 days.
 - **env**: PHP `major.minor`, DB engine + `major.minor`, web server
   family, OS family, plus a hosting fingerprint: PHP SAPI name,
   `memory_limit` / `max_execution_time`, how many functions
@@ -135,7 +137,13 @@ categories:
   document root path, and the `disable_functions` list itself are
   **never sent**, only the yes/no or the count.
 - **scale**: counts of admins, enabled servers, active and total
-  bans / comm blocks, 30-day submission / protest counts.
+  bans / comm blocks, 30-day submission / protest counts, bans and
+  active admins in the last 30 days, how many months of ban history
+  the panel holds, whether most recent bans were added from the web
+  panel, which games your enabled servers run (TF2, CS:S, CS:GO,
+  Garry's Mod, L4D2, or "other"; other game **names are never
+  sent**), and yes/no flags for web groups, server groups, overrides,
+  and admin immunity.
 - **features**: every checkbox under
   **Admin Panel → Settings → Features**, plus three derived booleans:
   SMTP-configured, Steam API key set, GeoIP DB present.

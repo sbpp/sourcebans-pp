@@ -66,6 +66,10 @@ final class TelemetryCollectTest extends ApiTestCase
         $this->assertArrayHasKey('theme', $panel);
         $this->assertSame('default', $panel['theme'], 'shipped default theme is reported as "default", not "custom"');
         $this->assertIsBool($panel['dev']);
+        // sbpp/cf-analytics#6. Region depends on the runner's
+        // timezone, so pin the domain only.
+        $this->assertContains($panel['region'], ['af', 'as', 'eu', 'na', 'oc', 'sa', null]);
+        $this->assertFalse($panel['exported_30d'], 'no Data Export rows in the fixture log');
 
         $env = $payload['env'];
         $this->assertIsArray($env);
@@ -110,6 +114,20 @@ final class TelemetryCollectTest extends ApiTestCase
         $this->assertSame(2, $scale['comms_total']);
         $this->assertSame(2, $scale['submissions_30d'], 'recent submissions inside the 30-day window');
         $this->assertSame(1, $scale['protests_30d']);
+        $this->assertSame(4, $scale['bans_30d'], 'every seeded ban is inside the 30-day window');
+        $this->assertIsInt($scale['admins_active_30d']);
+        $this->assertSame(0, $scale['ban_history_months'], 'oldest seeded ban is ~2 days old');
+        $this->assertFalse($scale['web_bans_majority_30d'], 'every seeded ban came from sid 1');
+        $this->assertSame(
+            ['tf' => true, 'cstrike' => false, 'csgo' => false, 'garrysmod' => false, 'left4dead2' => false, 'other' => false],
+            $scale['games'],
+            'only TF2 (modid 12) servers are enabled'
+        );
+        $this->assertSame(
+            ['web_groups' => false, 'server_groups' => false, 'overrides' => false, 'immunity' => true],
+            $scale['perms'],
+            'fixture admin carries immunity 100; no groups or overrides seeded'
+        );
 
         $features = $payload['features'];
         $this->assertIsArray($features);
@@ -152,6 +170,114 @@ final class TelemetryCollectTest extends ApiTestCase
                 "Telemetry payload leaked seeded PII string '$needle'"
             );
         }
+    }
+
+    /**
+     * sbpp/cf-analytics#6 slots against a panel shaped differently
+     * from the main universe: mixed games, mostly web bans, a long
+     * ban history, groups + overrides, and a recent export.
+     */
+    public function testScaleActivityGameMixPermissionShapeAndExport(): void
+    {
+        $pdo = Fixture::rawPdo();
+        $now = time();
+
+        $pdo->prepare(sprintf('UPDATE `%s_admins` SET `lastvisit` = ? WHERE `aid` = ?', DB_PREFIX))
+            ->execute([$now - 100, Fixture::adminAid()]);
+        $hash = password_hash('whatever', PASSWORD_BCRYPT);
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins` (`user`, `authid`, `password`, `gid`, `email`, `validate`, `extraflags`, `immunity`, `lastvisit`)
+             VALUES (?, ?, ?, -1, ?, NULL, 0, 0, ?)',
+            DB_PREFIX
+        ))->execute(['stale-admin', 'STEAM_0:1:444', $hash, 'stale@example.test', $now - 40 * 86400]);
+
+        // CS:GO (21) + HL2DM (1, folds into "other") enabled; L4D2 (16) disabled.
+        $stmt = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_servers` (`ip`, `port`, `rcon`, `modid`, `enabled`) VALUES (?, ?, ?, ?, ?)',
+            DB_PREFIX
+        ));
+        $stmt->execute(['10.0.1.1', 27015, '', 21, 1]);
+        $stmt->execute(['10.0.1.2', 27015, '', 1, 1]);
+        $stmt->execute(['10.0.1.3', 27015, '', 16, 0]);
+
+        // Last 30 days: 3 web bans (sid 0) + 1 server ban. Plus one
+        // 400-day-old ban (13 calendar months whatever the date) and a
+        // `created = 0` legacy row that must not read as 1970.
+        $stmt = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_bans` (`ip`, `authid`, `name`, `created`, `ends`, `length`, `reason`, `aid`, `adminIp`, `sid`, `type`)
+             VALUES (?, ?, ?, ?, 0, 0, ?, 1, ?, ?, 0)',
+            DB_PREFIX
+        ));
+        $stmt->execute(['', 'STEAM_0:1:1', 'a', $now - 100, 'r', '127.0.0.1', 0]);
+        $stmt->execute(['', 'STEAM_0:1:2', 'b', $now - 200, 'r', '127.0.0.1', 0]);
+        $stmt->execute(['', 'STEAM_0:1:3', 'c', $now - 300, 'r', '127.0.0.1', 0]);
+        $stmt->execute(['', 'STEAM_0:1:4', 'd', $now - 400, 'r', '127.0.0.1', 1]);
+        $stmt->execute(['', 'STEAM_0:1:5', 'e', $now - 400 * 86400, 'r', '127.0.0.1', 1]);
+        $stmt->execute(['', 'STEAM_0:1:6', 'f', 0, 'r', '127.0.0.1', 1]);
+
+        $pdo->prepare(sprintf('INSERT INTO `%s_groups` (`type`, `name`, `flags`) VALUES (1, ?, 0)', DB_PREFIX))
+            ->execute(['web-group']);
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_srvgroups` (`flags`, `immunity`, `name`, `groups_immune`) VALUES (?, 0, ?, ?)',
+            DB_PREFIX
+        ))->execute(['b', 'srv-group', ' ']);
+        $pdo->prepare(sprintf('INSERT INTO `%s_overrides` (`type`, `name`, `flags`) VALUES (?, ?, ?)', DB_PREFIX))
+            ->execute(['command', 'sm_ban', 'd']);
+
+        $this->insertLog('m', 'Data Export', $now - 1000);
+
+        $payload = Telemetry::collect();
+        $scale   = $payload['scale'];
+
+        $this->assertTrue($payload['panel']['exported_30d']);
+        $this->assertSame(4, $scale['bans_30d']);
+        $this->assertSame(1, $scale['admins_active_30d'], 'fixture admin active, stale admin 40 days out, CONSOLE never');
+        $this->assertSame(13, $scale['ban_history_months']);
+        $this->assertTrue($scale['web_bans_majority_30d'], '3 of 4 recent bans are web bans');
+        $this->assertSame(
+            ['tf' => false, 'cstrike' => false, 'csgo' => true, 'garrysmod' => false, 'left4dead2' => false, 'other' => true],
+            $scale['games']
+        );
+        $this->assertSame(
+            ['web_groups' => true, 'server_groups' => true, 'overrides' => true, 'immunity' => true],
+            $scale['perms']
+        );
+    }
+
+    public function testBanHistoryIsNullWithoutBans(): void
+    {
+        $payload = Telemetry::collect();
+        $this->assertNull($payload['scale']['ban_history_months']);
+        $this->assertFalse($payload['scale']['web_bans_majority_30d']);
+        $this->assertArrayNotHasKey(
+            'ban_history_months',
+            Telemetry::withoutNulls($payload)['scale'],
+            'a null leaf must be dropped from the wire body, not sent as null'
+        );
+    }
+
+    /**
+     * Only a successful export inside the window counts: failures log
+     * as `e`, and an export from 31 days ago is out of range.
+     */
+    public function testExportedFlagIgnoresFailuresAndOldExports(): void
+    {
+        $now = time();
+        $this->insertLog('e', 'Data Export', $now - 1000);
+        $this->insertLog('w', 'Data Export', $now - 1000);
+        $this->insertLog('m', 'Data Export', $now - 31 * 86400);
+        $this->insertLog('m', 'Group Created', $now - 1000);
+
+        $this->assertFalse(Telemetry::collect()['panel']['exported_30d']);
+    }
+
+    private function insertLog(string $type, string $title, int $created): void
+    {
+        Fixture::rawPdo()->prepare(sprintf(
+            'INSERT INTO `%s_log` (`type`, `title`, `message`, `function`, `query`, `aid`, `host`, `created`)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            DB_PREFIX
+        ))->execute([$type, $title, 'test', 'test', '', 0, '', $created]);
     }
 
     /**
