@@ -25,7 +25,7 @@ RUN apt-get update \
         intl \
         zip \
         mbstring \
- && a2enmod rewrite \
+ && a2enmod rewrite headers \
  && rm -rf /var/lib/apt/lists/*
 
 # opcache is bundled into PHP 8.5 core (no longer a separate ext module);
@@ -62,6 +62,10 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
         /etc/apache2/sites-available/*.conf \
         /etc/apache2/apache2.conf \
         /etc/apache2/conf-available/*.conf
+
+# Mirrors the prod image's demos/ deny + nosniff header (see the conf).
+COPY docker/apache/sbpp-dev.conf /etc/apache2/conf-available/zz-sbpp-dev.conf
+RUN a2enconf zz-sbpp-dev
 
 COPY docker/php/web-entrypoint.sh /usr/local/bin/web-entrypoint
 RUN chmod +x /usr/local/bin/web-entrypoint

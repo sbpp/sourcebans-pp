@@ -75,7 +75,8 @@ web/
 ├── config.php.template   Template the installer + dev entrypoint render
 ├── exportbans.php        Public ban-list export (CSV/XML)
 ├── export.php            Full data export (owner-only ZIP bundle; see includes/Export/)
-├── getdemo.php           Demo file download
+├── getdemo.php           Demo file download (the only way demos are served)
+├── demos/                Uploaded demos, random 32-hex names; .htaccess + Apache confs deny direct access
 │
 ├── api/handlers/         JSON API: one file per topic, _register.php wires them
 ├── pages/                Page handlers (procedural .php, included by build())
@@ -158,7 +159,9 @@ Both scripts include `init.php` first, which performs identical bootstrap.
 `init.php` does the following, in order:
 
 1. Defines path constants (`ROOT`, `INCLUDES_PATH`, `TEMPLATES_PATH`, …)
-   and the `IN_SB` sentinel that page files check.
+   and the `IN_SB` sentinel that page files check, then sends
+   `X-Content-Type-Options: nosniff` (the prod / dev Apache confs set
+   the same header for static files).
 2. Redirects to `/install/` if `config.php` is missing (the
    wizard is the canonical fresh-install path; #1335 M1 replaced
    the bare-text `die()`). If `install/` or `updater/` are still
@@ -1128,7 +1131,9 @@ model:
   Apache, bind-mounting `./web`), `db` (MariaDB 10.11), `adminer`
   (DB UI), and `mailpit` (catch-all SMTP).
 - **`docker/Dockerfile`** layers the PHP extensions, OPcache config, and
-  Composer onto `php:8.5-apache`.
+  Composer onto `php:8.5-apache`, plus `docker/apache/sbpp-dev.conf`
+  (the prod image's `demos/` deny + `nosniff` header, so E2E exercises
+  the same rules).
 - **`docker/php/web-entrypoint.sh`** waits for MariaDB, renders
   `web/config.php` from env vars (only if absent), runs `composer install`
   if `vendor/` is empty, then `exec`s Apache.

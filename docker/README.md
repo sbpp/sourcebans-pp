@@ -51,6 +51,8 @@ To stop:
 ```
 Dockerfile               php:8.5-apache + pdo_mysql, intl, zip, mbstring, opcache, composer
 docker-compose.yml       web, db, adminer, mailpit
+docker/apache/
+    sbpp-dev.conf        denies direct /demos/ access + sends nosniff (mirrors sbpp-prod.conf)
 docker/php/
     web-entrypoint.sh    waits for DB, renders config.php, runs composer install, fixes cache perms
     dev-prepend.php      dev-only constants: install-guard bypass + telemetry opt-out (web requests)
@@ -124,7 +126,7 @@ else not referenced by `:prefix_demos`) are never touched by the wipe.
 `db-reset` drops the entire DB volume AND wipes MD5-named files from
 `web/demos/` (orphans after the DB drop — the `_demos` rows that
 pointed at them vanished with the volume). The wipe is scoped to
-`[0-9a-f]{32}` basenames so `.gitkeep` stays put; non-MD5 manual
+`[0-9a-f]{32}` basenames so `.gitkeep` and `.htaccess` stay put; non-MD5 manual
 uploads (the icon / mapimg flows preserve original filenames) survive
 too, though those don't normally land in `web/demos/`.
 
