@@ -53,7 +53,7 @@ Dockerfile               php:8.5-apache + pdo_mysql, intl, zip, mbstring, opcach
 docker-compose.yml       web, db, adminer, mailpit
 docker/php/
     web-entrypoint.sh    waits for DB, renders config.php, runs composer install, fixes cache perms
-    dev-prepend.php      normalizes HTTP_HOST so init.php's localhost guard accepts :8080
+    dev-prepend.php      dev-only constants: install-guard bypass + telemetry opt-out (web requests)
 docker/db-init/
     00-render-schema.sh  on first DB init: substitutes {prefix}/{charset}, loads struc/data, seeds admin
 sbpp.sh                  thin wrapper around `docker compose` + common dev tasks
