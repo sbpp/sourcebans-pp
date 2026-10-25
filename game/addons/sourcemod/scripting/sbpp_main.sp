@@ -100,7 +100,8 @@ bool
 	, requireSiteLogin = false /* Require a lastvisited from SB site */
 	, backupConfig = true
 	, enableAdmins = true
-	, PlayerStatus[MAXPLAYERS + 1]; /* Player ban check status */
+	, PlayerStatus[MAXPLAYERS + 1] /* Player ban check status */
+	, PlayerCheckPending[MAXPLAYERS + 1]; /* Ban check query in flight */
 
 int
 	g_BanTarget[MAXPLAYERS + 1] =  { -1, ... }
@@ -316,6 +317,7 @@ public void OnClientDisconnect(int client)
 
 	ClearPendingBanState(client);
 
+	PlayerCheckPending[client] = false;
 	FormatEx(g_sSteamIDs[client], sizeof(g_sSteamIDs[]), "\0");
 	FormatEx(g_sPlayerIP[client], sizeof(g_sPlayerIP[]), "\0");
 	FormatEx(g_sName[client], sizeof(g_sName[]), "\0");
@@ -325,6 +327,7 @@ public void OnClientDisconnect(int client)
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	PlayerStatus[client] = false;
+	PlayerCheckPending[client] = false;
 	return true;
 }
 
@@ -347,7 +350,7 @@ public void OnClientConnected(int client)
 		GetClientAuthId(client, AuthId_Steam2, g_sSteamIDs[client], sizeof(g_sSteamIDs[]), false);
 
 	/* Do not check bots nor check player with lan steamid. */
-	if (auth[0] == 'B' || auth[9] == 'L' || DB == INVALID_HANDLE)
+	if (auth[0] == 'B' || auth[9] == 'L')
 	{
 		PlayerStatus[client] = true;
 		return;
@@ -356,8 +359,30 @@ public void OnClientConnected(int client)
 
 public void OnClientAuthorized(int client, const char[] auth)
 {
-	if (PlayerStatus[client])
+	CheckClientBan(client);
+}
+
+// Queries the ban tables for a connected, authorized client. Safe to call
+// repeatedly: it no-ops once the client passed a check, while a query is in
+// flight or a retry is scheduled, and while the database is unavailable
+// (GotDatabase re-runs it for everyone once the connection is up).
+void CheckClientBan(int client)
+{
+	if (PlayerStatus[client] || PlayerCheckPending[client] || PlayerRecheck[client] != INVALID_HANDLE || DB == INVALID_HANDLE)
 		return;
+
+	// The SteamID cached in OnClientConnected can still be STEAM_ID_PENDING.
+	char auth[MAX_AUTHID_LENGTH];
+	if (!GetClientAuthId(client, AuthId_Steam2, auth, sizeof(auth)))
+		return;
+
+	strcopy(g_sSteamIDs[client], sizeof(g_sSteamIDs[]), auth);
+
+	if (auth[0] == 'B' || auth[9] == 'L')
+	{
+		PlayerStatus[client] = true;
+		return;
+	}
 
 	char Query[256];
 	if (g_sPlayerIP[client][0] == '\0')
@@ -374,7 +399,19 @@ public void OnClientAuthorized(int client, const char[] auth)
 	LogToFile(logFile, "Checking ban for: %s", g_sSteamIDs[client]);
 	#endif
 
-	DB.Query(VerifyBan, Query, g_iUserIDs[client], DBPrio_High);
+	PlayerCheckPending[client] = true;
+	DB.Query(VerifyBan, Query, GetClientUserId(client), DBPrio_High);
+}
+
+void CheckConnectedClientBans()
+{
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientConnected(i) && IsClientAuthorized(i))
+		{
+			CheckClientBan(i);
+		}
+	}
 }
 
 public void OnRebuildAdminCache(AdminCachePart part)
@@ -476,7 +513,8 @@ public Action CommandBan(int client, int args)
 		return Plugin_Handled;
 	}
 
-	if (!PlayerStatus[target])
+	// Without a database the check can't run; the ban goes to the SQLite queue instead.
+	if (!PlayerStatus[target] && DB != INVALID_HANDLE)
 	{
 		// The target has not been banned verify. It must be completed before you can ban anyone.
 		ReplyToCommand(admin, "%s%t", Prefix, "Ban Not Verified");
@@ -1162,6 +1200,8 @@ public void GotDatabase(Database db, const char[] error, any data)
 		loadAdmins = false;
 	}
 	g_bConnecting = false;
+
+	CheckConnectedClientBans();
 }
 
 public void VerifyInsert(Database db, DBResultSet results, const char[] error, DataPack dataPack)
@@ -1709,11 +1749,14 @@ public void VerifyBan(Database db, DBResultSet results, const char[] error, int 
 	if (!client)
 		return;
 
+	PlayerCheckPending[client] = false;
+
 	/* Failure happen. Do retry with delay */
 	if (results == null)
 	{
 		LogToFile(logFile, "Verify Ban Query Failed: %s", error);
-		PlayerRecheck[client] = CreateTimer(RetryTime, ClientRecheck, client);
+		if (PlayerRecheck[client] == INVALID_HANDLE)
+			PlayerRecheck[client] = CreateTimer(RetryTime, ClientRecheck, client);
 		return;
 	}
 
@@ -2217,12 +2260,13 @@ public void OverridesDone(Database db, DBResultSet results, const char[] error, 
 
 public Action ClientRecheck(Handle timer, any client)
 {
-	if (!PlayerStatus[client] && IsClientConnected(client))
+	PlayerRecheck[client] = INVALID_HANDLE;
+
+	if (IsClientConnected(client) && IsClientAuthorized(client))
 	{
-		OnClientConnected(client);
+		CheckClientBan(client);
 	}
 
-	PlayerRecheck[client] = INVALID_HANDLE;
 	return Plugin_Stop;
 }
 
@@ -3244,14 +3288,14 @@ stock AdminFlag[] CreateFlagLetters()
 
 stock void AccountForLateLoading()
 {
+	// The database connects asynchronously, so the actual ban checks run from
+	// GotDatabase once it's up.
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientConnected(i) && !IsFakeClient(i))
+		if (IsClientConnected(i))
 		{
 			PlayerStatus[i] = false;
-		}
-		if (IsClientInGame(i) && !IsFakeClient(i) && IsClientAuthorized(i))
-		{
+			PlayerCheckPending[i] = false;
 			OnClientConnected(i);
 		}
 	}
