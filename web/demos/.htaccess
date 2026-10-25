@@ -1,0 +1,3 @@
+# Uploaded demos are served only through getdemo.php.
+# Needs `AllowOverride AuthConfig` (or `All`) on this directory.
+Require all denied

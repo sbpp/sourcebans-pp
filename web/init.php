@@ -25,6 +25,13 @@ define("MMDB_PATH", ROOT . 'data/GeoLite2-Country.mmdb');
 
 define('IN_SB', true);
 
+// Browsers must never content-sniff a panel response into HTML or
+// script. Static files bypass PHP, so the Docker Apache confs set the
+// same header server-wide.
+if (!headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+}
+
 // ---------------------------------------------------
 //  Are we installed? (Issue #1335 M1 + C1)
 // ---------------------------------------------------

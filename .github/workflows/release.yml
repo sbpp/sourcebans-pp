@@ -193,6 +193,9 @@ jobs:
       #     this install" — without it the user-visible promise lies).
       #     A release that silently drops any of the three makes every
       #     downstream redistribution non-compliant.
+      #   - demos/.htaccess — blocks direct web access to uploaded
+      #     demos on Apache tarball installs. It's a dotfile inside a
+      #     gitignored directory, so it's the easiest file to lose.
       - name: Verify required files are bundled in the zip
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
@@ -202,7 +205,8 @@ jobs:
               "${pkg}/includes/vendor/smarty/smarty/src/Smarty.php" \
               "${pkg}/LICENSE.txt" \
               "${pkg}/LICENSE-plugins.txt" \
-              "${pkg}/THIRD-PARTY-NOTICES.txt"; do
+              "${pkg}/THIRD-PARTY-NOTICES.txt" \
+              "${pkg}/demos/.htaccess"; do
               if ! unzip -l "${pkg}.zip" "${f}" >/dev/null 2>&1; then
                   echo "::error::Missing required artifact file in ${pkg}.zip: ${f}"
                   missing=1

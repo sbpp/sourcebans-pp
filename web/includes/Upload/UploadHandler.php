@@ -27,7 +27,7 @@ use LogType;
  *
  * Filename hygiene contract:
  *   - Demo uploads (#1113): the on-disk name is a fresh
- *     `md5(time() . rand())` so admin-controlled strings never reach
+ *     {@see UploadHandler::randomDiskName()} so admin-controlled strings never reach
  *     `move_uploaded_file()`'s second argument; the original name is
  *     surfaced back to the opener via `window.opener.demo()` for the
  *     UI label only.
@@ -71,7 +71,7 @@ final class UploadHandler
      *   (`demo` / `icon` / `mapimg`) — the JS function the parent
      *   window is expected to define.
      * @param bool   $renameToHash When `true` (demo flow), the on-disk
-     *   filename is replaced with `md5(time() . rand())` BEFORE the
+     *   filename is replaced with {@see randomDiskName()} BEFORE the
      *   final move. The original filename is sent back to the opener
      *   as the second `window.opener.<cb>()` argument; the parent uses
      *   it as the human label. When `false` (icon / mapimage), the
@@ -171,7 +171,7 @@ final class UploadHandler
 
         $sanitised = self::sanitiseName($rawName);
         $diskName  = $renameToHash
-            ? md5((string) time() . random_int(0, 1000))
+            ? self::randomDiskName()
             : $sanitised;
 
         $dest = rtrim($destDir, '/\\') . '/' . $diskName;
@@ -185,6 +185,16 @@ final class UploadHandler
         $jsName = json_encode($rawName,   self::JS_FLAGS);
         $args   = $renameToHash ? "$jsDisk,$jsName" : $jsName;
         return "<script>window.opener.{$callback}($args);self.close()</script>";
+    }
+
+    /**
+     * On-disk basename for an uploaded demo: 32 lowercase hex chars from
+     * a CSPRNG. Must stay 32-char lowercase hex because `api_bans_add`,
+     * `./sbpp.sh db-reset`, and the dev seeder key on that shape.
+     */
+    public static function randomDiskName(): string
+    {
+        return bin2hex(random_bytes(16));
     }
 
     /**

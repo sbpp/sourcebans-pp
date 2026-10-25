@@ -45,7 +45,10 @@ want the `sourcebans-pp-X.Y.Z.webpanel-only.zip` for the web side and
    "default" before uploading.
 
 3. **Upload and overwrite** all contents of the new `web/` folder
-   onto your existing SourceBans++ installation.
+   onto your existing SourceBans++ installation. Include
+   `demos/.htaccess` (some FTP clients hide dotfiles). On nginx or
+   IIS, add the rule from
+   [Block direct access to demos](/getting-started/quickstart/#block-direct-access-to-demos).
 
 4. **Delete the `install/` directory** if it's still there from a
    previous install. The panel actively refuses to boot while it

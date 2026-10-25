@@ -44,6 +44,8 @@ export interface SubmissionFixture {
     readonly reporterName: string;
     /** Submitter email; required by FILTER_VALIDATE_EMAIL. */
     readonly email: string;
+    /** Optional evidence upload; `name` must carry an allowed extension. */
+    readonly demo?: { readonly name: string; readonly contents: string };
 }
 
 /**
@@ -81,6 +83,13 @@ export async function anonymousSubmit(page: Page, fx: SubmissionFixture): Promis
     // us inside the success branch without depending on a seeded
     // :prefix_servers row.
     await page.locator('[data-testid="submitban-server"]').selectOption('0');
+    if (fx.demo) {
+        await page.locator('[data-testid="submitban-demo"]').setInputFiles({
+            name: fx.demo.name,
+            mimeType: 'application/octet-stream',
+            buffer: Buffer.from(fx.demo.contents),
+        });
+    }
 
     await Promise.all([
         page.waitForLoadState('domcontentloaded'),

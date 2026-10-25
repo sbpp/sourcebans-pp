@@ -240,6 +240,10 @@ is running in Docker.
 | `cache` | `/var/www/html/web/cache` | Optional. Smarty compile cache + PHP sessions. Wiping logs every admin out but doesn't lose data. |
 | `smarty` | `/var/www/html/web/templates_c` | Optional. Same shape as `cache`, rebuilt on demand. |
 
+The image's Apache config blocks direct web access to `demos/`.
+Demos download only through the panel (`getdemo.php`). If a reverse
+proxy serves files from the volume itself, deny `/demos/` there too.
+
 Back up the `dbdata` and `demos` volumes regularly. The simplest
 backup is a `mariadb-dump` for the DB and a `tar` for the demos:
 
