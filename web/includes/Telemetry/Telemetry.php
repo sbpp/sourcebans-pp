@@ -96,6 +96,11 @@ final class Telemetry
      * cURL POST on every probe, but the per-tick slot-reservation
      * `UPDATE` on `:prefix_settings.last_ping` is still pure noise
      * we'd rather not pay on a 2880-probe-per-day endpoint.
+     *
+     * The docker dev stack (`docker/php/dev-prepend.php`) defines
+     * the same constant on every web request, so local dev, E2E,
+     * and the CI docs-screenshot capture never ping the live
+     * endpoint.
      */
     public static function tickIfDue(): void
     {

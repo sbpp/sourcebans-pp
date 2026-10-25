@@ -728,7 +728,11 @@ The tick is the issue #1126 contract:
    calls without flipping the user-facing toggle.
 
 The whole `tickIfDue` body is wrapped in `try { … } catch (\Throwable)`
-so telemetry can NEVER hard-fail the request. Pings are never
+so telemetry can NEVER hard-fail the request. Defining
+`SBPP_SKIP_TELEMETRY` before `init.php` skips the tick for that
+request: `/health.php` does this, and so does the docker dev stack's
+`docker/php/dev-prepend.php` for every web request, which keeps local
+dev, E2E, and CI screenshot runs out of the production dataset. Pings are never
 audit-logged either — a flapping endpoint would otherwise generate
 `sb_log` noise that scares admins. Only the enable/disable
 **transitions** are audit-logged (in
