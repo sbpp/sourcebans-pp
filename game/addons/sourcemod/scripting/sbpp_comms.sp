@@ -297,9 +297,7 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 	FormatEx(g_sSteamIDs[client], sizeof(g_sSteamIDs[]), "%s", sSteamID);
 
 	char sIP[16];
-	GetClientIP(client, sIP, sizeof(sIP));
-	if (IsSteamNetworkingIP(sIP))
-		sIP[0] = '\0';
+	SBPP_GetClientPublicIP(client, sIP, sizeof(sIP));
 	FormatEx(g_sPlayerIP[client], sizeof(g_sPlayerIP[]), "%s", sIP);
 	FormatEx(g_sName[client], sizeof(g_sName[]), "%N", client);
 	g_iUserIDs[client] = GetClientUserId(client);

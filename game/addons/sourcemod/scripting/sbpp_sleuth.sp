@@ -201,9 +201,10 @@ public void OnClientPostAdminCheck(int client)
 		if (g_hAllowedArray.FindString(steamid) == -1)
 		{
 			char IP[32], Prefix[64];
-			GetClientIP(client, IP, sizeof(IP));
-
-			if (IsSteamNetworkingIP(IP))
+			/* SDR / Steam Networking clients have no usable IP (see
+			 * SBPP_GetClientPublicIP). Skip them rather than matching a
+			 * placeholder address shared by every such player. */
+			if (!SBPP_GetClientPublicIP(client, IP, sizeof(IP)))
 			{
 				return;
 			}

@@ -236,6 +236,11 @@
 		"pt"			"\"{1}\" adicionou um banimento. (Minutos: {2}.) (ID/IP: {3}.) (Motivo: {4}.)"
 		"chi"			"\"{1}\" 已被封禁 ({2} 分钟) (ID/IP: {3}) (理由: {4})."
 	}
+	"Cannot IP Ban No IP"
+	{
+		"#format"		"{1:N}"
+		"en"			"Cannot IP ban {1}: no IP address is available for this player (Steam Networking / SDR)."
+	}
 	"Ban Success Name"
 	{
 		"#format"		"{1:s}"
