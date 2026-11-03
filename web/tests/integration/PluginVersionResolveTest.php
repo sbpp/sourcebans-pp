@@ -156,26 +156,93 @@ final class PluginVersionResolveTest extends TestCase
         @unlink($outPath);
     }
 
+    /**
+     * Writes a fake `git` onto a fresh directory so the git-describe tier
+     * resolves deterministically, regardless of whether the checkout running
+     * the suite sits on a release tag (#1613). Prepend the returned
+     * directory to PATH.
+     */
+    private static function stubGitDir(string $describe, string $sha = 'abc1234'): string
+    {
+        $dir = sys_get_temp_dir() . '/sbpp-git-stub-' . bin2hex(random_bytes(4));
+        mkdir($dir, 0o755, true);
+
+        $script = "#!/bin/sh\n"
+            . "for a in \"\$@\"; do\n"
+            . "  case \"\$a\" in\n"
+            . '    describe) printf \'%s\\n\' ' . escapeshellarg($describe) . "; exit 0 ;;\n"
+            . '    rev-parse) printf \'%s\\n\' ' . escapeshellarg($sha) . "; exit 0 ;;\n"
+            . "  esac\n"
+            . "done\n"
+            . "exit 1\n";
+
+        file_put_contents($dir . '/git', $script);
+        chmod($dir . '/git', 0o755);
+
+        return $dir;
+    }
+
+    private static function removeStubGitDir(string $dir): void
+    {
+        @unlink($dir . '/git');
+        @rmdir($dir);
+    }
+
     public function testGitDescribeLeavesTripletAsDevWhenNotExactSemver(): void
     {
         $outPath = sys_get_temp_dir() . '/sbpp-version-inc-' . bin2hex(random_bytes(4)) . '.inc';
+        $stub = self::stubGitDir('2.2.3-5-gabc1234');
 
         [, $code] = $this->runResolver(
             [
                 'SBPP_VERSION_JSON' => self::repoRoot() . '/web/configs/version.json.nonexistent',
                 'SBPP_VERSION_INC_OUT' => $outPath,
+                'PATH' => $stub . PATH_SEPARATOR . (string) getenv('PATH'),
             ],
             ['SBPP_RELEASE_VERSION'],
         );
+
+        self::removeStubGitDir($stub);
 
         self::assertSame(0, $code);
 
         $inc = file_get_contents($outPath);
         self::assertIsString($inc);
-        self::assertMatchesRegularExpression('/#define SB_VERSION\s+"[^"]+"/', $inc);
-        self::assertStringNotContainsString('#define SB_VERSION                        "dev"', $inc);
+        self::assertStringContainsString('#define SB_VERSION                        "2.2.3-5-gabc1234"', $inc);
         self::assertStringContainsString('#define SB_VERSION_MAJOR                  "dev"', $inc);
+        self::assertStringContainsString('#define SB_VERSION_MINOR                  "0"', $inc);
+        self::assertStringContainsString('#define SB_VERSION_PATCH                  "0"', $inc);
         self::assertStringContainsString('#define MAJOR_REVISION                    2', $inc);
+
+        @unlink($outPath);
+    }
+
+    public function testGitDescribeResolvesTripletWhenExactSemverTag(): void
+    {
+        $outPath = sys_get_temp_dir() . '/sbpp-version-inc-' . bin2hex(random_bytes(4)) . '.inc';
+        $stub = self::stubGitDir('2.2.3');
+
+        [, $code] = $this->runResolver(
+            [
+                'SBPP_VERSION_JSON' => self::repoRoot() . '/web/configs/version.json.nonexistent',
+                'SBPP_VERSION_INC_OUT' => $outPath,
+                'PATH' => $stub . PATH_SEPARATOR . (string) getenv('PATH'),
+            ],
+            ['SBPP_RELEASE_VERSION'],
+        );
+
+        self::removeStubGitDir($stub);
+
+        self::assertSame(0, $code);
+
+        $inc = file_get_contents($outPath);
+        self::assertIsString($inc);
+        self::assertStringContainsString('#define SB_VERSION                        "2.2.3"', $inc);
+        self::assertStringContainsString('#define SB_VERSION_MAJOR                  "2"', $inc);
+        self::assertStringContainsString('#define SB_VERSION_MINOR                  "2"', $inc);
+        self::assertStringContainsString('#define SB_VERSION_PATCH                  "3"', $inc);
+        self::assertStringContainsString('#define MAJOR_REVISION                    2', $inc);
+        self::assertStringContainsString('(git abc1234)', $inc);
 
         @unlink($outPath);
     }
