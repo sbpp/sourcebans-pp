@@ -2574,6 +2574,12 @@ details.queue-row > summary > .row-actions {
 .app-footer__sep {
   margin-inline: 0.35em;
 }
+/* GeoLite attribution line (#1614), only rendered when an
+   operator-supplied MaxMind database is present. Sits on its own
+   line under the version / sponsor row. */
+.app-footer__attribution {
+  margin: 0.35rem 0 0;
+}
 
 /* ---- Dashboard intro Markdown editor + preview (#1207 SET-1) ----
    Two-column grid that drops to one column on mobile. The textarea

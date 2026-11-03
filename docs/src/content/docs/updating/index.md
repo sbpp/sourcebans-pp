@@ -67,6 +67,11 @@ want the `sourcebans-pp-X.Y.Z.webpanel-only.zip` for the web side and
 
 6. **Delete the `updater/` directory** when it's done.
 
+7. **Delete `data/GeoLite2-Country.mmdb`** if it's still there from
+   2.2.3 or older. The panel no longer ships it. See
+   [GeoIP country lookup](/configuring/geoip/) to install a current
+   copy yourself.
+
 :::caution
 Leaving `install/` or `updater/` accessible after an upgrade is a
 foot-gun: anyone who can reach the panel can re-run them. The

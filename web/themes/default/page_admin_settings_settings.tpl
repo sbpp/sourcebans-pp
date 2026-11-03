@@ -41,7 +41,7 @@
             $enable_commslist, $protest_emailonlyinvolved,
             $dash_lognopopup, $config_default_page,
             $config_bans_per_page, $banlist_hideadmname,
-            $banlist_nocountryfetch, $banlist_hideplayerips,
+            $banlist_nocountryfetch, $geoip_available, $banlist_hideplayerips,
             $bans_customreason (list), $config_smtp (tuple
             [host, user, port]), $config_smtp_verify_peer,
             $config_mail_from_email, $config_mail_from_name.
@@ -447,6 +447,9 @@
                                     <input type="checkbox" id="banlist_nocountryfetch" name="banlist_nocountryfetch"{if $banlist_nocountryfetch} checked{/if}>
                                     <span class="text-sm font-medium">Skip country lookup for IPs</span>
                                 </label>
+                                {if !$geoip_available}
+                                    <p class="text-xs text-muted m-0 mt-1" data-testid="geoip-missing-hint">Country lookup is off: no GeoLite2 country database was found. <a href="https://sbpp.github.io/configuring/geoip/" target="_blank" rel="noopener noreferrer">Add one</a> to enable it.</p>
+                                {/if}
                             </div>
                             <div data-testid="setting-row" data-key="bans.customreasons">
                                 <label class="label">Custom ban reasons</label>

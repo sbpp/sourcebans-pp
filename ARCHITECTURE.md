@@ -60,7 +60,12 @@ plugins are stable and updated less often.
 - **league/commonmark** for safely rendering admin-authored Markdown
   (dashboard intro text — see `Sbpp\Markup\IntroRenderer`).
 - **xpaw/php-source-query-class** for live server queries.
-- **maxmind-db/reader** for IP→country lookups (`web/data/GeoLite2-Country.mmdb`).
+- **maxmind-db/reader** for IP→country lookups against an operator-supplied
+  GeoLite2-Country database at `MMDB_PATH` (config.php define →
+  `SBPP_GEOIP_PATH` env → `web/data/GeoLite2-Country.mmdb`). The panel
+  doesn't ship the database (#1614, GeoLite EULA); `GeoIpAvailable()` in
+  `system-functions.php` gates the lookup, the banlist country write-back,
+  and the footer attribution, so the feature is off without it.
 - **Vanilla JavaScript** on the client — no framework, no bundler. Files
   carry `// @ts-check` and are type-checked with `tsc --checkJs`.
 

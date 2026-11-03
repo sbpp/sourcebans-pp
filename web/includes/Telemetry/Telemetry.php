@@ -803,10 +803,12 @@ final class Telemetry
     }
 
     /**
-     * True iff the Maxmind GeoIP database lives at
-     * `web/data/GeoLite2-Country.mmdb` and is readable. Mirrors
-     * what `system_check.php` checks before the country-flag
-     * lookup runs.
+     * True iff the operator-supplied MaxMind GeoIP database is
+     * readable at `MMDB_PATH` (config.php / `SBPP_GEOIP_PATH` /
+     * `web/data/GeoLite2-Country.mmdb`, see init.php). Mirrors
+     * `GeoIpAvailable()` in system-functions.php, which gates the
+     * country lookup; duplicated so the collector doesn't depend on
+     * the procedural helper file being loaded.
      */
     private static function resolveGeoipPresent(): bool
     {

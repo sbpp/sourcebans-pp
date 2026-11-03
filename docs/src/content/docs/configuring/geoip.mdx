@@ -1,0 +1,136 @@
+---
+title: GeoIP country lookup
+description: Add a MaxMind GeoLite2 database so the ban list can show which country a banned IP belongs to.
+sidebar:
+  order: 3
+  label: GeoIP country lookup
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+SourceBans++ can look up the country of a banned IP address and show
+it in the player drawer. The lookup reads a local MaxMind
+**GeoLite2-Country** database. Nothing is sent over the network.
+
+The panel does **not** ship this database. MaxMind's
+[GeoLite EULA](https://www.maxmind.com/en/geolite/eula) doesn't allow
+it to be redistributed, and it requires every copy to be updated
+within 30 days of each new MaxMind release. You download it yourself
+and keep it current with `geoipupdate`.
+
+**Without a database, the country lookup is off.** The panel works
+normally; IP bans just show no country.
+
+## 1. Get the database
+
+<Steps>
+1. Create a free account at
+   [maxmind.com/en/geolite2/signup](https://www.maxmind.com/en/geolite2/signup)
+   and accept the GeoLite EULA.
+
+2. In your MaxMind account, generate a **license key**. Note your
+   **account ID** too.
+
+3. Install [geoipupdate](https://github.com/maxmind/geoipupdate). It's
+   packaged on most Linux distributions (`apt install geoipupdate`,
+   `dnf install geoipupdate`), and MaxMind publishes a Docker image.
+
+4. Edit `/etc/GeoIP.conf` (the path can differ on your distribution):
+
+   ```ini
+   AccountID 123456
+   LicenseKey your_license_key
+   EditionIDs GeoLite2-Country
+   ```
+
+5. Run it once to download the database:
+
+   ```sh
+   sudo geoipupdate
+   ```
+
+   The file lands in `/var/lib/GeoIP/GeoLite2-Country.mmdb` by
+   default.
+
+6. Schedule it so the database stays current, for example a weekly
+   cron job:
+
+   ```cron
+   0 4 * * 3 /usr/bin/geoipupdate
+   ```
+
+   Many distribution packages install a timer or cron job for you.
+</Steps>
+
+<Aside type="caution">
+Keep the database outside the panel's web root. If anyone can
+download it from your site, you are redistributing it.
+</Aside>
+
+## 2. Point the panel at it
+
+<Tabs syncKey="install-path">
+  <TabItem label="Tarball / shared hosting" icon="cloud-download">
+    Add this line to `config.php`, using the path geoipupdate writes
+    to:
+
+    ```php
+    define('MMDB_PATH', '/var/lib/GeoIP/GeoLite2-Country.mmdb');
+    ```
+
+    The web server user needs read access to the file.
+
+    If you don't set `MMDB_PATH`, the panel looks for
+    `data/GeoLite2-Country.mmdb` inside the panel directory. A symlink
+    to the geoipupdate file works there too. The release ships
+    `data/.htaccess` to block downloads on Apache. On nginx or IIS,
+    deny `/data/` the same way as
+    [`/demos/`](/getting-started/quickstart/#block-direct-access-to-demos).
+  </TabItem>
+
+  <TabItem label="Docker" icon="seti:docker">
+    Mount the directory geoipupdate writes to and set
+    `SBPP_GEOIP_PATH`. In `docker-compose.prod.yml`, uncomment the
+    geoip volume under the `web` service:
+
+    ```yaml
+    volumes:
+      - /var/lib/GeoIP:/geoip:ro
+    ```
+
+    Then in `.env`:
+
+    ```sh
+    SBPP_GEOIP_PATH=/geoip/GeoLite2-Country.mmdb
+    ```
+
+    Run `docker compose -f docker-compose.prod.yml up -d` to apply.
+    You can also run geoipupdate as a container
+    (`ghcr.io/maxmind/geoipupdate`) writing to a shared volume.
+  </TabItem>
+</Tabs>
+
+## 3. Turn on the lookup
+
+Go to **Admin Panel → Settings → Main** and, in the **Ban list**
+card, clear **Skip country lookup for IPs**. It's checked on fresh installs. If the panel can't
+find the database, the setting shows a "no GeoLite2 country database
+was found" note.
+
+Countries are looked up when the ban list renders and cached on each
+ban.
+
+## Attribution
+
+While a database is present, the panel footer shows the attribution
+MaxMind asks for:
+
+> This product includes GeoLite Data created by MaxMind, available
+> from https://www.maxmind.com.
+
+## Upgrading from a release that shipped the database
+
+Releases up to and including 2.2.3 shipped `data/GeoLite2-Country.mmdb` (a copy from
+May 2024). Uploading a newer release doesn't remove it. Delete
+`data/GeoLite2-Country.mmdb` from your panel directory, then follow the
+steps above if you want country lookup.

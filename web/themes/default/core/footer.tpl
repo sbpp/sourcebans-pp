@@ -143,6 +143,19 @@
             <i data-lucide="heart" aria-hidden="true" style="width:12px;height:12px"></i>
             Support SourceBans++
         </a>
+        {*
+            GeoLite attribution (#1614). MaxMind's EULA asks for this
+            wording wherever GeoLite data (the drawer's Country row, the
+            banlist country flags) is shown. The panel doesn't ship the
+            database, so footer.php only sets the flag when an operator
+            has installed one at MMDB_PATH.
+        *}
+        {if isset($geoip_attribution) && $geoip_attribution}
+        <p class="app-footer__attribution" data-testid="app-footer-geoip">
+            This product includes GeoLite Data created by MaxMind, available from
+            <a href="https://www.maxmind.com" target="_blank" rel="noopener">https://www.maxmind.com</a>.
+        </p>
+        {/if}
     </footer>
   </div>{* /.main *}
 </div>{* /.app *}
