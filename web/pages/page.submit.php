@@ -8,7 +8,7 @@ global $userbank, $theme;
 use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
 use Sbpp\Mail\Mailer;
-use xPaw\SourceQuery\SourceQuery;
+use Sbpp\Servers\SourceQueryCache;
 
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
@@ -124,15 +124,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 $GLOBALS['PDO']->bind(':sid', $SID);
                 $server = $GLOBALS['PDO']->single();
 
-                $query = new SourceQuery();
-                try {
-                    $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
-                    $info = $query->GetInfo();
-                } catch (Exception $e) {
-                    $mailserver = "Server: Error Connecting (".$server['ip'].":".$server['port'].")\n";
-                } finally {
-                    $query->Disconnect();
-                }
+                $info = SourceQueryCache::fetch((string) $server['ip'], (int) $server['port'])['info'] ?? [];
 
                 if (!empty($info['HostName'])) {
                     $mailserver = "Server: ".$info['HostName']." (".$server['ip'].":".$server['port'].")\n";
@@ -237,17 +229,16 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
 $GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1 ORDER BY modid, sid");
 $servers = $GLOBALS['PDO']->resultset();
 
+// Hostnames come from the shared A2S cache (#1611). A live probe per
+// server on every render made the form take seconds to load on panels
+// with many servers, and gave anonymous visitors an uncached A2S fan-out
+// (the #1311 amplification shape). The public servers page fills the
+// same cache, so a visitor coming from there usually gets a warm hit.
 foreach ($servers as $key => $server) {
-    $query = new SourceQuery();
-    try {
-        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
-        $info = $query->GetInfo();
-        $servers[$key]['hostname'] = $info['HostName'];
-    } catch (Exception $e) {
-        $servers[$key]['hostname'] = "Error Connecting (".$server['ip'].":".$server['port'].")";
-    } finally {
-        $query->Disconnect();
-    }
+    $info = SourceQueryCache::fetch((string) $server['ip'], (int) $server['port'])['info'] ?? [];
+    $servers[$key]['hostname'] = !empty($info['HostName'])
+        ? (string) $info['HostName']
+        : "Error Connecting (".$server['ip'].":".$server['port'].")";
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\SubmitBanView(

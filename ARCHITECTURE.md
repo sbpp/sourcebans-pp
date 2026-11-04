@@ -635,9 +635,10 @@ companion changes:
 
 `Sbpp\Servers\SourceQueryCache::fetch($ip, $port, $ttl=30)` is a thin
 on-disk cache around `xPaw\SourceQuery\SourceQuery` — the UDP A2S
-probe used by the public servers page (`?p=servers`) and any
-third-party theme that still emits the legacy `__sbppLoadServerHost`
-helper from `page.servers.php`. Returns either the cached
+probe used by the public servers page (`?p=servers`), the server
+picker on the public "Report a player" form (`page.submit.php`, #1611),
+and any third-party theme that still emits the legacy
+`__sbppLoadServerHost` helper from `page.servers.php`. Returns either the cached
 `{info, players}` payload or `null` when the underlying probe failed;
 both states are persisted under `SB_CACHE/srvquery/<sha1(ip:port)>.json`
 so an unreachable server costs ONE A2S probe per ~30s window instead

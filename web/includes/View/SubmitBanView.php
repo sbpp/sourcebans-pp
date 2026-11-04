@@ -22,7 +22,8 @@ final class SubmitBanView extends View
     /**
      * @param list<array<string,mixed>> $server_list Each row has at
      *     least `sid` (int) and `hostname` (string), populated from
-     *     `:prefix_servers` plus a SourceQuery hostname lookup in
+     *     `:prefix_servers` plus a cached A2S hostname lookup
+     *     (`Sbpp\Servers\SourceQueryCache`) in
      *     `web/pages/page.submit.php`. The template iterates as
      *     `{$server.sid}` / `{$server.hostname}`.
      * @param int $server_selected `sid` of the server the submitter
