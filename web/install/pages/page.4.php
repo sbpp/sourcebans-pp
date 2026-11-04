@@ -61,19 +61,14 @@ try {
     $sql = (string) file_get_contents($strucPath);
     $sql = str_replace(['{prefix}', '{charset}'], [$prefix, $charset], $sql);
 
-    $stmts = explode(';', $sql);
     $errCount = 0;
-    foreach ($stmts as $stmt) {
-        $trimmed = trim($stmt);
-        if (strlen($trimmed) <= 2) {
-            continue;
-        }
-        $db->query($trimmed);
+    foreach (sbpp_install_split_sql($sql) as $stmt) {
+        $db->query($stmt);
         if (!$db->execute()) {
             $errCount++;
             continue;
         }
-        if (preg_match('/^\s*CREATE\s+TABLE/i', $trimmed) === 1) {
+        if (preg_match('/^\s*CREATE\s+TABLE/i', $stmt) === 1) {
             $tablesCreated++;
         }
     }

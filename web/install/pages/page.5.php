@@ -111,12 +111,8 @@ if ($posted) {
             $sql = (string) file_get_contents($dataPath);
             $sql = str_replace('{prefix}', $prefix, $sql);
 
-            foreach (explode(';', $sql) as $stmt) {
-                $trimmed = trim($stmt);
-                if (strlen($trimmed) <= 2) {
-                    continue;
-                }
-                $db->query($trimmed);
+            foreach (sbpp_install_split_sql($sql) as $stmt) {
+                $db->query($stmt);
                 $db->execute();
             }
 

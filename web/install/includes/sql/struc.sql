@@ -252,10 +252,6 @@ CREATE TABLE IF NOT EXISTS `{prefix}_login_tokens` (
 -- ban-row churn (a re-ban or unban makes a new bid — notes follow the
 -- player). The Notes pane in the drawer is admin-only — `is_admin()`
 -- gates both the JSON actions and the tab visibility.
--- NOTE: this comment block must contain no semicolon characters.
--- The installer (page.4.php) splits struc.sql on every semicolon
--- before it reaches MariaDB, so a stray one mid-comment cuts the
--- block in half and breaks the next CREATE TABLE (#1221).
 CREATE TABLE IF NOT EXISTS `{prefix}_notes` (
     `nid` int(10) NOT NULL AUTO_INCREMENT,
     `steam_id` varchar(64) character set {charset} NOT NULL DEFAULT '',

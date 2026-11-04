@@ -212,3 +212,117 @@ function sbpp_install_translate_pdo_error(
         default => 'Could not connect to the database: ' . $e->getMessage(),
     };
 }
+
+/**
+ * Split a rendered SQL file (struc.sql / data.sql) into statements.
+ *
+ * Steps 4 and 5 run their SQL file one statement at a time through
+ * `\Database`, so the wizard has to find the statement boundaries
+ * itself. Pre-#1224 both steps did `explode(';', $sql)`, which also
+ * cut on a `;` inside a comment or a string literal: #1221 was a
+ * `;` in a `--` comment in struc.sql, which broke the next
+ * CREATE TABLE on every fresh install.
+ *
+ * This is a small lexer, not a SQL parser. It tracks the four
+ * contexts MariaDB treats as opaque and only splits on a `;`
+ * outside all of them:
+ *
+ *  - `'…'` / `"…"` string literals, with backslash escapes (the
+ *    server default; neither SQL file's `sql_mode` enables
+ *    NO_BACKSLASH_ESCAPES) and doubled-quote escapes;
+ *  - `` `…` `` quoted identifiers;
+ *  - `-- ` and `#` line comments;
+ *  - `/* … *\/` block comments.
+ *
+ * Comments are dropped from the returned statements, so a
+ * comment-only chunk (e.g. a trailing comment block after the last
+ * `;`) never reaches the server as an empty query, and each
+ * statement starts with its first keyword (step 4 counts
+ * `CREATE TABLE` statements by prefix). The exceptions are
+ * MariaDB's executable comments (`/*! … *\/`, `/*M! … *\/`) and
+ * optimizer hints (`/*+ … *\/`): they carry SQL the server runs,
+ * so they are kept verbatim.
+ *
+ * Same approach as `sb_split_sql()` in `docker/php/sb-db.php` (the
+ * Docker image's first-boot installer), which isn't part of the
+ * release zip, so the wizard can't share it. The differences: this
+ * one drops comments (see above) and follows MariaDB's rule that
+ * `--` needs trailing whitespace to open a comment.
+ *
+ * `DELIMITER` (client-side, mysql CLI only) is not supported; the
+ * SQL files don't use stored routines.
+ *
+ * @return list<string> Trimmed, non-empty statements without the
+ *                      terminating `;`.
+ */
+function sbpp_install_split_sql(string $sql): array
+{
+    $statements = [];
+    $current    = '';
+    $length     = strlen($sql);
+    $i          = 0;
+
+    while ($i < $length) {
+        $char = $sql[$i];
+        $next = $sql[$i + 1] ?? '';
+
+        if ($char === "'" || $char === '"' || $char === '`') {
+            // Scan to the matching close quote. A doubled quote
+            // (`''`, `""`, ` `` `) closes and immediately reopens
+            // the literal, so it needs no special case. Backslash
+            // escapes apply to string literals only, not to
+            // backtick-quoted identifiers.
+            $end = $i + 1;
+            while ($end < $length && $sql[$end] !== $char) {
+                $end += ($char !== '`' && $sql[$end] === '\\') ? 2 : 1;
+            }
+            $end = min($end + 1, $length);
+            $current .= substr($sql, $i, $end - $i);
+            $i = $end;
+            continue;
+        }
+
+        // `--` only opens a comment when followed by whitespace or
+        // the end of input (MariaDB's rule), so `1--1` stays an
+        // expression.
+        if ($char === '#' || ($char === '-' && $next === '-' && ($i + 2 >= $length || ctype_space($sql[$i + 2])))) {
+            $end = strpos($sql, "\n", $i);
+            $i   = $end === false ? $length : $end;
+            continue;
+        }
+
+        if ($char === '/' && $next === '*') {
+            $end = strpos($sql, '*/', $i + 2);
+            $end = $end === false ? $length : $end + 2;
+            $third = $sql[$i + 2] ?? '';
+            if ($third === '!' || $third === '+' || ($third === 'M' && ($sql[$i + 3] ?? '') === '!')) {
+                $current .= substr($sql, $i, $end - $i);
+            } else {
+                // Keep the tokens on either side apart.
+                $current .= ' ';
+            }
+            $i = $end;
+            continue;
+        }
+
+        if ($char === ';') {
+            $statement = trim($current);
+            if ($statement !== '') {
+                $statements[] = $statement;
+            }
+            $current = '';
+            $i++;
+            continue;
+        }
+
+        $current .= $char;
+        $i++;
+    }
+
+    $statement = trim($current);
+    if ($statement !== '') {
+        $statements[] = $statement;
+    }
+
+    return $statements;
+}
