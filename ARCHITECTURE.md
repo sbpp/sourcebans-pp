@@ -628,8 +628,7 @@ companion changes:
   text — acceptable degradation for a security fix.
 - The settings UI swapped the TinyMCE WYSIWYG for a plain `<textarea>`
   with a Markdown cheat-sheet link; the static `web/includes/tinymce/`
-  bundle is no longer referenced and its directory is a follow-up
-  cleanup.
+  bundle it no longer referenced has since been removed.
 
 ### Server query cache (`includes/Servers/`)
 

@@ -177,30 +177,7 @@ rest of the panel is governed by `LICENSE.txt`.
   OTHER DEALINGS IN THE SOFTWARE.
 
 --------------------------------------------------------------------
-5. TinyMCE (`web/includes/tinymce/`)
---------------------------------------------------------------------
-
-  Copyright (C) Tiny Technologies, Inc. All rights reserved.
-  Project URL:  https://www.tiny.cloud/
-  Version:      5.4.2 (2020-08-17)
-  Licensed under: GNU Lesser General Public License v2.1
-                  (the LGPL or a commercial Tiny licence)
-
-TinyMCE is a third-party rich-text editor vendored under
-`web/includes/tinymce/`. The verbatim LGPL v2.1 text is preserved
-under `web/includes/tinymce/license.txt`.
-
-TinyMCE is no longer reachable from the panel's UI (the v2.0
-rewrite migrated admin-authored display text to plain `<textarea>`
-+ Markdown via `Sbpp\Markup\IntroRenderer` — see "Anti-patterns" /
-WYSIWYG in `AGENTS.md` for the rationale, which traces back to
-the stored-XSS vector in #1113). The directory is retained for
-self-hosters running custom theme forks that still wire the
-editor in. A future PR will remove the directory once the
-fork-fallout window has elapsed.
-
---------------------------------------------------------------------
-6. SourceMod (runtime dependency of the bundled plugins)
+5. SourceMod (runtime dependency of the bundled plugins)
 --------------------------------------------------------------------
 
   Copyright (C) 2006-present AlliedModders LLC. All rights reserved.
@@ -249,7 +226,7 @@ LLC and is reproduced here under the spirit of GPLv3 §7 (additional
 permissions).
 
 --------------------------------------------------------------------
-7. Composer dependencies (`web/composer.json`)
+6. Composer dependencies (`web/composer.json`)
 --------------------------------------------------------------------
 
 The panel's runtime PHP dependencies (`smarty/smarty`, `lcobucci/jwt`,
