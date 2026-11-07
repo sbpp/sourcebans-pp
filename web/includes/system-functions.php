@@ -241,12 +241,34 @@ function SecondsToString(int $sec, bool $textual = true): string
 }
 
 /**
- * Look up the ISO country code for `$ip` against the bundled MaxMind
- * country DB. Returns the placeholder `"zz"` on any failure (missing
- * DB, malformed IP, MaxMind exception).
+ * True when an operator-supplied MaxMind country database is readable
+ * at `MMDB_PATH`. The panel doesn't ship one (#1614, GeoLite EULA), so
+ * this gates every country lookup and the footer attribution: with no
+ * database the GeoIP feature is off.
+ */
+function GeoIpAvailable(?string $path = null): bool
+{
+    if ($path === null) {
+        if (!defined('MMDB_PATH')) {
+            return false;
+        }
+        $path = (string) constant('MMDB_PATH');
+    }
+    return $path !== '' && @is_file($path) && @is_readable($path);
+}
+
+/**
+ * Look up the ISO country code for `$ip` against the operator-supplied
+ * MaxMind country DB. Returns the placeholder `"zz"` on any failure
+ * (missing DB, malformed IP, MaxMind exception). Callers that cache the
+ * result must check `GeoIpAvailable()` first so a missing database
+ * doesn't get recorded as "unknown country".
  */
 function FetchIp(string $ip): string
 {
+    if (!GeoIpAvailable()) {
+        return 'zz';
+    }
     try {
         $reader = new Reader(MMDB_PATH);
         $row    = $reader->get($ip);

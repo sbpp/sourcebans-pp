@@ -65,6 +65,12 @@ Temporary Items
 !/web/demos/.gitkeep
 !/web/demos/.htaccess
 
+# GeoLite2 country database (#1614). Operators download it themselves
+# under MaxMind's EULA, which forbids redistribution, so a copy must
+# never be committed or shipped in a release.
+/web/data/*
+!/web/data/.htaccess
+
 # Local stash file used by the install-screenshot capture flow
 # (`docs/README.md` → "Capturing screenshots"). Gitignored so an
 # interrupted run never leaks the panel's DB credentials into a

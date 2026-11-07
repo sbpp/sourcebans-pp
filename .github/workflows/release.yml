@@ -196,6 +196,10 @@ jobs:
       #   - demos/.htaccess — blocks direct web access to uploaded
       #     demos on Apache tarball installs. It's a dotfile inside a
       #     gitignored directory, so it's the easiest file to lose.
+      #   - data/.htaccess — same, for an operator-supplied GeoLite2
+      #     database (#1614).
+      # It also fails if any MaxMind `.mmdb` database made it into the
+      # zip: the GeoLite EULA forbids redistributing it (#1614).
       - name: Verify required files are bundled in the zip
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
@@ -206,12 +210,17 @@ jobs:
               "${pkg}/LICENSE.txt" \
               "${pkg}/LICENSE-plugins.txt" \
               "${pkg}/THIRD-PARTY-NOTICES.txt" \
-              "${pkg}/demos/.htaccess"; do
+              "${pkg}/demos/.htaccess" \
+              "${pkg}/data/.htaccess"; do
               if ! unzip -l "${pkg}.zip" "${f}" >/dev/null 2>&1; then
                   echo "::error::Missing required artifact file in ${pkg}.zip: ${f}"
                   missing=1
               fi
           done
+          if unzip -Z1 "${pkg}.zip" | grep -i '\.mmdb$'; then
+              echo "::error::${pkg}.zip contains a MaxMind .mmdb database. GeoLite data must not be redistributed (#1614)."
+              missing=1
+          fi
           if [ "$missing" -ne 0 ]; then
               echo "::error::Webpanel zip is missing required bundled files; release would ship broken or ELv2-non-compliant to self-hosters."
               exit 1

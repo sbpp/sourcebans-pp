@@ -98,6 +98,10 @@ final class AdminSettingsView extends View
         public readonly int $config_default_page,
         public readonly bool $banlist_hideadmname,
         public readonly bool $banlist_nocountryfetch,
+        // #1614: whether an operator-supplied GeoLite2 country database
+        // is readable at MMDB_PATH. The panel no longer ships one; the
+        // template explains how to add it when this is false.
+        public readonly bool $geoip_available,
         public readonly bool $banlist_hideplayerips,
         public readonly bool $config_smtp_verify_peer,
         // #1455: pre-populated recipient for the SMTP test-email

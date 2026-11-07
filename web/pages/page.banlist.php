@@ -869,7 +869,12 @@ if ($viewCommentsEnabled && $banIds !== []) {
 // local DB file), but the write-back that caches the resolved country
 // on `:prefix_bans` is queued here and flushed as ONE batched UPDATE
 // after the loop instead of one UPDATE per row.
+//
+// #1614: the database is operator-supplied and may be absent. Without
+// it the lookup is skipped and nothing is written back, so rows aren't
+// permanently cached as "zz" and resolve once the operator adds it.
 $pendingCountryUpdates = [];
+$geoipLookup           = !Config::getBool('banlist.nocountryfetch') && GeoIpAvailable();
 
 foreach ($res as $row) {
     $data = [];
@@ -879,7 +884,7 @@ foreach ($res as $row) {
     if (!empty($row['ban_ip']) && !Config::getBool('banlist.nocountryfetch')) {
         if (!empty($row['ban_country']) && $row['ban_country'] != ' ') {
             $data['country'] = '<img src="images/country/' . strtolower($row['ban_country']) . '.png" alt="' . $row['ban_country'] . '" border="0" align="absmiddle" />';
-        } elseif (!Config::getBool('banlist.nocountryfetch')) {
+        } elseif ($geoipLookup) {
             $country = FetchIp($row['ban_ip']);
             $pendingCountryUpdates[(int) $row['ban_id']] = $country;
 

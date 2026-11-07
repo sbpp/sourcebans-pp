@@ -14,6 +14,11 @@ $theme->assign('git', SB_GITREV ? ' | Git: '.SB_GITREV : '');
 $theme->assign('version', SB_VERSION);
 $theme->assign('query', !empty($GLOBALS['server_qry']) ? $GLOBALS['server_qry'] : '');
 
+// #1614: MaxMind's GeoLite EULA asks for attribution wherever GeoLite
+// data is shown. The database is operator-supplied, so the line only
+// renders when one is present at MMDB_PATH.
+$theme->assign('geoip_attribution', GeoIpAvailable());
+
 // Issue #1304: server-render the command palette's "Navigate" entries
 // as a permission-filtered JSON blob the chrome emits inside a
 // `<script type="application/json" id="palette-actions">` tag in

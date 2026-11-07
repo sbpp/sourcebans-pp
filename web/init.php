@@ -21,8 +21,6 @@ define('SB_ICONS', ROOT . SB_ICON_LOCATION);
 define('SB_THEMES', ROOT . 'themes/');
 define('SB_CACHE', ROOT . 'cache/');
 
-define("MMDB_PATH", ROOT . 'data/GeoLite2-Country.mmdb');
-
 define('IN_SB', true);
 
 // Browsers must never content-sniff a panel response into HTML or
@@ -74,6 +72,29 @@ if (!file_exists($sbppConfigPath)) {
     exit;
 }
 require_once($sbppConfigPath);
+
+// GeoIP country database (#1614). Not shipped with the panel: MaxMind's
+// GeoLite EULA forbids redistribution and requires every copy to be
+// replaced within 30 days of each new MaxMind release, which a file in
+// the release zip can't do. Operators download it themselves (usually
+// via geoipupdate) and point the panel at it. Resolution order:
+//   1. `define('MMDB_PATH', '/var/lib/GeoIP/GeoLite2-Country.mmdb');`
+//      in config.php (loaded just above, so it wins).
+//   2. `SBPP_GEOIP_PATH` env var (Docker image, mirrors
+//      `SBPP_CONFIG_PATH`).
+//   3. The legacy `web/data/GeoLite2-Country.mmdb` location.
+// When no readable file exists at the resolved path, `GeoIpAvailable()`
+// returns false and the country lookup is skipped entirely.
+if (!defined('MMDB_PATH')) {
+    $sbppGeoipEnv = getenv('SBPP_GEOIP_PATH');
+    define(
+        'MMDB_PATH',
+        is_string($sbppGeoipEnv) && $sbppGeoipEnv !== ''
+            ? $sbppGeoipEnv
+            : ROOT . 'data/GeoLite2-Country.mmdb',
+    );
+    unset($sbppGeoipEnv);
+}
 
 // SBPP_TRUSTED_PROXIES (#1381 CRIT-4): operator-defined list of
 // CIDR ranges whose `X-Forwarded-Proto` / `X-Forwarded-For` the

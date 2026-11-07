@@ -448,6 +448,7 @@ if ($section === 'themes') {
         config_bans_per_page:        (int) SB_BANS_PER_PAGE,
         banlist_hideadmname:         Config::getBool('banlist.hideadminname'),
         banlist_nocountryfetch:      Config::getBool('banlist.nocountryfetch'),
+        geoip_available:             GeoIpAvailable(),
         banlist_hideplayerips:       Config::getBool('banlist.hideplayerips'),
         bans_customreason:           $customReasons,
         config_smtp:                 $smtpTuple,
