@@ -693,7 +693,7 @@ public Action CommandUnban(int client, int args)
 	char steam3[MAX_AUTHID_LENGTH];
 	if (isSteamId && !Steam2ToSteam3(arg, steam3, sizeof(steam3)))
 	{
-		ReplyToCommand(client, "%sInvalid SteamID %s, expected STEAM_[01]:[01]:Z", Prefix, arg);
+		ReplyToCommand(client, "%s%t", Prefix, "Invalid SteamID", arg);
 		return Plugin_Handled;
 	}
 
@@ -785,9 +785,11 @@ public Action CommandAddBan(int client, int args)
 	char steam3[MAX_AUTHID_LENGTH];
 	if (!Steam2ToSteam3(authid, steam3, sizeof(steam3)))
 	{
-		ReplyToCommand(client, "%sInvalid SteamID %s, expected STEAM_[01]:[01]:Z", Prefix, authid);
+		ReplyToCommand(client, "%s%t", Prefix, "Invalid SteamID", authid);
 		return Plugin_Handled;
 	}
+	// Stored as STEAM_0, like the web panel stores SteamIDs
+	authid[6] = '0';
 
 	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
 	{
@@ -1468,19 +1470,19 @@ public void SelectUnbanCallback(Database db, DBResultSet results, const char[] e
 		return;
 	}
 
-	// There is ban
-	if (results != null && results.FetchRow())
+	// Every active ban that matches, as there can be more than one, e.g. of either universe: the connect
+	// check would still find one that's left
+	char bids[512];
+	for (int i = 0; results.FetchRow(); i++)
 	{
-		// Get the values from the existing ban record
-		int bid = results.FetchInt(0);
-
-		char query[1024];
-		Format(query, sizeof(query), "UPDATE %s_bans SET RemovedBy = (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), RemoveType = 'U', RemovedOn = UNIX_TIMESTAMP(), ureason = '%s' WHERE bid = %d",
-			DatabasePrefix, DatabasePrefix, adminAuth, adminAuth[8], unbanReason, bid);
-
-		db.Query(InsertUnbanCallback, query, dataPack);
+		Format(bids, sizeof(bids), "%s%s%d", bids, i ? "," : "", results.FetchInt(0));
 	}
-	return;
+
+	char query[1024];
+	Format(query, sizeof(query), "UPDATE %s_bans SET RemovedBy = (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), RemoveType = 'U', RemovedOn = UNIX_TIMESTAMP(), ureason = '%s' WHERE bid IN (%s)",
+		DatabasePrefix, DatabasePrefix, adminAuth, adminAuth[8], unbanReason, bids);
+
+	db.Query(InsertUnbanCallback, query, dataPack);
 }
 
 public void InsertUnbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
