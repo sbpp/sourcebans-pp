@@ -1052,8 +1052,7 @@ input[type="checkbox"]:checked::after {
 /* Defensive paint for the indeterminate state (review nit on #1276):
    `appearance: none` strips the OS-native paint, so a checkbox with
    `el.indeterminate = true` would otherwise fall back to the
-   unchecked look. No panel surface sets `.indeterminate` today —
-   only the bundled tinymce skin references the keyword — but the
+   unchecked look. No panel surface sets `.indeterminate` today, but the
    gap is real, so paint a centered horizontal-bar glyph (mirroring
    the `:checked` SVG approach) at the brand colour so the state
    reads like the OS-native indeterminate. `:indeterminate` wins

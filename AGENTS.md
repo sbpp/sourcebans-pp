@@ -3124,13 +3124,13 @@ contributions without contacting every contributor individually.
  (today `LICENSE.txt`, formerly `LICENSE.md`) is the source of
  truth. The source-of-truth attribution surface for upstream
  lineage (SourceBans 1.4.x, SourceComms, InterWave Studios
- theme.conf, LightOpenID, TinyMCE) is `THIRD-PARTY-NOTICES.txt`.
+ theme.conf, LightOpenID) is `THIRD-PARTY-NOTICES.txt`.
  The v2.0 rewrite swept all 36 files onto the 4-line shape; the
  license-name + filename swap from CC-BY-NC-SA / `LICENSE.md` to
  ELv2 / `LICENSE.txt` rode the same PR that landed `LICENSE.txt`.
  New files take the 4-line shape from day one. Files with their
- own licence (`web/includes/Auth/openid.php`,
- `web/includes/tinymce/`) keep their original headers.
+ own licence (`web/includes/Auth/openid.php`) keep their original
+ headers.
 - Inline `echo '<form action="…">'` HTML blobs at the top of
  admin page handlers (`web/pages/admin.edit.<x>.php`) → build a
  typed `Sbpp\View\AdminEdit<X>View` DTO + `Renderer::render()` a
@@ -4565,8 +4565,8 @@ contributions without contacting every contributor individually.
   `web/includes/Auth/openid.php` (third-party). Issue #1290 phase G.
 - `array(…)` literal constructor → `[…]` short-array syntax. PHP 5.4+
   shape; the only reason `array(…)` survived this long was nobody got
-  around to it. Excluded: `web/includes/Auth/openid.php` and
-  `web/includes/tinymce/**` are third-party. Function signatures using
+  around to it. Excluded: `web/includes/Auth/openid.php` is
+  third-party. Function signatures using
   `array $x` as a TYPE HINT are unrelated and stay. Issue #1290 phase H.
 - `if (…) { return true; } return false;` → `return …;`. Three lines
   collapse to one when the condition itself is the boolean. When
