@@ -39,8 +39,9 @@ final class DispatcherTest extends ApiTestCase
         // system.check_version is registered as public (it just hits a remote URL).
         // We only assert that the dispatcher allows the call to proceed.
         $env = $this->api('system.check_version', []);
-        // External fetch may fail in CI; the envelope should still be OK
-        // (the handler gracefully encodes "Error" strings).
+        // The bootstrap's SB_RELEASE_LATEST_URL makes the fetch fail; the
+        // envelope should still be OK (the handler gracefully encodes
+        // "Error" strings).
         $this->assertTrue($env['ok'], 'expected ok envelope, got ' . json_encode($env));
         $this->assertArrayHasKey('release_latest', $env['data']);
     }

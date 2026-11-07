@@ -22,6 +22,11 @@ define('SB_DEMOS', ROOT . SB_DEMO_LOCATION);
 define('SB_ICONS', ROOT . SB_ICON_LOCATION);
 define('SB_THEMES', ROOT . 'themes/');
 define('SB_CACHE',  ROOT . 'cache/');
+// system.check_version's upstream (api.github.com by default) is a port
+// nothing listens on, so no test reaches the network and an uncached
+// fetch fails at once (ECONNREFUSED, no 5s timeout). Tests that need a
+// release seed the cache instead.
+define('SB_RELEASE_LATEST_URL', 'http://127.0.0.1:1/');
 define('MMDB_PATH', ROOT . 'data/GeoLite2-Country.mmdb');
 
 define('DB_HOST',    getenv('DB_HOST')    ?: 'db');
