@@ -82,6 +82,12 @@ final class AdminGroupsListView extends View
      *     and `api_groups_edit` ignores the field for type=web, so the
      *     master-detail editor never surfaces it; SourceMod admin groups
      *     (`:prefix_srvgroups`) keep their immunity surface elsewhere.
+     * @param string $web_groups_catalog_json JSON array of
+     *     `{gid, name, flags, member_count}` for every web group. The
+     *     master-detail client paints the right pane from this catalog
+     *     on left-rail clicks so selecting a group does not require a
+     *     full page navigation. Empty array string `"[]"` when the
+     *     directory is empty.
      */
     public function __construct(
         public readonly bool $permission_listgroups,
@@ -103,6 +109,7 @@ final class AdminGroupsListView extends View
         public readonly array $server_list,
         public readonly array $all_flags,
         public readonly ?array $selected_group,
+        public readonly string $web_groups_catalog_json = '[]',
     ) {
     }
 }
