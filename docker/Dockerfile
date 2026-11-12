@@ -25,8 +25,17 @@ RUN apt-get update \
         intl \
         zip \
         mbstring \
+ && apt-get install -y --no-install-recommends --only-upgrade \
+        apache2 apache2-bin apache2-data apache2-utils \
  && a2enmod rewrite headers \
+ && a2dismod -f http2 \
  && rm -rf /var/lib/apt/lists/*
+
+# The apt step above also upgrades Debian's apache2 packages (the base
+# image lags Debian security; 2.4.71 fixes CVE-2026-119618 in
+# mod_http2) and turns mod_http2 off. Dev serves plain HTTP/1.1 on
+# :8080, so nothing here needs HTTP/2. Dockerfile.prod enforces a hard
+# version floor; dev doesn't, so an offline rebuild still works.
 
 # opcache is bundled into PHP 8.5 core (no longer a separate ext module);
 # `docker-php-ext-install opcache` fails on the 8.5 image with

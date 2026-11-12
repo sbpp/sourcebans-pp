@@ -139,8 +139,24 @@ RUN apt-get update \
         zip \
         mbstring \
         gmp \
+ && apt-get install -y --no-install-recommends --only-upgrade \
+        apache2 apache2-bin apache2-data apache2-utils \
  && a2enmod rewrite headers remoteip setenvif \
+ && a2dismod -f http2 \
  && rm -rf /var/lib/apt/lists/*
+
+# Same idea for Apache. The `php:8.5-apache` base installs Debian's
+# apache2 package and is not rebuilt the moment Debian ships a security
+# fix, so the apt step above upgrades the apache2 packages from
+# Debian security and this check refuses to publish anything older.
+# 2.4.71 fixes CVE-2026-119618 (mod_http2 unauthenticated RCE) plus
+# CVE-2026-106023 (mod_md) and CVE-2026-109163 (mod_vhost_alias).
+# Debian's fixed builds are `2.4.71-1~deb13u1` and later, which
+# compare >= 2.4.71. Bump the floor on the next httpd security release.
+ARG APACHE_MIN_VERSION=2.4.71
+RUN v="$(dpkg-query -W -f='${Version}' apache2-bin)" \
+ && { dpkg --compare-versions "$v" ge "${APACHE_MIN_VERSION}" \
+      || { echo "apache2-bin $v is below the security floor ${APACHE_MIN_VERSION}; Debian security has not shipped the fix to this base yet." >&2; exit 1; }; }
 
 # Production PHP tuning. `display_errors=Off` + `log_errors=On` follows
 # 12-factor (errors to stderr; the orchestrator captures them).
@@ -177,11 +193,17 @@ COPY docker/apache/sbpp-prod.conf /etc/apache2/conf-available/zz-sbpp-prod.conf
 RUN a2enconf zz-sbpp-prod
 
 # Server-Tokens trim — don't leak the Apache version + module list in
-# error pages or the Server: header.
+# error pages or the Server: header. `Protocols http/1.1` pins the
+# image to HTTP/1.1: mod_php needs the prefork MPM, which mod_http2
+# can't serve well anyway, and TLS / HTTP/2 belong on the reverse proxy
+# in front of the container (see docker/caddy/Caddyfile.example).
+# Together with `a2dismod http2` above this keeps mod_http2 bugs such
+# as CVE-2026-119618 unreachable even on an older Apache.
 RUN { \
         echo 'ServerTokens Prod'; \
         echo 'ServerSignature Off'; \
         echo 'TraceEnable Off'; \
+        echo 'Protocols http/1.1'; \
     } > /etc/apache2/conf-available/zz-sbpp-tokens.conf \
  && a2enconf zz-sbpp-tokens
 
