@@ -259,7 +259,15 @@ async function loginAsAdmin(page) {
     .first()
     .fill(ADMIN_PASS);
   await Promise.all([
-    page.waitForLoadState('networkidle'),
+    // The login form submits through the JSON API, then assigns
+    // window.location. Waiting on the current document's already-settled
+    // load state returns immediately and races that redirect, so the first
+    // authenticated capture can abort while the remaining routes paint the
+    // login wall.
+    page.waitForURL(
+      (url) => url.searchParams.get('p') !== 'login',
+      { waitUntil: 'networkidle', timeout: 15_000 },
+    ),
     page.locator('button[type="submit"], input[type="submit"]').first().click(),
   ]);
 }

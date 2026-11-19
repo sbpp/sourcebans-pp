@@ -165,7 +165,10 @@ function parseDocblock(string $raw): array
 
     while ($i < count($clean)) {
         $line = $clean[$i];
-        if (preg_match('/^@param\s+(\S+)\s+\$(\w+)/', $line, $pm)) {
+        // Capture the complete type up to `$name`. Array shapes commonly
+        // contain spaces after commas/colons, so `\S+` truncates them and
+        // silently drops their generated request contract.
+        if (preg_match('/^@param\s+(.+?)\s+\$(\w+)(?:\s+.*)?$/', $line, $pm)) {
             $type = $pm[1];
             $name = $pm[2];
             $i++;
@@ -368,6 +371,16 @@ function renderParamsType(array $params): ?string
 {
     if ($params === []) {
         return null;
+    }
+    // API handlers receive one associative `$params` array, while callers
+    // pass that array's fields directly to sb.api.call(). Unwrap a documented
+    // array shape so the generated request describes the wire payload rather
+    // than the nonexistent `{params: {...}}` wrapper.
+    if (count($params) === 1 && $params[0]['name'] === 'params') {
+        $wireType = phpTypeToJsdoc($params[0]['type']);
+        if (str_starts_with($wireType, '{') && str_ends_with($wireType, '}')) {
+            return $wireType;
+        }
     }
     $bits = [];
     foreach ($params as $p) {

@@ -93,6 +93,6 @@ see **License** below.
   [Discord](https://discord.gg/tzqYqmAtF5).
 - **SourceMod plugins** (everything under `game/addons/sourcemod/`):
   [GPLv3](LICENSE-plugins.txt).
-- **Vendored third-party code** (LightOpenID, TinyMCE, the
-  SourceBans 1.4.x lineage, etc.) keeps its own license terms; see
+- **Vendored third-party code** (LightOpenID, the SourceBans
+  1.4.x lineage, etc.) keeps its own license terms; see
   [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).

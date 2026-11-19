@@ -12,7 +12,7 @@ declare(strict_types=1);
  *
  * `:prefix_demos` carries one row per uploaded demo with:
  *   - demtype  enum('B','S')  — B = Ban, S = Submission
- *   - demid    int            — fk to :prefix_bans.bid OR :prefix_submissions.id
+ *   - demid    int            — fk to :prefix_bans.bid OR :prefix_submissions.subid
  *   - filename text           — server-side basename under SB_DEMOS
  *   - origname text           — display name shown to the downloader
  *
@@ -23,10 +23,10 @@ declare(strict_types=1);
  *      column might carry (tampered DB row, partial migration). We don't
  *      run user-supplied paths through this — but we DO run a row a DB
  *      compromise could have rewritten, so the LFI guard is layered.
- *   2. `in_array(scandir(SB_DEMOS), …, true)` ensures the file we resolve
- *      is actually one of the listed demos in the directory — symlinks
- *      pointing outside SB_DEMOS aren't valid even if `file_exists()`
- *      would have accepted them.
+ *   2. `in_array(scandir(SB_DEMOS), …, true)` ensures the requested
+ *      basename is present in the demo directory.
+ *   3. `is_link()` rejects symlinks, then `realpath()` containment proves
+ *      the canonical file path remains under the canonical demo root.
  *
  * Different from the legacy 1.x entry point (the rewrite does not
  * trace structurally back):
@@ -50,7 +50,7 @@ const DEMO_TYPE_SUBMISSION = 'S';
 
 /**
  * Emit a plain-text error to the downloader and stop. The endpoint is
- * not reached from a panel surface, so we don't carry chrome.
+ * a binary response outside the page renderer, so errors do not carry chrome.
  */
 function getdemo_die(int $status, string $message): never
 {
@@ -99,11 +99,31 @@ if (!$row) {
 $onDisk = basename((string) $row['filename']);
 $origin = (string) ($row['origname'] ?? '') !== '' ? (string) $row['origname'] : $onDisk;
 $path   = SB_DEMOS . '/' . $onDisk;
-
-$listing = is_dir(SB_DEMOS) ? scandir(SB_DEMOS) : false;
-if ($listing === false || !in_array($onDisk, $listing, true) || !is_file($path)) {
+if ($onDisk === '' || str_contains($onDisk, "\0")) {
     getdemo_die(404, 'Demo file is no longer on disk.');
 }
+
+// SECURITY-REVIEW: the filename originates in an upload-backed database
+// row. Reject links and require canonical root containment before reading.
+$listing = is_dir(SB_DEMOS) ? scandir(SB_DEMOS) : false;
+$demoRoot = realpath(SB_DEMOS);
+$resolvedPath = realpath($path);
+$insideDemoRoot = $demoRoot !== false
+    && $resolvedPath !== false
+    && str_starts_with(
+        $resolvedPath,
+        rtrim($demoRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR,
+    );
+if (
+    $listing === false
+    || !in_array($onDisk, $listing, true)
+    || is_link($path)
+    || !$insideDemoRoot
+    || !is_file($resolvedPath)
+) {
+    getdemo_die(404, 'Demo file is no longer on disk.');
+}
+$path = $resolvedPath;
 
 $size = filesize($path);
 if ($size === false) {

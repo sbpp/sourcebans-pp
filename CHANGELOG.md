@@ -116,6 +116,9 @@ Legend:
         `SBPP_OnClientPostAdminCheck` (#1431). Plugins that only call
         existing SBPP ban/report forwards/natives can usually keep their
         existing `.smx`. ([#1114](https://github.com/sbpp/sourcebans-pp/issues/1114))
+37. * `SBPP_BanPlayerBySteamId` SourceMod native for adding a ban after
+        the target disconnects. This raises `SOURCEBANSPP_VERSION_MINOR`
+        to `1` (#1511).
 ```
 
 ### Privacy

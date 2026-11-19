@@ -25,7 +25,6 @@
         </include>
         <exclude>
             <directory>includes/vendor</directory>
-            <directory>includes/tinymce</directory>
         </exclude>
     </source>
     <php>

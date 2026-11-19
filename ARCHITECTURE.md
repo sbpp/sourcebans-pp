@@ -60,7 +60,12 @@ plugins are stable and updated less often.
 - **league/commonmark** for safely rendering admin-authored Markdown
   (dashboard intro text — see `Sbpp\Markup\IntroRenderer`).
 - **xpaw/php-source-query-class** for live server queries.
-- **maxmind-db/reader** for IP→country lookups (`web/data/GeoLite2-Country.mmdb`).
+- **maxmind-db/reader** for IP→country lookups against an operator-supplied
+  GeoLite2-Country database at `MMDB_PATH` (config.php define →
+  `SBPP_GEOIP_PATH` env → `web/data/GeoLite2-Country.mmdb`). The panel
+  doesn't ship the database (#1614, GeoLite EULA); `GeoIpAvailable()` in
+  `system-functions.php` gates the lookup, the banlist country write-back,
+  and the footer attribution, so the feature is off without it.
 - **Vanilla JavaScript** on the client — no framework, no bundler. Files
   carry `// @ts-check` and are type-checked with `tsc --checkJs`.
 
@@ -75,7 +80,8 @@ web/
 ├── config.php.template   Template the installer + dev entrypoint render
 ├── exportbans.php        Public ban-list export (CSV/XML)
 ├── export.php            Full data export (owner-only ZIP bundle; see includes/Export/)
-├── getdemo.php           Demo file download
+├── getdemo.php           Demo file download (the only way demos are served)
+├── demos/                Uploaded demos, random 32-hex names; .htaccess + Apache confs deny direct access
 │
 ├── api/handlers/         JSON API: one file per topic, _register.php wires them
 ├── pages/                Page handlers (procedural .php, included by build())
@@ -103,7 +109,7 @@ web/
 │   ├── Servers/              Sbpp\Servers\{SourceQueryCache, RconStatusCache} — per-(ip, port) cache around the xPaw A2S probe (#1311) + per-sid cache around the RCON `status` command (#PLAYER_CTX_MENU)
 │   ├── Upload/               Sbpp\Upload\UploadHandler — shared file-upload handler (perm + CSRF + extension allowlist + filename sanitiser + popup chrome) for the demo / icon / mapimage popup pages
 │   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum
-│   ├── Telemetry/            Sbpp\Telemetry\{Telemetry,Schema1} — anonymous opt-out daily ping (#1126); schema-1.lock.json is the vendored cross-repo contract
+│   ├── Telemetry/            Sbpp\Telemetry\{Telemetry,Schema1,HostFingerprint,Region} — anonymous opt-out daily ping (#1126); schema-1.lock.json is the vendored cross-repo contract
 │   ├── Announce/             Sbpp\Announce\{AnnouncementFetcher,Announcement} — anonymous opt-out daily fetch of project news / security advisories from https://sbpp.github.io/announcements.json (source of truth: docs/public/announcements.json); admin-only banner on the home dashboard
 │   ├── Export/               Sbpp\Export\{ManifestBuilder,EntityExporter,BundleWriter,S3PresignedUploader,ExportError,Manifest} — owner-only full data export feature; streamed one-shot ZIP bundle of every row + every uploaded demo; entry point web/export.php (binary wire format, sits at panel-root next to exportbans.php / getdemo.php)
 │   ├── SteamID/              SteamID parsing / vanity-URL resolution
@@ -158,7 +164,9 @@ Both scripts include `init.php` first, which performs identical bootstrap.
 `init.php` does the following, in order:
 
 1. Defines path constants (`ROOT`, `INCLUDES_PATH`, `TEMPLATES_PATH`, …)
-   and the `IN_SB` sentinel that page files check.
+   and the `IN_SB` sentinel that page files check, then sends
+   `X-Content-Type-Options: nosniff` (the prod / dev Apache confs set
+   the same header for static files).
 2. Redirects to `/install/` if `config.php` is missing (the
    wizard is the canonical fresh-install path; #1335 M1 replaced
    the bare-text `die()`). If `install/` or `updater/` are still
@@ -625,8 +633,7 @@ companion changes:
   text — acceptable degradation for a security fix.
 - The settings UI swapped the TinyMCE WYSIWYG for a plain `<textarea>`
   with a Markdown cheat-sheet link; the static `web/includes/tinymce/`
-  bundle is no longer referenced and its directory is a follow-up
-  cleanup.
+  bundle it no longer referenced has since been removed.
 
 ### Server query cache (`includes/Servers/`)
 
@@ -728,13 +735,31 @@ The tick is the issue #1126 contract:
    calls without flipping the user-facing toggle.
 
 The whole `tickIfDue` body is wrapped in `try { … } catch (\Throwable)`
-so telemetry can NEVER hard-fail the request. Pings are never
+so telemetry can NEVER hard-fail the request. Defining
+`SBPP_SKIP_TELEMETRY` before `init.php` skips the tick for that
+request: `/health.php` does this, and so does the docker dev stack's
+`docker/php/dev-prepend.php` for every web request, which keeps local
+dev, E2E, and CI screenshot runs out of the production dataset. Pings are never
 audit-logged either — a flapping endpoint would otherwise generate
 `sb_log` noise that scares admins. Only the enable/disable
 **transitions** are audit-logged (in
 `web/pages/admin.settings.php`'s features POST handler).
 
 `Telemetry::collect()` is the side-effect-free payload builder. The
+shared-hosting signals in the `env` block (SAPI, ini limits,
+`open_basedir`, control-panel dirs, per-user FPM; sbpp/cf-analytics#3)
+come from `Sbpp\Telemetry\HostFingerprint`, which runs every probe
+behind a `Throwable` guard so a host that disables `ini_get` /
+`posix_*` degrades one field instead of losing the ping. Nullable
+fields stay as explicit `null` in `collect()` (stable key set for the
+parity test) and `send()` drops them via `Telemetry::withoutNulls()`,
+because the Worker's validator accepts an absent key but rejects a
+literal `null`. `panel.region` (sbpp/cf-analytics#6) comes from
+`Sbpp\Telemetry\Region`, a hardcoded IANA-zone → continent table fed
+by `config.timezone` (when it's a zone name; pre-2.0 upgrades can
+leave a bare UTC offset there) or else PHP's default timezone; it
+never reads the request. `panel.exported_30d` reads the `Data Export`
+success rows `web/export.php` writes to `:prefix_log`. The
 exact wire format is captured in
 `web/includes/Telemetry/schema-1.lock.json` — a Draft-7 JSON Schema
 vendored byte-for-byte from the [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics)
@@ -1110,7 +1135,9 @@ model:
   Apache, bind-mounting `./web`), `db` (MariaDB 10.11), `adminer`
   (DB UI), and `mailpit` (catch-all SMTP).
 - **`docker/Dockerfile`** layers the PHP extensions, OPcache config, and
-  Composer onto `php:8.5-apache`.
+  Composer onto `php:8.5-apache`, plus `docker/apache/sbpp-dev.conf`
+  (the prod image's `demos/` deny + `nosniff` header, so E2E exercises
+  the same rules).
 - **`docker/php/web-entrypoint.sh`** waits for MariaDB, renders
   `web/config.php` from env vars (only if absent), runs `composer install`
   if `vendor/` is empty, then `exec`s Apache.

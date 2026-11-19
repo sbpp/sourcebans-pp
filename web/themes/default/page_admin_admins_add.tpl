@@ -204,21 +204,14 @@
                                 pills / player counts would only add
                                 visual noise to the checkbox grid.
 
-                                `data-trunchostname="40"` caps the live
-                                hostname server-side: this grid's per-row
-                                card is a FIXED ~18rem wide, so a small
-                                fixed cap keeps a long hostname from
-                                tripping `truncate`'s ellipsis. (The
-                                dashboard widget dropped its cap to `0`
-                                in #1487 because its column is fluid and
-                                CSS sizes the cut to the rendered width;
-                                this grid's column is fixed, so the cap
-                                stays.) The number forwards to
-                                `api_servers_host_players` as the
-                                SourceQuery truncation hint (cheaper
-                                server-side than a JS-side trim because
-                                the handler also htmlspecialchars()'s the
-                                truncated string for `sb.setHTML`).
+                                #1491 limits the grid to two columns and
+                                forwards `data-trunchostname="0"` so the
+                                full live hostname reaches the row. The
+                                dedicated CSS class wraps long hostnames
+                                instead of clipping them, preserving the
+                                distinguishing suffixes operators need
+                                when similarly named servers share a
+                                prefix.
 
                                 Pre-#1405 (post-#1404 cleanup) the row
                                 shipped `<span id="sa{$server.sid}">IP:port</span>`
@@ -237,10 +230,10 @@
                                 helper re-paint it after a UDP probe
                                 failure so the row never goes blank.
                             *}
-                            <div class="grid gap-2"
-                                 style="grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))"
+                            <div class="grid gap-2 admin-server-access-grid"
+                                 data-testid="admin-add-server-access-grid"
                                  data-server-hydrate="auto"
-                                 data-trunchostname="40">
+                                 data-trunchostname="0">
                                 {foreach $server_list as $server}
                                     <label class="flex items-center gap-2 p-3"
                                            style="border:1px solid var(--border);border-radius:var(--radius-md)"
@@ -248,7 +241,7 @@
                                            data-id="{$server.sid}">
                                         <input type="checkbox" id="servers[]" name="servers[]" value="s{$server.sid}"
                                                data-testid="admin-add-server">
-                                        <span class="text-sm font-mono"
+                                        <span class="text-sm font-mono admin-server-access-grid__hostname"
                                               data-testid="server-host"
                                               data-fallback="{$server.ip}:{$server.port}">{$server.ip}:{$server.port}</span>
                                     </label>
@@ -414,7 +407,7 @@
             #1405 — additive replacement: the per-row span above carries
             `[data-testid="server-host"]` + `data-fallback="<ip>:<port>"`
             and the wrapping grid div opts in via
-            `data-server-hydrate="auto"` + `data-trunchostname="40"`. The
+            `data-server-hydrate="auto"` + `data-trunchostname="0"`. The
             shared helper (`<script src>` below, same one driving the
             public servers list / admin Server Management list / dashboard
             Servers widget) fires `Actions.ServersHostPlayers` per row

@@ -367,9 +367,14 @@ var did = 0;
 var dname = "";
 function demo(id, name)
 {
-    $('demo.msg').setHTML("Uploaded: <b>" + name);
     did = id;
     dname = name;
+    // SECURITY-REVIEW: the original upload filename is untrusted. Render it
+    // as text, not HTML, and avoid the removed MooTools `$().setHTML()` API.
+    var message = document.getElementById("demo.msg");
+    if (message) {
+        message.textContent = "Uploaded: " + String(name);
+    }
 }
 
 function changeReason(szListValue)
@@ -475,13 +480,13 @@ window.__sbppApplyBanFields = function (d) {
     if (byId('steam'))      byId('steam').value      = d.steam    || '';
     if (byId('ip'))         byId('ip').value         = d.ip       || '';
     if (byId('txtReason'))  byId('txtReason').value  = '';
-    if (byId('demo.msg'))   byId('demo.msg').innerHTML = '';
+    if (byId('demo.msg'))   byId('demo.msg').textContent = '';
     if (typeof window.selectLengthTypeReason === 'function') {
         window.selectLengthTypeReason(d.length || 0, d.type || 0, d.reason || '');
     }
     if (d.demo) {
-        if (byId('demo.msg')) byId('demo.msg').innerHTML = d.demo.origname || '';
         if (typeof window.demo === 'function') window.demo(d.demo.filename, d.demo.origname);
+        else if (byId('demo.msg')) byId('demo.msg').textContent = String(d.demo.origname || '');
     }
 };
 </script>
@@ -568,14 +573,15 @@ if ($section === 'protests') {
         $protestBids = array_map(static fn ($p) => (int) $p['bid'], $protests);
         $protestBanDetailsByBid = [];
         if ($protestBids !== []) {
-            $placeholders = implode(',', array_fill(0, count($protestBids), '?'));
-            $banRows      = $GLOBALS['PDO']->query(
+            $banRows = $GLOBALS['PDO']->resultsetInList(
                 "SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, email, ad.user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid
                  FROM `:prefix_bans` AS ba
                  LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
                  LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid
-                 WHERE bid IN ($placeholders)"
-            )->resultset($protestBids);
+                 WHERE bid IN (",
+                $protestBids,
+                ')',
+            );
             foreach ($banRows as $banRow) {
                 $protestBanDetailsByBid[(int) $banRow['bid']] = $banRow;
             }
@@ -584,14 +590,15 @@ if ($section === 'protests') {
         $protestPids = array_map(static fn ($p) => (int) $p['pid'], $protests);
         $protestCommentsByPid = [];
         if ($protestPids !== []) {
-            $placeholders = implode(',', array_fill(0, count($protestPids), '?'));
-            $cRows        = $GLOBALS['PDO']->query(
+            $cRows = $GLOBALS['PDO']->resultsetInList(
                 "SELECT bid, cid, aid, commenttxt, added, edittime,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
                  FROM `:prefix_comments` AS C
-                 WHERE type = 'P' AND bid IN ($placeholders) ORDER BY added desc"
-            )->resultset($protestPids);
+                 WHERE type = 'P' AND bid IN (",
+                $protestPids,
+                ') ORDER BY added desc',
+            );
             foreach ($cRows as $cRow) {
                 $protestCommentsByPid[(int) $cRow['bid']][] = $cRow;
             }
@@ -624,8 +631,11 @@ if ($section === 'protests') {
         }
         if (count($delete) > 0) {
             $cnt = count($delete);
-            $placeholders = implode(',', array_fill(0, $cnt, '?'));
-            $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = '2' WHERE bid IN($placeholders) LIMIT $cnt")->execute($delete);
+            $GLOBALS['PDO']->executeInList(
+                "UPDATE `:prefix_protests` SET archiv = '2' WHERE bid IN(",
+                $delete,
+                ") LIMIT $cnt",
+            );
         }
 
         \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansProtestsView(
@@ -684,14 +694,15 @@ if ($section === 'protests') {
         }
         $protestArchivBanDetailsByBid = [];
         if ($protestArchivBids !== []) {
-            $placeholders = implode(',', array_fill(0, count($protestArchivBids), '?'));
-            $banRows      = $GLOBALS['PDO']->query(
+            $banRows = $GLOBALS['PDO']->resultsetInList(
                 "SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, email, ad.user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid
                  FROM `:prefix_bans` AS ba
                  LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
                  LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid
-                 WHERE bid IN ($placeholders)"
-            )->resultset($protestArchivBids);
+                 WHERE bid IN (",
+                $protestArchivBids,
+                ')',
+            );
             foreach ($banRows as $banRow) {
                 $protestArchivBanDetailsByBid[(int) $banRow['bid']] = $banRow;
             }
@@ -700,14 +711,15 @@ if ($section === 'protests') {
         $protestArchivPids = array_map(static fn ($p) => (int) $p['pid'], $protestsarchiv);
         $protestArchivCommentsByPid = [];
         if ($protestArchivPids !== []) {
-            $placeholders = implode(',', array_fill(0, count($protestArchivPids), '?'));
-            $cRows        = $GLOBALS['PDO']->query(
+            $cRows = $GLOBALS['PDO']->resultsetInList(
                 "SELECT bid, cid, aid, commenttxt, added, edittime,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
                  FROM `:prefix_comments` AS C
-                 WHERE type = 'P' AND bid IN ($placeholders) ORDER BY added desc"
-            )->resultset($protestArchivPids);
+                 WHERE type = 'P' AND bid IN (",
+                $protestArchivPids,
+                ') ORDER BY added desc',
+            );
             foreach ($cRows as $cRow) {
                 $protestArchivCommentsByPid[(int) $cRow['bid']][] = $cRow;
             }
@@ -751,9 +763,11 @@ if ($section === 'protests') {
             array_push($protest_list_archiv, $prot);
         }
         if ($protestArchivToMarkDeleted !== []) {
-            $placeholders = implode(',', array_fill(0, count($protestArchivToMarkDeleted), '?'));
-            $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = '2' WHERE pid IN ($placeholders)")
-                ->execute($protestArchivToMarkDeleted);
+            $GLOBALS['PDO']->executeInList(
+                "UPDATE `:prefix_protests` SET archiv = '2' WHERE pid IN (",
+                $protestArchivToMarkDeleted,
+                ')',
+            );
         }
 
         \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansProtestsArchivView(
@@ -834,10 +848,11 @@ if ($section === 'submissions') {
 
         $submissionDemoFilenameBySubid = [];
         if ($submissionSubids !== []) {
-            $placeholders = implode(',', array_fill(0, count($submissionSubids), '?'));
-            $demRows      = $GLOBALS['PDO']->query(
-                "SELECT demid, filename FROM `:prefix_demos` WHERE demtype = 'S' AND demid IN ($placeholders)"
-            )->resultset($submissionSubids);
+            $demRows = $GLOBALS['PDO']->resultsetInList(
+                "SELECT demid, filename FROM `:prefix_demos` WHERE demtype = 'S' AND demid IN (",
+                $submissionSubids,
+                ')',
+            );
             foreach ($demRows as $demRow) {
                 $submissionDemoFilenameBySubid[(int) $demRow['demid']] = $demRow['filename'];
             }
@@ -849,11 +864,12 @@ if ($section === 'submissions') {
         }
         $submissionModNameById = [];
         if ($submissionModIds !== []) {
-            $modIds       = array_keys($submissionModIds);
-            $placeholders = implode(',', array_fill(0, count($modIds), '?'));
-            $modRows      = $GLOBALS['PDO']->query(
-                "SELECT mid, name FROM `:prefix_mods` WHERE mid IN ($placeholders)"
-            )->resultset($modIds);
+            $modIds  = array_keys($submissionModIds);
+            $modRows = $GLOBALS['PDO']->resultsetInList(
+                'SELECT mid, name FROM `:prefix_mods` WHERE mid IN (',
+                $modIds,
+                ')',
+            );
             foreach ($modRows as $modRow) {
                 $submissionModNameById[(int) $modRow['mid']] = $modRow['name'];
             }
@@ -861,14 +877,15 @@ if ($section === 'submissions') {
 
         $submissionCommentsBySubid = [];
         if ($submissionSubids !== []) {
-            $placeholders = implode(',', array_fill(0, count($submissionSubids), '?'));
-            $cRows        = $GLOBALS['PDO']->query(
+            $cRows = $GLOBALS['PDO']->resultsetInList(
                 "SELECT bid, cid, aid, commenttxt, added, edittime,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
                  FROM `:prefix_comments` AS C
-                 WHERE type = 'S' AND bid IN ($placeholders) ORDER BY added desc"
-            )->resultset($submissionSubids);
+                 WHERE type = 'S' AND bid IN (",
+                $submissionSubids,
+                ') ORDER BY added desc',
+            );
             foreach ($cRows as $cRow) {
                 $submissionCommentsBySubid[(int) $cRow['bid']][] = $cRow;
             }
@@ -946,10 +963,11 @@ if ($section === 'submissions') {
 
         $submissionArchivDemoFilenameBySubid = [];
         if ($submissionArchivSubids !== []) {
-            $placeholders = implode(',', array_fill(0, count($submissionArchivSubids), '?'));
-            $demRows      = $GLOBALS['PDO']->query(
-                "SELECT demid, filename FROM `:prefix_demos` WHERE demtype = 'S' AND demid IN ($placeholders)"
-            )->resultset($submissionArchivSubids);
+            $demRows = $GLOBALS['PDO']->resultsetInList(
+                "SELECT demid, filename FROM `:prefix_demos` WHERE demtype = 'S' AND demid IN (",
+                $submissionArchivSubids,
+                ')',
+            );
             foreach ($demRows as $demRow) {
                 $submissionArchivDemoFilenameBySubid[(int) $demRow['demid']] = $demRow['filename'];
             }
@@ -961,11 +979,12 @@ if ($section === 'submissions') {
         }
         $submissionArchivModNameById = [];
         if ($submissionArchivModIds !== []) {
-            $modIds       = array_keys($submissionArchivModIds);
-            $placeholders = implode(',', array_fill(0, count($modIds), '?'));
-            $modRows      = $GLOBALS['PDO']->query(
-                "SELECT mid, name FROM `:prefix_mods` WHERE mid IN ($placeholders)"
-            )->resultset($modIds);
+            $modIds  = array_keys($submissionArchivModIds);
+            $modRows = $GLOBALS['PDO']->resultsetInList(
+                'SELECT mid, name FROM `:prefix_mods` WHERE mid IN (',
+                $modIds,
+                ')',
+            );
             foreach ($modRows as $modRow) {
                 $submissionArchivModNameById[(int) $modRow['mid']] = $modRow['name'];
             }
@@ -973,14 +992,15 @@ if ($section === 'submissions') {
 
         $submissionArchivCommentsBySubid = [];
         if ($submissionArchivSubids !== []) {
-            $placeholders = implode(',', array_fill(0, count($submissionArchivSubids), '?'));
-            $cRows        = $GLOBALS['PDO']->query(
+            $cRows = $GLOBALS['PDO']->resultsetInList(
                 "SELECT bid, cid, aid, commenttxt, added, edittime,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
                     (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
                  FROM `:prefix_comments` AS C
-                 WHERE type = 'S' AND bid IN ($placeholders) ORDER BY added desc"
-            )->resultset($submissionArchivSubids);
+                 WHERE type = 'S' AND bid IN (",
+                $submissionArchivSubids,
+                ') ORDER BY added desc',
+            );
             foreach ($cRows as $cRow) {
                 $submissionArchivCommentsBySubid[(int) $cRow['bid']][] = $cRow;
             }
@@ -1298,12 +1318,14 @@ JS;
  * splat into the View DTO.
  *
  * @param list<array<string,mixed>> $commentres
- * @param object $userbank Logged-in user (CUserManager-like).
- * @param int    $rowId    pid (for protests) or subid (for submissions).
- * @param string $type     'P' for protests, 'S' for submissions.
- * @return string|list<array<string,mixed>> "None" sentinel or comment rows.
+ * @return 'None'|list<array<string,mixed>>
  */
-function bansBuildComments(array $commentres, $userbank, int $rowId, string $type)
+function bansBuildComments(
+    array $commentres,
+    \Sbpp\Auth\UserManager $userbank,
+    int $rowId,
+    string $type,
+): string|array
 {
     if (count($commentres) === 0) {
         return "None";
@@ -1335,9 +1357,8 @@ function bansBuildComments(array $commentres, $userbank, int $rowId, string $typ
 
         $cdata['comname']    = $crow['comname'];
         $cdata['added']      = Config::time($crow['added']);
-        $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $commentText         = encodePreservingBr($commentText);
-        $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
+        $commentText         = encodePreservingBr((string) $crow['commenttxt']);
+        $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?[^\s<]+)?)?)?)@', '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>', $commentText);
         $cdata['commenttxt'] = $commentText;
 
         if (!empty($crow['edittime'])) {

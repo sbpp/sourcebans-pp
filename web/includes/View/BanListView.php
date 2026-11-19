@@ -32,9 +32,9 @@ final class BanListView extends View
 
     /**
      * @param list<array<string,mixed>>           $ban_list
-     * @param int|false                           $comment        Bid being commented on, or false when not in comment-edit mode.
+     * @param int|false                           $comment        Parent bid/subid/pid being commented on, or false outside comment-edit mode.
      * @param int                                 $page           Active pagination page (or -1 when not paginated).
-     * @param array<int, array<string,mixed>>|string $othercomments  Sibling comments shown beneath the editor; "None" string when the ban has no other comments.
+     * @param list<array<string,mixed>>|''       $othercomments  Sibling comments shown beneath the editor; empty string outside comment-edit mode.
      * @param list<array{sid: int, name: string}> $server_list    Enabled servers for the public filter bar's `<select name="server">` (#1226).
      * @param array{search: string, server: string, time: string, state: string} $filters Current filter state — drives the sticky filter bar's pre-fill + active selected `<option>` (#1226 + #1352).
      */
@@ -62,6 +62,9 @@ final class BanListView extends View
         public readonly bool $can_delete,
         public readonly bool $can_export,
         public readonly string $admin_postkey,
+        // Any web admin may add comments. Per-comment edit/delete
+        // controls remain narrower (author-or-owner / owner).
+        public readonly bool $can_comment,
         // #1207: gates the first-run empty-state CTA in `page_bans.tpl`
         // (admins with `ADMIN_ADD_BAN` see "Add a ban", everyone else
         // sees the body copy without the link). Splatted from

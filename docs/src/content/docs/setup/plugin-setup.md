@@ -64,6 +64,18 @@ The rest of the file controls in-game admin menu behaviour (ban
 durations, default reasons, immunity flags, etc.). The defaults are
 sensible; tweak as you go.
 
+If the game server runs behind NAT or inside a container, its `hostip`
+value may be a private address. Set `ServerIP` to the public IPv4
+address registered in the panel:
+
+```ini
+"ServerIP"  "203.0.113.10"
+```
+
+Leave `ServerIP` blank to use `hostip`. This setting controls
+address-based server lookup and automatic registration. Keep
+`ServerID` set to the panel's numeric ID whenever possible.
+
 After editing either file, **reload the map or restart the game
 server** so SourceMod re-reads the configs.
 
@@ -84,6 +96,43 @@ is mandatory; the others are opt-in based on what you want:
 Drop the plugins you want into `addons/sourcemod/plugins/` and remove
 the ones you don't (SourceMod loads everything it finds, so an unused
 plugin still consumes a server slot).
+
+### How `sbpp_sleuth.smx` matches alt accounts
+
+When a player connects, SourceSleuth looks for active bans on their IP
+that belong to a **different** SteamID. It ignores:
+
+- Bans on the connecting player's own SteamID.
+- Players who already have an active SteamID ban. `sbpp_main.smx`
+  rejects them with their existing ban, so no new ban is added.
+
+`sm_sleuth_actions 1` (original length) and `3` (double length) use the
+oldest matching ban, so repeat alt bans on the same IP don't keep
+growing.
+
+### Steam Networking (SDR / FakeIP) servers
+
+Servers using `-enablefakeip` or `sv_use_steam_networking` (Source SDK
+2013 games) see every Steam Networking client under a placeholder
+`169.254.x.x` address instead of the player's public IP. That address
+is shared by every such player and identifies nobody, so the plugins
+never store or match it:
+
+- **Bans and comms** record no IP for these players (neither the
+  target's nor admins). Bans are applied by SteamID.
+- **`sm_banip`** refuses to ban a player who has no usable IP; use
+  `sm_ban` instead.
+- **`sbpp_checker.smx` and `sbpp_main.smx`** only look up these players
+  via SteamID when they connect.
+- **`sbpp_sleuth.smx`** skips them entirely. Its IP-based alt-account
+  detection can't work without a public IP address, and matching the
+  shared placeholder IP would flag innocent players.
+
+Players on the same server who connect normally, without SDR, are
+checked exactly as before. The panel updater (migration 811) removes
+placeholder addresses already stored by older plugins: SDR IP bans that
+have a valid SteamID are converted to SteamID bans, and placeholder
+IPs are cleared.
 
 ### Discord notifications
 

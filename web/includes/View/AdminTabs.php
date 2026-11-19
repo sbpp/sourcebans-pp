@@ -41,15 +41,12 @@ final class AdminTabs
      * @param list<TabSpec> $tabs
      * @param string|null   $activeSlug    Kept for call-site compatibility;
      *     unused when `$tabs` is non-empty (main sidebar owns active state).
-     * @param string|null   $sidebarLabel  Kept for call-site compatibility;
-     *     unused when `$tabs` is non-empty.
      */
     public function __construct(
         array $tabs,
         \Sbpp\Auth\UserManager $userbank,
         \Smarty\Smarty $theme,
         ?string $activeSlug = null,
-        ?string $sidebarLabel = null,
     ) {
         foreach ($tabs as $tab) {
             if ($userbank->HasAccess($tab['permission'])) {
@@ -72,10 +69,8 @@ final class AdminTabs
             $theme->display('core/admin_tabs.tpl');
             return;
         }
-
         // #1490 — section nav moved into the main sidebar accordion.
         // Non-empty AdminTabs no longer opens admin-sidebar-shell.
-        unset($sidebarLabel);
     }
 }
 

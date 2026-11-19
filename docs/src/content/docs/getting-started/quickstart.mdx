@@ -130,6 +130,52 @@ proceed rather than leave you with a panel that fails later. Fix the
 permissions and reload.
 </Aside>
 
+### Block direct access to demos
+
+`demos/` holds uploaded evidence, including uploads from the public
+ban submission form. The panel serves demos only through
+`getdemo.php`. Your web server must never serve files from `demos/`
+directly.
+
+<Tabs syncKey="webserver">
+  <TabItem label="Apache">
+    The release ships `demos/.htaccess`, which denies every request.
+    Apache only reads it when `AllowOverride` includes `AuthConfig`
+    (or `All`) for the panel directory. Some FTP clients hide
+    dotfiles, so check that the file uploaded.
+  </TabItem>
+
+  <TabItem label="nginx">
+    nginx ignores `.htaccess`. Add this to the panel's `server` block
+    (use `/sb/demos/` for a subfolder install) and reload nginx:
+
+    ```nginx
+    location ^~ /demos/ {
+        deny all;
+    }
+    ```
+  </TabItem>
+
+  <TabItem label="IIS">
+    Add `demos` as a hidden segment in the panel's `web.config`:
+
+    ```xml
+    <system.webServer>
+      <security>
+        <requestFiltering>
+          <hiddenSegments>
+            <add segment="demos" />
+          </hiddenSegments>
+        </requestFiltering>
+      </security>
+    </system.webServer>
+    ```
+  </TabItem>
+</Tabs>
+
+To check, open `https://<your-domain>/demos/.htaccess`. You should
+get a 403 or 404 error, not the file.
+
 ## Step 3 — Run the install wizard
 
 Open `https://<your-domain>/install/` in a browser (or

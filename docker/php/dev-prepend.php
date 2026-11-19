@@ -28,3 +28,22 @@
 if (!defined('SBPP_DEV_KEEP_INSTALL')) {
     define('SBPP_DEV_KEEP_INSTALL', true);
 }
+
+// Keep dev / CI / test traffic out of the production telemetry
+// dataset (#1126). The dev stack seeds the DB from `data.sql`, which
+// ships `telemetry.enabled = 1` + the live cf-analytics endpoint, so
+// without this every `./sbpp.sh up`, every E2E run, and every docs
+// screenshot capture in CI would ping the real Worker from a
+// throwaway install with a fresh `instance_id`. `SBPP_SKIP_TELEMETRY`
+// is the same per-request opt-out `/health.php` uses; it makes
+// `Telemetry::tickIfDue()` return before any DB write or network call.
+//
+// Web SAPIs only: the CLI also loads this file (PHPUnit inside the
+// container via `./sbpp.sh test`), and `TelemetryOptOutTest` drives
+// `tickIfDue()` directly against a dead endpoint to pin the gate.
+// Defining the constant there would short-circuit those tests. The
+// PHPUnit bootstrap never requires `init.php`, so no shutdown tick is
+// registered under the CLI anyway.
+if (PHP_SAPI !== 'cli' && !defined('SBPP_SKIP_TELEMETRY')) {
+    define('SBPP_SKIP_TELEMETRY', true);
+}

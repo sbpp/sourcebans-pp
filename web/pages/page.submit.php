@@ -116,8 +116,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     }
 
     if ($validsubmit) {
-        $filename = md5($SteamID . time());
-        //echo SB_DEMOS."/".$filename;
+        $filename = \Sbpp\Upload\UploadHandler::randomDiskName();
         $demo     = move_uploaded_file($_FILES['demo_file']['tmp_name'], SB_DEMOS . "/" . $filename);
         if ($demo || empty($_FILES['demo_file']['name'])) {
             if ($SID != 0) {

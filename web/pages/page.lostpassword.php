@@ -60,12 +60,24 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
         PageDie();
     }
 
-    $GLOBALS['PDO']->query("SELECT aid, user FROM `:prefix_admins` WHERE `email` = :email AND `validate` = :validate");
+    // Both columns use a case- and accent-insensitive collation, so SQL
+    // only narrows by email: the token is checked byte-exact here, and
+    // the new password goes to the stored address, never the
+    // collation-equal request value.
+    $GLOBALS['PDO']->query("SELECT aid, user, email, validate FROM `:prefix_admins` WHERE `email` = :email");
     $GLOBALS['PDO']->bind(':email', $email);
-    $GLOBALS['PDO']->bind(':validate', $validation);
-    $result = $GLOBALS['PDO']->single();
+    $candidates = $GLOBALS['PDO']->resultset();
 
-    if (empty($result['aid'])) {
+    $result = null;
+    foreach ($candidates as $candidate) {
+        $storedToken = (string) $candidate['validate'];
+        if ($storedToken !== '' && hash_equals($storedToken, (string) $validation)) {
+            $result = $candidate;
+            break;
+        }
+    }
+
+    if ($result === null) {
         \Sbpp\View\Toast::emit('error', 'Error', 'The validation string does not match the email for this reset request.');
         PageDie();
     }
@@ -83,7 +95,7 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     // surface the error otherwise so the user can retry once SMTP is
     // configured.
     $password    = Crypto::genSecret(MIN_PASS_LENGTH + 8);
-    $isEmailSent = Mail::send($email, EmailType::PasswordResetSuccess, [
+    $isEmailSent = Mail::send((string) $result['email'], EmailType::PasswordResetSuccess, [
         '{password}' => $password,
         '{name}'     => $result['user'],
         '{home}'     => Host::complete(true)

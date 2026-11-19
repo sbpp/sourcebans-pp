@@ -46,6 +46,10 @@ export interface SeedBanArgs {
     reason?: string;
     /** Length in MINUTES. `0` (default) is a permanent ban. */
     length?: number;
+    /** Existing uploader-shaped 32-character lowercase hex basename under `web/demos/`. */
+    demoFile?: string;
+    /** Download filename stored in `:prefix_demos.origname`. */
+    demoName?: string;
 }
 
 /**
@@ -91,9 +95,18 @@ export async function seedBanViaApi(page: Page, seed: SeedBanArgs): Promise<Seed
                 ip: '',
                 length: args.length,
                 reason: args.reason,
+                dfile: args.demoFile || '',
+                dname: args.demoName || '',
             });
         },
-        { nickname: seed.nickname, steam: seed.steam, reason, length },
+        {
+            nickname: seed.nickname,
+            steam: seed.steam,
+            reason,
+            length,
+            demoFile: seed.demoFile ?? '',
+            demoName: seed.demoName ?? '',
+        },
     );
 
     const env = envelope as SbApiEnvelopeShape;

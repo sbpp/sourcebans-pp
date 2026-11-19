@@ -162,7 +162,11 @@ function api_auth_lost_password(array $params): array
 
     $email = (string)($params['email'] ?? '');
 
-    $GLOBALS['PDO']->query("SELECT aid, user FROM `:prefix_admins` WHERE email = :email");
+    // `email` uses the table's case- and accent-insensitive collation, so
+    // the request value can differ from the stored address. Everything
+    // past the lookup keys on the stored row (`aid`, `email`), never on
+    // the request string.
+    $GLOBALS['PDO']->query("SELECT aid, user, email FROM `:prefix_admins` WHERE email = :email");
     $GLOBALS['PDO']->bind(':email', $email);
     $row = $GLOBALS['PDO']->single();
 
@@ -178,16 +182,17 @@ function api_auth_lost_password(array $params): array
         return _api_auth_lost_password_generic_response();
     }
 
-    $validation = Crypto::recoveryHash();
-    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET validate = :validate WHERE email = :email");
+    $storedEmail = (string) $row['email'];
+    $validation  = Crypto::recoveryHash();
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET validate = :validate WHERE aid = :aid");
     $GLOBALS['PDO']->bind(':validate', $validation);
-    $GLOBALS['PDO']->bind(':email', $email);
+    $GLOBALS['PDO']->bind(':aid', (int) $row['aid']);
     $GLOBALS['PDO']->execute();
 
-    $url = Host::complete(true) . '/index.php?p=lostpassword&email=' . urlencode($email)
+    $url = Host::complete(true) . '/index.php?p=lostpassword&email=' . urlencode($storedEmail)
         . '&validation=' . urlencode($validation);
 
-    $sent = Mail::send($email, EmailType::PasswordReset, [
+    $sent = Mail::send($storedEmail, EmailType::PasswordReset, [
         '{link}' => $url,
         '{name}' => $row['user'],
         '{home}' => Host::complete(true),

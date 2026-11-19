@@ -1052,8 +1052,7 @@ input[type="checkbox"]:checked::after {
 /* Defensive paint for the indeterminate state (review nit on #1276):
    `appearance: none` strips the OS-native paint, so a checkbox with
    `el.indeterminate = true` would otherwise fall back to the
-   unchecked look. No panel surface sets `.indeterminate` today —
-   only the bundled tinymce skin references the keyword — but the
+   unchecked look. No panel surface sets `.indeterminate` today, but the
    gap is real, so paint a centered horizontal-bar glyph (mirroring
    the `:checked` SVG approach) at the brand colour so the state
    reads like the OS-native indeterminate. `:indeterminate` wins
@@ -1959,6 +1958,26 @@ details.queue-row > summary > .row-actions {
   }
 }
 
+/* ---- Add Admin server-access grid (#1491) ----
+   Keep the per-server choices to at most two columns. Hostnames can
+   use the Source server-name limit, so the hydrated value is left
+   intact and wraps within its choice instead of being truncated. */
+.admin-server-access-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.admin-server-access-grid > [data-testid="server-tile"],
+.admin-server-access-grid__hostname {
+  min-width: 0;
+}
+.admin-server-access-grid__hostname {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 768px) {
+  .admin-server-access-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ---- Server card grid (#1316 — public + admin Server Management) ----
    Shared `grid-template-columns` for the two surfaces that render
    `:prefix_servers` rows as A2S-hydrated cards:
@@ -2130,6 +2149,12 @@ details.queue-row > summary > .row-actions {
 .admins-list-card:last-child { border-bottom: none; }
 .admins-list-card__body { padding: 0.75rem 1rem 0.25rem; }
 
+.mods-list-cards { display: none; }
+.mods-list-cards[hidden] { display: none; }
+.mods-list-card { border-bottom: 1px solid var(--border); }
+.mods-list-card:last-child { border-bottom: none; }
+.mods-list-card__body { padding: 0.75rem 1rem 0.25rem; }
+
 /* ---- Responsive ---- */
 [data-mobile-menu] { display: none; }
 @media (max-width: 1024px) {
@@ -2148,6 +2173,7 @@ details.queue-row > summary > .row-actions {
      dance as `.ban-cards` — hidden at desktop, block at mobile. */
   .log-cards { display: block; }
   .admins-list-cards { display: block; }
+  .mods-list-cards { display: block; }
   /* #1181: filter chip rows wrap onto multiple lines on mobile
      instead of horizontal-scrolling, so every chip is reachable
      without a swipe. The .scroll-x desktop affordance is the
@@ -2159,6 +2185,7 @@ details.queue-row > summary > .row-actions {
   .ban-cards { display: none; }
   .log-cards { display: none; }
   .admins-list-cards { display: none; }
+  .mods-list-cards { display: none; }
 }
 
 /* ---- Utility classes used by templates ---- */
@@ -2238,6 +2265,7 @@ details.queue-row > summary > .row-actions {
   padding: 2.5rem 1.5rem;
   color: var(--text-muted);
 }
+.empty-state[hidden] { display: none; }
 .empty-state__icon {
   width: 2.5rem;
   height: 2.5rem;
@@ -2544,6 +2572,12 @@ details.queue-row > summary > .row-actions {
    uses `·` as a soft separator (e.g. the drawer meta rows). */
 .app-footer__sep {
   margin-inline: 0.35em;
+}
+/* GeoLite attribution line (#1614), only rendered when an
+   operator-supplied MaxMind database is present. Sits on its own
+   line under the version / sponsor row. */
+.app-footer__attribution {
+  margin: 0.35rem 0 0;
 }
 
 /* ---- Dashboard intro Markdown editor + preview (#1207 SET-1) ----

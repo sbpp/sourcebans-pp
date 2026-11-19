@@ -111,7 +111,16 @@ services:
       # Default: write into the image's writable layer at
       # /var/www/html/web/config.php.
       SBPP_CONFIG_PATH: "${SBPP_CONFIG_PATH:-}"
+
+      # SBPP_GEOIP_PATH — path inside the container to a GeoLite2
+      # country database (#1614). The image doesn't ship one (MaxMind's
+      # EULA forbids redistribution). Empty = country lookup off. Pair
+      # with the commented geoip volume below.
+      SBPP_GEOIP_PATH: "${SBPP_GEOIP_PATH:-}"
     volumes:
+      # GeoIP (optional): mount the host directory geoipupdate writes
+      # to, then set SBPP_GEOIP_PATH=/geoip/GeoLite2-Country.mmdb.
+      # - /var/lib/GeoIP:/geoip:ro
       # Demos: uploaded ban-evidence demos. MUST persist (admin
       # uploads; not in DB, not regenerable from any other source).
       - demos:/var/www/html/web/demos

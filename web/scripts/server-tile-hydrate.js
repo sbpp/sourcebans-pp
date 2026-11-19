@@ -100,8 +100,8 @@
      data-trunchostname="<n>"                 hostname truncation forwarded
                                               to the JSON action (default 70;
                                               `0` = no server-side truncation,
-                                              CSS `.truncate` handles the cut
-                                              client-side, #1487)
+                                              leaving display policy to each
+                                              consumer's CSS, #1487 / #1491)
 
    ----------------------------------------------------------------
    Public API (window.SBPP)
@@ -131,7 +131,7 @@
      * @typedef {Object} HydrateOptions
      * @property {ParentNode} [container] - tile-bearing wrapper (default: every `[data-server-hydrate]` in the doc).
      * @property {number} [openedIndex] - auto-expand the tile whose `data-index` matches this value (default: -1, i.e. don't auto-expand).
-     * @property {number} [trunchostname] - hostname truncation forwarded to the JSON action (default 70; `0` = no server-side truncation, CSS handles the cut client-side, #1487).
+     * @property {number} [trunchostname] - hostname truncation forwarded to the JSON action (default 70; `0` = no server-side truncation, leaving display policy to the consumer's CSS, #1487 / #1491).
      */
 
     /**

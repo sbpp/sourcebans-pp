@@ -2,12 +2,12 @@
     SourceBans++ 2026 — partials / player-drawer.tpl
 
     Reference structure for the right-side ban-detail drawer rendered by
-    web/themes/sbpp2026/js/theme.js after a `bans.detail` call (#1123 C1).
+    web/themes/default/js/theme.js after a `bans.detail` call (#1123 C1).
 
     The handler returns structured JSON (see api_bans_detail() in
     web/api/handlers/bans.php); theme.js renders the markup client-side
     via renderDrawerBody(), funnelling every dynamic value through
-    escapeHtml(). This file is the canonical *shape* the JS mirrors so a
+    escapeHtml() or renderCommentText(). This file is the canonical *shape* the JS mirrors so a
     designer can iterate on the visual without booting the JSON path,
     and so a future B-phase ticket that needs a server-rendered initial
     state for a deep-link (e.g. `?p=banlist&id=N` opening the drawer
@@ -32,11 +32,16 @@
       - $detail.ban.unban_reason             string
       - $detail.admin.name                   string|null
       - $detail.server.name                  string|null
+      - $detail.demo_count                   int
       - $detail.comments_visible             bool
+      - $detail.comments_can_add             bool
+      - $detail.comments[].cid               int
       - $detail.comments[].author            string|null
       - $detail.comments[].author_hidden     bool   (#1500: name suppressed by banlist.hideadminname)
       - $detail.comments[].added_human       string
       - $detail.comments[].text              string
+      - $detail.comments[].can_edit          bool
+      - $detail.comments[].can_delete        bool
 
     Smarty's auto-escape is on globally (init.php), so {$value} renders
     safely without per-line nofilter.
@@ -114,20 +119,68 @@
             <dd style="margin:0">{$detail.server.name}</dd>
         {/if}
     </dl>
+
+    {if $detail.demo_count > 0}
+    <div data-testid="drawer-demo-actions">
+        <a class="btn btn--secondary btn--sm"
+           href="getdemo.php?type=B&amp;id={$detail.bid}"
+           data-testid="drawer-demo-download">
+            <i data-lucide="download" style="width:14px;height:14px"></i>
+            Download demo
+        </a>
+    </div>
+    {/if}
 </div>
 
 {if $detail.comments_visible}
-    <section style="padding:0 1.25rem 1.25rem">
-        <h3 class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;margin:0 0 0.5rem">Comments</h3>
+    <section data-testid="drawer-comments" style="padding:0 1.25rem 1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">
+            <h3 class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;margin:0">Comments</h3>
+            {if $detail.comments_can_add}
+            <a class="btn btn--secondary btn--sm"
+               href="index.php?p=banlist&amp;comment={$detail.bid}&amp;ctype=B"
+               data-testid="drawer-comment-add">
+                <i data-lucide="message-square-text" style="width:13px;height:13px"></i>
+                Add comment
+            </a>
+            {/if}
+        </div>
         {if $detail.comments}
             <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.625rem">
                 {foreach $detail.comments as $c}
                     <li style="border:1px solid var(--border);border-radius:var(--radius-md);padding:0.625rem 0.75rem;background:var(--bg-surface)">
-                        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">
-                            <span class="font-medium">{if $c.author_hidden}Hidden{else}{$c.author|default:'unknown'}{/if}</span>
+                        <div style="display:flex;align-items:center;gap:0.375rem;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">
+                            <span class="font-medium">{if $c.author_hidden}Hidden{elseif !empty($c.author)}{$c.author}{else}deleted admin{/if}</span>
+                            <span aria-hidden="true">&middot;</span>
                             <span>{$c.added_human}</span>
+                            {if $c.can_edit || $c.can_delete}
+                            <span class="row-actions row-actions--icons" style="margin-left:auto">
+                                {if $c.can_edit}
+                                <a class="btn btn--ghost btn--icon btn--xs"
+                                   href="index.php?p=banlist&amp;comment={$detail.bid}&amp;ctype=B&amp;cid={$c.cid}"
+                                   data-testid="drawer-comment-edit"
+                                   data-tooltip="Edit comment"
+                                   aria-label="Edit comment">
+                                    <i data-lucide="pencil" style="width:12px;height:12px"></i>
+                                </a>
+                                {/if}
+                                {if $c.can_delete}
+                                <button type="button"
+                                        class="btn btn--ghost btn--icon btn--xs"
+                                        data-testid="drawer-comment-delete"
+                                        data-action="comment-delete"
+                                        data-cid="{$c.cid}"
+                                        data-ctype="B"
+                                        data-page="-1"
+                                        data-tooltip="Delete comment"
+                                        aria-label="Delete comment">
+                                    <i data-lucide="trash-2" style="width:12px;height:12px;color:var(--danger)"></i>
+                                </button>
+                                {/if}
+                            </span>
+                            {/if}
                         </div>
-                        <div class="text-sm" style="white-space:pre-wrap">{$c.text}</div>
+                        <div class="text-sm" data-testid="drawer-comment-text" style="white-space:pre-wrap">{$c.text}</div>
                     </li>
                 {/foreach}
             </ul>

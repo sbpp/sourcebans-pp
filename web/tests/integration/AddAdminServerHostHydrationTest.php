@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
  * `[data-testid="server-host"]` + `data-fallback="<ip>:<port>"` and
  * the wrapping grid div opts into the shared
  * `web/scripts/server-tile-hydrate.js` helper via
- * `data-server-hydrate="auto"` + `data-trunchostname="40"`. The
+ * `data-server-hydrate="auto"` + `data-trunchostname="0"`. The
  * helper auto-runs on first paint for every container marked
  * `data-server-hydrate="auto"`, walks every `[data-testid="server-tile"]`
  * child, and fires `Actions.ServersHostPlayers` per row to patch the
@@ -40,6 +40,10 @@ use PHPUnit\Framework\TestCase;
  * no-op for the missing ones. The Add Admin form is the editor for
  * per-server access, not a player-row table; status pills / player
  * counts would only add visual noise to the checkbox grid.
+ *
+ * Issue #1491 caps the access grid at two columns and removes the
+ * server-side hostname cap. Full hostnames wrap inside each choice,
+ * preserving distinguishing suffixes instead of clipping them.
  *
  * Why this is a template-string-shape test rather than a stub-Smarty
  * render harness (cf. `AdminServersListHydrationTest`)
@@ -135,15 +139,9 @@ final class AddAdminServerHostHydrationTest extends TestCase
      * at first paint; without this attribute the Add Admin rows are
      * skipped entirely.
      *
-     * `data-trunchostname="40"` caps the hostname server-side — this
-     * grid's per-row card is a FIXED ~18rem wide
-     * (`grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr))`)
-     * so a small fixed cap keeps a long hostname from tripping
-     * `truncate`'s ellipsis. (The dashboard widget dropped its cap to
-     * `0` in #1487 — its column is fluid, so CSS sizes the cut to the
-     * rendered width; this grid's column is fixed, so the cap stays.)
-     * The presence of the attribute is the contract; the helper falls
-     * back to 70 otherwise.
+     * `data-trunchostname="0"` is the no-server-side-truncation
+     * sentinel. The dedicated layout class wraps the full hostname
+     * inside a grid capped at two columns (#1491).
      */
     public function testGridOptsIntoAutoHydration(): void
     {
@@ -153,14 +151,50 @@ final class AddAdminServerHostHydrationTest extends TestCase
         // also one combined assertion for an early "both must live on
         // the same opener" failure message.
         $this->assertMatchesRegularExpression(
-            '/<div\b[^>]*\bdata-server-hydrate="auto"[^>]*\bdata-trunchostname="40"/',
+            '/<div\b(?=[^>]*\bclass="[^"]*\badmin-server-access-grid\b[^"]*")'
+            . '(?=[^>]*\bdata-testid="admin-add-server-access-grid")'
+            . '(?=[^>]*\bdata-server-hydrate="auto")'
+            . '(?=[^>]*\bdata-trunchostname="0")[^>]*>/',
             $this->template,
             'The Add Admin per-server access grid wrapper must carry '
-            . '`data-server-hydrate="auto" data-trunchostname="40"` on the SAME `<div>` opener '
-            . 'so the shared hydration helper auto-runs on first paint and forwards the '
-            . 'cramped-column truncation hint to the JSON action (#1405). The 40-char cap '
-            . 'suits this grid\'s FIXED ~18rem columns; the dashboard widget dropped to `0` '
-            . '(client-side CSS truncation) in #1487 because its column is fluid.',
+            . '`admin-server-access-grid`, `data-testid="admin-add-server-access-grid"`, '
+            . '`data-server-hydrate="auto"`, and `data-trunchostname="0"` on the SAME `<div>` '
+            . 'opener. The helper must auto-run and request the full hostname for the '
+            . 'two-column wrapping layout (#1491).',
+        );
+    }
+
+    public function testGridCapsDesktopAtTwoColumnsAndWrapsFullHostnames(): void
+    {
+        $cssPath = ROOT . 'themes/default/css/theme.css';
+        $css = file_get_contents($cssPath);
+        if ($css === false) {
+            self::fail("could not read {$cssPath}");
+        }
+
+        $this->assertMatchesRegularExpression(
+            '/\.admin-server-access-grid\s*\{[^}]*'
+            . 'grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)\s*;[^}]*\}/s',
+            $css,
+            'The Add Admin server-access grid must render at most two equal desktop columns (#1491).',
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.admin-server-access-grid__hostname\s*\{[^}]*'
+            . 'overflow-wrap:\s*anywhere\s*;[^}]*\}/s',
+            $css,
+            'Full hydrated hostnames must wrap instead of clipping their distinguishing suffixes (#1491).',
+        );
+        $this->assertMatchesRegularExpression(
+            '/@media\s*\(max-width:\s*768px\)\s*\{.*?'
+            . '\.admin-server-access-grid\s*\{[^}]*'
+            . 'grid-template-columns:\s*minmax\(0,\s*1fr\)\s*;/s',
+            $css,
+            'The two-column grid must collapse to one column on narrow screens.',
+        );
+        $this->assertStringNotContainsString(
+            'grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))',
+            $this->templateNoComments,
+            'The old auto-fill layout could render three or more server choices per row and must stay removed.',
         );
     }
 

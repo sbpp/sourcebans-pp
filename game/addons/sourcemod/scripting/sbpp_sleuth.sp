@@ -30,6 +30,7 @@
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
 #include <sourcebanspp>
+#include <sbpp_server_ip>
 
 #define PLUGIN_VERSION "1.8.0"
 
@@ -85,7 +86,7 @@ public void OnPluginStart()
 	CreateConVar("sm_sourcesleuth_version", PLUGIN_VERSION, "SourceSleuth plugin version", FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 
 	g_cVar_actions = CreateConVar("sm_sleuth_actions", "3", "Sleuth Ban Type: 1 - Original Length, 2 - Custom Length, 3 - Double Length, 4 - Notify Admins Only, 5 - Kick Client", 0, true, 1.0, true, 5.0);
-	g_cVar_banduration = CreateConVar("sm_sleuth_duration", "0", "Required: sm_sleuth_actions 1: Bantime to ban player if we got a match (0 = permanent (defined in minutes) )", 0);
+	g_cVar_banduration = CreateConVar("sm_sleuth_duration", "0", "Required: sm_sleuth_actions 2: Bantime to ban player if we got a match (0 = permanent (defined in minutes) )", 0);
 	g_cVar_sbprefix = CreateConVar("sm_sleuth_prefix", "sb", "Prexfix for sourcebans tables: Default sb", 0);
 	g_cVar_bansAllowed = CreateConVar("sm_sleuth_bansallowed", "0", "How many active bans are allowed before we act", 0);
 	g_cVar_bantype = CreateConVar("sm_sleuth_bantype", "0", "0 - ban all type of lengths, 1 - ban only permanent bans", 0, true, 0.0, true, 1.0);
@@ -190,7 +191,12 @@ public void OnClientPostAdminCheck(int client)
 	if (CanUseSourcebans && !IsFakeClient(client))
 	{
 		char steamid[32];
-		GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid));
+		/* Without a validated SteamID the player's own bans can't be told
+		 * apart from an alt's. */
+		if (!GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid)))
+		{
+			return;
+		}
 
 		if (g_cVar_bypass.BoolValue && CheckCommandAccess(client, "sleuth_admin", ADMFLAG_BAN, false))
 		{
@@ -200,13 +206,30 @@ public void OnClientPostAdminCheck(int client)
 		if (g_hAllowedArray.FindString(steamid) == -1)
 		{
 			char IP[32], Prefix[64];
-			GetClientIP(client, IP, sizeof(IP));
+			/* SDR / Steam Networking clients have no usable IP (see
+			 * SBPP_GetClientPublicIP). Skip them rather than matching a
+			 * placeholder address shared by every such player. */
+			if (!SBPP_GetClientPublicIP(client, IP, sizeof(IP)))
+			{
+				return;
+			}
 
 			g_cVar_sbprefix.GetString(Prefix, sizeof(Prefix));
 
 			char query[1024];
 
-			FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND (ends > %d OR ((1 = %d AND length = 0 AND ends > %d) OR (0 = %d AND length = 0)))", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0, g_cVar_excludeOld.IntValue, GetTime() - g_cVar_excludeTime.IntValue, g_cVar_excludeOld.IntValue);
+			/* Only other accounts' bans count as evidence of an alt, and a
+			 * player who is already banned is left to sbpp_main. Matching the
+			 * player's own ban would re-ban them on every reconnect. Oldest
+			 * ban first so length-based actions don't compound off bans
+			 * SourceSleuth issued itself. */
+			FormatEx(query, sizeof(query), "SELECT length FROM %s_bans \
+				WHERE ip = '%s' AND RemoveType IS NULL \
+				AND authid NOT REGEXP '^STEAM_[0-9]:%s$' \
+				AND (ends > %d OR ((1 = %d AND length = 0 AND ends > %d) OR (0 = %d AND length = 0))) \
+				AND NOT EXISTS (SELECT 1 FROM %s_bans WHERE type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL) \
+				ORDER BY created ASC, bid ASC",
+				Prefix, IP, steamid[8], g_cVar_bantype.IntValue == 0 ? GetTime() : 0, g_cVar_excludeOld.IntValue, GetTime() - g_cVar_excludeTime.IntValue, g_cVar_excludeOld.IntValue, Prefix, steamid[8]);
 
 			DataPack datapack = new DataPack();
 
@@ -243,6 +266,11 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 		return;
 	}
 
+	if (!client)
+	{
+		return;
+	}
+
 	if (results.FetchRow())
 	{
 		int TotalBans = results.RowCount;
@@ -253,7 +281,7 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 			{
 				case LENGTH_ORIGINAL:
 				{
-					int length = results.FetchInt(6);
+					int length = results.FetchInt(0);
 					int time = length / 60;
 
 					BanPlayer(client, time);
@@ -265,7 +293,7 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 				}
 				case LENGTH_DOUBLE:
 				{
-					int length = results.FetchInt(6);
+					int length = results.FetchInt(0);
 
 					int time = 0;
 

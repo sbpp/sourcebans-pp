@@ -11,7 +11,7 @@
 #define _sbpp_version_included
 
 #define MAJOR_REVISION                    2
-#define MINOR_REVISION                    0
+#define MINOR_REVISION                    1
 
 #define SOURCEBANSPP_VERSION_MAJOR        MAJOR_REVISION
 #define SOURCEBANSPP_VERSION_MINOR        MINOR_REVISION

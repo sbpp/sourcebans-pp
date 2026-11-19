@@ -119,7 +119,8 @@ Open `.env` in your editor. The template is grouped into
 The template is commented in detail. Read through the rest of it
 for the optional knobs (image-tag pinning, trusted-proxy CIDR ranges,
 `DATABASE_URL` for managed databases, the `*_FILE` Docker-secret
-pattern).
+pattern, `SBPP_GEOIP_PATH` for
+[GeoIP country lookup](/configuring/geoip/)).
 
 <Aside type="caution">
 Don't commit `.env` to git. It carries the panel's JWT signing key
@@ -240,6 +241,10 @@ is running in Docker.
 | `cache` | `/var/www/html/web/cache` | Optional. Smarty compile cache + PHP sessions. Wiping logs every admin out but doesn't lose data. |
 | `smarty` | `/var/www/html/web/templates_c` | Optional. Same shape as `cache`, rebuilt on demand. |
 
+The image's Apache config blocks direct web access to `demos/`.
+Demos download only through the panel (`getdemo.php`). If a reverse
+proxy serves files from the volume itself, deny `/demos/` there too.
+
 Back up the `dbdata` and `demos` volumes regularly. The simplest
 backup is a `mariadb-dump` for the DB and a `tar` for the demos:
 
@@ -280,6 +285,12 @@ The new container's entrypoint runs any pending updater migrations
 against the existing database. The migrations are idempotent: every
 script in `web/updater/data/<N>.php` is forward-only and safe to
 re-run. The `dbdata` and `demos` volumes survive the swap unchanged.
+
+PHP security fixes reach you the same way: each published image is
+built on the newest `php:8.5-apache` base, and the build fails on a
+PHP release with a known security fix missing. Pull a fresh image
+after a PHP security release. Check the running version
+with `docker compose -f docker-compose.prod.yml exec web php -v`.
 
 Image tags:
 

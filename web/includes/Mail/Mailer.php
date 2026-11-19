@@ -13,6 +13,7 @@ use Sbpp\Config;
 use Sbpp\Log;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
+use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Component\Mime\Email;
 
 final class Mailer
@@ -22,6 +23,9 @@ final class Mailer
 
     /** Latched so we only emit one deprecation warning per process when the legacy SB_EMAIL fallback is used. */
     private static bool $sbEmailDeprecationLogged = false;
+
+    /** Test-only replacement for the SMTP transport {@see send()} builds from the configured DSN. */
+    private static ?TransportInterface $transportOverride = null;
 
     public function __construct(
         private readonly string $host,
@@ -52,7 +56,7 @@ final class Mailer
         if(!$this->verifyPeer)
             $dsn .= '?verify_peer=false';
 
-        $mailer = Transport::fromDsn($dsn);
+        $mailer = self::$transportOverride ?? Transport::fromDsn($dsn);
 
         $mail = $this->buildMessage($destination, $subject, $body, $files);
 
@@ -167,6 +171,17 @@ final class Mailer
     public static function resetDeprecationLatch(): void
     {
         self::$sbEmailDeprecationLogged = false;
+    }
+
+    /**
+     * Test-only seam: route every {@see send()} through `$transport`
+     * (e.g. a capturing `AbstractTransport`) instead of SMTP, so tests
+     * can assert recipients without a live mail server. Pass `null` to
+     * restore the configured transport.
+     */
+    public static function overrideTransportForTests(?TransportInterface $transport): void
+    {
+        self::$transportOverride = $transport;
     }
 
     private static function formatFrom(string $name, string $email): string

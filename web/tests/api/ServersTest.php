@@ -477,10 +477,9 @@ final class ServersTest extends ApiTestCase
 
     /**
      * #1487 — the inverse contract: a positive `trunchostname` still
-     * truncates server-side. The dashboard opts out via `0`, but every
-     * other surface (public list `70`, Add Admin grid / Server Groups
-     * `40`) relies on the cap staying live, so the positive branch must
-     * keep working.
+     * truncates server-side. Dashboard and Add Admin opt out via `0`,
+     * but the public list (`70`) and Server Groups (`40`) rely on the
+     * cap staying live, so the positive branch must keep working.
      */
     public function testHostPlayersTruncatesHostnameWhenTrunchostnamePositive(): void
     {

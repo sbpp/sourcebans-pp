@@ -1,0 +1,4 @@
+# Holds the operator-supplied GeoLite2 country database (not shipped,
+# see docs/configuring/geoip). Never serve it: MaxMind's EULA forbids
+# redistributing the file. Needs `AllowOverride AuthConfig` (or `All`).
+Require all denied

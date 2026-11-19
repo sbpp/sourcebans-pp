@@ -70,6 +70,9 @@ final class Telemetry
     /** cURL total-operation timeout. */
     private const TOTAL_TIMEOUT_SECONDS = 5;
 
+    /** `modfolder`s with their own `scale.games` flag; every other folder reports as `other`. */
+    private const TRACKED_GAMES = ['tf', 'cstrike', 'csgo', 'garrysmod', 'left4dead2'];
+
     /**
      * Process-local cache of the instance ID. Settings are loaded
      * once at request start by `Config::init()` and the cache is
@@ -96,6 +99,11 @@ final class Telemetry
      * cURL POST on every probe, but the per-tick slot-reservation
      * `UPDATE` on `:prefix_settings.last_ping` is still pure noise
      * we'd rather not pay on a 2880-probe-per-day endpoint.
+     *
+     * The docker dev stack (`docker/php/dev-prepend.php`) defines
+     * the same constant on every web request, so local dev, E2E,
+     * and the CI docs-screenshot capture never ping the live
+     * endpoint.
      */
     public static function tickIfDue(): void
     {
@@ -141,7 +149,7 @@ final class Telemetry
         if ($endpoint === '') {
             return;
         }
-        $body = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        $body = json_encode(self::withoutNulls($payload), JSON_UNESCAPED_SLASHES);
         if ($body === false) {
             return;
         }
@@ -173,6 +181,28 @@ final class Telemetry
         // phpstan-deprecation-rules. Letting the local fall out of scope
         // is the supported lifecycle.
         unset($ch);
+    }
+
+    /**
+     * Drop `null` leaves before encoding. `collect()` keeps nullable
+     * fields (e.g. `env.memory_limit_mb` on an unlimited host) as
+     * explicit `null` so the extractor parity test sees a stable
+     * key set, but the Worker's validator only accepts an absent
+     * key there; a literal `null` would 400 the whole ping.
+     *
+     * @param array<string, mixed> $node
+     * @return array<string, mixed>
+     */
+    public static function withoutNulls(array $node): array
+    {
+        $out = [];
+        foreach ($node as $key => $value) {
+            if ($value === null) {
+                continue;
+            }
+            $out[$key] = is_array($value) ? self::withoutNulls($value) : $value;
+        }
+        return $out;
     }
 
     /**
@@ -409,11 +439,17 @@ final class Telemetry
         /** @var mixed $rawGit */
         $rawGit  = defined('SB_GITREV') ? constant('SB_GITREV') : '';
         $git     = is_string($rawGit) ? $rawGit : '';
+        $timezone = Config::get('config.timezone');
         return [
-            'version' => $version,
-            'git'     => $git,
-            'dev'     => $version === \Sbpp\Version::DEV_SENTINEL,
-            'theme'   => self::resolveTheme(),
+            'version'      => $version,
+            'git'          => $git,
+            'dev'          => $version === \Sbpp\Version::DEV_SENTINEL,
+            'theme'        => self::resolveTheme(),
+            'region'       => Region::resolve(
+                is_string($timezone) ? $timezone : null,
+                date_default_timezone_get()
+            ),
+            'exported_30d' => self::resolveExported30d(),
         ];
     }
 
@@ -428,29 +464,51 @@ final class Telemetry
             'db_version' => self::resolveDbVersion(),
             'web_server' => self::resolveWebServer((string) ($_SERVER['SERVER_SOFTWARE'] ?? '')),
             'os_family'  => self::resolveOsFamily(),
-        ];
+        ] + HostFingerprint::collect();
     }
 
     /**
-     * @return array<string, int>
+     * @return array<string, mixed>
      */
     private static function collectScale(): array
     {
         $db = self::db();
         if ($db === null) {
             return [
-                'admins'          => 0,
-                'servers_enabled' => 0,
-                'bans_active'     => 0,
-                'bans_total'      => 0,
-                'comms_active'    => 0,
-                'comms_total'     => 0,
-                'submissions_30d' => 0,
-                'protests_30d'    => 0,
+                'admins'                => 0,
+                'servers_enabled'       => 0,
+                'bans_active'           => 0,
+                'bans_total'            => 0,
+                'comms_active'          => 0,
+                'comms_total'           => 0,
+                'submissions_30d'       => 0,
+                'protests_30d'          => 0,
+                'bans_30d'              => 0,
+                'admins_active_30d'     => 0,
+                'ban_history_months'    => null,
+                'web_bans_majority_30d' => false,
+                'games'                 => self::gamesFromModfolders([]),
+                'perms'                 => [
+                    'web_groups'    => false,
+                    'server_groups' => false,
+                    'overrides'     => false,
+                    'immunity'      => false,
+                ],
             ];
         }
 
-        $thirtyDaysAgo = time() - 30 * 86400;
+        $now           = time();
+        $thirtyDaysAgo = $now - 30 * 86400;
+        $bans30d       = self::countWithCutoff(
+            $db,
+            "SELECT COUNT(*) AS c FROM `:prefix_bans` WHERE `created` >= :cutoff",
+            $thirtyDaysAgo
+        );
+        $webBans30d    = self::countWithCutoff(
+            $db,
+            "SELECT COUNT(*) AS c FROM `:prefix_bans` WHERE `created` >= :cutoff AND `sid` = 0",
+            $thirtyDaysAgo
+        );
 
         return [
             'admins'          => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_admins`"),
@@ -477,7 +535,127 @@ final class Telemetry
                 "SELECT COUNT(*) AS c FROM `:prefix_protests` WHERE `datesubmitted` >= :cutoff",
                 $thirtyDaysAgo
             ),
+            'bans_30d'              => $bans30d,
+            'admins_active_30d'     => self::countWithCutoff(
+                $db,
+                "SELECT COUNT(*) AS c FROM `:prefix_admins` WHERE `lastvisit` >= :cutoff",
+                $thirtyDaysAgo
+            ),
+            'ban_history_months'    => self::resolveBanHistoryMonths($db, $now),
+            'web_bans_majority_30d' => $webBans30d * 2 > $bans30d,
+            'games'                 => self::gamesFromModfolders(self::enabledModfolders($db)),
+            'perms'                 => [
+                'web_groups'    => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_groups` WHERE `type` = 1") > 0,
+                'server_groups' => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_srvgroups`") > 0,
+                'overrides'     => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_overrides`") > 0,
+                'immunity'      => self::countSimple($db, "SELECT COUNT(*) AS c FROM `:prefix_admins` WHERE `immunity` > 0") > 0,
+            ],
         ];
+    }
+
+    /**
+     * Map the `modfolder`s of enabled servers onto the `scale.games`
+     * flags. Anything outside the five tracked games collapses into
+     * `other`; the folder name itself never leaves the panel.
+     *
+     * @param list<string> $modfolders
+     * @return array<string, bool>
+     */
+    public static function gamesFromModfolders(array $modfolders): array
+    {
+        $games = array_fill_keys(self::TRACKED_GAMES, false);
+        $games['other'] = false;
+        foreach ($modfolders as $folder) {
+            $folder = strtolower(trim($folder));
+            $games[in_array($folder, self::TRACKED_GAMES, true) ? $folder : 'other'] = true;
+        }
+        return $games;
+    }
+
+    /**
+     * Distinct `modfolder`s across enabled servers.
+     *
+     * @return list<string>
+     */
+    private static function enabledModfolders(Database $db): array
+    {
+        try {
+            $db->query(
+                "SELECT DISTINCT m.`modfolder` FROM `:prefix_servers` s "
+                . "JOIN `:prefix_mods` m ON m.`mid` = s.`modid` "
+                . "WHERE s.`enabled` = 1"
+            );
+            $folders = [];
+            foreach ($db->resultset() as $row) {
+                $folders[] = (string) ($row['modfolder'] ?? '');
+            }
+            return $folders;
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Whole calendar months between the oldest ban and `$now`, or
+     * `null` when the panel has no bans. `created = 0` rows (the
+     * column default, seen on imported legacy bans) are ignored so
+     * they don't read as a ban from 1970.
+     */
+    private static function resolveBanHistoryMonths(Database $db, int $now): ?int
+    {
+        try {
+            $db->query("SELECT MIN(`created`) AS m FROM `:prefix_bans` WHERE `created` > 0");
+            $row = $db->single();
+            $oldest = is_array($row) ? (int) ($row['m'] ?? 0) : 0;
+        } catch (Throwable) {
+            return null;
+        }
+        if ($oldest <= 0) {
+            return null;
+        }
+        return self::monthsBetween($oldest, $now);
+    }
+
+    /**
+     * Whole calendar months from `$from` to `$to` (both unix
+     * seconds, compared in UTC). `0` when `$from` is in the future.
+     */
+    public static function monthsBetween(int $from, int $to): int
+    {
+        if ($from >= $to) {
+            return 0;
+        }
+        $utc  = new \DateTimeZone('UTC');
+        $diff = (new \DateTimeImmutable('@' . $from))->setTimezone($utc)
+            ->diff((new \DateTimeImmutable('@' . $to))->setTimezone($utc));
+        return $diff->y * 12 + $diff->m;
+    }
+
+    /**
+     * True iff `web/export.php` logged a successful full data
+     * export (ZIP delivered or S3 upload OK, both `LogType::Message`
+     * under the `Data Export` title) in the last 30 days. Failures
+     * and permission denials log as `Error` / `Warning` and don't
+     * count. An operator who clears the audit log resets this.
+     */
+    private static function resolveExported30d(): bool
+    {
+        $db = self::db();
+        if ($db === null) {
+            return false;
+        }
+        try {
+            $db->query(
+                "SELECT COUNT(*) AS c FROM `:prefix_log` "
+                . "WHERE `type` = :type AND `title` = 'Data Export' AND `created` >= :cutoff"
+            );
+            $db->bind(':type', \LogType::Message->value);
+            $db->bind(':cutoff', time() - 30 * 86400);
+            $row = $db->single();
+            return is_array($row) && (int) ($row['c'] ?? 0) > 0;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /**
@@ -625,10 +803,12 @@ final class Telemetry
     }
 
     /**
-     * True iff the Maxmind GeoIP database lives at
-     * `web/data/GeoLite2-Country.mmdb` and is readable. Mirrors
-     * what `system_check.php` checks before the country-flag
-     * lookup runs.
+     * True iff the operator-supplied MaxMind GeoIP database is
+     * readable at `MMDB_PATH` (config.php / `SBPP_GEOIP_PATH` /
+     * `web/data/GeoLite2-Country.mmdb`, see init.php). Mirrors
+     * `GeoIpAvailable()` in system-functions.php, which gates the
+     * country lookup; duplicated so the collector doesn't depend on
+     * the procedural helper file being loaded.
      */
     private static function resolveGeoipPresent(): bool
     {

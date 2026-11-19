@@ -74,6 +74,11 @@ If you skip the `ServerID` step, the plugin will still try to write
 bans to the database but with no server-side identity, so the panel
 can't tell them apart from bans on other servers.
 
+Servers behind NAT or running in containers may report a private
+`hostip`. Set `ServerIP` in the same config to the public IPv4 address
+saved in the panel. Leave it blank on servers whose `hostip` already
+matches the panel.
+
 ## Verifying
 
 Back in the panel's **Servers** page, your new server should show:

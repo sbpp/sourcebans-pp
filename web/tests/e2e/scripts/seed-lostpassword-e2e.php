@@ -46,6 +46,9 @@
  *   php seed-lostpassword-e2e.php
  *   # → {"email":"admin@example.test","token":"<16-hex-chars>"}
  *
+ *   php seed-lostpassword-e2e.php someone@example.test
+ *   # → same, against a dedicated admin row created for that address
+ *
  * The output is JSON on stdout; consumed by `seedLostpasswordE2e`
  * in `web/tests/e2e/fixtures/db.ts`.
  */
@@ -110,7 +113,21 @@ foreach ($settings as $key => $value) {
 // rolls 16-char tokens. Match that shape so the seed reads as
 // realistic.
 $token = bin2hex(random_bytes(8));
-$email = 'admin@example.test';
+$email = $argv[1] ?? 'admin@example.test';
+
+// A caller-supplied address gets its own low-privilege admin row so a
+// spec can drive the reset branch without racing other specs (or the
+// other Playwright project) on `admin@example.test`'s token.
+if ($email !== 'admin@example.test') {
+    $pdo->query(
+        'INSERT IGNORE INTO `:prefix_admins` (user, authid, password, gid, email, validate, extraflags, immunity)
+         VALUES (:user, \'\', :password, -1, :email, NULL, 0, 0)'
+    );
+    $pdo->bind(':user', $email);
+    $pdo->bind(':password', password_hash(bin2hex(random_bytes(16)), PASSWORD_BCRYPT));
+    $pdo->bind(':email', $email);
+    $pdo->execute();
+}
 
 $pdo->query('UPDATE `:prefix_admins` SET validate = :validate WHERE email = :email');
 $pdo->bind(':validate', $token);

@@ -783,11 +783,12 @@ foreach ($res as $row) {
 }
 $removedByNames = [];
 if ($removedByAdminIds !== []) {
-    $ids          = array_keys($removedByAdminIds);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $adminRows    = $GLOBALS['PDO']->query(
-        "SELECT aid, user FROM `:prefix_admins` WHERE aid IN ($placeholders)"
-    )->resultset($ids);
+    $ids       = array_keys($removedByAdminIds);
+    $adminRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT aid, user FROM `:prefix_admins` WHERE aid IN (',
+        $ids,
+        ')',
+    );
     foreach ($adminRows as $adminRow) {
         $removedByNames[(int) $adminRow['aid']] = $adminRow['user'];
     }
@@ -810,21 +811,23 @@ foreach ($res as $row) {
     }
 }
 if ($steamAuthidsToCheck !== []) {
-    $ids          = array_keys($steamAuthidsToCheck);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $countRows    = $GLOBALS['PDO']->query(
-        "SELECT authid, COUNT(bid) as cnt FROM `:prefix_bans` WHERE authid IN ($placeholders) AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' GROUP BY authid"
-    )->resultset($ids);
+    $ids       = array_keys($steamAuthidsToCheck);
+    $countRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT authid, COUNT(bid) as cnt FROM `:prefix_bans` WHERE authid IN (',
+        $ids,
+        ") AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' GROUP BY authid",
+    );
     foreach ($countRows as $countRow) {
         $activeSteamCounts[$countRow['authid']] = (int) $countRow['cnt'];
     }
 }
 if ($ipsToCheck !== []) {
-    $ids          = array_keys($ipsToCheck);
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $countRows    = $GLOBALS['PDO']->query(
-        "SELECT ip, COUNT(bid) as cnt FROM `:prefix_bans` WHERE ip IN ($placeholders) AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' GROUP BY ip"
-    )->resultset($ids);
+    $ids       = array_keys($ipsToCheck);
+    $countRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT ip, COUNT(bid) as cnt FROM `:prefix_bans` WHERE ip IN (',
+        $ids,
+        ") AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' GROUP BY ip",
+    );
     foreach ($countRows as $countRow) {
         $activeIpCounts[$countRow['ip']] = (int) $countRow['cnt'];
     }
@@ -832,26 +835,30 @@ if ($ipsToCheck !== []) {
 
 $banlogByBid = [];
 if ($banIds !== []) {
-    $placeholders = implode(',', array_fill(0, count($banIds), '?'));
-    $blRows       = $GLOBALS['PDO']->query(
-        "SELECT bl.bid, bl.time, bl.name, s.ip, s.port FROM `:prefix_banlog` AS bl LEFT JOIN `:prefix_servers` AS s ON s.sid = bl.sid WHERE bl.bid IN ($placeholders)"
-    )->resultset($banIds);
+    $blRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT bl.bid, bl.time, bl.name, s.ip, s.port FROM `:prefix_banlog` AS bl LEFT JOIN `:prefix_servers` AS s ON s.sid = bl.sid WHERE bl.bid IN (',
+        $banIds,
+        ')',
+    );
     foreach ($blRows as $blRow) {
         $banlogByBid[(int) $blRow['bid']][] = $blRow;
     }
 }
 
-$viewCommentsEnabled = Config::getBool('config.enablepubliccomments') || $userbank->is_admin();
+$canComment          = $userbank->is_admin();
+$canDeleteComment    = $userbank->HasAccess(WebPermission::Owner);
+$viewCommentsEnabled = Config::getBool('config.enablepubliccomments') || $canComment;
 $commentsByBid       = [];
 if ($viewCommentsEnabled && $banIds !== []) {
-    $placeholders = implode(',', array_fill(0, count($banIds), '?'));
-    $cRows        = $GLOBALS['PDO']->query(
+    $cRows = $GLOBALS['PDO']->resultsetInList(
         "SELECT bid, cid, aid, editaid, commenttxt, added, edittime,
 			(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
 			(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
 			FROM `:prefix_comments` AS C
-			WHERE type = 'B' AND bid IN ($placeholders) ORDER BY bid, added desc"
-    )->resultset($banIds);
+			WHERE type = 'B' AND bid IN (",
+        $banIds,
+        ') ORDER BY bid, added desc',
+    );
     foreach ($cRows as $cRow) {
         $commentsByBid[(int) $cRow['bid']][] = $cRow;
     }
@@ -862,7 +869,12 @@ if ($viewCommentsEnabled && $banIds !== []) {
 // local DB file), but the write-back that caches the resolved country
 // on `:prefix_bans` is queued here and flushed as ONE batched UPDATE
 // after the loop instead of one UPDATE per row.
+//
+// #1614: the database is operator-supplied and may be absent. Without
+// it the lookup is skipped and nothing is written back, so rows aren't
+// permanently cached as "zz" and resolve once the operator adds it.
 $pendingCountryUpdates = [];
+$geoipLookup           = !Config::getBool('banlist.nocountryfetch') && GeoIpAvailable();
 
 foreach ($res as $row) {
     $data = [];
@@ -872,7 +884,7 @@ foreach ($res as $row) {
     if (!empty($row['ban_ip']) && !Config::getBool('banlist.nocountryfetch')) {
         if (!empty($row['ban_country']) && $row['ban_country'] != ' ') {
             $data['country'] = '<img src="images/country/' . strtolower($row['ban_country']) . '.png" alt="' . $row['ban_country'] . '" border="0" align="absmiddle" />';
-        } elseif (!Config::getBool('banlist.nocountryfetch')) {
+        } elseif ($geoipLookup) {
             $country = FetchIp($row['ban_ip']);
             $pendingCountryUpdates[(int) $row['ban_id']] = $country;
 
@@ -1084,18 +1096,22 @@ foreach ($res as $row) {
             foreach ($commentres as $crow) {
                 $cdata            = [];
                 $cdata['morecom'] = ($morecom == 1 ? true : false);
-                if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(WebPermission::Owner)) {
-                    $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B&cid=' . $crow['cid'] . $pagelink, 'Edit Comment');
-                    if ($userbank->HasAccess(WebPermission::Owner)) {
-                        // #1402: `onclick="RemoveComment(...)"` was the v1.x bridge into
-                        // the deleted sourcebans.js helper — every click threw
-                        // `ReferenceError: RemoveComment is not defined`. We now emit
-                        // `data-action="comment-delete"` + the per-comment context;
-                        // the document-level dispatcher in web/scripts/comment-actions.js
-                        // handles the confirm + JSON API round-trip uniformly across all
-                        // four comment-thread surfaces (banlist / commslist / protests
-                        // / submissions). data-page lets the handler land the operator
-                        // back on the same paginated banlist view post-delete.
+                $canEditThisComment = $canComment
+                    && ((int) $crow['aid'] === $userbank->GetAid() || $canDeleteComment);
+                $editCommentUrl = 'index.php?p=banlist&comment=' . $data['ban_id']
+                    . '&ctype=B&cid=' . (int) $crow['cid'] . $pagelink;
+
+                $cdata['cid']        = (int) $crow['cid'];
+                $cdata['can_edit']   = $canEditThisComment;
+                $cdata['can_delete'] = $canDeleteComment;
+                $cdata['edit_url']   = $editCommentUrl;
+                $cdata['page']       = isset($_GET["page"]) ? (int) $page : -1;
+                // Legacy row keys stay populated for third-party themes.
+                $cdata['editcomlink'] = '';
+                $cdata['delcomlink']  = '';
+                if ($canEditThisComment) {
+                    $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', $editCommentUrl, 'Edit Comment');
+                    if ($canDeleteComment) {
                         $cdata['delcomlink'] = '<a href="#" class="tip" title="Delete Comment" target="_self"'
                             . ' data-action="comment-delete"'
                             . ' data-cid="' . (int) $crow['cid'] . '"'
@@ -1103,17 +1119,13 @@ foreach ($res as $row) {
                             . ' data-page="' . (isset($_GET["page"]) ? (int) $page : -1) . '"'
                             . '><i class="fas fa-trash fa-lg"></i></a>';
                     }
-                } else {
-                    $cdata['editcomlink'] = "";
-                    $cdata['delcomlink']  = "";
                 }
 
                 $cdata['comname']    = $commentsHideAdmin ? '' : $crow['comname'];
                 $cdata['added']      = Config::time($crow['added']);
-                $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                $commentText         = encodePreservingBr($commentText);
+                $commentText         = encodePreservingBr((string) $crow['commenttxt']);
                 // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
-                $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
+                $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?[^\s<]+)?)?)?)@', '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>', $commentText);
                 $cdata['commenttxt'] = $commentText;
 
                 if (!empty($crow['edittime'])) {
@@ -1134,8 +1146,8 @@ foreach ($res as $row) {
         $data['commentdata'] = $comment;
     }
 
-
-    $data['addcomment'] = CreateLinkR('<i class="fas fa-comment-dots fa-lg"></i> Add Comment', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B' . $pagelink);
+    $data['comment_url'] = 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B' . $pagelink;
+    $data['addcomment']  = CreateLinkR('<i class="fas fa-comment-dots fa-lg"></i> Add Comment', $data['comment_url']);
     //-----------------------------------
 
     $data['ub_reason']   = (isset($data['ub_reason']) ? $data['ub_reason'] : "");
@@ -1224,15 +1236,15 @@ foreach ($res as $row) {
     array_push($bans, $data);
 }
 
-// Flush the GeoIP country write-back queued during the loop above as a
-// single batched UPDATE (one round trip for the whole page) instead of
-// one UPDATE per row.
-if ($pendingCountryUpdates !== []) {
+// Flush the GeoIP country write-back in bounded batches instead of one
+// UPDATE per row. Each row contributes three placeholders (CASE id,
+// country, and the WHERE id), so use the shared 10,000-value chunk cap.
+foreach (array_chunk($pendingCountryUpdates, \Sbpp\Db\Database::IN_LIST_CHUNK_SIZE, true) as $countryUpdates) {
     $caseParts    = [];
     $whenArgs     = [];
     $idPlaceholders = [];
     $idArgs       = [];
-    foreach ($pendingCountryUpdates as $bid => $country) {
+    foreach ($countryUpdates as $bid => $country) {
         $caseParts[]      = "WHEN ? THEN ?";
         $whenArgs[]       = $bid;
         $whenArgs[]       = $country;
@@ -1341,36 +1353,91 @@ $commentCid     = '';
 $commentCanedit = false;
 /** @var array<int, array<string, mixed>>|string $commentOthers */
 $commentOthers  = '';
-if (isset($_GET["comment"])) {
-    $_GET["comment"] = (int) $_GET["comment"];
-    $commentMode  = $_GET["comment"];
+$ceditdata      = false;
+$requestedCtype = (string) ($_GET["ctype"] ?? '');
+// SECURITY-REVIEW: S/P comments belong to restricted moderation queues.
+// Do not let the public-comments toggle grant access to those record types.
+$commentRouteCanEdit = match ($requestedCtype) {
+    'B' => $canComment,
+    'S' => $userbank->HasAccess(WebPermission::mask(
+        WebPermission::Owner,
+        WebPermission::BanSubmissions,
+    )),
+    'P' => $userbank->HasAccess(WebPermission::mask(
+        WebPermission::Owner,
+        WebPermission::BanProtests,
+    )),
+    default => false,
+};
+$commentRouteVisible = $requestedCtype === 'B'
+    ? $viewCommentsEnabled
+    : $commentRouteCanEdit;
+$requestedCommentId = isset($_GET["comment"]) ? (int) $_GET["comment"] : 0;
+$commentParentExists = false;
+if ($commentRouteVisible && $requestedCommentId > 0) {
+    $commentParentExists = match ($requestedCtype) {
+        'B' => $GLOBALS['PDO']->query(
+            'SELECT bid FROM `:prefix_bans` WHERE bid = ?'
+        )->single([$requestedCommentId]) !== false,
+        'S' => $GLOBALS['PDO']->query(
+            'SELECT subid FROM `:prefix_submissions` WHERE subid = ?'
+        )->single([$requestedCommentId]) !== false,
+        'P' => $GLOBALS['PDO']->query(
+            'SELECT pid FROM `:prefix_protests` WHERE pid = ?'
+        )->single([$requestedCommentId]) !== false,
+        default => false,
+    };
+}
+if (
+    isset($_GET["comment"])
+    && $commentRouteVisible
+    && $commentParentExists
+) {
+    $_GET["comment"] = $requestedCommentId;
+    $commentMode  = $requestedCommentId;
     $commentType  = isset($_GET["cid"]) ? "Edit" : "Add";
     if (isset($_GET["cid"])) {
         $_GET["cid"]    = (int) $_GET["cid"];
-        $GLOBALS['PDO']->query("SELECT * FROM `:prefix_comments` WHERE cid = :cid");
+        $GLOBALS['PDO']->query(
+            "SELECT * FROM `:prefix_comments`
+             WHERE cid = :cid AND bid = :bid AND type = :ctype"
+        );
         $GLOBALS['PDO']->bind(':cid', $_GET["cid"]);
+        $GLOBALS['PDO']->bind(':bid', $_GET["comment"]);
+        $GLOBALS['PDO']->bind(':ctype', $requestedCtype);
         $ceditdata      = $GLOBALS['PDO']->single();
-        $ctext          = html_entity_decode($ceditdata['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $cotherdataedit = " AND cid != '" . $_GET["cid"] . "'";
+        $ctext          = $ceditdata
+            ? substituteInvalidUtf8((string) $ceditdata['commenttxt'])
+            : '';
+        if (!$ceditdata) {
+            $commentMode = false;
+        }
     } else {
-        $cotherdataedit = "";
-        $ctext          = "";
+        $ctext = "";
     }
 
-    $_GET["ctype"] = substr((string) ($_GET["ctype"] ?? ''), 0, 1);
+    if (isset($_GET["cid"])) {
+        $cotherdata = $GLOBALS['PDO']->query(
+            "SELECT cid, aid, commenttxt, added, edittime,
+                    (SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+                    (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+               FROM `:prefix_comments` AS C
+              WHERE type = ? AND bid = ? AND cid != ?
+           ORDER BY added DESC"
+        )->resultset([$requestedCtype, $_GET["comment"], $_GET["cid"]]);
+    } else {
+        $cotherdata = $GLOBALS['PDO']->query(
+            "SELECT cid, aid, commenttxt, added, edittime,
+                    (SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+                    (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+               FROM `:prefix_comments` AS C
+              WHERE type = ? AND bid = ?
+           ORDER BY added DESC"
+        )->resultset([$requestedCtype, $_GET["comment"]]);
+    }
 
-    $cotherdata = $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
-											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
-											(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
-											FROM `:prefix_comments` AS C
-											WHERE type = ? AND bid = ?" . $cotherdataedit . " ORDER BY added desc")->resultset([
-        $_GET["ctype"],
-        $_GET["comment"],
-    ]);
-
-    // #1500: same gate as the per-ban comment thread above — null admin
-    // usernames for public viewers so this comment-edit surface (reachable
-    // by anyone via ?comment=N) doesn't leak them regardless of theme.
+    // #1500: same gate as the per-ban comment thread above. Public ban
+    // comments may be visible when enabled, but admin usernames stay hidden.
     $commentsHideAdmin = Config::getBool('banlist.hideadminname') && !$userbank->is_admin();
 
     $ocomments = [];
@@ -1378,13 +1445,12 @@ if (isset($_GET["comment"])) {
         $coment               = [];
         $coment['comname']    = $commentsHideAdmin ? '' : $cdrow['comname'];
         $coment['added']      = Config::time($cdrow['added']);
-        $commentTextRow       = html_entity_decode($cdrow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $commentTextRow       = encodePreservingBr($commentTextRow);
+        $commentTextRow       = encodePreservingBr((string) $cdrow['commenttxt']);
         // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
-        $commentTextRow       = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentTextRow);
+        $commentTextRow       = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?[^\s<]+)?)?)?)@', '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>', $commentTextRow);
         $coment['commenttxt'] = $commentTextRow;
 
-        if ($cdrow['editname'] != "") {
+        if (!empty($cdrow['edittime'])) {
             $coment['edittime'] = Config::time($cdrow['edittime']);
             $coment['editname'] = $commentsHideAdmin ? '' : $cdrow['editname'];
         } else {
@@ -1395,9 +1461,13 @@ if (isset($_GET["comment"])) {
     }
 
     $commentText    = (string) (isset($ctext) ? $ctext : '');
-    $commentCtype   = (string) $_GET["ctype"];
+    $commentCtype   = $requestedCtype;
     $commentCid     = isset($_GET["cid"]) ? (string) $_GET["cid"] : '';
-    $commentCanedit = $userbank->is_admin();
+    $commentCanedit = $commentRouteCanEdit && (
+        !isset($_GET["cid"])
+        || ($ceditdata
+            && ((int) $ceditdata['aid'] === $userbank->GetAid() || $canDeleteComment))
+    );
     $commentOthers  = $ocomments;
 }
 
@@ -1497,6 +1567,7 @@ Renderer::render($theme, new BanListView(
     can_delete:      (bool) $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteBan)),
     can_export:      (bool) $userbank->HasAccess(WebPermission::Owner) || Config::getBool('config.exportpublic'),
     admin_postkey:   $_SESSION['banlist_postkey'],
+    can_comment:     $canComment,
     can_add_ban:     (bool) $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan)),
     is_filtered:             $banlistIsFiltered,
     server_list:             $banlistServerList,

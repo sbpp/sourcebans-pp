@@ -241,12 +241,34 @@ function SecondsToString(int $sec, bool $textual = true): string
 }
 
 /**
- * Look up the ISO country code for `$ip` against the bundled MaxMind
- * country DB. Returns the placeholder `"zz"` on any failure (missing
- * DB, malformed IP, MaxMind exception).
+ * True when an operator-supplied MaxMind country database is readable
+ * at `MMDB_PATH`. The panel doesn't ship one (#1614, GeoLite EULA), so
+ * this gates every country lookup and the footer attribution: with no
+ * database the GeoIP feature is off.
+ */
+function GeoIpAvailable(?string $path = null): bool
+{
+    if ($path === null) {
+        if (!defined('MMDB_PATH')) {
+            return false;
+        }
+        $path = (string) constant('MMDB_PATH');
+    }
+    return $path !== '' && @is_file($path) && @is_readable($path);
+}
+
+/**
+ * Look up the ISO country code for `$ip` against the operator-supplied
+ * MaxMind country DB. Returns the placeholder `"zz"` on any failure
+ * (missing DB, malformed IP, MaxMind exception). Callers that cache the
+ * result must check `GeoIpAvailable()` first so a missing database
+ * doesn't get recorded as "unknown country".
  */
 function FetchIp(string $ip): string
 {
+    if (!GeoIpAvailable()) {
+        return 'zz';
+    }
     try {
         $reader = new Reader(MMDB_PATH);
         $row    = $reader->get($ip);
@@ -323,47 +345,49 @@ function PruneBans(): void
     $pdo->bind(':id', $adminId);
     $pdo->execute();
 
-    // Two single-column SELECTs are intentionally separate from the
-    // composite UPDATE below: `UPDATE … WHERE` locks every row it
-    // examines for the predicate, not just the rows it changes. We
-    // surface the candidate `subid`s with a SELECT first so the
-    // UPDATE only locks rows it'll mutate.
-    $steamIds = $pdo
-        ->query('SELECT DISTINCT authid FROM `:prefix_bans` WHERE `type` = 0 AND `RemoveType` IS NULL')
-        ->resultset(null, PDO::FETCH_COLUMN);
-    $banIps = $pdo
-        ->query('SELECT ip FROM `:prefix_bans` WHERE type = 1 AND RemoveType IS NULL')
-        ->resultset(null, PDO::FETCH_COLUMN);
-
-    if ($steamIds === [] && $banIps === []) {
-        return;
-    }
-
-    $clauses = [];
-    $args    = [];
-    if ($steamIds !== []) {
-        $clauses[] = 'SteamId IN (' . implode(',', array_fill(0, count($steamIds), '?')) . ')';
-        array_push($args, ...$steamIds);
-    }
-    if ($banIps !== []) {
-        $clauses[] = 'sip IN (' . implode(',', array_fill(0, count($banIps), '?')) . ')';
-        array_push($args, ...$banIps);
-    }
-
+    // Keep the candidate lookup read-only: a composite UPDATE would
+    // lock every submissions row examined, not just rows it changes.
+    // Two set-based arms avoid materialising every active ban identifier
+    // as one prepared-statement IN-list (MariaDB rejects statements above
+    // 65,535 placeholders). UNION DISTINCT de-duplicates a submission
+    // that happens to match both its Steam ID and IP. Keeping the arms
+    // separate lets MariaDB probe type_authid / type_ip directly for each
+    // submission instead of materialising all active identifiers first.
+    // No FORCE INDEX: it fatals (1176) on installs missing either index.
     $subIds = $pdo
-        ->query('SELECT `subid` FROM `:prefix_submissions` WHERE `archiv` = 0 AND (' . implode(' OR ', $clauses) . ')')
-        ->resultset($args, PDO::FETCH_COLUMN);
+        ->query(
+            'SELECT S.`subid`
+               FROM `:prefix_submissions` AS S
+               INNER JOIN `:prefix_bans` AS BSteam
+                       ON BSteam.`type` = 0
+                      AND BSteam.`authid` = S.`SteamId`
+                      AND BSteam.`RemoveType` IS NULL
+              WHERE S.`archiv` = 0
+              UNION DISTINCT
+             SELECT S.`subid`
+               FROM `:prefix_submissions` AS S
+               INNER JOIN `:prefix_bans` AS BIp
+                       ON BIp.`type` = 1
+                      AND BIp.`ip` = S.`sip`
+                      AND BIp.`RemoveType` IS NULL
+              WHERE S.`archiv` = 0'
+        )
+        ->resultset(null, PDO::FETCH_COLUMN);
 
     if ($subIds === []) {
         return;
     }
 
-    $pdo
-        ->query('UPDATE `:prefix_submissions`
-                    SET `archiv` = 3,
-                        `archivedby` = ?
-                  WHERE `subid` IN (' . implode(',', array_fill(0, count($subIds), '?')) . ')')
-        ->execute([$adminId, ...$subIds]);
+    $pdo->executeInList(
+        'UPDATE `:prefix_submissions`
+            SET `archiv` = 3,
+                `archivedby` = ?
+          WHERE `subid` IN (',
+        $subIds,
+        ')',
+        [$adminId],
+        atomic: true,
+    );
 }
 
 /**
@@ -597,20 +621,41 @@ function parseRconStatus(string $status): array
  * `<br/>` tags as literal line breaks (the comment-store format
  * pre-#1113 wraps newlines in `<br/>`s; we want to escape every other
  * fragment but emit the line breaks back as `<br/>` after `nl2br()`).
+ * Comment text is stored raw, so entity-shaped input stays literal.
+ * Malformed historical bytes substitute to U+FFFD instead of blanking
+ * the containing segment.
  */
 function encodePreservingBr(string $text): string
 {
     $segments = preg_split('/(<br\s*\/?>)/i', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
     if ($segments === false) {
-        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     $rendered = '';
     foreach ($segments as $segment) {
         $rendered .= preg_match('/^<br\s*\/?>$/i', $segment)
             ? "\n"
-            : htmlspecialchars($segment, ENT_QUOTES, 'UTF-8');
+            : htmlspecialchars($segment, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     return nl2br($rendered);
+}
+
+/**
+ * Replace malformed UTF-8 byte sequences without otherwise changing text.
+ *
+ * Historical comment rows can predate the utf8mb4 migration. Editable
+ * textarea values must remain raw (not pre-escaped), so use JSON's
+ * well-defined U+FFFD substitution to normalise them before Smarty applies
+ * its HTML escaping.
+ */
+function substituteInvalidUtf8(string $text): string
+{
+    if (mb_check_encoding($text, 'UTF-8')) {
+        return $text;
+    }
+
+    $encoded = json_encode($text, JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
+    return (string) json_decode($encoded, true, 512, JSON_THROW_ON_ERROR);
 }

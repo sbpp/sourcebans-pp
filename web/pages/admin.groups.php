@@ -55,10 +55,11 @@ $web_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE t
 $webGroupIds = array_map(static fn ($r) => (int) $r['gid'], $web_group_rows);
 $webGroupMembersByGid = [];
 if ($webGroupIds !== []) {
-    $placeholders  = implode(',', array_fill(0, count($webGroupIds), '?'));
-    $memberRows    = $GLOBALS['PDO']->query(
-        "SELECT aid, user, authid, gid FROM `:prefix_admins` WHERE gid IN ($placeholders)"
-    )->resultset($webGroupIds);
+    $memberRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT aid, user, authid, gid FROM `:prefix_admins` WHERE gid IN (',
+        $webGroupIds,
+        ')',
+    );
     foreach ($memberRows as $memberRow) {
         $webGroupMembersByGid[(int) $memberRow['gid']][] = $memberRow;
     }
@@ -89,10 +90,11 @@ $server_admin_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgro
 $srvGroupNames = array_map(static fn ($r) => (string) $r['name'], $server_admin_group_rows);
 $srvGroupMembersByName = [];
 if ($srvGroupNames !== []) {
-    $placeholders = implode(',', array_fill(0, count($srvGroupNames), '?'));
-    $memberRows   = $GLOBALS['PDO']->query(
-        "SELECT aid, user, authid, srv_group FROM `:prefix_admins` WHERE srv_group IN ($placeholders)"
-    )->resultset($srvGroupNames);
+    $memberRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT aid, user, authid, srv_group FROM `:prefix_admins` WHERE srv_group IN (',
+        $srvGroupNames,
+        ')',
+    );
     foreach ($memberRows as $memberRow) {
         $srvGroupMembersByName[$memberRow['srv_group']][] = $memberRow;
     }
@@ -101,10 +103,11 @@ if ($srvGroupNames !== []) {
 $srvGroupIds = array_map(static fn ($r) => (int) $r['id'], $server_admin_group_rows);
 $srvGroupOverridesByGroupId = [];
 if ($srvGroupIds !== []) {
-    $placeholders = implode(',', array_fill(0, count($srvGroupIds), '?'));
-    $overrideRows = $GLOBALS['PDO']->query(
-        "SELECT type, name, access, group_id FROM `:prefix_srvgroups_overrides` WHERE group_id IN ($placeholders)"
-    )->resultset($srvGroupIds);
+    $overrideRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT type, name, access, group_id FROM `:prefix_srvgroups_overrides` WHERE group_id IN (',
+        $srvGroupIds,
+        ')',
+    );
     foreach ($overrideRows as $overrideRow) {
         $srvGroupOverridesByGroupId[(int) $overrideRow['group_id']][] = $overrideRow;
     }
@@ -154,14 +157,14 @@ $server_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHER
 $serverGroupIds = array_map(static fn ($r) => (int) $r['gid'], $server_group_rows);
 $serverRowsByGroupId = [];
 if ($serverGroupIds !== []) {
-    $placeholders = implode(',', array_fill(0, count($serverGroupIds), '?'));
-    $groupServerRows = $GLOBALS['PDO']->query(
-        "SELECT S.sid, S.ip, S.port, S.enabled, SG.group_id
+    $groupServerRows = $GLOBALS['PDO']->resultsetInList(
+        'SELECT S.sid, S.ip, S.port, S.enabled, SG.group_id
          FROM `:prefix_servers_groups` AS SG
          INNER JOIN `:prefix_servers` AS S ON S.sid = SG.server_id
-         WHERE SG.group_id IN ($placeholders)
-         ORDER BY S.sid ASC"
-    )->resultset($serverGroupIds);
+         WHERE SG.group_id IN (',
+        $serverGroupIds,
+        ') ORDER BY S.sid ASC',
+    );
     foreach ($groupServerRows as $groupServerRow) {
         $serverRowsByGroupId[(int) $groupServerRow['group_id']][] = $groupServerRow;
     }

@@ -723,11 +723,21 @@
     const admin  = (data && data.admin)  || {};
     const server = (data && data.server) || {};
     const comments = Array.isArray(data && data.comments) ? data.comments : [];
-    const commentsVisible = !!(data && data.comments_visible);
+    const commentsVisible = Boolean(data && data.comments_visible === true);
+    const commentsCanAdd = Boolean(data && data.comments_can_add === true);
     const isComm = drawerKind === 'comm';
     const focal  = isComm
       ? ((data && data.block) || {})
       : ((data && data.ban) || {});
+    const focalId = Number(isComm ? data && data.cid : data && data.bid);
+    const validFocalId = Number.isInteger(focalId) && focalId > 0 ? focalId : 0;
+    const commentPage = isComm ? 'commslist' : 'banlist';
+    const commentType = isComm ? 'C' : 'B';
+    const commentUrl = (/** @type {number} */ cid) =>
+      'index.php?p=' + commentPage
+      + '&comment=' + encodeURIComponent(String(validFocalId))
+      + '&ctype=' + commentType
+      + (cid > 0 ? '&cid=' + encodeURIComponent(String(cid)) : '');
 
     /** @type {Array<[string, string]>} */
     const idRows = [];
@@ -778,27 +788,79 @@
         ).join('')
       + '</dl>';
 
+    let demoHtml = '';
+    if (!isComm && validFocalId > 0 && Number(data && data.demo_count) > 0) {
+      const demoUrl = 'getdemo.php?type=B&id=' + encodeURIComponent(String(validFocalId));
+      demoHtml =
+        '<div data-testid="drawer-demo-actions">'
+        + '<a class="btn btn--secondary btn--sm" href="' + escapeHtml(demoUrl) + '" data-testid="drawer-demo-download">'
+        + '<i data-lucide="download" style="width:14px;height:14px"></i>'
+        + 'Download demo'
+        + '</a>'
+        + '</div>';
+    }
+
     let commentsHtml = '';
     if (commentsVisible) {
       commentsHtml = '<section data-testid="drawer-comments" style="margin-top:0.5rem">'
-        + '<h3 class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;margin:0 0 0.5rem">Comments</h3>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">'
+        + '<h3 class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;margin:0">Comments</h3>'
+        + (commentsCanAdd && validFocalId > 0
+          ? '<a class="btn btn--secondary btn--sm" href="' + escapeHtml(commentUrl(0)) + '" data-testid="drawer-comment-add">'
+            + '<i data-lucide="message-square-text" style="width:13px;height:13px"></i>'
+            + 'Add comment'
+            + '</a>'
+          : '')
+        + '</div>'
         + (comments.length === 0
           ? '<p class="text-sm text-muted" style="margin:0">No comments.</p>'
           : '<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.625rem">'
-            + comments.map((c) =>
+            + comments.map((rawComment) => {
+                // Treat every API element as untrusted. One malformed entry
+                // must not prevent the rest of the drawer from rendering.
+                const c = /** @type {any} */ (
+                  rawComment && typeof rawComment === 'object' ? rawComment : {}
+                );
+                const cid = Number(c && c.cid);
+                const validCid = Number.isInteger(cid) && cid > 0 ? cid : 0;
+                const canEdit = c.can_edit === true;
+                const canDelete = c.can_delete === true;
+                const authorLabel = c.author_hidden === true
+                  ? 'Hidden'
+                  : (Object.prototype.hasOwnProperty.call(c, 'author') && c.author === null
+                    ? 'deleted admin'
+                    : (typeof c.author === 'string' && c.author !== '' ? c.author : 'unknown'));
+                const actionsHtml = validCid > 0 && (canEdit || canDelete)
+                  ? '<span class="row-actions row-actions--icons" style="margin-left:auto">'
+                    + (canEdit
+                      ? '<a class="btn btn--ghost btn--icon btn--xs" href="' + escapeHtml(commentUrl(validCid)) + '" data-testid="drawer-comment-edit" data-tooltip="Edit comment" aria-label="Edit comment">'
+                        + '<i data-lucide="pencil" style="width:12px;height:12px"></i>'
+                        + '</a>'
+                      : '')
+                    + (canDelete
+                      ? '<button type="button" class="btn btn--ghost btn--icon btn--xs" data-testid="drawer-comment-delete" data-action="comment-delete" data-cid="' + escapeHtml(String(validCid)) + '" data-ctype="' + commentType + '" data-page="-1" data-tooltip="Delete comment" aria-label="Delete comment">'
+                        + '<i data-lucide="trash-2" style="width:12px;height:12px;color:var(--danger)"></i>'
+                        + '</button>'
+                      : '')
+                    + '</span>'
+                  : '';
+                return (
                 '<li style="border:1px solid var(--border);border-radius:var(--radius-md);padding:0.625rem 0.75rem;background:var(--bg-surface)">'
-                + '<div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">'
-                +   '<span class="font-medium">' + escapeHtml(c.author_hidden ? 'Hidden' : (c.author || 'unknown')) + '</span>'
+                + '<div style="display:flex;align-items:center;gap:0.375rem;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">'
+                +   '<span class="font-medium">' + escapeHtml(authorLabel) + '</span>'
+                +   '<span aria-hidden="true">\u00b7</span>'
                 +   '<span>' + escapeHtml(c.added_human || '') + '</span>'
+                +   actionsHtml
                 + '</div>'
-                + '<div class="text-sm" style="white-space:pre-wrap">' + escapeHtml(c.text || '') + '</div>'
+                + '<div class="text-sm" data-testid="drawer-comment-text" style="white-space:pre-wrap">' + renderCommentText(c.text || '') + '</div>'
                 + '</li>'
-              ).join('')
+                );
+              }).join('')
             + '</ul>')
         + '</section>';
     }
 
-    return idHtml + focalHtml + commentsHtml;
+    return idHtml + focalHtml + demoHtml + commentsHtml;
   }
 
   /**
@@ -1937,6 +1999,28 @@
         default:  return '&#39;';
       }
     });
+  }
+
+  /**
+   * Render raw stored comment text with the same safety and display contract
+   * as PHP's encodePreservingBr(): escape everything, preserve legacy `<br>`
+   * separators, and linkify only HTTP(S) URLs from the escaped text.
+   *
+   * @param {unknown} value
+   * @returns {string}
+   */
+  function renderCommentText(value) {
+    // SECURITY-REVIEW: comment text comes from an API response and is
+    // untrusted. Escape every text segment before adding fixed link/BR markup.
+    const parts = String(value == null ? '' : value).split(/(<br\s*\/?>)/gi);
+    return parts.map((part) => {
+      if (/^<br\s*\/?>$/i.test(part)) return '<br>';
+      const escaped = escapeHtml(part);
+      return escaped.replace(
+        /(https?:\/\/(?:[-\w.]+)+(?::\d+)?(?:\/(?:[\w/_.]*(?:\?\S+)?)?)?)/g,
+        (url) => '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>',
+      );
+    }).join('');
   }
 
   // Init Lucide icons whenever DOM changes (cheap MutationObserver hook).

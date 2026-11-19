@@ -143,6 +143,19 @@
             <i data-lucide="heart" aria-hidden="true" style="width:12px;height:12px"></i>
             Support SourceBans++
         </a>
+        {*
+            GeoLite attribution (#1614). MaxMind's EULA asks for this
+            wording wherever GeoLite data (the drawer's Country row, the
+            banlist country flags) is shown. The panel doesn't ship the
+            database, so footer.php only sets the flag when an operator
+            has installed one at MMDB_PATH.
+        *}
+        {if isset($geoip_attribution) && $geoip_attribution}
+        <p class="app-footer__attribution" data-testid="app-footer-geoip">
+            This product includes GeoLite Data created by MaxMind, available from
+            <a href="https://www.maxmind.com" target="_blank" rel="noopener">https://www.maxmind.com</a>.
+        </p>
+        {/if}
     </footer>
   </div>{* /.main *}
 </div>{* /.app *}
@@ -231,8 +244,8 @@
 {*
     #1402: comment-actions.js — single document-level click delegate
     for `data-action="comment-delete"` triggers (admin moderation
-    queues, banlist / commslist comment editor on themes that render
-    delcomlink). Loaded globally because the dispatcher is feature-
+    queues, banlist / commslist inline disclosures, and the player
+    drawer). Loaded globally because the dispatcher is feature-
     detected (no-op when no triggers exist) and the four surfaces it
     serves render from different page handlers; per-page includes
     would mean tracking four mount points instead of one. Pre-#1402
@@ -240,11 +253,7 @@
     `ReferenceError: RemoveComment is not defined` (the helper lived
     in the deleted sourcebans.js at #1123 D1).
 *}
-{* `defer` would be a no-op here since the script lives at the body
-   tail and the parser is already past the body. Drop it so the
-   markup matches the runtime behaviour (#1402 adversarial review
-   LOW 8). *}
-<script src="./scripts/comment-actions.js"></script>
+<script src="./scripts/comment-actions.js" defer></script>
 
 </body>
 </html>

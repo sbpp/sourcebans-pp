@@ -236,6 +236,11 @@
 		"pt"			"\"{1}\" adicionou um banimento. (Minutos: {2}.) (ID/IP: {3}.) (Motivo: {4}.)"
 		"chi"			"\"{1}\" 已被封禁 ({2} 分钟) (ID/IP: {3}) (理由: {4})."
 	}
+	"Cannot IP Ban No IP"
+	{
+		"#format"		"{1:N}"
+		"en"			"Cannot IP ban {1}: no IP address is available for this player (Steam Networking / SDR)."
+	}
 	"Ban Success Name"
 	{
 		"#format"		"{1:s}"
@@ -275,6 +280,23 @@
 		"fr"			"\"{1}\" a supprimé le ban (filter: {2}) (raison: {3})."
 		"pt"			"\"{1}\" removeu um banimento. (Filtro: {2}.) (Motivo: {3}.)"
 		"chi"			"\"{1}\" 移除了封禁 (过滤: {2}) (理由: {3})."
+	}
+	"Invalid SteamID"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} isn't a valid SteamID, expected STEAM_X:Y:Z."
+		"nl"			"{1} is geen geldige SteamID, verwacht wordt STEAM_X:Y:Z."
+		"fr"			"{1} n'est pas un SteamID valide, format attendu : STEAM_X:Y:Z."
+		"pl"			"{1} nie jest prawidłowym SteamID, oczekiwano STEAM_X:Y:Z."
+		"pt"			"{1} não é um SteamID válido, esperado STEAM_X:Y:Z."
+		"de"			"{1} ist keine gültige SteamID, erwartet wird STEAM_X:Y:Z."
+		"ru"			"{1} не является действительным SteamID, ожидается STEAM_X:Y:Z."
+		"da"			"{1} er ikke et gyldigt SteamID, forventet STEAM_X:Y:Z."
+		"no"			"{1} er ikke en gyldig SteamID, forventet STEAM_X:Y:Z."
+		"hu"			"{1} nem érvényes SteamID, várt formátum: STEAM_X:Y:Z."
+		"chi"			"{1} 不是有效的 SteamID, 应为 STEAM_X:Y:Z."
+		"tr"			"{1} geçerli bir SteamID değil, beklenen biçim: STEAM_X:Y:Z."
+		"es"			"{1} no es un SteamID válido, se esperaba STEAM_X:Y:Z."
 	}
 	"No Active Ban"
 	{

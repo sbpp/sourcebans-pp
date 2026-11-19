@@ -20,7 +20,7 @@
         "panel": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["version", "git", "dev", "theme"],
+            "required": ["version", "git", "dev", "theme", "region", "exported_30d"],
             "properties": {
                 "version": {
                     "type": "string",
@@ -38,13 +38,44 @@
                     "type": "string",
                     "enum": ["default", "custom"],
                     "description": "`'default'` if the active theme is the panel's shipped default; `'custom'` otherwise. The actual fork theme name is never reported (would leak community names)."
+                },
+                "region": {
+                    "type": ["string", "null"],
+                    "enum": ["af", "as", "eu", "na", "oc", "sa", null],
+                    "description": "Continent code derived from the panel's configured timezone: `config.timezone` when it holds an IANA zone name, else PHP's default timezone (`date.timezone`). Never derived from the request or the client IP. `null` for `UTC` / `Etc/*` / Antarctica / unparseable values; null leaves are dropped from the wire body, so the Worker sees the key as absent."
+                },
+                "exported_30d": {
+                    "type": "boolean",
+                    "description": "True iff a full data export bundle was delivered (ZIP download or S3 upload) in the last 30 days, read from the `Data Export` success rows in `:prefix_log`."
                 }
             }
         },
         "env": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["php", "db_engine", "db_version", "web_server", "os_family"],
+            "required": [
+                "php",
+                "db_engine",
+                "db_version",
+                "web_server",
+                "os_family",
+                "sapi",
+                "memory_limit_mb",
+                "max_execution_time",
+                "disable_functions_count",
+                "zts",
+                "php_64bit",
+                "open_basedir_set",
+                "allow_url_fopen",
+                "opcache_loaded",
+                "suhosin_loaded",
+                "posix_available",
+                "host_panel_cpanel",
+                "host_panel_plesk",
+                "host_panel_directadmin",
+                "docroot_user_home",
+                "sapi_per_user"
+            ],
             "properties": {
                 "php": {
                     "type": "string",
@@ -70,6 +101,74 @@
                     "type": "string",
                     "enum": ["linux", "windows", "mac", "bsd", "other"],
                     "description": "Lowercased `PHP_OS_FAMILY`."
+                },
+                "sapi": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9_-]+$",
+                    "description": "`PHP_SAPI` (e.g. `fpm-fcgi`, `apache2handler`, `cgi-fcgi`, `litespeed`). Bounded set of runtime names, not host-identifying."
+                },
+                "memory_limit_mb": {
+                    "type": ["integer", "null"],
+                    "minimum": 0,
+                    "description": "`ini_get('memory_limit')` parsed to whole MiB (`512M` → `512`, `1G` → `1024`). `null` when unlimited (`-1`) or unparseable; null leaves are dropped from the wire body, so the Worker sees the key as absent."
+                },
+                "max_execution_time": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`(int) ini_get('max_execution_time')`. `0` means no limit."
+                },
+                "disable_functions_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of entries in `disable_functions`. The list itself is never sent (it fingerprints the hosting provider)."
+                },
+                "zts": {
+                    "type": "boolean",
+                    "description": "`PHP_ZTS === 1` (thread-safe build)."
+                },
+                "php_64bit": {
+                    "type": "boolean",
+                    "description": "`PHP_INT_SIZE === 8`."
+                },
+                "open_basedir_set": {
+                    "type": "boolean",
+                    "description": "`open_basedir` is non-empty. Boolean only; the value would leak the home directory path."
+                },
+                "allow_url_fopen": {
+                    "type": "boolean",
+                    "description": "`allow_url_fopen` is enabled."
+                },
+                "opcache_loaded": {
+                    "type": "boolean",
+                    "description": "`extension_loaded('Zend OPcache')`."
+                },
+                "suhosin_loaded": {
+                    "type": "boolean",
+                    "description": "`extension_loaded('suhosin')`."
+                },
+                "posix_available": {
+                    "type": "boolean",
+                    "description": "`function_exists('posix_geteuid')`."
+                },
+                "host_panel_cpanel": {
+                    "type": "boolean",
+                    "description": "`/usr/local/cpanel` exists. `false` when `open_basedir` hides it."
+                },
+                "host_panel_plesk": {
+                    "type": "boolean",
+                    "description": "`/usr/local/psa` exists. `false` when `open_basedir` hides it."
+                },
+                "host_panel_directadmin": {
+                    "type": "boolean",
+                    "description": "`/usr/local/directadmin` exists. `false` when `open_basedir` hides it."
+                },
+                "docroot_user_home": {
+                    "type": "boolean",
+                    "description": "`DOCUMENT_ROOT` matches the cPanel / DirectAdmin layout (`/home*/<user>/public_html` or `/home*/<user>/domains/<domain>/public_html`). Boolean only; the path contains the account username."
+                },
+                "sapi_per_user": {
+                    "type": "boolean",
+                    "description": "SAPI is `fpm-fcgi` / `cgi-fcgi` AND the effective uid owns the panel's files AND is a regular account (>= 1000, not `nobody`). Per-user FPM / suEXEC / mod_ruid2 fingerprint. `false` without POSIX."
                 }
             }
         },
@@ -84,7 +183,13 @@
                 "comms_active",
                 "comms_total",
                 "submissions_30d",
-                "protests_30d"
+                "protests_30d",
+                "bans_30d",
+                "admins_active_30d",
+                "ban_history_months",
+                "web_bans_majority_30d",
+                "games",
+                "perms"
             ],
             "properties": {
                 "admins": {
@@ -126,6 +231,79 @@
                     "type": "integer",
                     "minimum": 0,
                     "description": "`SELECT COUNT(*) FROM :prefix_protests WHERE datesubmitted >= UNIX_TIMESTAMP() - 2592000`."
+                },
+                "bans_30d": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_bans WHERE created >= UNIX_TIMESTAMP() - 2592000`."
+                },
+                "admins_active_30d": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "`SELECT COUNT(*) FROM :prefix_admins WHERE lastvisit >= UNIX_TIMESTAMP() - 2592000`."
+                },
+                "ban_history_months": {
+                    "type": ["integer", "null"],
+                    "minimum": 0,
+                    "description": "Whole calendar months since `MIN(:prefix_bans.created)` (rows with `created = 0` ignored). `null` when there are no bans; null leaves are dropped from the wire body, so the Worker sees the key as absent."
+                },
+                "web_bans_majority_30d": {
+                    "type": "boolean",
+                    "description": "True iff more than half of the bans created in the last 30 days have `sid = 0` (added from the web panel rather than a game server). `false` when there were none."
+                },
+                "games": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["tf", "cstrike", "csgo", "garrysmod", "left4dead2", "other"],
+                    "properties": {
+                        "tf": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'tf'`."
+                        },
+                        "cstrike": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'cstrike'`."
+                        },
+                        "csgo": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'csgo'`."
+                        },
+                        "garrysmod": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'garrysmod'`."
+                        },
+                        "left4dead2": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has `modfolder = 'left4dead2'`."
+                        },
+                        "other": {
+                            "type": "boolean",
+                            "description": "At least one enabled server whose mod has any other `modfolder`. The folder name itself is never sent."
+                        }
+                    }
+                },
+                "perms": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["web_groups", "server_groups", "overrides", "immunity"],
+                    "properties": {
+                        "web_groups": {
+                            "type": "boolean",
+                            "description": "At least one web admin group (`:prefix_groups` with `type = 1`)."
+                        },
+                        "server_groups": {
+                            "type": "boolean",
+                            "description": "At least one server admin group (`:prefix_srvgroups`)."
+                        },
+                        "overrides": {
+                            "type": "boolean",
+                            "description": "At least one row in `:prefix_overrides`."
+                        },
+                        "immunity": {
+                            "type": "boolean",
+                            "description": "At least one admin with `immunity > 0`."
+                        }
+                    }
                 }
             }
         },

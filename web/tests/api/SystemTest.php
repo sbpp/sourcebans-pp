@@ -78,17 +78,11 @@ final class SystemTest extends ApiTestCase
 
     public function testCheckVersionErrorWhenNoCacheAndUpstreamUnreachable(): void
     {
-        // Force the upstream URL to a port that nothing listens on so
-        // the fetch fails immediately (ECONNREFUSED, no 5s wait), drop
-        // the cache, and assert the handler reports the documented
-        // degraded shape. SB_RELEASE_LATEST_URL is a constant; once
-        // defined it sticks for the rest of the PHPUnit process. That's
-        // fine: every other check_version test seeds a fresh cache
-        // (TTL 1d) so they never reach the upstream-fetch branch.
+        // The bootstrap points SB_RELEASE_LATEST_URL at a port that
+        // nothing listens on, so the fetch fails immediately
+        // (ECONNREFUSED, no 5s wait). Drop the cache and assert the
+        // handler reports the documented degraded shape.
         @unlink(SB_CACHE . 'github_release_latest.json');
-        if (!defined('SB_RELEASE_LATEST_URL')) {
-            define('SB_RELEASE_LATEST_URL', 'http://127.0.0.1:1/');
-        }
 
         $env = $this->api('system.check_version', []);
 
@@ -106,17 +100,14 @@ final class SystemTest extends ApiTestCase
         // payload anyway (NOT the `Error` envelope). Prime the cache
         // with `cached_at` one second past the TTL so the in-TTL fast
         // path is skipped and the handler falls into the upstream-fetch
-        // branch; force the upstream URL to a refused port so that
-        // fetch returns null; assert the handler returns the formatted
-        // cached shape, not `release_latest: 'Error'`. Re-priming the
+        // branch, where the bootstrap's refused SB_RELEASE_LATEST_URL
+        // makes the fetch return null; assert the handler returns the
+        // formatted cached shape, not `release_latest: 'Error'`. Re-priming the
         // cache here (rather than relying on a previously-primed file)
         // makes the test order-independent: even if it runs after
         // `testCheckVersionErrorWhenNoCacheAndUpstreamUnreachable`
         // unlinked the file, the stale entry below is what the assertion
         // depends on.
-        if (!defined('SB_RELEASE_LATEST_URL')) {
-            define('SB_RELEASE_LATEST_URL', 'http://127.0.0.1:1/');
-        }
         $this->primeReleaseCache('1.7.2', time() - 86401);
 
         $env = $this->api('system.check_version', []);

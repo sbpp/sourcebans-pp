@@ -280,13 +280,19 @@ export interface LostpasswordSeed {
  * single source of truth for which settings the happy-path requires
  * (kept out of the TS side so the schema-shape of `:prefix_settings`
  * stays Python-style invisible to the spec author).
+ *
+ * Pass `email` to seed (and target) a dedicated admin row for that
+ * address instead of `admin@example.test`.
  */
-export async function seedLostpasswordE2e(): Promise<LostpasswordSeed> {
+export async function seedLostpasswordE2e(email?: string): Promise<LostpasswordSeed> {
     const inContainer = process.env.E2E_IN_CONTAINER === '1';
     const cmd = inContainer ? 'php' : 'docker';
-    const cmdArgs = inContainer
+    const scriptArgs = email === undefined
         ? [SEED_LOSTPASSWORD_INSIDE_CONTAINER]
-        : ['compose', 'exec', '-T', 'web', 'php', SEED_LOSTPASSWORD_INSIDE_CONTAINER];
+        : [SEED_LOSTPASSWORD_INSIDE_CONTAINER, email];
+    const cmdArgs = inContainer
+        ? scriptArgs
+        : ['compose', 'exec', '-T', 'web', 'php', ...scriptArgs];
 
     const { stdout, stderr } = await execFileP(cmd, cmdArgs, {
         maxBuffer: 1 * 1024 * 1024,

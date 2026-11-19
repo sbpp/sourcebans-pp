@@ -33,7 +33,16 @@
     "autoload": {
         "psr-4": {
             "Sbpp\\": "includes/"
-        }
+        },
+        "exclude-from-classmap": [
+            "includes/Auth/openid.php",
+            "includes/BanRemoval.php",
+            "includes/BanType.php",
+            "includes/LogSearchType.php",
+            "includes/LogType.php",
+            "includes/SteamID/",
+            "includes/WebPermission.php"
+        ]
     },
     "autoload-dev": {
         "classmap": ["phpstan/"]

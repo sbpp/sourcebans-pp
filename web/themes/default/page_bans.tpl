@@ -3,7 +3,7 @@
    Vars: $ban_list, $total_bans, $hidetext, $searchlink, $view_bans,
          $hideadminname, $hideplayerips, $groupban, $friendsban,
          $general_unban, $can_delete, $can_export, $admin_postkey,
-         $view_comments, plus the comment-edit scratch pad
+         $view_comments, $can_comment, plus the comment-edit scratch pad
          ($comment, $commenttype, $commenttext, $ctype, $cid, $page,
          $canedit, $othercomments).
    Per-row $ban.* keys: bid, name, steam, state, length, length_human,
@@ -15,51 +15,10 @@
    ============================================================ *}
 
 {* -- Comment edit mode -- replaces the body when ?comment=N is set.
-   The legacy default theme renders this at the top of the file; we
-   keep the same surface but drop the page chrome around it so the
-   action sits in a focused card. CSRF + submit go through the JSON
-   API (sb.api.call(Actions.BansAddComment / BansEditComment)) —
-   wired in the inline form handler below. *}
+   Banlist and commslist share the same focused editor partial. Submit
+   goes through the JSON API via web/scripts/banlist.js. *}
 {if $comment}
-<div class="card" style="max-width:42rem;margin:1.5rem auto">
-  <div class="card__header">
-    <div>
-      <h3>{$commenttype} comment</h3>
-      <p>Visible to admins; commented threads also surface to the public when public comments are enabled.</p>
-    </div>
-  </div>
-  <div class="card__body">
-    <form id="banlist-comment-form" data-bid="{$comment}" data-ctype="{$ctype}" data-cid="{$cid}" data-page="{$page}">
-      <label class="label" for="banlist-comment-text">Comment</label>
-      <textarea class="textarea" id="banlist-comment-text" name="commenttext" rows="6" {if !$canedit}disabled{/if}>{$commenttext}</textarea>
-      <div class="flex gap-2 mt-4">
-        {if $canedit}
-        <button class="btn btn--primary" type="submit">{$commenttype} comment</button>
-        {/if}
-        <button class="btn btn--secondary" type="button" onclick="history.back()">Back</button>
-      </div>
-    </form>
-
-    <div class="mt-6">
-      {foreach from=$othercomments item=com name=othercomments}
-        {if $smarty.foreach.othercomments.first}<h3 style="font-size:var(--fs-base);font-weight:600;margin:0 0 0.5rem">Other comments</h3>{/if}
-        <div class="mt-4" style="border-top:1px solid var(--border);padding-top:0.75rem">
-          <div class="flex items-center justify-between">
-            {* #1500: comment author is an admin username; hide it for public viewers when banlist.hideadminname is on (parity with the inline disclosure block below). *}
-            {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.comname)}<strong>{$com.comname|escape}</strong>{else}<i class="text-faint">deleted admin</i>{/if}
-            <span class="text-xs text-muted">{$com.added}</span>
-          </div>
-          {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.banlist.php $cotherdata loop *}
-          <div class="text-sm mt-2">{$com.commenttxt nofilter}</div>
-          {* gate on edittime not editname: #1500 nulls editname for hidden viewers, edittime survives so the "last edit" indicator still shows. *}
-          {if !empty($com.edittime)}
-          <div class="text-xs text-faint mt-2">last edit {$com.edittime} by {if $hideadminname}<i class="text-faint">Hidden</i>{elseif !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
-          {/if}
-        </div>
-      {/foreach}
-    </div>
-  </div>
-</div>
+{include file="partials/punishment-comment-editor.tpl"}
 {else}
 
 <div id="banlist-root" class="p-6 space-y-4" style="max-width:1700px;margin:0 auto" data-loading="false">
@@ -370,6 +329,32 @@
                         {/if}
                         <span class="text-faint">&middot;</span>
                         <span class="text-xs text-faint tabular-nums">{$com.added}</span>
+                        {if $com.can_edit || $com.can_delete}
+                        <span class="row-actions row-actions--icons" style="margin-left:auto">
+                          {if $com.can_edit}
+                          <a class="btn btn--ghost btn--icon btn--xs"
+                             href="{$com.edit_url|escape}"
+                             data-testid="ban-comment-edit"
+                             data-tooltip="Edit comment"
+                             aria-label="Edit comment">
+                            <i data-lucide="pencil" style="width:12px;height:12px"></i>
+                          </a>
+                          {/if}
+                          {if $com.can_delete}
+                          <button type="button"
+                                  class="btn btn--ghost btn--icon btn--xs"
+                                  data-testid="ban-comment-delete"
+                                  data-action="comment-delete"
+                                  data-cid="{$com.cid}"
+                                  data-ctype="B"
+                                  data-page="{$com.page}"
+                                  data-tooltip="Delete comment"
+                                  aria-label="Delete comment">
+                            <i data-lucide="trash-2" style="width:12px;height:12px;color:var(--danger)"></i>
+                          </button>
+                          {/if}
+                        </span>
+                        {/if}
                       </div>
                       {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.banlist.php $commentres loop. Same provenance + safety as the existing comment-edit-mode block at the top of this template. *}
                       <div class="ban-comments-inline__text" data-testid="ban-comment-text">{$com.commenttxt nofilter}</div>
@@ -508,6 +493,24 @@
                     <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
                 </a>
                 {/if}
+              {/if}
+              {if $can_comment}
+              <a class="btn btn--ghost btn--icon btn--sm"
+                 href="{$ban.comment_url|escape}"
+                 data-testid="row-action-comment-add"
+                 data-tooltip="Add comment"
+                 aria-label="Add comment for {$ban.name|escape}">
+                <i data-lucide="message-square-text" style="width:14px;height:14px"></i>
+              </a>
+              {/if}
+              {if $ban.demo_available}
+              <a class="btn btn--ghost btn--icon btn--sm"
+                 href="getdemo.php?type=B&amp;id={$ban.bid}"
+                 data-testid="row-action-demo-download"
+                 data-tooltip="Download demo"
+                 aria-label="Download demo for {$ban.name|escape}">
+                <i data-lucide="download" style="width:14px;height:14px"></i>
+              </a>
               {/if}
               {if !empty($ban.steam)}
               {* #1308: NO `onclick="event.stopPropagation()"` here. The
@@ -659,7 +662,7 @@
           </div>
           <span class="text-faint" aria-hidden="true">&rsaquo;</span>
         </a>
-        {if $view_bans || !empty($ban.steam) || $ban.can_delete_ban}
+        {if $view_bans || $can_comment || $ban.demo_available || !empty($ban.steam) || $ban.can_delete_ban}
         <div class="row-actions row-actions--icons ban-card__actions">
           {if $view_bans}
             {if $ban.can_edit_ban && $ban.state != 'unbanned'}
@@ -693,6 +696,24 @@
                 <i data-lucide="rotate-ccw" style="width:14px;height:14px"></i>
             </a>
             {/if}
+          {/if}
+          {if $can_comment}
+          <a class="btn btn--ghost btn--icon btn--sm"
+             href="{$ban.comment_url|escape}"
+             data-testid="row-action-comment-add-mobile"
+             data-tooltip="Add comment"
+             aria-label="Add comment for {$ban.name|escape}">
+            <i data-lucide="message-square-text" style="width:14px;height:14px"></i>
+          </a>
+          {/if}
+          {if $ban.demo_available}
+          <a class="btn btn--ghost btn--icon btn--sm"
+             href="getdemo.php?type=B&amp;id={$ban.bid}"
+             data-testid="row-action-demo-download-mobile"
+             data-tooltip="Download demo"
+             aria-label="Download demo for {$ban.name|escape}">
+            <i data-lucide="download" style="width:14px;height:14px"></i>
+          </a>
           {/if}
           {if !empty($ban.steam)}
           <button class="btn btn--ghost btn--icon btn--sm" type="button"
@@ -885,19 +906,13 @@
   </form>
 </dialog>
 
-{* banlist.js wires both branches: the chip filter / copy buttons /
-   skeleton hook on the listing branch, and the `#banlist-comment-form`
-   submit -> sb.api.call(BansAddComment / BansEditComment) on the
-   comment-edit branch. The IIFE feature-detects every element it
-   touches, so loading it unconditionally is safe; loading it only on
-   the listing branch silently broke comment save (no submit handler
-   attached, native form submission to action-less URL no-ops). *}
+{* banlist.js submits the shared ban/comms comment editor through
+   BansAddComment / BansEditComment. It feature-detects the form, so
+   loading it on the normal list branch is harmless. *}
 <script src="./scripts/banlist.js" defer></script>
 {* #1402: trash-can-on-a-comment triggers (`data-action="comment-delete"`)
-   on the comment-edit branch are handled by the global comment-actions.js
-   dispatcher loaded from core/footer.tpl — single mount point shared
-   with the admin moderation queues (protests / submissions) and the
-   commslist comment-edit branch. *}
+   in inline disclosures and the player drawer are handled by the global
+   comment-actions.js dispatcher loaded from core/footer.tpl. *}
 
 {* ============================================================
    #1301 — banlist row-action wiring (inline page-tail JS).

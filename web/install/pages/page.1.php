@@ -34,7 +34,7 @@ require_once PANEL_INCLUDES_PATH . '/View/Renderer.php';
 // Elastic License 2.0, a software-purpose, source-available
 // license. `THIRD-PARTY-NOTICES.txt` carries the upstream-lineage
 // attributions (SourceBans 1.4.x, SourceComms, InterWave Studios
-// theme.conf, LightOpenID, TinyMCE).
+// theme.conf, LightOpenID).
 $licenseText = <<<'TEXT'
 This installation of SourceBans++ is governed by the project's
 license:

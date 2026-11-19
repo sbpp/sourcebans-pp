@@ -3,7 +3,7 @@
 #   1. Wait for the database to accept connections.
 #   2. Render web/config.php from environment variables if it's missing/empty.
 #   3. Run `composer install` if vendor/ is absent.
-#   4. Make sure cache/ is writable.
+#   4. Make sure cache/ and demos/ are writable.
 #   5. exec the original CMD (apache2-foreground).
 
 set -euo pipefail
@@ -86,6 +86,11 @@ ensure_cache() {
     mkdir -p "${WEB_ROOT}/cache" "${WEB_ROOT}/cache/sessions" "${WEB_ROOT}/templates_c"
     chown -R www-data:www-data "${WEB_ROOT}/cache" "${WEB_ROOT}/templates_c"
     chmod -R 0775 "${WEB_ROOT}/cache" "${WEB_ROOT}/templates_c"
+    # demos/ lives on the host bind mount, so chown would hand the host
+    # checkout to uid 33. Widen the directory mode instead so Apache can
+    # write uploads; Apache denies direct /demos/ requests.
+    mkdir -p "${WEB_ROOT}/demos"
+    chmod 0777 "${WEB_ROOT}/demos"
 }
 
 main() {

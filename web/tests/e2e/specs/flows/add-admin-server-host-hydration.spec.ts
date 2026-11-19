@@ -19,12 +19,16 @@
  * now carries `[data-testid="server-host"]` + a `data-fallback`
  * IP:port, the wrapping `<div>` opts into the shared
  * `web/scripts/server-tile-hydrate.js` helper via
- * `data-server-hydrate="auto"` + `data-trunchostname="40"`, and the
+ * `data-server-hydrate="auto"` + `data-trunchostname="0"`, and the
  * helper fires `Actions.ServersHostPlayers` per row to patch the
  * live hostname into the slot via `sb.setHTML`. The SSR-rendered
  * `IP:port` stays as the no-JS / cache-cold fallback (and
  * `data-fallback` lets the helper repaint it on probe failure so
  * the row never goes blank).
+ *
+ * Issue #1491 limits the grid to two columns and wraps the complete
+ * hydrated hostname. A third fixture plus a 63-character hostname
+ * pin both layout and no-truncation contracts.
  *
  * The PHPUnit guard at
  * `web/tests/integration/AddAdminServerHostHydrationTest.php` pins
@@ -45,14 +49,14 @@
  *
  * Project gating
  * --------------
- * Pin to chromium (desktop). Per AGENTS.md "Playwright E2E
+ * Pin to the chromium project. Per AGENTS.md "Playwright E2E
  * specifics" the suite shares a single `sourcebans_e2e` DB across
  * projects and `workers: 1` in CI — but the local default cpu-count
  * worker shape would still let a sibling spec's truncate race the
- * Apache reads this spec needs. The browser-shape coverage is
- * irrelevant here: the hydration helper is identical on both form
- * factors and the underlying `Actions.ServersHostPlayers` round-trip
- * is server-side.
+ * Apache reads this spec needs. The test covers the narrow layout by
+ * resizing the same Chromium page to 390px after its desktop checks,
+ * so running the mobile-chromium project would duplicate coverage
+ * while widening the shared-DB race window.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
@@ -68,23 +72,24 @@ interface SeededServer {
 }
 
 /**
- * Seed two enabled servers via `Actions.ServersAdd`. Mirrors
+ * Seed three enabled servers via `Actions.ServersAdd`. Mirrors
  * `seedServerViaApi` in `server-map-thumbnail.spec.ts`: drives the
  * same PHP dispatcher (CSRF + permissions + handler) that production
  * traffic uses, so a future contract drift on `servers.add` is
  * caught here along with the actual surface under test.
  *
- * Both seeded IPs are in the documentation-only `192.0.2.0/24`
+ * All seeded IPs are in the documentation-only `192.0.2.0/24`
  * block (RFC 5737) — guarantees the live UDP probe (if anything
- * managed to escape the route mock) would route to nowhere. Two
- * rows so the spec asserts the helper fans out per-tile (one POST
- * per row, distinct hostnames per row) rather than coincidentally
- * happening to render right with a single row.
+ * managed to escape the route mock) would route to nowhere. Three
+ * rows so the spec asserts the two-column cap with a second row and
+ * the helper fans out per tile. The third hostname uses the full
+ * 63-character Source server-name budget.
  */
-async function seedTwoServersViaApi(page: import('@playwright/test').Page): Promise<SeededServer[]> {
+async function seedThreeServersViaApi(page: import('@playwright/test').Page): Promise<SeededServer[]> {
     const fixtures = [
         { ip: '192.0.2.21', port: 27015, hostname: 'e2e tile #1 — surf europe' },
         { ip: '192.0.2.22', port: 27016, hostname: 'e2e tile #2 — bhop usa' },
+        { ip: '192.0.2.23', port: 27017, hostname: `e2e-${'x'.repeat(59)}` },
     ] as const;
 
     await page.goto('/');
@@ -131,7 +136,7 @@ async function seedTwoServersViaApi(page: import('@playwright/test').Page): Prom
         };
         if (!env.ok || env.data?.sid === undefined) {
             throw new Error(
-                `seedTwoServersViaApi: servers.add failed for ${f.ip}:${f.port} ` +
+                `seedThreeServersViaApi: servers.add failed for ${f.ip}:${f.port} ` +
                 `(ok=${env.ok}) — ${JSON.stringify(env)}`,
             );
         }
@@ -150,7 +155,7 @@ async function seedTwoServersViaApi(page: import('@playwright/test').Page): Prom
  *
  * Records the per-sid request payload + the trunchostname hint
  * (`hostnames` array) so the spec can assert the helper fans out
- * per-row AND forwards the `data-trunchostname="40"` opt-in. Other
+ * per-row AND forwards the `data-trunchostname="0"` opt-in. Other
  * actions on the page (CSRF, chrome bootstrap, palette) are passed
  * through untouched — only `servers.host_players` is intercepted.
  */
@@ -231,12 +236,13 @@ async function stubHostPlayersForSeeded(
     });
 }
 
-test.describe('flow: Add Admin per-server access list hostname hydration (#1405)', () => {
+test.describe('flow: Add Admin server access layout and hostname hydration (#1405, #1491)', () => {
     // Skip mobile-chromium at the `beforeEach` boundary so the
     // truncate inside the test never fires on that worker. The
-    // browser-shape coverage is irrelevant here (the hydration
-    // helper + `Actions.ServersHostPlayers` round-trip are identical
-    // on both form factors); the file-level rationale + the
+    // same Chromium page is resized to a phone-width viewport for
+    // the responsive assertions; the hydration helper +
+    // `Actions.ServersHostPlayers` round-trip are identical across
+    // projects. The file-level rationale + the
     // `server-refresh-debounce.spec.ts` precedent both name the
     // truncate-vs-Apache race against `sourcebans_e2e` as the load-
     // bearing reason for skipping. Without this skip, both
@@ -252,24 +258,24 @@ test.describe('flow: Add Admin per-server access list hostname hydration (#1405)
     test.beforeEach(({}, testInfo) => {
         test.skip(
             testInfo.project.name !== 'chromium',
-            'Browser-shape-agnostic; skip the second project to avoid the truncate-vs-Apache race against sourcebans_e2e (see file-level comment).',
+            'Responsive layout is covered by resizing Chromium; skip the duplicate project to avoid the truncate-vs-Apache race against sourcebans_e2e.',
         );
     });
 
-    // Single test consolidates two contracts (success-path hydration
-    // + failure-branch fallback) so the seed-and-navigate setup fires
+    // Single test consolidates layout, success-path hydration, and
+    // failure-branch fallback so the seed-and-navigate setup fires
     // once and the file stays single-test under `fullyParallel: true`.
     // The contracts are linearly ordered (you have to hydrate
     // successfully first to prove the helper fires per row, then re-
     // route to the failure shape and assert the row stays informative)
-    // and share the same two seeded servers + the same Add Admin page
+    // and share the same three seeded servers + the same Add Admin page
     // render, so consolidation is the natural fit. See the
     // `server-refresh-debounce.spec.ts` file-level comment for the
     // canonical rationale.
-    test('per-server access rows hydrate live hostnames on success and fall back to IP:port on probe failure', async ({ page }) => {
+    test('caps rows at two columns, preserves full hostnames, and falls back to IP:port', async ({ page }) => {
         await truncateE2eDb();
 
-        const seeded = await seedTwoServersViaApi(page);
+        const seeded = await seedThreeServersViaApi(page);
 
         // --- Contract 1: success-path hydration ---
         const record = { sids: [] as number[], trunchints: [] as Array<number | string | undefined> };
@@ -277,7 +283,7 @@ test.describe('flow: Add Admin per-server access list hostname hydration (#1405)
 
         await page.goto(ADD_ADMIN_ROUTE);
 
-        // 1.a: BOTH server rows are in the DOM under the canonical
+        // 1.a: all server rows are in the DOM under the canonical
         // testids the integration test pins.
         for (const s of seeded) {
             const tile = page.locator(`[data-testid="server-tile"][data-id="${s.sid}"]`);
@@ -311,13 +317,78 @@ test.describe('flow: Add Admin per-server access list hostname hydration (#1405)
             );
         }
 
-        // 1.d: the helper fired EXACTLY one POST per seeded row (no
+        // 1.d: three rows resolve into exactly two desktop columns.
+        // The full 63-character hostname wraps inside its choice and
+        // does not create horizontal overflow.
+        const accessGrid = page.getByTestId('admin-add-server-access-grid');
+        const trackCount = await accessGrid.evaluate((el) => {
+            const columns = getComputedStyle(el).gridTemplateColumns.trim();
+            return columns === '' ? 0 : columns.split(/\s+/).length;
+        });
+        expect(trackCount, 'three server choices must use at most two desktop columns').toBe(2);
+
+        const longServer = seeded[2];
+        if (!longServer) {
+            throw new Error('third seeded server is required for the two-column layout assertion');
+        }
+        expect(longServer.hostname).toHaveLength(63);
+        const longHost = accessGrid
+            .locator(`[data-testid="server-tile"][data-id="${longServer.sid}"]`)
+            .locator('[data-testid="server-host"]');
+        const longHostLayout = await longHost.evaluate((el) => {
+            const style = getComputedStyle(el);
+            return {
+                overflowWrap: style.overflowWrap,
+                clientWidth: el.clientWidth,
+                scrollWidth: el.scrollWidth,
+            };
+        });
+        expect(longHostLayout.overflowWrap).toBe('anywhere');
+        expect(
+            longHostLayout.scrollWidth,
+            'the full hostname should wrap without horizontal clipping',
+        ).toBeLessThanOrEqual(longHostLayout.clientWidth + 1);
+
+        // 1.e: at a phone-width viewport the grid collapses to one
+        // column, every tile occupies its own row, and neither the
+        // grid nor the document overflows horizontally.
+        await page.setViewportSize({ width: 390, height: 844 });
+        const mobileLayout = await accessGrid.evaluate((grid) => {
+            const columns = getComputedStyle(grid).gridTemplateColumns.trim();
+            const tiles = Array.from(grid.querySelectorAll<HTMLElement>('[data-testid="server-tile"]'))
+                .map((tile) => {
+                    const rect = tile.getBoundingClientRect();
+                    return { left: rect.left, top: rect.top };
+                });
+            const root = document.documentElement;
+            return {
+                trackCount: columns === '' ? 0 : columns.split(/\s+/).length,
+                tiles,
+                gridClientWidth: grid.clientWidth,
+                gridScrollWidth: grid.scrollWidth,
+                pageClientWidth: root.clientWidth,
+                pageScrollWidth: root.scrollWidth,
+            };
+        });
+        expect(mobileLayout.trackCount).toBe(1);
+        expect(mobileLayout.tiles).toHaveLength(3);
+        for (let i = 1; i < mobileLayout.tiles.length; i += 1) {
+            const previous = mobileLayout.tiles[i - 1];
+            const current = mobileLayout.tiles[i];
+            if (!previous || !current) {
+                throw new Error('all three mobile server tile positions are required');
+            }
+            expect(Math.abs(current.left - previous.left)).toBeLessThanOrEqual(1);
+            expect(current.top).toBeGreaterThan(previous.top);
+        }
+        expect(mobileLayout.gridScrollWidth).toBeLessThanOrEqual(mobileLayout.gridClientWidth + 1);
+        expect(mobileLayout.pageScrollWidth).toBeLessThanOrEqual(mobileLayout.pageClientWidth + 1);
+
+        // 1.f: the helper fired EXACTLY one POST per seeded row (no
         // per-row over-fetch / amplification), and each POST
-        // forwarded `trunchostname=40` per the template opt-in.
-        // Without the `data-trunchostname="40"` opt-in the hint
-        // would default to 70 (the public list's column budget),
-        // which would silently let long hostnames overflow the Add
-        // Admin's 18rem column.
+        // forwarded `trunchostname=0` per the template opt-in.
+        // Any positive value would clip valid server names before
+        // the wrapping layout could display their suffixes.
         const seededSids = seeded.map((s) => s.sid).sort((a, b) => a - b);
         const seenSids = [...record.sids].sort((a, b) => a - b);
         expect(
@@ -325,14 +396,14 @@ test.describe('flow: Add Admin per-server access list hostname hydration (#1405)
             'helper must fire one Actions.ServersHostPlayers POST per seeded row, no more, no less',
         ).toEqual(seededSids);
         // `trunchostname` is forwarded by the helper as either a
-        // numeric `40` or the stringified `"40"` depending on how
-        // the helper marshals attribute reads; the contract is "the
-        // forwarded value coerces to 40", not the exact JS type.
+        // numeric `0` or the stringified `"0"` depending on how the
+        // helper marshals attribute reads; the contract is "the
+        // forwarded value coerces to 0", not the exact JS type.
         for (const hint of record.trunchints) {
             expect(
                 Number(hint),
-                `each POST must forward trunchostname=40 (saw ${JSON.stringify(hint)})`,
-            ).toBe(40);
+                `each POST must forward trunchostname=0 (saw ${JSON.stringify(hint)})`,
+            ).toBe(0);
         }
 
         // --- Contract 2: failure-branch fallback ---

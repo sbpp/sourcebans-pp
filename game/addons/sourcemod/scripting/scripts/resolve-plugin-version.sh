@@ -48,7 +48,7 @@ fi
 # Native API epoch — NOT panel semver minor. Bump MINOR_REVISION manually when
 # shipping additive natives; bump MAJOR only on breaking native contract.
 api_major=2
-api_minor=0
+api_minor=1
 
 sb_major="dev"
 sb_minor="0"

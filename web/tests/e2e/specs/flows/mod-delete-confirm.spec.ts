@@ -43,11 +43,11 @@
  *
  * Project gating
  * --------------
- * Pin to chromium (desktop). The flow mutates `:prefix_mods` and the
- * suite shares a single `sourcebans_e2e` DB across projects
- * (`workers: 1` is the suite-wide mitigation per AGENTS.md). Mobile
- * coverage doesn't add value for an admin-only chrome that's
- * structurally identical at every viewport.
+ * Pin to chromium. The flow mutates `:prefix_mods` and the suite shares
+ * a single `sourcebans_e2e` DB across projects (`workers: 1` is the
+ * suite-wide mitigation per AGENTS.md). The main mutation flow resizes
+ * that desktop context to exercise the mobile-card mirror without
+ * adding a second mutating project.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
@@ -64,6 +64,10 @@ const FIXTURE = {
 };
 
 test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)', () => {
+    // Both tests truncate and mutate the shared E2E database. Keep focused
+    // local runs serial even though the project enables full parallelism.
+    test.describe.configure({ mode: 'serial' });
+
     test.skip(({ isMobile }) => isMobile, 'flow spec runs only on desktop chromium');
 
     test.beforeEach(async () => {
@@ -128,13 +132,25 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
         const targetMid = Number(targetMidAttr);
         expect(Number.isFinite(targetMid) && targetMid > 0).toBe(true);
 
-        // The count badge text is a bare digit. Read the starting value
-        // so we can assert it decrements by exactly one after the delete.
+        // The hidden mobile mirror must be removed by the same successful
+        // response, otherwise resizing after deletion resurrects the mod.
+        const targetCard = page
+            .locator('[data-testid="mods-list-card"]')
+            .filter({ hasText: FIXTURE.name })
+            .first();
+        await expect(targetCard).toHaveCount(1);
+
+        // Read the parenthesised starting value so we can assert it
+        // decrements by exactly one after the delete.
         const countBadge = page.locator('[data-testid="mod-count"]').first();
         await expect(countBadge).toBeVisible();
         const startingCountText = (await countBadge.textContent()) ?? '';
         const startingCount = Number(startingCountText.replace(/[^0-9]/g, ''));
         expect(Number.isFinite(startingCount) && startingCount > 0).toBe(true);
+        expect(await page.locator('[data-testid="mod-row"]').count())
+            .toBe(startingCount);
+        expect(await page.locator('[data-testid="mods-list-card"]').count())
+            .toBe(startingCount);
 
         // ---- 3. Click the trash button — dialog must open ----------------
         // The delete button is inside `.row-actions` on the row's
@@ -177,8 +193,18 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
         // The row is still there — cancel didn't delete anything.
         await expect(targetRow).toBeVisible();
 
-        // ---- 5. Re-open + supply reason + confirm -----------------------
-        await deleteButton.click();
+        // ---- 5. Switch to mobile + re-open + confirm --------------------
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect(page.locator('[data-testid="mods-table"]')).toBeHidden();
+        await expect(page.locator('[data-testid="mods-list-cards"]')).toBeVisible();
+        await expect(targetCard).toBeVisible();
+        await expect(targetCard.locator('[data-testid="editmod-link-mobile"]')).toBeVisible();
+
+        const mobileDeleteButton = targetCard.locator(
+            '[data-testid="deletemod-btn-mobile"]',
+        );
+        await expect(mobileDeleteButton).toBeVisible();
+        await mobileDeleteButton.click();
         await expect(dialog).toBeVisible();
 
         const reasonInput = dialog.locator('[data-testid="mod-delete-reason"]');
@@ -204,13 +230,14 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
 
         // ---- 6. Row removed in place ------------------------------------
         await expect(targetRow).toHaveCount(0);
+        await expect(targetCard).toHaveCount(0);
         // Dialog closes after success.
         await expect(dialog).toBeHidden();
 
         // Count badge decrements by exactly one (defensive — the
         // chrome's `decrementCount` reads the span's text and writes
         // back `n - 1`).
-        await expect(countBadge).toHaveText(String(startingCount - 1));
+        await expect(countBadge).toHaveText(`(${startingCount - 1})`);
 
         // Success toast surfaces. Anchor on `data-kind="success"` plus
         // a hasText filter on the title our handler emits ("Mod
@@ -221,6 +248,7 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
         await expect(successToast).toBeVisible();
 
         // ---- 7. Audit log carries the reason ----------------------------
+        await page.setViewportSize({ width: 1280, height: 720 });
         // Navigate to the audit log and assert the most recent
         // "MOD Deleted" entry's body contains the reason. The audit
         // page's row body is `<div class="audit-row__detail">`.
@@ -272,6 +300,33 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
             .first();
         await expect(row).toBeVisible();
 
+        // Model the final visible mod without deleting fixture rows from the
+        // shared DB. This isolates the client-side 1 → 0 transition that must
+        // reveal the already-mounted empty state after a successful delete.
+        const targetMid = await row.getAttribute('data-id');
+        expect(targetMid).not.toBeNull();
+        await page.locator('[data-testid="mod-row"]').evaluateAll((nodes, keepMid) => {
+            nodes.forEach((node) => {
+                if (node.getAttribute('data-id') !== keepMid) node.remove();
+            });
+        }, targetMid);
+        await page.locator('[data-testid="mods-list-card"]').evaluateAll((nodes, keepMid) => {
+            nodes.forEach((node) => {
+                if (node.getAttribute('data-id') !== keepMid) node.remove();
+            });
+        }, targetMid);
+
+        const targetCard = page
+            .locator('[data-testid="mods-list-card"]')
+            .filter({ hasText: 'e2e-no-reason-mod' });
+        const countBadge = page.locator('[data-testid="mod-count"]');
+        await countBadge.evaluate((node) => {
+            node.textContent = '(1)';
+        });
+        await expect(page.locator('[data-testid="mod-row"]')).toHaveCount(1);
+        await expect(targetCard).toHaveCount(1);
+        await expect(page.locator('[data-testid="mods-empty"]')).toBeHidden();
+
         await row.locator('[data-testid="deletemod-btn"]').click();
         const dialog = page.locator('[data-testid="mod-delete-dialog"]');
         await expect(dialog).toBeVisible();
@@ -286,7 +341,17 @@ test.describe('flow: admin mod delete confirm modal (#1397 — RemoveMod zombie)
         expect(env.ok, JSON.stringify(env)).toBe(true);
 
         await expect(row).toHaveCount(0);
+        await expect(targetCard).toHaveCount(0);
+        await expect(countBadge).toHaveText('(0)');
+        await expect(page.locator('[data-testid="mods-table-wrap"]')).toHaveAttribute('hidden', '');
+        await expect(page.locator('[data-testid="mods-list-cards"]')).toHaveAttribute('hidden', '');
+        await expect(page.locator('[data-testid="mods-empty"]')).toBeVisible();
 
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect(page.locator('[data-testid="mods-list-cards"]')).toBeHidden();
+        await expect(page.locator('[data-testid="mods-empty"]')).toBeVisible();
+
+        await page.setViewportSize({ width: 1280, height: 720 });
         await page.goto(AUDIT_ROUTE);
         const auditDetail = page
             .locator('.audit-row__detail')
