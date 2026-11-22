@@ -280,7 +280,7 @@
                     (#1313) patches `src` from the live response via
                     `applyData()`'s `[data-testid="server-map-img"]` lookup,
                     unhides the element on `load`, and KEEPS it hidden on
-                    `error` (file missing or 404 / nomap.jpg also missing)
+                    `error` (file missing or 404 / nomap.webp also missing)
                     so we never paint a broken-image icon. The helper is
                     feature-detected, so the admin Server Management list
                     (which does NOT ship this slot) silently no-ops.
@@ -292,8 +292,8 @@
                     Layout (#1375):
                     -----------------
                     The bundled map thumbnails under `web/images/maps/`
-                    are mostly 340×255 (4:3 landscape — `de_dust2.jpg`,
-                    `nomap.jpg`, the CS / TF2 set), with a handful of
+                    are mostly 340×255 (4:3 landscape — `de_dust2.webp`,
+                    `nomap.webp`, the CS / TF2 set), with a handful of
                     newer 16:9 MvM screenshots (800×450) thrown in.
                     Pre-#1375 the slot ran `width:100%;max-height:140px;
                     object-fit:cover` — but on a 28rem grid track (~448px
@@ -301,7 +301,7 @@
                     box (~2.86:1), so `object-fit:cover` cropped the
                     middle horizontal band of a 4:3 source and the visible
                     strip read as a horizontally-stretched fragment of the
-                    map (e.g. `de_dust2.jpg`'s windows visibly squashed).
+                    map (e.g. `de_dust2.webp`'s windows visibly squashed).
                     The fix is `max-width: 340px` (the natural source
                     width — no upscaling blur on smaller maps) + `height:
                     auto` so the rendered box matches the source aspect

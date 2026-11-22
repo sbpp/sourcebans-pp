@@ -290,12 +290,12 @@ function PageDie(): never
 
 /**
  * Resolve the per-server map thumbnail URL. Falls back to the bundled
- * `nomap.jpg` placeholder when the per-map asset is missing.
+ * `nomap.webp` placeholder when the per-map asset is missing.
  */
 function GetMapImage(string $map): string
 {
-    $candidate = SB_MAP_LOCATION . "/{$map}.jpg";
-    return is_file($candidate) ? $candidate : SB_MAP_LOCATION . '/nomap.jpg';
+    $candidate = SB_MAP_LOCATION . "/{$map}.webp";
+    return is_file($candidate) ? $candidate : SB_MAP_LOCATION . '/nomap.webp';
 }
 
 /**

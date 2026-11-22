@@ -208,7 +208,7 @@ async function stubHostPlayersBySid(
                     maxplayers:  24,
                     map:         'de_dust2',
                     mapfull:     'de_dust2',
-                    mapimg:      'images/maps/de_dust2.jpg',
+                    mapimg:      'images/maps/de_dust2.webp',
                     os_class:    'fab fa-linux',
                     secure:      true,
                     player_list: [

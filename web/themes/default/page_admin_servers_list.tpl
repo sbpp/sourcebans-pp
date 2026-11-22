@@ -246,7 +246,7 @@
             <div class="text-xs text-muted mt-4" data-testid="server-list-mapimg-hint">
                 Need to upload a map screenshot? Drop it under
                 <code class="font-mono">web/images/maps/</code> using the map name as the filename
-                (e.g. <code class="font-mono">de_dust2.jpg</code>).
+                (e.g. <code class="font-mono">de_dust2.webp</code>).
             </div>
         {/if}
     {/if}

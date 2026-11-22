@@ -18,7 +18,7 @@
  *   - Unhide the slot on `load` (so the empty `src=""` placeholder
  *     never paints a broken-image icon during the loading window).
  *   - KEEP the slot hidden on `error` (so a missing file — e.g. a
- *     fork that ships without `nomap.jpg` — degrades to "no
+ *     fork that ships without `nomap.webp` — degrades to "no
  *     thumbnail" instead of a broken-image icon).
  *
  * This spec drives the runtime observable: seed a server row,
@@ -210,12 +210,12 @@ test.describe('flow: expanded server card map thumbnail (#1312)', () => {
     test('paints the thumbnail when the bundled map image exists', async ({ page }) => {
         const seeded = await seedServerViaApi(page);
 
-        // de_dust2.jpg ships in web/images/maps/ out of the box, so
+        // de_dust2.webp ships in web/images/maps/ out of the box, so
         // the browser will resolve the URL to a real 200 + image
         // payload and the helper's `onload` branch unhides the slot.
         await stubHostPlayers(page, seeded, {
             map:    'de_dust2',
-            mapimg: 'images/maps/de_dust2.jpg',
+            mapimg: 'images/maps/de_dust2.webp',
         });
 
         await page.goto(`/index.php?p=servers&s=0`);
@@ -230,7 +230,7 @@ test.describe('flow: expanded server card map thumbnail (#1312)', () => {
 
         const mapImg = tile.locator('[data-testid="server-map-img"]');
         await expect(mapImg).toBeVisible();
-        await expect(mapImg).toHaveAttribute('src', /images\/maps\/de_dust2\.jpg$/);
+        await expect(mapImg).toHaveAttribute('src', /images\/maps\/de_dust2\.webp$/);
     });
 
     test('keeps the slot hidden when the image fails to load', async ({ page }) => {
@@ -242,7 +242,7 @@ test.describe('flow: expanded server card map thumbnail (#1312)', () => {
         // glyph would paint instead.
         await stubHostPlayers(page, seeded, {
             map:    'definitely_not_a_real_map',
-            mapimg: 'images/maps/__sbpp_e2e_does_not_exist__.jpg',
+            mapimg: 'images/maps/__sbpp_e2e_does_not_exist__.webp',
         });
 
         await page.goto(`/index.php?p=servers&s=0`);

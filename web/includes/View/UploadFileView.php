@@ -11,7 +11,7 @@ namespace Sbpp\View;
  * `window.open(...)` from the parent admin page:
  *
  *   - `web/pages/admin.uploadicon.php`   → mod icon (gif/jpg/png)
- *   - `web/pages/admin.uploadmapimg.php` → server-list map image (jpg)
+ *   - `web/pages/admin.uploadmapimg.php` → server-list map image (webp)
  *   - `web/pages/admin.uploaddemo.php`   → demo attachment
  *     (zip/rar/dem/7z/bz2/gz)
  *
@@ -32,7 +32,7 @@ namespace Sbpp\View;
  *     so each handler reads its `$_FILES[<input_name>]` entry directly.
  *   - `$form_name`: HTML `id` of the `<form>` (used by the popup's
  *     callbacks to look the form up via `document.getElementById`).
- *   - `$formats`: human-readable allowed-formats sentence ("a JPG",
+ *   - `$formats`: human-readable allowed-formats sentence ("a WEBP",
  *     "a GIF, PNG or JPG", …) shown in the help text.
  */
 final class UploadFileView extends View

@@ -378,10 +378,10 @@
         // `[data-testid="server-players-panel"]`; the admin Server
         // Management list does not, so the lookup returns null on
         // that surface and the whole block silently no-ops. The
-        // handler returns `images/maps/<map>.jpg` (or
-        // `images/maps/nomap.jpg` if the file is missing) — show the
+        // handler returns `images/maps/<map>.webp` (or
+        // `images/maps/nomap.webp` if the file is missing) — show the
         // <img> only after the network round-trip succeeds, because
-        // `nomap.jpg` itself can be missing on forks / bare
+        // `nomap.webp` itself can be missing on forks / bare
         // deployments and we treat any load error as a signal to
         // keep the slot hidden rather than painting a broken-image
         // icon.
