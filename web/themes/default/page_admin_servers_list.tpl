@@ -244,10 +244,41 @@
 
         {if $permission_addserver}
             <div class="text-xs text-muted mt-4" data-testid="server-list-mapimg-hint">
-                Need to upload a map screenshot? Drop it under
-                <code class="font-mono">web/images/maps/</code> using the map name as the filename
-                (e.g. <code class="font-mono">de_dust2.webp</code>).
+                Need a map screenshot? Upload a WEBP or JPG named after the map (e.g.
+                <code class="font-mono">de_dust2.webp</code> or <code class="font-mono">de_dust2.jpg</code>),
+                or drop it straight into <code class="font-mono">web/images/maps/</code>.
+                <div class="flex items-center gap-3 mt-2">
+                    <button class="btn btn--secondary btn--sm"
+                            type="button"
+                            data-testid="server-list-mapimg-upload"
+                            onclick="childWindow=open('pages/admin.uploadmapimg.php','upload','resizable=yes,width=320,height=160');">
+                        <i data-lucide="upload"></i>
+                        Upload map image
+                    </button>
+                    <span data-testid="server-list-mapimg-result" hidden>
+                        Saved as <span class="font-mono" data-testid="server-list-mapimg-result-name"></span>
+                    </span>
+                </div>
             </div>
+            {* Called by admin.uploadmapimg.php's success blob
+               (UploadHandler `callback: 'mapimg'`) with the stored
+               `.webp` basename. *}
+            {literal}
+            <script>
+            window.mapimg = function (filename) {
+                var name = String(filename || '');
+                var chip  = document.querySelector('[data-testid="server-list-mapimg-result"]');
+                var label = document.querySelector('[data-testid="server-list-mapimg-result-name"]');
+                if (chip && label && name) {
+                    label.textContent = name;
+                    chip.removeAttribute('hidden');
+                }
+                if (name && window.SBPP && window.SBPP.showToast) {
+                    window.SBPP.showToast({ kind: 'success', title: 'Map image uploaded', body: name });
+                }
+            };
+            </script>
+            {/literal}
         {/if}
     {/if}
 </section>

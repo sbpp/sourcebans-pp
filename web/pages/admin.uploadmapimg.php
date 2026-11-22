@@ -12,6 +12,7 @@ global $userbank, $theme;
 
 chdir(ROOT);
 
+// Map thumbnails may be WebP or JPG (see GetMapImage()).
 \Sbpp\Upload\UploadHandler::handle(
     userbank: $userbank,
     theme:    $theme,
@@ -22,14 +23,14 @@ chdir(ROOT);
     deniedAuditMsg: $userbank->GetProperty('user') . " tried to upload a mapimage, but doesn't have access.",
     deniedUserMsg:  "You don't have access to this!",
     field:    'mapimg_file',
-    allowed:  ['webp'],
+    allowed:  ['webp', 'jpg'],
     destDir:  SB_MAPS,
     callback: 'mapimg',
     renameToHash: false,
     auditOk:  'Map Image Uploaded',
     auditFmt: 'A new map image has been uploaded: %s',
-    errorMsg: '<b>File must be WEBP filetype.</b><br><br>',
+    errorMsg: '<b>File must be WEBP or JPG filetype.</b><br><br>',
     title:    'Upload Mapimage',
     formName: 'mapimgup',
-    formats:  'a WEBP',
+    formats:  'a WEBP or JPG',
 );

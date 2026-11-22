@@ -289,13 +289,19 @@ function PageDie(): never
 }
 
 /**
- * Resolve the per-server map thumbnail URL. Falls back to the bundled
- * `nomap.webp` placeholder when the per-map asset is missing.
+ * Resolve the per-server map thumbnail URL. Map images may be WebP or
+ * JPG: `<map>.webp` wins, then `<map>.jpg`. Falls back to the bundled
+ * `nomap.webp` placeholder when neither exists.
  */
 function GetMapImage(string $map): string
 {
-    $candidate = SB_MAP_LOCATION . "/{$map}.webp";
-    return is_file($candidate) ? $candidate : SB_MAP_LOCATION . '/nomap.webp';
+    foreach (['webp', 'jpg'] as $ext) {
+        $candidate = SB_MAP_LOCATION . "/{$map}.{$ext}";
+        if (is_file($candidate)) {
+            return $candidate;
+        }
+    }
+    return SB_MAP_LOCATION . '/nomap.webp';
 }
 
 /**
