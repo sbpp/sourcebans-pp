@@ -261,22 +261,30 @@
                 </div>
             </div>
             {* Called by admin.uploadmapimg.php's success blob
-               (UploadHandler `callback: 'mapimg'`) with the stored
-               `.webp` basename. *}
+               (UploadHandler `callback: 'mapimg'`) with the filename as
+               uploaded (`.webp` or `.jpg`). The on-disk name is the
+               sanitised form of it, which only differs for names
+               carrying path separators or leading dots. *}
             {literal}
             <script>
-            window.mapimg = function (filename) {
-                var name = String(filename || '');
-                var chip  = document.querySelector('[data-testid="server-list-mapimg-result"]');
-                var label = document.querySelector('[data-testid="server-list-mapimg-result-name"]');
-                if (chip && label && name) {
-                    label.textContent = name;
-                    chip.removeAttribute('hidden');
-                }
-                if (name && window.SBPP && window.SBPP.showToast) {
-                    window.SBPP.showToast({ kind: 'success', title: 'Map image uploaded', body: name });
-                }
-            };
+            (function () {
+                'use strict';
+
+                // @ts-expect-error - window.mapimg is the call target for admin.uploadmapimg.php's
+                // window.opener.<cb>() success blob; intentionally untyped on the global.
+                window.mapimg = function (filename) {
+                    var name = String(filename || '');
+                    var chip  = document.querySelector('[data-testid="server-list-mapimg-result"]');
+                    var label = document.querySelector('[data-testid="server-list-mapimg-result-name"]');
+                    if (chip && label && name) {
+                        label.textContent = name;
+                        chip.removeAttribute('hidden');
+                    }
+                    if (name && window.SBPP && window.SBPP.showToast) {
+                        window.SBPP.showToast({ kind: 'success', title: 'Map image uploaded', body: name });
+                    }
+                };
+            })();
             </script>
             {/literal}
         {/if}

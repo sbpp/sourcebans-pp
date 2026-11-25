@@ -351,4 +351,43 @@ final class ServerMapImageRenderTest extends TestCase
             . "handler as the last line of defense against a broken-image icon (#1312).",
         );
     }
+
+    /**
+     * Map images may be WebP or JPG. A bundled `<map>.webp` wins over a
+     * `<map>.jpg` of the same name; a lone `<map>.jpg` (operator upload,
+     * or a leftover from a pre-WebP install) must still resolve instead
+     * of dropping to `nomap.webp`.
+     */
+    public function testGetMapImagePrefersWebpAndFallsBackToJpg(): void
+    {
+        $map  = 'sbpp-test-map-' . bin2hex(random_bytes(6));
+        $webp = SB_MAPS . "/{$map}.webp";
+        $jpg  = SB_MAPS . "/{$map}.jpg";
+
+        // GetMapImage() probes a ROOT-relative path, same as the
+        // API handler's runtime cwd.
+        $cwd = getcwd();
+        chdir(ROOT);
+        try {
+            file_put_contents($jpg, 'jpg');
+            $this->assertSame(
+                SB_MAP_LOCATION . "/{$map}.jpg",
+                \GetMapImage($map),
+                'GetMapImage() must fall back to `<map>.jpg` when no `<map>.webp` exists.',
+            );
+
+            file_put_contents($webp, 'webp');
+            $this->assertSame(
+                SB_MAP_LOCATION . "/{$map}.webp",
+                \GetMapImage($map),
+                'GetMapImage() must prefer `<map>.webp` over `<map>.jpg`.',
+            );
+        } finally {
+            @unlink($jpg);
+            @unlink($webp);
+            if ($cwd !== false) {
+                chdir($cwd);
+            }
+        }
+    }
 }
