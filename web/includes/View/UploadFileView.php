@@ -11,7 +11,7 @@ namespace Sbpp\View;
  * `window.open(...)` from the parent admin page:
  *
  *   - `web/pages/admin.uploadicon.php`   → mod icon (gif/jpg/png)
- *   - `web/pages/admin.uploadmapimg.php` → server-list map image (jpg)
+ *   - `web/pages/admin.uploadmapimg.php` → server-list map image (webp/jpg)
  *   - `web/pages/admin.uploaddemo.php`   → demo attachment
  *     (zip/rar/dem/7z/bz2/gz)
  *

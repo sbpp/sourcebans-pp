@@ -38,7 +38,7 @@ use PHPUnit\Framework\TestCase;
  *      `src` and toggles `hidden` on `load` / `error`, AND the
  *      template <script src>s the helper.
  *   4. `GetMapImage()` still falls back to `nomap` when the file
- *      can't be found, and the bundled `nomap.jpg` placeholder still
+ *      can't be found, and the bundled `nomap.webp` placeholder still
  *      ships (so the fallback path renders something instead of a
  *      404 / broken-image icon).
  *
@@ -225,7 +225,7 @@ final class ServerMapImageRenderTest extends TestCase
             '/\w+\.onerror\s*=\s*function\s*\([^)]*\)\s*\{[^}]*setAttribute\([\'\"]hidden[\'\"],\s*[\'\"][\'\"]\)/s',
             $this->hydrate,
             "server-tile-hydrate.js must KEEP the slot hidden on `error` so a missing "
-            . "file (or a missing `nomap.jpg`) never paints a broken-image icon (#1312).",
+            . "file (or a missing `nomap.webp`) never paints a broken-image icon (#1312).",
         );
     }
 
@@ -271,7 +271,7 @@ final class ServerMapImageRenderTest extends TestCase
             '/max-width\s*:\s*340px/',
             $tag,
             'page_servers.tpl must cap the map preview at `max-width: 340px` (the natural width '
-            . 'of the bundled `web/images/maps/*.jpg` thumbnails) so the rendered box never '
+            . 'of the bundled `web/images/maps/*.webp` thumbnails) so the rendered box never '
             . 'exceeds the source dimensions and `object-fit:cover` cropping is never triggered (#1375).'
         );
 
@@ -323,32 +323,71 @@ final class ServerMapImageRenderTest extends TestCase
     /**
      * `GetMapImage()` is the helper the API handler calls to derive
      * the URL the template will eventually patch in. Its fallback to
-     * `nomap.jpg` is what keeps unknown maps from producing a 404 —
+     * `nomap.webp` is what keeps unknown maps from producing a 404 —
      * this test pins both halves of the contract: the helper's
-     * behaviour AND the bundled `nomap.jpg` placeholder.
+     * behaviour AND the bundled `nomap.webp` placeholder.
      */
     public function testGetMapImageFallsBackToNomap(): void
     {
         $url = \GetMapImage('definitely-not-a-real-map-' . uniqid());
         $this->assertSame(
-            SB_MAP_LOCATION . '/nomap.jpg',
+            SB_MAP_LOCATION . '/nomap.webp',
             $url,
-            "GetMapImage() must return the `nomap.jpg` URL when the requested map's "
+            "GetMapImage() must return the `nomap.webp` URL when the requested map's "
             . "file is missing — without this fallback every server running an "
             . "unrecognised map would emit a 404 / broken-image icon (#1312).",
         );
 
-        // Belt-and-suspenders: the bundled `nomap.jpg` placeholder
+        // Belt-and-suspenders: the bundled `nomap.webp` placeholder
         // still needs to exist on disk, otherwise the fallback URL
         // points at a 404 and the `onerror` branch is the only thing
         // standing between a missing file and a visible broken-image
         // icon. Assert the asset ships.
         $this->assertFileExists(
-            ROOT . SB_MAP_LOCATION . '/nomap.jpg',
-            "web/images/maps/nomap.jpg must ship as the fallback placeholder for "
+            ROOT . SB_MAP_LOCATION . '/nomap.webp',
+            "web/images/maps/nomap.webp must ship as the fallback placeholder for "
             . "`GetMapImage()` — without it the helper returns a URL that 404s and "
             . "every server running an unrecognised map relies on the JS `onerror` "
             . "handler as the last line of defense against a broken-image icon (#1312).",
         );
+    }
+
+    /**
+     * Map images may be WebP or JPG. A bundled `<map>.webp` wins over a
+     * `<map>.jpg` of the same name; a lone `<map>.jpg` (operator upload,
+     * or a leftover from a pre-WebP install) must still resolve instead
+     * of dropping to `nomap.webp`.
+     */
+    public function testGetMapImagePrefersWebpAndFallsBackToJpg(): void
+    {
+        $map  = 'sbpp-test-map-' . bin2hex(random_bytes(6));
+        $webp = SB_MAPS . "/{$map}.webp";
+        $jpg  = SB_MAPS . "/{$map}.jpg";
+
+        // GetMapImage() probes a ROOT-relative path, same as the
+        // API handler's runtime cwd.
+        $cwd = getcwd();
+        chdir(ROOT);
+        try {
+            file_put_contents($jpg, 'jpg');
+            $this->assertSame(
+                SB_MAP_LOCATION . "/{$map}.jpg",
+                \GetMapImage($map),
+                'GetMapImage() must fall back to `<map>.jpg` when no `<map>.webp` exists.',
+            );
+
+            file_put_contents($webp, 'webp');
+            $this->assertSame(
+                SB_MAP_LOCATION . "/{$map}.webp",
+                \GetMapImage($map),
+                'GetMapImage() must prefer `<map>.webp` over `<map>.jpg`.',
+            );
+        } finally {
+            @unlink($jpg);
+            @unlink($webp);
+            if ($cwd !== false) {
+                chdir($cwd);
+            }
+        }
     }
 }

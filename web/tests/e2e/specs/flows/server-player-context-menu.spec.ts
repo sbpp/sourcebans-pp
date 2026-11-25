@@ -146,7 +146,7 @@ async function stubHostPlayers(
                     maxplayers: 24,
                     map:        'cp_dustbowl',
                     mapfull:    'cp_dustbowl',
-                    mapimg:     'images/maps/nomap.jpg',
+                    mapimg:     'images/maps/nomap.webp',
                     os_class:   'fab fa-linux',
                     secure:     true,
                     player_list: players.map((p, idx) => ({
@@ -499,7 +499,7 @@ test.describe('flow: server-player right-click context menu (#PLAYER_CTX_MENU)',
                         maxplayers: 24,
                         map:        'cp_dustbowl',
                         mapfull:    'cp_dustbowl',
-                        mapimg:     'images/maps/nomap.jpg',
+                        mapimg:     'images/maps/nomap.webp',
                         os_class:   'fab fa-linux',
                         secure:     true,
                         player_list: [

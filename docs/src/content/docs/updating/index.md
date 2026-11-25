@@ -91,6 +91,17 @@ directory has no such guard, so it's on you to remove it.
 
 ## Version-specific notes
 
+### Custom map images
+
+Bundled map thumbnails in `images/maps/` now ship as `.webp`. When
+both `<map>.webp` and `<map>.jpg` exist, the panel shows the `.webp`.
+
+If you replaced a bundled thumbnail with your own `.jpg`, convert it
+to WebP and save it as `<map>.webp` so it keeps showing. Custom
+`.jpg` files for maps without a bundled `.webp` keep working. Leftover
+bundled `.jpg` files are unused once the `.webp` copy exists, so you
+can delete them.
+
 ### Upgrading from 1.8.x to 2.0.x
 
 The biggest jump SourceBans++ has shipped: PHP 8.5 requirement,
